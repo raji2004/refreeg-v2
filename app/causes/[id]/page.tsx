@@ -1,13 +1,28 @@
-import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { DonationForm } from "@/components/donation-form"
-import { DonorsList } from "@/components/donors-list"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getCause, getCurrentUser, getProfile, listDonationsForCause } from "@/actions"
-import { notFound } from "next/navigation"
-import { ShareModal } from "@/components/share-modal"
-import { getBaseURL } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/server";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { DonationForm } from "@/components/donation-form";
+import { DonorsList } from "@/components/donors-list";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  getCause,
+  getCurrentUser,
+  getProfile,
+  listDonationsForCause,
+} from "@/actions";
+import { notFound } from "next/navigation";
+import { ShareModal } from "@/components/share-modal";
+import { getBaseURL } from "@/lib/utils";
+import MaticDonationButton from "@/components/crypto-details/MaticDonationButton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+
 // Mock data for a cause
 const mockCause = {
   id: "1",
@@ -24,53 +39,98 @@ const mockCause = {
   },
   created_at: "2023-05-15T10:30:00Z",
   status: "approved",
-}
+};
 
 // Mock donors data
 const mockDonors = [
-  { id: "1", name: "John Doe", amount: 500, date: "2023-06-01T14:30:00Z", message: "Keep up the great work!" },
-  { id: "2", name: "Anonymous", amount: 1000, date: "2023-06-02T09:15:00Z", message: null },
-  { id: "3", name: "Sarah Johnson", amount: 250, date: "2023-06-03T16:45:00Z", message: "Happy to support this cause" },
-  { id: "4", name: "Anonymous", amount: 5000, date: "2023-06-04T11:20:00Z", message: "Water is life" },
-  { id: "5", name: "Michael Brown", amount: 750, date: "2023-06-05T13:10:00Z", message: null },
-]
+  {
+    id: "1",
+    name: "John Doe",
+    amount: 500,
+    date: "2023-06-01T14:30:00Z",
+    message: "Keep up the great work!",
+  },
+  {
+    id: "2",
+    name: "Anonymous",
+    amount: 1000,
+    date: "2023-06-02T09:15:00Z",
+    message: null,
+  },
+  {
+    id: "3",
+    name: "Sarah Johnson",
+    amount: 250,
+    date: "2023-06-03T16:45:00Z",
+    message: "Happy to support this cause",
+  },
+  {
+    id: "4",
+    name: "Anonymous",
+    amount: 5000,
+    date: "2023-06-04T11:20:00Z",
+    message: "Water is life",
+  },
+  {
+    id: "5",
+    name: "Michael Brown",
+    amount: 750,
+    date: "2023-06-05T13:10:00Z",
+    message: null,
+  },
+];
 
-export default async function CauseDetailPage({ params }: { params: { id: string } }) {
-  const myparams = await params
-  const cause = await getCause(myparams.id)
+export default async function CauseDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const myparams = await params;
+  const cause = await getCause(myparams.id);
   if (!cause) {
-    notFound()
+    notFound();
   }
   // Use mock data for now
   // const cause = mockCause
-  const donors = await listDonationsForCause(cause.id)
+  const donors = await listDonationsForCause(cause.id);
 
   // Format the date
   const formattedDate = new Date(cause.created_at).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
-  })
+  });
 
   // Calculate percentage raised
-  const percentRaised = Math.min(Math.round((cause.raised / cause.goal) * 100), 100)
-  const user = await getCurrentUser()
-  const myprofile = user ? await getProfile(user.id) : undefined
+  const percentRaised = Math.min(
+    Math.round((cause.raised / cause.goal) * 100),
+    100
+  );
+  const user = await getCurrentUser();
+  const myprofile = user ? await getProfile(user.id) : undefined;
   const profile = {
     email: myprofile?.email || "",
     name: myprofile?.full_name || "",
     id: myprofile?.id || "",
     subaccount: myprofile?.sub_account_code || "",
-  }
+  };
 
-  const baseUrl = getBaseURL()
+  const baseUrl = getBaseURL();
+
+  // Check if creator has a wallet
+  const creatorProfile = await getProfile(cause.user_id);
+  const hasCreatorWallet = !!creatorProfile?.crypto_wallets?.ethereum;
 
   return (
     <div className="container py-10">
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <div className="aspect-video w-full overflow-hidden rounded-lg">
-            <img src={cause.image || "/placeholder.svg"} alt={cause.title} className="object-cover w-full h-full" />
+            <img
+              src={cause.image || "/placeholder.svg"}
+              alt={cause.title}
+              className="object-cover w-full h-full"
+            />
           </div>
 
           <Tabs defaultValue="about">
@@ -99,16 +159,24 @@ export default async function CauseDetailPage({ params }: { params: { id: string
           <Card>
             <CardHeader>
               <CardTitle>Donation Progress</CardTitle>
-              <CardDescription>Help us reach our goal of ₦{cause.goal.toLocaleString()}</CardDescription>
+              <CardDescription>
+                Help us reach our goal of ₦{cause.goal.toLocaleString()}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="font-medium">₦{cause.raised.toLocaleString()}</span>
-                  <span className="text-muted-foreground">of ₦{cause.goal.toLocaleString()}</span>
+                  <span className="font-medium">
+                    ₦{cause.raised.toLocaleString()}
+                  </span>
+                  <span className="text-muted-foreground">
+                    of ₦{cause.goal.toLocaleString()}
+                  </span>
                 </div>
                 <Progress value={percentRaised} />
-                <div className="text-sm text-muted-foreground text-right">{percentRaised}% raised</div>
+                <div className="text-sm text-muted-foreground text-right">
+                  {percentRaised}% raised
+                </div>
               </div>
 
               <div className="text-sm">
@@ -132,10 +200,53 @@ export default async function CauseDetailPage({ params }: { params: { id: string
             </CardContent>
           </Card>
 
-          <DonationForm causeId={cause.id} profile={profile} status={cause.status} />
+          <Card>
+            <CardHeader>
+              <CardTitle>Make a Donation</CardTitle>
+              <CardDescription>
+                Choose your preferred donation method
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {hasCreatorWallet ? (
+                <div className="space-y-4">
+                  <MaticDonationButton causeId={cause.id} />
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        Or donate with
+                      </span>
+                    </div>
+                  </div>
+                  <DonationForm
+                    causeId={cause.id}
+                    profile={profile}
+                    status={cause.status}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Crypto donations are not available for this cause as the
+                      creator has not connected their wallet.
+                    </AlertDescription>
+                  </Alert>
+                  <DonationForm
+                    causeId={cause.id}
+                    profile={profile}
+                    status={cause.status}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
-  )
+  );
 }
-
