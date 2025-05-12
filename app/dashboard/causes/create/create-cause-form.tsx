@@ -35,6 +35,7 @@ type FormData = {
     goal: string
     currency: string
     coverImage: File | null
+    sections: { heading: string; description: string }[]
 }
 
 type FormErrors = {
@@ -52,6 +53,7 @@ type CauseFormData = {
     goal: string
     currency: string
     coverImage: File | null
+    sections: { heading: string; description: string }[]
 }
 
 const validateForm = (formData: FormData): FormErrors => {
@@ -97,6 +99,7 @@ export default function CreateCauseForm() {
         goal: "",
         currency: "NGN",
         coverImage: null,
+        sections: [{ heading: "", description: "" }],
     })
     const [errors, setErrors] = useState<FormErrors>({})
 
@@ -151,6 +154,8 @@ export default function CreateCauseForm() {
             case 1:
                 return !currentErrors.title && !currentErrors.description && !currentErrors.category && !currentErrors.goal
             case 2:
+                return formData.sections.every(section => section.heading.trim() !== "" && section.description.trim() !== "")
+            case 3:
                 return !currentErrors.coverImage
             default:
                 return true
@@ -190,6 +195,7 @@ export default function CreateCauseForm() {
             goal: formData.goal,
             currency: formData.currency,
             coverImage: formData.coverImage,
+            sections: formData.sections,
         }
 
         await createCause(user.id, causeData)
@@ -198,6 +204,29 @@ export default function CreateCauseForm() {
 
     const prevStep = () => {
         if (currentStep > 1) setCurrentStep((prev) => prev - 1)
+    }
+
+    const addSection = () => {
+        setFormData(prev => ({
+            ...prev,
+            sections: [...prev.sections, { heading: "", description: "" }]
+        }))
+    }
+
+    const removeSection = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            sections: prev.sections.filter((_, i) => i !== index)
+        }))
+    }
+
+    const updateSection = (index: number, field: 'heading' | 'description', value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            sections: prev.sections.map((section, i) =>
+                i === index ? { ...section, [field]: value } : section
+            )
+        }))
     }
 
     const renderStep = () => {
@@ -291,6 +320,58 @@ export default function CreateCauseForm() {
             case 2:
                 return (
                     <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-medium">Additional Sections</h3>
+                            <Button type="button" onClick={addSection} variant="outline">
+                                Add Section
+                            </Button>
+                        </div>
+
+                        {formData.sections.map((section, index) => (
+                            <Card key={index} className="p-4">
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <h4 className="text-sm font-medium">Section {index + 1}</h4>
+                                        {index > 0 && (
+                                            <Button
+                                                type="button"
+                                                onClick={() => removeSection(index)}
+                                                variant="ghost"
+                                                size="sm"
+                                            >
+                                                Remove
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor={`section-heading-${index}`}>Sub-heading</Label>
+                                        <Input
+                                            id={`section-heading-${index}`}
+                                            value={section.heading}
+                                            onChange={(e) => updateSection(index, 'heading', e.target.value)}
+                                            placeholder="Enter sub-heading"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor={`section-description-${index}`}>Sub-description</Label>
+                                        <Textarea
+                                            id={`section-description-${index}`}
+                                            value={section.description}
+                                            onChange={(e) => updateSection(index, 'description', e.target.value)}
+                                            placeholder="Enter sub-description"
+                                        />
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                )
+
+            case 3:
+                return (
+                    <div className="space-y-4">
                         <div className="space-y-2">
                             <Label>Cover Image</Label>
                             <ImageUpload
@@ -312,7 +393,7 @@ export default function CreateCauseForm() {
                     </div>
                 )
 
-            case 3:
+            case 4:
                 return (
                     <div className="space-y-6">
                         <div className="space-y-2">
@@ -325,6 +406,14 @@ export default function CreateCauseForm() {
                         <div className="space-y-2">
                             <h4 className="font-medium">Description</h4>
                             <p className="text-sm">{formData.description}</p>
+                        </div>
+                        <div className="space-y-2">
+                            {formData.sections.map((section, index) => (
+                                <div key={index} className="space-y-2">
+                                    <h5 className="font-medium">{section.heading}</h5>
+                                    <p className="text-sm">{section.description}</p>
+                                </div>
+                            ))}
                         </div>
 
                         <div className="space-y-2">
@@ -349,18 +438,8 @@ export default function CreateCauseForm() {
                                 )}
                             </div>
                         </div>
-                    </div>
-                )
 
-            case 4:
-                return (
-                    <div className="space-y-4">
-                        <div className="text-center space-y-2">
-                            <h3 className="text-lg font-semibold">Ready to Submit?</h3>
-                            <p className="text-sm text-muted-foreground">
-                                Review your cause details and submit for approval.
-                            </p>
-                        </div>
+                       
                     </div>
                 )
 
@@ -379,10 +458,11 @@ export default function CreateCauseForm() {
                 </CardDescription>
                 <Progress value={(currentStep / 4) * 100} className="mt-4" />
             </CardHeader>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="space-y-8">
                 <CardContent className="space-y-4">
                     {renderStep()}
                 </CardContent>
+
                 <CardFooter className="flex justify-between">
                     <Button
                         type="button"

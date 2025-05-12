@@ -62,17 +62,15 @@ export function Header() {
           <nav className="hidden gap-6 md:flex">
             <Link
               href="/causes"
-              className={`text-sm font-medium transition-colors hover:text-secondary ${
-                pathname === "/causes" ? "text-foreground" : "text-muted-foreground"
-              }`}
+              className={`text-sm font-medium transition-colors hover:text-secondary ${pathname === "/causes" ? "text-foreground" : "text-muted-foreground"
+                }`}
             >
               Causes
             </Link>
             <Link
               href="/how-it-works"
-              className={`text-sm font-medium transition-colors hover:text-secondary ${
-                pathname === "/how-it-works" ? "text-foreground" : "text-muted-foreground"
-              }`}
+              className={`text-sm font-medium transition-colors hover:text-secondary ${pathname === "/how-it-works" ? "text-foreground" : "text-muted-foreground"
+                }`}
             >
               How It Works
             </Link>
@@ -165,18 +163,18 @@ export function Header() {
                 Dashboard
               </Link>
             )} */}
-           
+
           </nav>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-5">
           {/* <ThemeToggle /> */}
+          <Link href="/dashboard/causes/create">
+            <Button variant="outline" size="sm">
+              List a Cause
+            </Button>
+          </Link>
           {!isLoading && !user ? (
             <div className="flex items-center gap-2">
-              <Link href="/dashboard/causes/create">
-                <Button variant="outline" size="sm">
-                  List a Cause
-                </Button>
-              </Link>
               <Link href="/auth/signin">
                 <Button size="sm" className="bg-[#0070E0]">Sign In</Button>
               </Link>

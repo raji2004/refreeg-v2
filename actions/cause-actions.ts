@@ -19,15 +19,20 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
       profiles!inner (
         full_name,
         email
+      ),
+      cause_sections (
+        id,
+        heading,
+        description
       )
     `)
     .eq("id", causeId)
     .single()
 
-    if((data?.status === "pending" || data?.status === "rejected" )&& user?.id !== data?.user_id) {
-      redirect("/")
-      return null  
-    }
+  if ((data?.status === "pending" || data?.status === "rejected") && user?.id !== data?.user_id) {
+    redirect("/")
+    return null
+  }
   if (error) {
     if (error.code === "PGRST116") {
       return null
@@ -43,10 +48,12 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
       name: data.profiles?.full_name || "Anonymous",
       email: data.profiles?.email || "",
     },
+    sections: data.cause_sections || []
   } as unknown as CauseWithUser
 
   // Remove the nested objects that we've flattened
   delete (cause as any).profiles
+  delete (cause as any).cause_sections
 
   return cause
 }
@@ -90,7 +97,8 @@ export async function createCause(userId: string, causeData: CauseFormData): Pro
     coverImageUrl = await uploadImageToSupabase(causeData.coverImage, userId, "cover")
   }
 
-  const { data, error } = await supabase
+  // Start a transaction
+  const { data: cause, error: causeError } = await supabase
     .from("causes")
     .insert({
       user_id: userId,
@@ -103,14 +111,32 @@ export async function createCause(userId: string, causeData: CauseFormData): Pro
     })
     .select()
     .single()
+  console.log(cause)
+  if (causeError) {
+    console.error("Error creating cause:", causeError)
+    throw causeError
+  }
 
-  if (error) {
-    console.error("Error creating cause:", error)
-    throw error
+  // Insert sections if they exist
+  if (causeData.sections && causeData.sections.length > 0) {
+    const sections = causeData.sections.map(section => ({
+      cause_id: cause.id,
+      heading: section.heading,
+      description: section.description
+    }))
+
+    const { error: sectionsError } = await supabase
+      .from("cause_sections")
+      .insert(sections)
+
+    if (sectionsError) {
+      console.error("Error creating sections:", sectionsError)
+      throw sectionsError
+    }
   }
 
   revalidatePath("/dashboard/causes")
-  return data as Cause
+  return cause as Cause
 }
 
 /**
@@ -148,6 +174,38 @@ export async function updateCause(causeId: string, userId: string, causeData: Pa
   if (error) {
     console.error("Error updating cause:", error)
     throw error
+  }
+
+  // Handle sections update
+  if (causeData.sections) {
+    // First delete existing sections
+    const { error: deleteError } = await supabase
+      .from("cause_sections")
+      .delete()
+      .eq("cause_id", causeId)
+
+    if (deleteError) {
+      console.error("Error deleting existing sections:", deleteError)
+      throw deleteError
+    }
+
+    // Then insert new sections if they exist
+    if (causeData.sections.length > 0) {
+      const sections = causeData.sections.map(section => ({
+        cause_id: causeId,
+        heading: section.heading,
+        description: section.description
+      }))
+
+      const { error: sectionsError } = await supabase
+        .from("cause_sections")
+        .insert(sections)
+
+      if (sectionsError) {
+        console.error("Error creating new sections:", sectionsError)
+        throw sectionsError
+      }
+    }
   }
 
   revalidatePath(`/dashboard/causes/${causeId}`)
@@ -329,32 +387,32 @@ export async function deleteCause(causeId: string): Promise<void> {
 /**
  * Save a cause share to the database
  */
-export async function saveCauseShare(causeId: string, ): Promise<void> {
+export async function saveCauseShare(causeId: string,): Promise<void> {
   const supabase = await createClient()
 
   // Start a transaction
   const { error: shareError, data: causeData } = await supabase
     .from("causes")
-   .select('shared')
-   .eq('id', causeId)
-   .single()
-   if (shareError) {
-     console.error("Error saving cause share:", shareError)
-     throw shareError
-   }
+    .select('shared')
+    .eq('id', causeId)
+    .single()
+  if (shareError) {
+    console.error("Error saving cause share:", shareError)
+    throw shareError
+  }
 
-   const { data: mine, error: causeError } = await supabase
-   .from("causes")
-   .update({ shared: causeData.shared + 1 })
-   .eq('id', causeId)
-   .single()
+  const { data: mine, error: causeError } = await supabase
+    .from("causes")
+    .update({ shared: causeData.shared + 1 })
+    .eq('id', causeId)
+    .single()
 
-   if (causeError) {
+  if (causeError) {
     console.error("Error saving cause share:", causeError)
     throw causeError
-   }
+  }
 
-   return mine
+  return mine
 }
 
 

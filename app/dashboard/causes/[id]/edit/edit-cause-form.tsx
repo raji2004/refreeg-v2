@@ -37,6 +37,7 @@ type FormData = {
     currency: string
     coverImage: File | null
     image: string
+    sections: { heading: string; description: string }[]
 }
 
 type FormErrors = {
@@ -63,6 +64,7 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
         currency: "NGN",
         coverImage: null,
         image: cause.image || "",
+        sections: cause.sections || [{ heading: "", description: "" }],
     })
     const [errors, setErrors] = useState<FormErrors>({})
 
@@ -84,7 +86,6 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
     }
 
     const handleImageUpload = (files: File[]) => {
-      
         setFormData((prev) => ({ ...prev, coverImage: files[0] }))
         if (errors.coverImage) {
             setErrors((prev) => ({ ...prev, coverImage: undefined }))
@@ -96,6 +97,29 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
         e.stopPropagation()
     }
 
+    const addSection = () => {
+        setFormData(prev => ({
+            ...prev,
+            sections: [...prev.sections, { heading: "", description: "" }]
+        }))
+    }
+
+    const removeSection = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            sections: prev.sections.filter((_, i) => i !== index)
+        }))
+    }
+
+    const updateSection = (index: number, field: 'heading' | 'description', value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            sections: prev.sections.map((section, i) =>
+                i === index ? { ...section, [field]: value } : section
+            )
+        }))
+    }
+
     const validateStep = (step: number): boolean => {
         const currentErrors = validateForm(formData)
         setErrors(currentErrors)
@@ -104,6 +128,8 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
             case 1:
                 return !currentErrors.title && !currentErrors.description && !currentErrors.category && !currentErrors.goal
             case 2:
+                return formData.sections.every(section => section.heading.trim() !== "" && section.description.trim() !== "")
+            case 3:
                 return !currentErrors.coverImage
             default:
                 return true
@@ -117,7 +143,6 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
-    
         e.preventDefault()
         if (!user) return
 
@@ -127,14 +152,13 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
             return
         }
 
-      
-
         const causeData: Partial<FormData> = {
             title: formData.title,
             description: formData.description,
             category: formData.category,
             goal: formData.goal,
             coverImage: formData.coverImage,
+            sections: formData.sections,
         }
 
         await updateCause(cause.id, user.id, causeData)
@@ -215,6 +239,58 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
             case 2:
                 return (
                     <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-medium">Additional Sections</h3>
+                            <Button type="button" onClick={addSection} variant="outline">
+                                Add Section
+                            </Button>
+                        </div>
+
+                        {formData.sections.map((section, index) => (
+                            <Card key={index} className="p-4">
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <h4 className="text-sm font-medium">Section {index + 1}</h4>
+                                        {index > 0 && (
+                                            <Button
+                                                type="button"
+                                                onClick={() => removeSection(index)}
+                                                variant="ghost"
+                                                size="sm"
+                                            >
+                                                Remove
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor={`section-heading-${index}`}>Sub-heading</Label>
+                                        <Input
+                                            id={`section-heading-${index}`}
+                                            value={section.heading}
+                                            onChange={(e) => updateSection(index, 'heading', e.target.value)}
+                                            placeholder="Enter sub-heading"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor={`section-description-${index}`}>Sub-description</Label>
+                                        <Textarea
+                                            id={`section-description-${index}`}
+                                            value={section.description}
+                                            onChange={(e) => updateSection(index, 'description', e.target.value)}
+                                            placeholder="Enter sub-description"
+                                        />
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                )
+
+            case 3:
+                return (
+                    <div className="space-y-4">
                         <div className="space-y-2">
                             <Label>Cover Image</Label>
                             {cause.image && (
@@ -238,13 +314,34 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                     </div>
                 )
 
-            case 3:
+            case 4:
                 return (
-                    <div className="space-y-4">
-                        <div className="text-center space-y-2">
-                            <h3 className="text-lg font-semibold">Review Your Changes</h3>
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <h3 className="text-lg font-semibold">{formData.title}</h3>
                             <p className="text-sm text-muted-foreground">
-                                Please review your changes before submitting.
+                                {categories.find((c) => c.id === formData.category)?.name}
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h4 className="font-medium">Description</h4>
+                            <p className="text-sm">{formData.description}</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            {formData.sections.map((section, index) => (
+                                <div key={index} className="space-y-2">
+                                    <h5 className="font-medium">{section.heading}</h5>
+                                    <p className="text-sm">{section.description}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="space-y-2">
+                            <h4 className="font-medium">Funding Goal</h4>
+                            <p className="text-sm">
+                                {formData.currency} {formData.goal}
                             </p>
                         </div>
                     </div>
@@ -262,7 +359,7 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                 <CardDescription>
                     Update your cause details below. All changes will require re-approval before going live.
                 </CardDescription>
-                <Progress value={(currentStep / 3) * 100} className="mt-4" />
+                <Progress value={(currentStep / 4) * 100} className="mt-4" />
             </CardHeader>
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4">
@@ -277,7 +374,7 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                     >
                         Back
                     </Button>
-                    {currentStep != 3 ? (
+                    {currentStep != 4 ? (
                         <Button type="button" onClick={nextStep}>
                             Next
                         </Button>

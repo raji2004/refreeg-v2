@@ -19,6 +19,24 @@ export interface Cause {
     email: string
   }
 }
+export interface subHeadings{
+  id: string
+  title: string
+  cause_id: string
+  created_at: string
+}
+export interface subDescription{
+  id: string
+  description: string
+  sub_heading_id: string
+  created_at: string
+}
+export interface subHeadingWithSubDescription extends subHeadings{
+  sub_description: subDescription[]
+}
+export interface CauseWithSubHeading extends Cause{
+  sub_heading: subHeadingWithSubDescription[]
+}
 
 // Cause with user information
 export interface CauseWithUser extends Cause {
