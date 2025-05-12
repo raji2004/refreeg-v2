@@ -4,23 +4,29 @@ import { useState } from "react";
 import { BrowserProvider } from "ethers";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { toast } from "sonner";
-import Link from "next/link";
+import { useToast } from "@/components/ui/use-toast";
 
 interface ConnectWalletButtonProps {
   onConnected?: (address: string, network?: string) => void;
+  disabled?: boolean;
 }
 
-export function ConnectWalletButton({ onConnected }: ConnectWalletButtonProps) {
+export function ConnectWalletButton({
+  onConnected,
+  disabled,
+}: ConnectWalletButtonProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
+  const { toast } = useToast();
 
   const installMetaMask = () => {
     window.open("https://metamask.io/download/", "_blank");
   };
 
   const connectWallet = async () => {
+    if (disabled) return;
+
     setIsConnecting(true);
     setError(null);
 
@@ -28,12 +34,15 @@ export function ConnectWalletButton({ onConnected }: ConnectWalletButtonProps) {
       if (!window.ethereum) {
         const errorMsg = "MetaMask is not installed";
         setError(errorMsg);
-        toast.error(errorMsg, {
-          action: {
-            label: "Install MetaMask",
-            onClick: installMetaMask,
-          },
-          duration: 5000,
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: errorMsg,
+          action: (
+            <Button variant="outline" onClick={installMetaMask}>
+              Install MetaMask
+            </Button>
+          ),
         });
         return;
       }
@@ -43,62 +52,61 @@ export function ConnectWalletButton({ onConnected }: ConnectWalletButtonProps) {
       });
 
       if (!accounts || accounts.length === 0) {
-        const errorMsg = "No accounts found";
-        setError(errorMsg);
-        toast.error(errorMsg);
-        return;
+        throw new Error("No accounts found");
       }
 
       const address = accounts[0];
       if (!address) {
-        const errorMsg = "No address found";
-        setError(errorMsg);
-        toast.error(errorMsg);
-        return;
+        throw new Error("Invalid wallet address");
       }
 
       const provider = new BrowserProvider(window.ethereum);
       const network = await provider.getNetwork();
-      const signer = await provider.getSigner();
+
+      if (Number(network.chainId) !== 80002) {
+        throw new Error(
+          "Please switch to the Polygon Amoy testnet in MetaMask"
+        );
+      }
 
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
       if (!user) {
-        const errorMsg = "You must be logged in to connect a wallet";
-        setError(errorMsg);
-        toast.error(errorMsg);
-        return;
+        throw new Error("You must be logged in to connect a wallet");
       }
 
       const { error: updateError } = await supabase
         .from("profiles")
         .update({
-          crypto_wallets: {
-            [network.name]: address,
-          },
+          polygon_wallet: address,
         })
         .eq("id", user.id);
 
       if (updateError) {
-        const errorMsg = "Failed to save wallet address";
-        setError(errorMsg);
-        toast.error(errorMsg);
-        return;
+        console.error("Supabase update error:", updateError);
+        throw new Error("Failed to save wallet address");
       }
 
-      if (onConnected) {
-        onConnected(address, network.name);
-      }
+      onConnected?.(address, "matic-amoy");
 
-      toast.success("Wallet connected successfully");
-      return { address, network: network.name };
+      toast({
+        title: "Success",
+        description: "Wallet connected on Polygon Amoy testnet",
+      });
+      return { address, network: "matic-amoy" };
     } catch (err) {
       console.error("Wallet connection error:", err);
       const errorMessage =
         err instanceof Error ? err.message : "Failed to connect wallet";
       setError(errorMessage);
-      toast.error(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage,
+      });
+      throw new Error(errorMessage);
     } finally {
       setIsConnecting(false);
     }
@@ -108,7 +116,7 @@ export function ConnectWalletButton({ onConnected }: ConnectWalletButtonProps) {
     <div className="space-y-4">
       <Button
         onClick={connectWallet}
-        disabled={isConnecting}
+        disabled={isConnecting || disabled}
         className="w-full"
       >
         {isConnecting ? "Connecting..." : "Connect Wallet"}
@@ -118,21 +126,12 @@ export function ConnectWalletButton({ onConnected }: ConnectWalletButtonProps) {
         <div className="text-sm text-red-500 mt-2">
           {error}
           {error === "MetaMask is not installed" && (
-            <>
-              <button
-                onClick={installMetaMask}
-                className="ml-2 text-blue-500 hover:text-blue-600 underline"
-              >
-                Install MetaMask
-              </button>
-              <span className="mx-2">|</span>
-              <Link
-                href="/guide/web3-wallet"
-                className="text-blue-500 hover:text-blue-600 underline"
-              >
-                How to install a Web3 wallet
-              </Link>
-            </>
+            <button
+              onClick={installMetaMask}
+              className="ml-2 text-blue-500 hover:text-blue-600 underline"
+            >
+              Install MetaMask
+            </button>
           )}
         </div>
       )}

@@ -24,7 +24,5 @@ export interface Profile {
   causes_count?: number;
   user_type?: "individual" | "organization";
   bio?: string;
-  crypto_wallets?: {
-    [network: string]: string;
-  };
+  polygon_wallet?: string | null;
 }

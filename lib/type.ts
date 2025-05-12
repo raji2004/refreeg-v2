@@ -174,7 +174,6 @@ export type Cause = {
     type: string;
     progress: number;
   };
-
   img: string;
   userId: string;
   zipCode: string;

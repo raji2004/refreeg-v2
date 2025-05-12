@@ -42,7 +42,7 @@ export default function Web3WalletGuide() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <img
-                        src="/metamask-fox.svg"
+                        src="/metamask.svg"
                         alt="MetaMask"
                         className="w-6 h-6"
                       />
@@ -76,7 +76,7 @@ export default function Web3WalletGuide() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                {/* <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <img
@@ -112,7 +112,7 @@ export default function Web3WalletGuide() {
                       </Button>
                     </div>
                   </CardContent>
-                </Card>
+                </Card> */}
               </div>
             </div>
 

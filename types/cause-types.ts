@@ -15,9 +15,11 @@ export interface Cause {
   updated_at: string
   image?: string | null
   profiles?: {
-    full_name: string
-    email: string
-  }
+    id: string;
+    full_name: string;
+    email: string;
+    profile_photo?: string;
+  };
 }
 export interface subHeadings{
   id: string

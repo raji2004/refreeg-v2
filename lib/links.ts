@@ -19,8 +19,8 @@ export const quickLinks = [
 export const contactLinks = [
   {
     key: 1,
-    label: "refreegcorrespondence@gmail.com",
-    route: "mailto:refreegcorrespondence@gmail.com",
+    label: "Support@refreeg.com",
+    route: "mailto:Support@Refreeg.com",
   },
   {
     key: 2,

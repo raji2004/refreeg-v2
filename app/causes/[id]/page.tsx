@@ -22,6 +22,7 @@ import { getBaseURL } from "@/lib/utils";
 import MaticDonationButton from "@/components/crypto-details/MaticDonationButton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import Link from "next/link";
 
 // Mock data for a cause
 const mockCause = {
@@ -113,13 +114,14 @@ export default async function CauseDetailPage({
     name: myprofile?.full_name || "",
     id: myprofile?.id || "",
     subaccount: myprofile?.sub_account_code || "",
+    profile_photo: myprofile?.profile_photo || "",
   };
 
   const baseUrl = getBaseURL();
 
   // Check if creator has a wallet
   const creatorProfile = await getProfile(cause.user_id);
-  const hasCreatorWallet = !!creatorProfile?.crypto_wallets?.ethereum;
+  const hasCreatorWallet = !!creatorProfile?.polygon_wallet;
 
   return (
     <div className="container py-10">
@@ -141,19 +143,35 @@ export default async function CauseDetailPage({
             <TabsContent value="about" className="space-y-4">
               <h1 className="text-3xl font-bold">{cause.title}</h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Created by {cause.user.name}</span>
+              <div className="w-8 h-8 rounded-full overflow-hidden border">
+                <img
+                  src={cause.user.profile_photo || "/default-avatar.png"}
+                  alt={"User profile photo"}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <Link
+                href={`/dashboard/admin/users/${cause.user_id}`}
+                className="hover:underline"
+              >
+                Created by {cause.user.name}
+              </Link>
                 <span>•</span>
                 <span>{formattedDate}</span>
                 <span>•</span>
                 <span className="capitalize">{cause.category}</span>
               </div>
               <p className="whitespace-pre-line">{cause.description}</p>
-              {cause.sections && cause.sections.length > 0 && cause.sections.map((section, index) => (
-                <div key={index} className="mt-4">
-                  <h3 className="text-xl font-semibold">{section.heading}</h3>
-                  <p className="text-muted-foreground">{section.description}</p>
-                </div>
-              ))}
+              {cause.sections &&
+                cause.sections.length > 0 &&
+                cause.sections.map((section, index) => (
+                  <div key={index} className="mt-4">
+                    <h3 className="text-xl font-semibold">{section.heading}</h3>
+                    <p className="text-muted-foreground">
+                      {section.description}
+                    </p>
+                  </div>
+                ))}
             </TabsContent>
             <TabsContent value="donors">
               <DonorsList donors={donors} />
@@ -214,41 +232,30 @@ export default async function CauseDetailPage({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {hasCreatorWallet ? (
-                <div className="space-y-4">
-                  <MaticDonationButton causeId={cause.id} />
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
-                        Or donate with
-                      </span>
-                    </div>
+              <div className="space-y-4">
+                {/* <MaticDonationButton causeId={cause.id} /> */}
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Crypto donations are not available at the moment.
+                  </AlertDescription>
+                </Alert>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
                   </div>
-                  <DonationForm
-                    causeId={cause.id}
-                    profile={profile}
-                    status={cause.status}
-                  />
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or donate with
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Crypto donations are not available for this cause as the
-                      creator has not connected their wallet.
-                    </AlertDescription>
-                  </Alert>
-                  <DonationForm
-                    causeId={cause.id}
-                    profile={profile}
-                    status={cause.status}
-                  />
-                </div>
-              )}
+                <DonationForm
+                  causeId={cause.id}
+                  profile={profile}
+                  status={cause.status}
+                />
+              </div>
             </CardContent>
           </Card>
         </div>
