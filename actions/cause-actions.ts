@@ -18,7 +18,8 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
       *,
       profiles!inner (
         full_name,
-        email
+        email,
+        profile_photo
       ),
       cause_sections (
         id,
@@ -47,6 +48,7 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
     user: {
       name: data.profiles?.full_name || "Anonymous",
       email: data.profiles?.email || "",
+      profile_photo: data.profiles?.profile_photo || "",
     },
     sections: data.cause_sections || []
   } as unknown as CauseWithUser
@@ -221,7 +223,7 @@ export async function listCauses(options: CauseFilterOptions = {}): Promise<Caus
   const supabase = await createClient()
 
 
-  let query = supabase.from("causes").select("*,profiles(full_name,email)").order("created_at", { ascending: false })
+  let query = supabase.from("causes").select("*,profiles!inner(full_name,email,profile_photo)").order("created_at", { ascending: false })
 
   // Apply filters
   if (options.category && options.category !== "all") {
@@ -317,12 +319,19 @@ export async function updateCauseStatus(
     updateData.rejection_reason = rejectionReason
   }
 
-  const { data, error } = await supabase.from("causes").update(updateData).eq("id", causeId).select().single()
+  const { data, error } = await supabase.from("causes").update(updateData).eq("id", causeId).select(`
+    *,
+    profiles (
+      full_name,
+      profile_photo
+    )
+  `).single()
 
   if (error) {
     console.error("Error updating cause status:", error)
     throw error
   }
+  
 
   revalidatePath("/dashboard/admin/causes")
   return data as Cause

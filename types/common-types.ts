@@ -93,12 +93,19 @@ export interface Cause {
   created_at: string;
   updated_at: string;
   sections?: CauseSection[];
+  profiles?: {
+    id: string;
+    full_name: string;
+    email: string;
+    profile_photo?: string;
+  };
 }
 
 export interface CauseWithUser extends Cause {
   user: {
     name: string;
     email: string;
+    profile_photo: string;
   };
   sections: CauseSection[];
 }

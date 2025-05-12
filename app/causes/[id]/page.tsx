@@ -114,6 +114,7 @@ export default async function CauseDetailPage({
     name: myprofile?.full_name || "",
     id: myprofile?.id || "",
     subaccount: myprofile?.sub_account_code || "",
+    profile_photo: myprofile?.profile_photo || "",
   };
 
   const baseUrl = getBaseURL();
@@ -142,15 +143,19 @@ export default async function CauseDetailPage({
             <TabsContent value="about" className="space-y-4">
               <h1 className="text-3xl font-bold">{cause.title}</h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>
-                  Created by{" "}
-                  <Link
-                    href={`/profile/${cause.user_id}`}
-                    className="hover:underline text-blue-600"
-                  >
-                    {cause.user.name}
-                  </Link>
-                </span>
+              <div className="w-8 h-8 rounded-full overflow-hidden border">
+                <img
+                  src={cause.user.profile_photo || "/default-avatar.png"}
+                  alt={"User profile photo"}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <Link
+                href={`/dashboard/admin/users/${cause.user_id}`}
+                className="hover:underline"
+              >
+                Created by {cause.user.name}
+              </Link>
                 <span>•</span>
                 <span>{formattedDate}</span>
                 <span>•</span>

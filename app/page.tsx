@@ -40,49 +40,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="w-full py-12 md:py-24 lg:py-32">
-        <div className="container px-4 md:px-6">
-          <div className="flex flex-col items-center justify-center space-y-4 text-center">
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">How It Works</h2>
-              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Refreeg makes it easy to create and support causes that matter to you.
-              </p>
-            </div>
-          </div>
-          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-3 md:gap-8">
-            <div className="flex flex-col items-center space-y-2 rounded-lg border p-6 shadow-sm">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0070E0] text-secondary-foreground">
-                1
-              </div>
-              <h3 className="text-xl font-bold">Create a Cause</h3>
-              <p className="text-center text-muted-foreground">
-                Sign up and create a cause with details about your initiative and funding goal.
-              </p>
-            </div>
-            <div className="flex flex-col items-center space-y-2 rounded-lg border p-6 shadow-sm">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0070E0] text-secondary-foreground">
-                2
-              </div>
-              <h3 className="text-xl font-bold">Get Approved</h3>
-              <p className="text-center text-muted-foreground">
-                Our team reviews your cause to ensure it meets our community guidelines.
-              </p>
-            </div>
-            <div className="flex flex-col items-center space-y-2 rounded-lg border p-6 shadow-sm">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0070E0] text-secondary-foreground">
-                3
-              </div>
-              <h3 className="text-xl font-bold">Receive Donations</h3>
-              <p className="text-center text-muted-foreground">
-                Once approved, your cause goes live and donations are automatically transferred to your account.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Featured Causes */}
       <section className="w-full py-12 md:py-24 lg:py-20 bg-muted">
         <div className="container px-4 md:px-6">

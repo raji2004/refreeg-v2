@@ -45,8 +45,14 @@ import {
 //   },
 // ]
 
+export async function getCauseProfilePhotos(): Promise<string[]> {
+  const causes = await listCauses()
+  return causes.map(c => c.profiles?.profile_photo || "/default-avatar.png")
+}
+
 export async function FeaturedCauses() {
   const featuredCauses = await listCauses()
+  console.log(await listCauses());
 
   const categories = [
     { id: "education", name: "Education", icon: <GraduationCap className="mr-1 h-4 w-4" /> },
@@ -92,6 +98,7 @@ export async function FeaturedCauses() {
       {featuredCauses.map((cause) => {
         // Find the category based on the cause's category id
         const category = categories.find((cat) => cat.id === cause.category)
+        
 
         return (
           <Link key={cause.id} href={`/causes/${cause.id}`} className="group">
@@ -101,12 +108,22 @@ export async function FeaturedCauses() {
               </div>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs px-2 py-1 rounded-full">
-                    {category?.icon}
-                    {category ? category.name.charAt(0).toUpperCase() + category.name.slice(1) : "Unknown"}
-                  </Badge>
+                <div className="w-12 h-12 rounded-full overflow-hidden border bg-gray-100 shrink-0">
+  <img
+    src={cause.profiles?.profile_photo || "/default-avatar.png"}
+    alt={cause.profiles?.full_name || "User"}
+    className="w-full h-full object-cover"
+  />
+</div>
+
+
+                  <CardTitle className="font-medium text-base md:text-lg lg:text-lg">
+                    {cause.title}
+                    <div className="font-normal lg:text-sm">{((cause.raised / cause.goal) * 100).toFixed(1)}% funded</div>
+                  </CardTitle>                  
                 </div>
-                <CardTitle className="font-medium text-base md:text-xl lg:text-2xl">{cause.title}</CardTitle>
+                
+                
                 <CardDescription>
                   {cause.description.split(" ").length > 25
                     ? (
@@ -120,11 +137,16 @@ export async function FeaturedCauses() {
               </CardHeader>
               <CardContent className="flex-1">
                 <div className="space-y-2">
+                <Badge variant="default" className="bg-transparent text-gray-500 text-xs px-2 py-1 border border-[#525252] rounded-full">
+                  {category?.icon}
+                  {category ? category.name.charAt(0).toUpperCase() + category.name.slice(1) : "Unknown"}
+                </Badge>
+
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">₦{cause.raised.toLocaleString()}</span>
                     <span className="text-muted-foreground">of ₦{cause.goal.toLocaleString()}</span>
                   </div>
-                  <Progress value={(cause.raised / cause.goal) * 100} className="h-2 bg-muted" />
+                  <Progress value={(cause.raised / cause.goal) * 100} className="h-2 bg-muted border border-[#525252] rounded-full" />
                 </div>
               </CardContent>
               <CardFooter>
