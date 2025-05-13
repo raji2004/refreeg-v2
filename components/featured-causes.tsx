@@ -109,12 +109,12 @@ export async function FeaturedCauses() {
               <CardHeader>
                 <div className="flex items-center gap-2">
                 <div className="w-12 h-12 rounded-full overflow-hidden border bg-gray-100 shrink-0">
-  <img
-    src={cause.profiles?.profile_photo || "/default-avatar.png"}
-    alt={cause.profiles?.full_name || "User"}
-    className="w-full h-full object-cover"
-  />
-</div>
+                  <img
+                    src={cause.profiles?.profile_photo || "/default-avatar.png"}
+                    alt={cause.profiles?.full_name || "User"}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
 
 
                   <CardTitle className="font-medium text-base md:text-lg lg:text-lg">
