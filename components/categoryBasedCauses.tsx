@@ -82,8 +82,8 @@ export default function CategoryCausesSection({ title, causes }: Props) {
         ))}
       </div>
       <div className="mt-4 flex justify-center">
-        <Link href={`/categories/${causes[0].category}`}>
-            <Button variant="outline" className="text-sm font-medium">
+        <Link href={`/causes?category=${causes[0].category}`}>
+            <Button variant="outline" className="text-sm font-medium hover:bg-[#0070E0]">
             View More {categoryInfo?.name || title} Causes
             </Button>
         </Link>
