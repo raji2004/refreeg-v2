@@ -41,7 +41,7 @@ export default function Home() {
       </section>
 
       {/* Featured Causes */}
-      <section className="w-full py-12 md:py-24 lg:py-20 bg-muted">
+      <section className="w-full py-12 md:py-24 lg:py-20">
         <div className="w-full px-4 md:px-6">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
             <div className="space-y-2">
