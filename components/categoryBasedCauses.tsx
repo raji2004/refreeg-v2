@@ -49,14 +49,14 @@ export default function CategoryCausesSection({ title, causes }: Props) {
                   </CardTitle>
                 </div>
                 <CardDescription>
-                  {cause.description.split(" ").length > 25
+                  {/* {cause.description.split(" ").length > 25
                     ? (
                         <>
                           {cause.description.split(" ").slice(0, 25).join(" ")}...
                           <span className="text-blue-600 group-hover:underline">see more</span>
                         </>
                       )
-                    : cause.description}
+                    : cause.description} */}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1">
