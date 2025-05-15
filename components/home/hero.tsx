@@ -38,7 +38,7 @@ const Hero = () => {
         <Link
           href={"/causes"}
           className="flex gap-[6px] py-[10px] px-[15px] rounded-[8px] text-brand text-[15px] items-center justify-center mx-auto relative z-30 
-            md:mt-16 mt-8 font-semibold cursor-pointer bg-muted hover:bg-[#0070E0] hover:text-secondary-foreground transition"
+            md:mt-16 mt-8 font-semibold cursor-pointer bg-muted hover:bg-[#284678] hover:text-secondary-foreground transition"
         >
           Explore Causes
           <ArrowRight size={"18"} />

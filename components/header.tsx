@@ -169,7 +169,7 @@ export function Header() {
         <div className="flex items-center gap-5">
           {/* <ThemeToggle /> */}
           <Link href="/dashboard/causes/create">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" className="hover:bg-[#284678] " size="sm">
               List a Cause
             </Button>
           </Link>

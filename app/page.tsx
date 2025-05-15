@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import FeaturedCauses from "@/components/featured-causes"
+import { FeaturedCauses } from "@/components/featured-causes"
 import Hero from "@/components/home/hero"
 import WhyUseUs from "@/components/home/whyUseUs"
 import { H2, P, Ol } from "@/components/typograpy";
@@ -41,20 +41,20 @@ export default function Home() {
       </section>
 
       {/* Featured Causes */}
-      <section className="w-full py-12 md:py-24 lg:py-20">
-        <div className="w-full px-4 md:px-6">
-          <div className="flex flex-col items-center justify-center space-y-4 text-center">
+      <section className="w-full py-12 md:py-24 lg:py-20 lg:px-4">
+        <div className="px-4 md:px-6">
+          <div className="flex flex-col space-y-4">
             <div className="space-y-2">
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Featured Causes</h2>
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-2xl md:text-3xl lg:text-4xl">Happening Near You</h2>
               <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Discover and support these impactful initiatives.
+                These causes are happening close to your current location.
               </p>
             </div>
           </div>
           <FeaturedCauses />
           <div className="flex justify-center mt-8">
             <Link href="/causes">
-              <Button variant="outline" size="lg" className="hover:bg-[#0070E0]">
+              <Button variant="outline" size="lg" className="hover:bg-[#284678]">
                 View All Causes
               </Button>
             </Link>

@@ -32,13 +32,15 @@ export function CausesFilter({ categories, selectedCategory }: CausesFilterProps
         <div className="flex flex-wrap gap-2">
           {categories.map((category) => (
             <Button
-              key={category.id}
-              variant={selectedCategory === category.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleCategoryChange(category.id)}
-            >
-              {category.name}
-            </Button>
+            key={category.id}
+            variant={selectedCategory === category.id ? "default" : "outline"}
+            size="sm"
+            onClick={() => handleCategoryChange(category.id)}
+            className={selectedCategory === category.id ? "bg-[#284678] text-white hover:bg-[#234069]" : ""}
+          >
+            {category.name}
+          </Button>
+          
           ))}
         </div>
         <ScrollBar orientation="horizontal" />

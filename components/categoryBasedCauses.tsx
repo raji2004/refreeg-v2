@@ -73,7 +73,7 @@ export default function CategoryCausesSection({ title, causes }: Props) {
                 </div>
               </CardContent>
               <CardFooter>
-                <div className="w-full">
+                <div className="w-1/3">
                   <DonateButton />
                 </div>
               </CardFooter>
