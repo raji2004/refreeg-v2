@@ -174,13 +174,13 @@ export async function CausesList({ category, page, pageSize }: CausesListProps) 
               </div>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <div className="w-12 h-12 rounded-full overflow-hidden border bg-gray-100 shrink-0">
+                  {/* <div className="w-12 h-12 rounded-full overflow-hidden border bg-gray-100 shrink-0">
                     <img
                       src={cause.profiles?.profile_photo || "/default-avatar.png"}
                       alt={cause.profiles?.full_name || "User"}
                       className="w-full h-full object-cover"
                     />
-                  </div>
+                  </div> */}
                   <CardTitle className="font-medium text-base md:text-lg lg:text-lg">
                     {cause.title}
                     <div className="font-normal lg:text-sm">
