@@ -31,7 +31,7 @@ export function ReplyForm({
         body: JSON.stringify({
           causeId,
           parentId,
-          content,
+          content
         }),
       });
       

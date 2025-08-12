@@ -27,7 +27,7 @@ export function CommentForm({
         },
         body: JSON.stringify({
           causeId,
-          content,
+          content
         }),
       });
       

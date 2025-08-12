@@ -9,29 +9,27 @@ interface CommentsSectionProps {
   comments: Comment[];
   causeId: string;
   currentUserId?: string;
+  onCommentAdded?: () => void;
+  onCommentDeleted?: () => void;
 }
 
 export function CommentsSection({ 
   comments, 
   causeId, 
-  currentUserId 
+  currentUserId,
+  onCommentAdded,
+  onCommentDeleted
 }: CommentsSectionProps) {
   const [localComments, setLocalComments] = useState<Comment[]>(comments);
 
   const handleCommentAdded = (newComment: Comment) => {
     setLocalComments([newComment, ...localComments]);
-  };
-
-  const handleCommentUpdated = (updatedComment: Comment) => {
-    setLocalComments(localComments.map(comment => 
-      comment.id === updatedComment.id ? updatedComment : comment
-    ));
+    onCommentAdded?.();
   };
 
   const handleCommentDeleted = (deletedCommentId: string) => {
-    setLocalComments(localComments.filter(comment => 
-      comment.id !== deletedCommentId
-    ));
+    setLocalComments(localComments.filter(c => c.id !== deletedCommentId));
+    onCommentDeleted?.();
   };
 
   return (
@@ -57,7 +55,6 @@ export function CommentsSection({
                 comment={comment}
                 causeId={causeId}
                 currentUserId={currentUserId}
-                onCommentUpdated={handleCommentUpdated}
                 onCommentDeleted={handleCommentDeleted}
               />
             ))}

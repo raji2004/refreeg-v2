@@ -14,25 +14,12 @@ export function EditCommentForm({
   onCancel: () => void;
 }) {
   const [content, setContent] = useState(initialContent);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!content.trim() || content === initialContent) {
-      onCancel();
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await onSave(content);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-2 space-y-2">
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      onSave(content);
+    }} className="mt-2 space-y-2">
       <Textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
@@ -44,16 +31,15 @@ export function EditCommentForm({
         <Button
           type="submit"
           size="sm"
-          disabled={isSubmitting || !content.trim() || content === initialContent}
+          disabled={!content.trim() || content === initialContent}
         >
-          {isSubmitting ? "Saving..." : "Save Changes"}
+          Save Changes
         </Button>
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={onCancel}
-          disabled={isSubmitting}
         >
           Cancel
         </Button>

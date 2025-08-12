@@ -31,7 +31,8 @@ import {
 import Link from "next/link";
 import MultimediaCarousel from "@/components/MultimediaCarousel";
 import { listCommentsForCause } from "@/actions/comment-actions";
-import { CommentsSection } from "@/components/comments/comment-section";
+import { CommentsTabWrapper } from "@/components/comments/comments-tab-wrapper";
+import { MilestoneNotifications } from "@/components/milestone-notifications";
 
 export default async function CauseDetailPage({
   params,
@@ -128,6 +129,7 @@ export default async function CauseDetailPage({
             <TabsList>
               <TabsTrigger value="about">About</TabsTrigger>
               <TabsTrigger value="donors">Donors</TabsTrigger>
+              <TabsTrigger value="comments">Comments ({comments.length})</TabsTrigger>
               <TabsTrigger value="comments">Comments ({comments.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="about" className="space-y-4">
@@ -229,13 +231,11 @@ export default async function CauseDetailPage({
               </div>
               <DonorsList donors={donors} />
             </TabsContent>
-            <TabsContent value="comments">
-              <CommentsSection 
-                comments={comments} 
-                causeId={cause.id} 
-                currentUserId={user?.id} 
-              />
-            </TabsContent>
+            <CommentsTabWrapper
+              initialComments={comments}
+              causeId={cause.id}
+              currentUserId={user?.id}
+            />
           </Tabs>
         </div>
 
