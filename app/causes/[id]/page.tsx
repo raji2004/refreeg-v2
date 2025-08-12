@@ -30,8 +30,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import MultimediaCarousel from "@/components/MultimediaCarousel";
-import { listCommentsForCause } from "@/actions/comment-actions";
-import { CommentsTabWrapper } from "@/components/comments/comments-tab-wrapper";
 import { MilestoneNotifications } from "@/components/milestone-notifications";
 
 export default async function CauseDetailPage({
@@ -46,8 +44,6 @@ export default async function CauseDetailPage({
   }
 
   const donors = await listDonationsForCause(cause.id);
-  const comments = await listCommentsForCause(cause.id);
-  const comments = await listCommentsForCause(cause.id);
   const formattedDate = new Date(cause.created_at).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -104,7 +100,14 @@ export default async function CauseDetailPage({
 
   return (
     <div className="container py-10">
-
+      <MilestoneNotifications
+        raised={cause.raised}
+        goal={cause.goal}
+        causeId={cause.id}
+        causeTitle={cause.title}
+        userName={cause.user.name}
+      />
+      
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           {cause.multimedia &&
