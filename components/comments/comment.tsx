@@ -14,6 +14,7 @@ interface CommentProps {
   comment: Comment;
   causeId: string;
   currentUserId?: string;
+  onCommentUpdated: (updatedComment: Comment) => void;
   onCommentDeleted: (commentId: string) => void;
 }
 
@@ -21,11 +22,28 @@ export function CommentComponent({
   comment, 
   causeId, 
   currentUserId,
+  onCommentUpdated,
   onCommentDeleted
 }: CommentProps) {
   const [showReplies, setShowReplies] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const [replies, setReplies] = useState<Comment[]>([]);
+  const [isLoadingReplies, setIsLoadingReplies] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const loadReplies = async () => {
+    if (replies.length > 0 || isLoadingReplies) return;
+    
+    setIsLoadingReplies(true);
+    try {
+      const response = await fetch(`/api/comments/${comment.id}/replies`);
+      const data = await response.json();
+      setReplies(data);
+    } catch (error) {
+      console.error("Failed to load replies:", error);
+    } finally {
+      setIsLoadingReplies(false);
+    }
+  };
 
   const handleDelete = async () => {
     try {
@@ -53,9 +71,7 @@ export function CommentComponent({
       
       if (response.ok) {
         const updatedComment = await response.json();
-        setReplies(replies.map(r => 
-          r.id === updatedComment.id ? updatedComment : r
-        ));
+        onCommentUpdated(updatedComment);
         setIsEditing(false);
       }
     } catch (error) {
@@ -113,7 +129,10 @@ export function CommentComponent({
           
           <div className="mt-2 flex items-center gap-4">
             <button 
-              onClick={() => setShowReplies(!showReplies)}
+              onClick={() => {
+                if (!showReplies) loadReplies();
+                setShowReplies(!showReplies);
+              }}
               className="text-sm text-muted-foreground hover:text-primary"
             >
               {comment.replies_count === 1 
@@ -146,6 +165,10 @@ export function CommentComponent({
                 parentId={comment.id}
                 onReplyAdded={(newReply) => {
                   setReplies([...replies, newReply]);
+                  onCommentUpdated({
+                    ...comment,
+                    replies_count: (comment.replies_count || 0) + 1
+                  });
                 }}
               />
             </div>
@@ -153,17 +176,24 @@ export function CommentComponent({
         </div>
       </div>
 
-      {showReplies && replies.length > 0 && (
+      {showReplies && (
         <div className="ml-12 mt-4 space-y-4 border-l-2 pl-4">
-          {replies.map((reply) => (
-            <CommentComponent 
-              key={reply.id}
-              comment={reply}
-              causeId={causeId}
-              currentUserId={currentUserId}
-              onCommentDeleted={onCommentDeleted}
-            />
-          ))}
+          {isLoadingReplies ? (
+            <p className="text-sm text-muted-foreground">Loading replies...</p>
+          ) : replies.length > 0 ? (
+            replies.map((reply) => (
+              <CommentComponent 
+                key={reply.id}
+                comment={reply}
+                causeId={causeId}
+                currentUserId={currentUserId}
+                onCommentUpdated={onCommentUpdated}
+                onCommentDeleted={onCommentDeleted}
+              />
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No replies yet</p>
+          )}
         </div>
       )}
     </div>

@@ -31,8 +31,7 @@ import {
 import Link from "next/link";
 import MultimediaCarousel from "@/components/MultimediaCarousel";
 import { listCommentsForCause } from "@/actions/comment-actions";
-import { CommentsTabWrapper } from "@/components/comments/comments-tab-wrapper";
-import { MilestoneNotifications } from "@/components/milestone-notifications";
+import { CommentsSection } from "@/components/comments/comment-section";
 
 export default async function CauseDetailPage({
   params,
@@ -46,6 +45,7 @@ export default async function CauseDetailPage({
   }
 
   const donors = await listDonationsForCause(cause.id);
+  const comments = await listCommentsForCause(cause.id);
   const comments = await listCommentsForCause(cause.id);
   const formattedDate = new Date(cause.created_at).toLocaleDateString("en-US", {
     year: "numeric",
@@ -103,44 +103,32 @@ export default async function CauseDetailPage({
 
   return (
     <div className="container py-10">
-      <MilestoneNotifications
-        raised={cause.raised}
-        goal={cause.goal}
-        causeId={cause.id}
-        causeTitle={cause.title}
-        userName={cause.user.name}
-      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          {(() => {
-            // Combine multimedia (images) and video_links (video URLs)
-            const allMedia = [...(cause.multimedia || [])];
-
-            return allMedia.length > 0 ? (
-              <MultimediaCarousel
-                media={allMedia}
-                coverImage={cause.image || undefined}
-                title={cause.title}
+          {cause.multimedia &&
+          Array.isArray(cause.multimedia) &&
+          cause.multimedia.length > 0 ? (
+            <MultimediaCarousel
+              media={cause.multimedia}
+              coverImage={cause.image || undefined}
+              title={cause.title}
+            />
+          ) : (
+            <div className="aspect-video w-full overflow-hidden rounded-lg">
+              <img
+                src={cause.image || "/placeholder.svg"}
+                alt={cause.title}
+                className="object-cover w-full h-full"
               />
-            ) : (
-              <div className="aspect-video w-full overflow-hidden rounded-lg">
-                <img
-                  src={cause.image || "/placeholder.svg"}
-                  alt={cause.title}
-                  className="object-cover w-full h-full"
-                />
-              </div>
-            );
-          })()}
+            </div>
+          )}
 
           <Tabs defaultValue="about">
             <TabsList>
               <TabsTrigger value="about">About</TabsTrigger>
               <TabsTrigger value="donors">Donors</TabsTrigger>
-              <TabsTrigger value="comments">
-                Comments ({comments.length})
-              </TabsTrigger>
+              <TabsTrigger value="comments">Comments ({comments.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="about" className="space-y-4">
               <h1 className="text-3xl font-bold">{cause.title}</h1>
@@ -226,8 +214,14 @@ export default async function CauseDetailPage({
                   variant="destructive"
                   className="mb-4 bg-[#E4626F33] border-0"
                 >
+                <Alert
+                  variant="destructive"
+                  className="mb-4 bg-[#E4626F33] border-0"
+                >
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
+                    These records are logged on the blockchain and are
+                    immutable.
                     These records are logged on the blockchain and are
                     immutable.
                   </AlertDescription>
@@ -235,11 +229,13 @@ export default async function CauseDetailPage({
               </div>
               <DonorsList donors={donors} />
             </TabsContent>
-            <CommentsTabWrapper
-              initialComments={comments}
-              causeId={cause.id}
-              currentUserId={user?.id}
-            />
+            <TabsContent value="comments">
+              <CommentsSection 
+                comments={comments} 
+                causeId={cause.id} 
+                currentUserId={user?.id} 
+              />
+            </TabsContent>
           </Tabs>
         </div>
 
