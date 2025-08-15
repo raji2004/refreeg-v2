@@ -1,11 +1,24 @@
+// Helper to extract a simple device/OS string from user agent
+function getDeviceInfo() {
+  if (typeof window === "undefined") return "Unknown Device";
+  const ua = window.navigator.userAgent;
+  if (/android/i.test(ua)) return "Android";
+  if (/iPad|iPhone|iPod/.test(ua)) return "iOS";
+  if (/Windows NT/.test(ua)) return "Windows";
+  if (/Macintosh/.test(ua)) return "Mac";
+  if (/Linux/.test(ua)) return "Linux";
+  return "Other";
+}
 "use client"
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/use-toast"
+
 import { getCurrentUser } from "@/actions/auth-actions"
 import { updateProfile } from "@/actions"
+import { sendLoginNotificationEmail } from "@/services/mail"
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null)
@@ -64,6 +77,29 @@ export function useAuth() {
         })
         return
       }
+
+
+
+      // Get device and IP address (best effort, client-side)
+      const device = getDeviceInfo();
+      let ipAddress = "Unknown IP";
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        if (res.ok) {
+          const data = await res.json();
+          ipAddress = data.ip || ipAddress;
+        }
+      } catch (e) {
+        // Ignore IP fetch errors
+      }
+
+      // Send login notification email (fire and forget)
+      sendLoginNotificationEmail({
+        loginTime: new Date().toLocaleString(),
+        device,
+        ipAddress,
+      })
+        .catch((e) => console.error("Login notification email error:", e));
 
       toast({
         title: "Welcome back!",

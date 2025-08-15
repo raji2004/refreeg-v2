@@ -44,7 +44,7 @@ export async function sendMail({
   subject,
   templateName,
   context,
-  from = process.env.DEFAULT_FROM_EMAIL || "noreply@example.com",
+  from = process.env.SMTP_USER || process.env.EMAIL_FROM || "noreply@example.com",
   cc,
   bcc,
 }: SendMailOptions) {
@@ -120,51 +120,29 @@ export async function sendBankAccountAddedEmail(context: {
   });
 }
 
-// KYC Email Notifications
-export async function sendKycSubmittedEmail(
-  userEmail: string,
-  userName: string
-) {
-  return sendMail({
-    to: userEmail,
-    subject: "KYC Verification Submitted - Refreeg",
-    templateName: "kyc-submitted",
-    context: {
-      userName,
-      organizationName: "Refreeg",
-      reviewTimeframe: "3-5 business days",
-    },
-  });
-}
 
-export async function sendKycApprovedEmail(
-  userEmail: string,
-  userName: string
-) {
-  return sendMail({
-    to: userEmail,
-    subject: "KYC Verification Approved - Refreeg",
-    templateName: "kyc-approved",
-    context: {
-      userName,
-      organizationName: "Refreeg",
-    },
-  });
-}
 
-export async function sendKycRejectedEmail(
-  userEmail: string,
-  userName: string,
-  rejectionReason: string
-) {
+// Convenience function for sending login notification emails
+export async function sendLoginNotificationEmail(context: {
+  ipAddress?: string;
+  device?: string;
+  loginTime?: string;
+}) {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error("User not found");
+  }
+  const profile = await getProfile(user.id);
   return sendMail({
-    to: userEmail,
-    subject: "KYC Verification Update - Refreeg",
-    templateName: "kyc-rejected",
+    to: profile?.email || "",
+    subject: "New Login Notification",
+    templateName: "login-notification",
     context: {
-      userName,
-      organizationName: "Refreeg",
-      rejectionReason,
+      ...context,
+      userName: profile?.full_name || "User",
+      loginTime: context.loginTime || new Date().toLocaleString(),
+      device: context.device || "Unknown Device",
+      ipAddress: context.ipAddress || "Unknown IP",
     },
   });
 }
