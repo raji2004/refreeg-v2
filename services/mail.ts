@@ -6,6 +6,19 @@ import path from "path";
 import Handlebars from "handlebars";
 import { getCurrentUser, getProfile } from "@/actions";
 
+
+
+
+export async function getDeviceInfo() {
+  if (typeof window === "undefined") return "Unknown Device";
+  const ua = window.navigator.userAgent;
+  if (/android/i.test(ua)) return "Android";
+  if (/iPad|iPhone|iPod/.test(ua)) return "iOS";
+  if (/Windows NT/.test(ua)) return "Windows";
+  if (/Macintosh/.test(ua)) return "Mac";
+  if (/Linux/.test(ua)) return "Linux";
+  return "Other";
+}
 // Configure mail transporter
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",

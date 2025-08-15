@@ -1,14 +1,4 @@
 // Helper to extract a simple device/OS string from user agent
-function getDeviceInfo() {
-  if (typeof window === "undefined") return "Unknown Device";
-  const ua = window.navigator.userAgent;
-  if (/android/i.test(ua)) return "Android";
-  if (/iPad|iPhone|iPod/.test(ua)) return "iOS";
-  if (/Windows NT/.test(ua)) return "Windows";
-  if (/Macintosh/.test(ua)) return "Mac";
-  if (/Linux/.test(ua)) return "Linux";
-  return "Other";
-}
 "use client"
 
 import { useEffect, useState } from "react"
@@ -19,7 +9,17 @@ import { toast } from "@/components/ui/use-toast"
 import { getCurrentUser } from "@/actions/auth-actions"
 import { updateProfile } from "@/actions"
 import { sendLoginNotificationEmail } from "@/services/mail"
-
+// Helper to extract a simple device/OS string from user agent
+function getDeviceInfo() {
+  if (typeof window === "undefined") return "Unknown Device";
+  const ua = window.navigator.userAgent;
+  if (/android/i.test(ua)) return "Android";
+  if (/iPad|iPhone|iPod/.test(ua)) return "iOS";
+  if (/Windows NT/.test(ua)) return "Windows";
+  if (/Macintosh/.test(ua)) return "Mac";
+  if (/Linux/.test(ua)) return "Linux";
+  return "Other";
+}
 export function useAuth() {
   const [user, setUser] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
