@@ -126,3 +126,53 @@ CREATE TRIGGER update_kyc_verifications_updated_at
     BEFORE UPDATE ON kyc_verifications
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column(); 
+
+    -- Allow users to insert their own KYC verification record
+CREATE POLICY "Users can insert their own KYC"
+ON kyc_verifications
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+
+ALTER TABLE profiles
+ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT false;
+
+
+-- Function to sync profile verification status
+CREATE OR REPLACE FUNCTION sync_profile_verification()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.status = 'approved' THEN
+    UPDATE profiles SET is_verified = true WHERE id = NEW.user_id;
+  ELSIF NEW.status = 'rejected' THEN
+    UPDATE profiles SET is_verified = false WHERE id = NEW.user_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to run after KYC status changes
+DROP TRIGGER IF EXISTS kyc_sync_profile_verified ON kyc_verifications;
+
+CREATE TRIGGER kyc_sync_profile_verified
+AFTER UPDATE OF status ON kyc_verifications
+FOR EACH ROW
+EXECUTE FUNCTION sync_profile_verification();
+
+
+-- Sync existing accounts where KYC is already approved
+UPDATE profiles p
+SET is_verified = TRUE
+FROM kyc_verifications k
+WHERE p.id = k.user_id
+  AND k.status = 'approved'
+  AND (p.is_verified IS NULL OR p.is_verified = FALSE);
+
+-- Optional: reset any profiles wrongly marked as verified but KYC not approved
+UPDATE profiles p
+SET is_verified = FALSE
+WHERE NOT EXISTS (
+    SELECT 1 FROM kyc_verifications k
+    WHERE k.user_id = p.id AND k.status = 'approved'
+)
+AND (p.is_verified IS TRUE);

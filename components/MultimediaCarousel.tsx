@@ -1,6 +1,11 @@
 "use client";
 import React, { useState } from "react";
 
+interface MediaItem {
+  type: "image" | "video";
+  url: string;
+}
+
 export default function MultimediaCarousel({
   media,
   coverImage,
@@ -11,36 +16,139 @@ export default function MultimediaCarousel({
   title: string;
 }) {
   const [current, setCurrent] = useState(0);
-  const slides = [coverImage, ...media.filter(Boolean)].filter(Boolean);
-  const isVideo = (url: string) => /\.(mp4|mov|webm)$/i.test(url);
+
+  // Convert string array to MediaItem array
+  const processMedia = (): MediaItem[] => {
+    if (media.length === 0) return [];
+
+    return media.map((url) => ({
+      type:
+        url.match(/\.(mp4|mov|webm)$/i) ||
+        url.match(/(youtube\.com|youtu\.be|tiktok\.com|drive\.google\.com)/i)
+          ? "video"
+          : "image",
+      url,
+    }));
+  };
+
+  const mediaItems = processMedia();
+  const slides = coverImage
+    ? [{ type: "image" as const, url: coverImage }, ...mediaItems]
+    : mediaItems;
 
   const goTo = (idx: number) => setCurrent(idx);
   const prev = () => setCurrent((c) => (c === 0 ? slides.length - 1 : c - 1));
   const next = () => setCurrent((c) => (c === slides.length - 1 ? 0 : c + 1));
 
+  const renderMediaItem = (item: MediaItem, idx: number) => {
+    if (item.type === "video") {
+      const url = item.url;
+
+      // YouTube embed
+      if (url.includes("youtube.com") || url.includes("youtu.be")) {
+        const videoId = url.includes("youtube.com")
+          ? new URL(url).searchParams.get("v")
+          : url.split("youtu.be/")[1];
+        return (
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}`}
+            title={`${title} - Video ${idx + 1}`}
+            className="w-full h-full"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        );
+      }
+
+      // TikTok embed (requires /embed/VIDEO_ID)
+      else if (url.includes("tiktok.com")) {
+        const match = url.match(/\/video\/(\d+)/);
+        const videoId = match ? match[1] : null;
+        if (videoId) {
+          return (
+            <iframe
+              src={`https://www.tiktok.com/embed/${videoId}`}
+              title={`${title} - TikTok Video ${idx + 1}`}
+              className="w-full h-full"
+              frameBorder="0"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+            />
+          );
+        }
+        return (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            View TikTok Video
+          </a>
+        );
+      }
+
+      // Google Drive embed (/file/{id}/preview)
+      else if (url.includes("drive.google.com")) {
+        const fileIdMatch = url.match(/\/d\/([^/]+)\//);
+        const fileId = fileIdMatch ? fileIdMatch[1] : null;
+        if (fileId) {
+          return (
+            <iframe
+              src={`https://drive.google.com/file/d/${fileId}/preview`}
+              title={`${title} - Drive Video ${idx + 1}`}
+              className="w-full h-full"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
+          );
+        }
+        return (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            View Google Drive Video
+          </a>
+        );
+      }
+
+      // Direct video file
+      else {
+        return (
+          <video
+            src={url}
+            controls
+            className="object-contain w-full h-full bg-black"
+            poster={coverImage && idx === 0 ? coverImage : undefined}
+          />
+        );
+      }
+    } else {
+      // Image
+      return (
+        <img
+          src={item.url}
+          alt={`${title} - Image ${idx + 1}`}
+          className="object-cover w-full h-full"
+        />
+      );
+    }
+  };
+
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
-      {slides.map((url, idx) => (
+      {slides.map((item, idx) => (
         <div
           key={idx}
           className={`absolute inset-0 transition-opacity duration-500 ${
             idx === current ? "opacity-100 z-10" : "opacity-0 z-0"
           }`}
         >
-          {typeof url === "string" && isVideo(url) ? (
-            <video
-              src={url}
-              controls
-              className="object-contain w-full h-full bg-black"
-              poster={coverImage && idx === 0 ? coverImage : undefined}
-            />
-          ) : (
-            <img
-              src={url as string}
-              alt={title}
-              className="object-cover w-full h-full"
-            />
-          )}
+          {renderMediaItem(item, idx)}
         </div>
       ))}
       {/* Navigation Buttons */}

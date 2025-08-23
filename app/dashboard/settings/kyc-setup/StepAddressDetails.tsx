@@ -1,7 +1,14 @@
+"use client";
 import { Label } from "@/components/ui/label";
-
-export const inputBoxClass =
-  "w-[530px] h-20 px-2.5 pt-[6px] text-neutral-700 text-sm font-normal font-montserrat rounded-[10px] outline outline-1 outline-neutral-200 resize-none";
+import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function StepAddressDetails({
   formData,
@@ -12,8 +19,53 @@ export default function StepAddressDetails({
   setFormData: (data: any) => void;
   error?: string | null;
 }) {
+  const [touched, setTouched] = useState<any>({});
+  const [errors, setErrors] = useState<any>({});
+  const [countries, setCountries] = useState<string[]>([]);
+  const [loadingCountries, setLoadingCountries] = useState(false);
+
+  // Fetch countries on component mount
+  useEffect(() => {
+    const fetchCountries = async () => {
+      setLoadingCountries(true);
+      try {
+        const response = await fetch("/api/countries");
+        if (response.ok) {
+          const data = await response.json();
+          setCountries(data);
+        }
+      } catch (error) {
+        console.error("Error fetching countries:", error);
+      } finally {
+        setLoadingCountries(false);
+      }
+    };
+    fetchCountries();
+  }, []);
+
+  const updateField = (key: string, value: string) => {
+    setFormData({ ...formData, [key]: value });
+    setTouched({ ...touched, [key]: true });
+    validateField(key, value);
+
+    // Clear state when country changes
+    if (key === "country") {
+      setFormData((prev: any) => ({ ...prev, state: "" }));
+    }
+  };
+
+  const validateField = (key: string, value: string) => {
+    let error = "";
+    if (!value) {
+      error = "This field is required.";
+    } else if (key === "postal" && !/^\d{4,10}$/.test(value)) {
+      error = "Enter a valid postal code.";
+    }
+    setErrors((prev: any) => ({ ...prev, [key]: error }));
+  };
+
   return (
-    <div className="space-y-4 ">
+    <div className="space-y-4">
       {error && (
         <div className="text-red-600 text-sm font-montserrat mb-2">{error}</div>
       )}
@@ -21,70 +73,114 @@ export default function StepAddressDetails({
         {/* Address Line */}
         <div className="flex flex-col gap-1.5 flex-1">
           <Label htmlFor="address">Address Line</Label>
-          <textarea
+          <Input
             id="address"
             placeholder="e.g., 12 Adewole Crescent"
-            value={formData.address}
-            onChange={(e) =>
-              setFormData({ ...formData, address: e.target.value })
+            value={formData.address || ""}
+            onChange={(e) => updateField("address", e.target.value)}
+            onBlur={() => validateField("address", formData.address)}
+            className={
+              touched.address && errors.address ? "border-red-500" : ""
             }
-            rows={1}
-            className={inputBoxClass}
           />
+          {touched.address && errors.address && (
+            <span className="text-red-600 text-xs font-montserrat">
+              {errors.address}
+            </span>
+          )}
         </div>
+
         {/* City */}
         <div className="flex flex-col gap-1.5 flex-1">
           <Label htmlFor="city">City</Label>
-          <textarea
+          <Input
             id="city"
             placeholder="e.g., Abuja"
-            value={formData.city}
-            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            rows={1}
-            className={inputBoxClass}
+            value={formData.city || ""}
+            onChange={(e) => updateField("city", e.target.value)}
+            onBlur={() => validateField("city", formData.city)}
+            className={touched.city && errors.city ? "border-red-500" : ""}
           />
+          {touched.city && errors.city && (
+            <span className="text-red-600 text-xs font-montserrat">
+              {errors.city}
+            </span>
+          )}
         </div>
-        {/* State */}
+
+        {/* Country (from API) */}
+        <div className="flex flex-col gap-1.5 flex-1">
+          <Label htmlFor="country">Country</Label>
+          <Select
+            value={formData.country || ""}
+            onValueChange={(value) => updateField("country", value)}
+          >
+            <SelectTrigger
+              className={
+                touched.country && errors.country ? "border-red-500" : ""
+              }
+            >
+              <SelectValue
+                placeholder={
+                  loadingCountries ? "Loading countries..." : "Select a country"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {countries.map((country) => (
+                <SelectItem key={country} value={country}>
+                  {country}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {touched.country && errors.country && (
+            <span className="text-red-600 text-xs font-montserrat">
+              {errors.country}
+            </span>
+          )}
+        </div>
+
+        {/* State (now just input, no API select) */}
         <div className="flex flex-col gap-1.5 flex-1">
           <Label htmlFor="state">State</Label>
-          <textarea
+          <Input
             id="state"
-            placeholder="e.g., FCT"
-            value={formData.state}
-            onChange={(e) =>
-              setFormData({ ...formData, state: e.target.value })
-            }
-            rows={1}
-            className={inputBoxClass}
+            placeholder="e.g., Lagos"
+            value={formData.state || ""}
+            onChange={(e) => updateField("state", e.target.value)}
+            onBlur={() => validateField("state", formData.state)}
+            className={touched.state && errors.state ? "border-red-500" : ""}
           />
+          {touched.state && errors.state && (
+            <span className="text-red-600 text-xs font-montserrat">
+              {errors.state}
+            </span>
+          )}
         </div>
+
         {/* Postal Code */}
         <div className="flex flex-col gap-1.5 flex-1">
           <Label htmlFor="postal">Postal Code</Label>
-          <textarea
+          <Input
             id="postal"
             placeholder="e.g., 900211"
-            value={formData.postal}
-            onChange={(e) =>
-              setFormData({ ...formData, postal: e.target.value })
-            }
-            rows={1}
-            className={inputBoxClass}
+            value={formData.postal || ""}
+            onChange={(e) => {
+              // Only allow numbers
+              const val = e.target.value.replace(/[^\d]/g, "");
+              updateField("postal", val);
+            }}
+            onBlur={() => validateField("postal", formData.postal)}
+            className={touched.postal && errors.postal ? "border-red-500" : ""}
+            inputMode="numeric"
+            pattern="[0-9]*"
           />
-        </div>
-        {/* Country */}
-        <div className="flex flex-col gap-1.5 flex-1">
-          <Label htmlFor="country">Country</Label>
-          <textarea
-            id="country"
-            placeholder="Select a country"
-            value={formData.country}
-            onChange={(e) =>
-              setFormData({ ...formData, country: e.target.value })
-            }
-            rows={1}
-            className={inputBoxClass}
-          />
+          {touched.postal && errors.postal && (
+            <span className="text-red-600 text-xs font-montserrat">
+              {errors.postal}
+            </span>
+          )}
         </div>
       </div>
     </div>

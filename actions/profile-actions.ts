@@ -55,7 +55,6 @@ export async function updateProfile(
     facebook_url: profileData.facebook_url || null,
     instagram_url: profileData.instagram_url || null,
     linkedin_url: profileData.linkedin_url || null,
-
     updated_at: new Date().toISOString(),
   };
 
@@ -88,7 +87,6 @@ export async function updateProfilePhoto(
 ): Promise<string> {
   const supabase = await createClient();
 
-  // Upload the file to Supabase Storage
   const fileName = `${userId}-${Date.now()}-${photoFile.name}`;
   const { data: uploadData, error: uploadError } = await supabase.storage
     .from("profile-photos")
@@ -102,14 +100,12 @@ export async function updateProfilePhoto(
     throw uploadError;
   }
 
-  // Get the public URL
   const { data: urlData } = supabase.storage
     .from("profile-photos")
     .getPublicUrl(fileName);
 
   const publicUrl = urlData.publicUrl;
 
-  // Update the profile with the new photo URL
   const { data, error } = await supabase
     .from("profiles")
     .upsert({
@@ -161,6 +157,9 @@ export async function updateBankDetails(
   return data as Profile;
 }
 
+/**
+ * Check if profile is complete
+ */
 export async function isProfileComplete(
   userId: string
 ): Promise<{ isComplete: boolean; missingFields: string[] }> {
@@ -200,4 +199,47 @@ export async function isProfileComplete(
     console.error("Error in isProfileComplete:", error);
     return { isComplete: false, missingFields: ["profile"] };
   }
+}
+
+/* ------------------------------------------------------------------
+   KYC ACTIONS
+------------------------------------------------------------------ */
+
+/**
+ * Check if a user has a KYC verification
+ */
+export async function hasKycVerification(userId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("kyc_verifications")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+
+  if (error && error.code !== "PGRST116") throw error;
+  return data || null;
+}
+
+/**
+ * Update a KYC verification status
+ */
+export async function updateKycStatus(
+  verificationId: string,
+  status: "approved" | "rejected",
+  notes?: string
+) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("kyc_verifications")
+    .update({
+      status,
+      verification_notes: notes ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", verificationId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }

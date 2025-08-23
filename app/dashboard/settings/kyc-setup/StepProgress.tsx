@@ -23,15 +23,16 @@ export default function StepProgress({
   }, [onComplete]);
 
   return (
-    <div className="flex flex-col items-center space-y-6">
-      <span className="self-stretch text-center justify-start text-black text-2xl font-bold font-montserrat">
-        Checking Your Documents...
-      </span>
-      <span className="self-stretch text-center justify-start text-black/60 text-base font-medium font-ontserrat leading-snug">
-        We're reviewing your identity to keep Refreeg safe and secure for
-        everyone.
-      </span>
-      <Progress value={progress} className="w-full" />
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center space-y-6 max-w-md w-full px-6">
+        <span className="text-center text-black text-2xl font-bold font-montserrat">
+          Checking Your Documents...
+        </span>
+        <span className="text-center text-black/60 text-base font-medium font-montserrat leading-snug">
+          Making sure your documents are in order
+        </span>
+        <Progress value={progress} className="w-full" />
+      </div>
     </div>
   );
 }

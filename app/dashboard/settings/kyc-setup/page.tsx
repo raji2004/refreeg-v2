@@ -151,13 +151,14 @@ export default function KycSetupPage() {
   const completedSteps = Array.from({ length: Math.min(step, 3) }, (_, i) => i);
 
   return (
-    <div className="px-10 w-full flex flex-col md:flex-row min-h-screen">
+    <div className="flex w-full h-screen bg-white">
+      {/* Sidebar */}
       {showProgressNav && (
-        <div className="w-full md:w-[340px] flex-shrink-0">
+        <div className="w-[380px] border-r hidden md:block">
           <ProgressNav currentStep={step} completedSteps={completedSteps} />
         </div>
       )}
-      <div className="flex-1 flex items-start ">
+      <div className="flex-1 flex items-start md:px-10">
         <Card className="w-full border-none shadow-none flex flex-col">
           <CardHeader>
             <CardTitle className="text-neutral-950 text-4xl font-bold font-montserrat">
@@ -217,7 +218,7 @@ export default function KycSetupPage() {
 
           {/* BOTTOM RIGHT BUTTONS - sticky to bottom of card */}
           <div className="mt-auto flex justify-end px-6 pb-8 gap-4 sticky bottom-0 bg-white z-10 border-t border-neutral-100">
-            {step > 0 && step < 4 && (
+            {step > 0 && step < 3 && (
               <Button
                 variant="outline"
                 className="w-64 h-16 px-10 font-montserrat text-md flex items-center gap-2"

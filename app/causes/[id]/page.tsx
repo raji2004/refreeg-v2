@@ -113,29 +113,34 @@ export default async function CauseDetailPage({
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          {cause.multimedia &&
-          Array.isArray(cause.multimedia) &&
-          cause.multimedia.length > 0 ? (
-            <MultimediaCarousel
-              media={cause.multimedia}
-              coverImage={cause.image || undefined}
-              title={cause.title}
-            />
-          ) : (
-            <div className="aspect-video w-full overflow-hidden rounded-lg">
-              <img
-                src={cause.image || "/placeholder.svg"}
-                alt={cause.title}
-                className="object-cover w-full h-full"
+          {(() => {
+            // Combine multimedia (images) and video_links (video URLs)
+            const allMedia = [...(cause.multimedia || [])];
+
+            return allMedia.length > 0 ? (
+              <MultimediaCarousel
+                media={allMedia}
+                coverImage={cause.image || undefined}
+                title={cause.title}
               />
-            </div>
-          )}
+            ) : (
+              <div className="aspect-video w-full overflow-hidden rounded-lg">
+                <img
+                  src={cause.image || "/placeholder.svg"}
+                  alt={cause.title}
+                  className="object-cover w-full h-full"
+                />
+              </div>
+            );
+          })()}
 
           <Tabs defaultValue="about">
             <TabsList>
               <TabsTrigger value="about">About</TabsTrigger>
               <TabsTrigger value="donors">Donors</TabsTrigger>
-              <TabsTrigger value="comments">Comments ({comments.length})</TabsTrigger>
+              <TabsTrigger value="comments">
+                Comments ({comments.length})
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="about" className="space-y-4">
               <h1 className="text-3xl font-bold">{cause.title}</h1>

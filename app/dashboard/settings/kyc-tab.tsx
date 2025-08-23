@@ -25,8 +25,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Profile } from "@/types";
-import { useKyc } from "@/hooks/use-kyc";
-import { KycVerification, KycStatus } from "@/types/kyc-types";
+import Image from "next/image";
 
 interface KycTabProps {
   profile: Profile;
@@ -142,9 +141,7 @@ export function KycTab({ profile, user }: KycTabProps) {
         </CardHeader>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">{getStatusMessage()}</p>
-            </div>
+            <p className="text-sm text-gray-600">{getStatusMessage()}</p>
             {getStatusBadge()}
           </div>
 
@@ -170,7 +167,9 @@ export function KycTab({ profile, user }: KycTabProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
+            {/* Personal & Address Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Personal */}
               <div className="space-y-4">
                 <h4 className="font-semibold text-sm text-gray-600 uppercase tracking-wide">
                   Personal Information
@@ -198,6 +197,7 @@ export function KycTab({ profile, user }: KycTabProps) {
                 </div>
               </div>
 
+              {/* Address */}
               <div className="space-y-4">
                 <h4 className="font-semibold text-sm text-gray-600 uppercase tracking-wide">
                   Address Information
@@ -238,6 +238,64 @@ export function KycTab({ profile, user }: KycTabProps) {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <Separator className="my-6" />
+
+            {/* Document Preview */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm text-gray-600 uppercase tracking-wide">
+                Document Preview
+              </h4>
+
+              {kycData?.document_url ? (
+                <>
+                  {kycData.document_url.endsWith(".pdf") ? (
+                    <div className="border rounded-lg p-4 bg-gray-50 flex items-center gap-4">
+                      <span className="inline-block w-8 h-8 bg-gray-200 flex items-center justify-center rounded">
+                        📄
+                      </span>
+                      <a
+                        href={kycData.document_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline"
+                      >
+                        View PDF Document
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg p-4 bg-gray-50 flex flex-col items-center">
+                      <Image
+                        src={kycData.document_url}
+                        alt="KYC Document"
+                        width={400}
+                        height={300}
+                        className="object-contain rounded shadow-sm hover:shadow-md transition-shadow max-h-64"
+                      />
+                      <p className="text-sm text-blue-600 mt-2 text-center">
+                        Click image to view full size
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="border rounded-lg p-8 bg-gray-50 text-center text-gray-500">
+                  No document uploaded
+                </div>
+              )}
+
+              {kycData?.status === "rejected" &&
+                kycData?.verification_notes && (
+                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mt-4">
+                    <h3 className="font-medium text-destructive mb-2">
+                      Rejection Reason
+                    </h3>
+                    <p className="text-sm text-destructive">
+                      {kycData.verification_notes}
+                    </p>
+                  </div>
+                )}
             </div>
 
             <Separator className="my-6" />

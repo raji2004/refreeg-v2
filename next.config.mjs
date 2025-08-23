@@ -21,7 +21,7 @@ const nextConfig = {
           process.env.NODE_ENV === "development"
             ? "eivlgwyipqojpeaxoajm.supabase.co"
             : "gfrksuuzzaczlxcswgkw.supabase.co",
-        pathname: "/storage/v1/object/public/**",
+        pathname: "/storage/v1/object/**",
       },
     ],
   },

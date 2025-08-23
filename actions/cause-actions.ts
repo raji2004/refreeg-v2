@@ -189,7 +189,7 @@ export async function createCause(
       status: "pending", // All causes start as pending
       image: coverImageUrl, // Store the cover image URL
       days_active: daysActive, // Store the calculated days active
-      multimedia: multimediaUrls, // Store multimedia URLs as JSON array
+      multimedia: multimediaUrls, // Store image URLs as JSON array
     })
     .select()
     .single();

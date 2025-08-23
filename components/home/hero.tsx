@@ -171,7 +171,7 @@ const Hero = () => {
               asChild
               className="px-3.5 py-2 bg-white text-[#003366] border border-[#003366] hover:bg-white hover:text-[#003366]"
             >
-              <Link href="/auth/signin">
+              <Link href="/dashboard/causes/create">
                 <span className="flex items-center gap-2">
                   Join the change
                   <Image

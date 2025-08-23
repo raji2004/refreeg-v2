@@ -32,6 +32,21 @@ import { getCause } from "@/actions/cause-actions";
 import { format } from "date-fns";
 import { categories } from "@/lib/categories";
 import { useNotifications } from "@/hooks/use-notification";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
 
 export default function ManageCauses() {
   const router = useRouter();
@@ -65,6 +80,7 @@ export default function ManageCauses() {
     open: boolean;
     cause: CauseWithUser | null;
     isLoading: boolean;
+    error?: string;
   }>({
     open: false,
     cause: null,
@@ -105,21 +121,35 @@ export default function ManageCauses() {
   };
 
   const openDetailDialog = async (causeId: string) => {
-    setDetailDialog((prev) => ({ ...prev, open: true, isLoading: true }));
-
+    setDetailDialog((prev) => ({
+      ...prev,
+      open: true,
+      isLoading: true,
+      error: undefined,
+    }));
     try {
       const detailedCause = await getCause(causeId);
+      if (!detailedCause || !detailedCause.id) {
+        setDetailDialog((prev) => ({
+          ...prev,
+          cause: null,
+          isLoading: false,
+          error: "Cause details not found or incomplete.",
+        }));
+        return;
+      }
       setDetailDialog((prev) => ({
         ...prev,
         cause: detailedCause,
         isLoading: false,
+        error: undefined,
       }));
     } catch (error) {
-      console.error("Error fetching cause details:", error);
       setDetailDialog((prev) => ({
         ...prev,
         cause: null,
         isLoading: false,
+        error: "Failed to load cause details. Please try again.",
       }));
     }
   };
@@ -170,140 +200,99 @@ export default function ManageCauses() {
               No {activeTab} causes to display.
             </p>
           ) : (
-            <div className="grid gap-4">
-              {causes.map((cause) => (
-                <Card key={cause.id} className="max-w-sm">
-                  <CardHeader>
-                    {cause.image && (
-                      <div className="relative w-full h-48 mb-4 rounded-lg overflow-hidden">
-                        <Image
-                          priority
-                          src={cause.image}
-                          alt={cause.title}
-                          className="object-cover w-full h-full"
-                          width={1000}
-                          height={1000}
-                        />
-                      </div>
-                    )}
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle
-                          className="cursor-pointer hover:text-primary transition-colors"
-                          onClick={() => openDetailDialog(cause.id)}
-                        >
-                          {cause.title}
-                        </CardTitle>
-                        <CardDescription>
-                          {new Date(cause.created_at).toLocaleDateString(
-                            "en-US",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            }
-                          )}
-                        </CardDescription>
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          Created by: {cause.profiles?.name || "Anonymous"}
-                        </div>
-                      </div>
-                      <Badge
-                        variant={
-                          cause.status === "approved"
-                            ? "default"
-                            : cause.status === "pending"
-                            ? "secondary"
-                            : "destructive"
-                        }
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Goal</TableHead>
+                    <TableHead>Created By</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {causes.map((cause) => (
+                    <TableRow key={cause.id}>
+                      <TableCell
+                        className="font-medium cursor-pointer hover:text-primary"
+                        onClick={() => openDetailDialog(cause.id)}
                       >
-                        {cause.status.charAt(0).toUpperCase() +
-                          cause.status.slice(1)}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {/* <p className="line-clamp-3">{cause.description}</p> */}
-                    <div className="text-sm">
-                      <div className="flex justify-between py-1">
-                        <span>Category</span>
-                        <span className="font-medium">{cause.category}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-t">
-                        <span>Goal</span>
-                        <span className="font-medium">
-                          ₦{cause.goal.toLocaleString()}
-                        </span>
-                      </div>
-                      {cause.days_active !== null &&
-                        cause.days_active !== undefined && (
-                          <div className="flex justify-between py-1 border-t">
-                            <span>Days Active</span>
-                            <span className="font-medium">
-                              {cause.days_active} days
-                            </span>
-                          </div>
-                        )}
-                      {cause.status === "rejected" &&
-                        cause.rejection_reason && (
-                          <div className="mt-2 p-2 bg-destructive/10 text-destructive text-sm rounded">
-                            <strong>Rejection Reason:</strong>{" "}
-                            {cause.rejection_reason}
-                          </div>
-                        )}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openDetailDialog(cause.id)}
-                    >
-                      View Details
-                    </Button>
-                    <div className="flex gap-2">
-                      {activeTab === "pending" && (
-                        <>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() =>
-                              openRejectDialog(cause.id, cause.title)
-                            }
-                          >
-                            Reject
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleApprove(cause.id)}
-                          >
-                            Approve
-                          </Button>
-                        </>
-                      )}
-                      {activeTab === "rejected" && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleApprove(cause.id)}
-                        >
-                          Approve
-                        </Button>
-                      )}
-                      {activeTab === "approved" && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() =>
-                            openRejectDialog(cause.id, cause.title)
+                        {cause.title}
+                      </TableCell>
+                      <TableCell>{cause.category}</TableCell>
+                      <TableCell>₦{cause.goal.toLocaleString()}</TableCell>
+                      <TableCell>
+                        {cause.profiles?.name || "Anonymous"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            cause.status === "approved"
+                              ? "default"
+                              : cause.status === "pending"
+                              ? "secondary"
+                              : "destructive"
                           }
                         >
-                          Take Down
-                        </Button>
-                      )}
-                    </div>
-                  </CardFooter>
-                </Card>
-              ))}
+                          {cause.status.charAt(0).toUpperCase() +
+                            cause.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => openDetailDialog(cause.id)}
+                            >
+                              View
+                            </DropdownMenuItem>
+                            {activeTab === "pending" && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    openRejectDialog(cause.id, cause.title)
+                                  }
+                                >
+                                  Reject
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleApprove(cause.id)}
+                                >
+                                  Approve
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {activeTab === "rejected" && (
+                              <DropdownMenuItem
+                                onClick={() => handleApprove(cause.id)}
+                              >
+                                Approve
+                              </DropdownMenuItem>
+                            )}
+                            {activeTab === "approved" && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  openRejectDialog(cause.id, cause.title)
+                                }
+                              >
+                                Take Down
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </TabsContent>
@@ -364,6 +353,10 @@ export default function ManageCauses() {
             <div className="flex justify-center items-center py-8">
               <Icons.spinner className="h-8 w-8 animate-spin" />
             </div>
+          ) : detailDialog.error ? (
+            <div className="text-center py-8 text-destructive">
+              {detailDialog.error}
+            </div>
           ) : detailDialog.cause ? (
             <div className="space-y-6">
               {/* Header */}
@@ -374,11 +367,9 @@ export default function ManageCauses() {
                       {detailDialog.cause.title}
                     </h2>
                     <p className="text-muted-foreground">
-                      {
-                        categories.find(
-                          (c) => c.id === detailDialog.cause?.category
-                        )?.name
-                      }
+                      {categories.find(
+                        (c) => c.id === detailDialog.cause?.category
+                      )?.name || detailDialog.cause.category}
                     </p>
                   </div>
                   <Badge
@@ -401,22 +392,28 @@ export default function ManageCauses() {
                   <div className="text-sm space-y-1">
                     <p>
                       <span className="font-medium">Name:</span>{" "}
-                      {detailDialog.cause.user.name}
+                      {detailDialog.cause.user?.name || "-"}
                     </p>
                     <p>
                       <span className="font-medium">Email:</span>{" "}
-                      {detailDialog.cause.user.email}
+                      {detailDialog.cause.user?.email || "-"}
                     </p>
                     <p>
                       <span className="font-medium">Created:</span>{" "}
-                      {format(new Date(detailDialog.cause.created_at), "PPP")}
+                      {detailDialog.cause.created_at
+                        ? format(new Date(detailDialog.cause.created_at), "PPP")
+                        : "-"}
                     </p>
-                    {detailDialog.cause.status === "approved" && (
-                      <p>
-                        <span className="font-medium">Approved:</span>{" "}
-                        {format(new Date(detailDialog.cause.updated_at), "PPP")}
-                      </p>
-                    )}
+                    {detailDialog.cause.status === "approved" &&
+                      detailDialog.cause.updated_at && (
+                        <p>
+                          <span className="font-medium">Approved:</span>{" "}
+                          {format(
+                            new Date(detailDialog.cause.updated_at),
+                            "PPP"
+                          )}
+                        </p>
+                      )}
                   </div>
                 </div>
               </div>
@@ -438,50 +435,136 @@ export default function ManageCauses() {
               )}
 
               {/* Multimedia Gallery */}
-              {detailDialog.cause.multimedia &&
-                detailDialog.cause.multimedia.length > 0 && (
+              {(() => {
+                const allMedia = [...(detailDialog.cause.multimedia || [])];
+
+                return allMedia.length > 0 ? (
                   <div className="space-y-2">
                     <h3 className="font-medium">Multimedia Gallery</h3>
                     <div className="grid grid-cols-2 gap-4">
-                      {detailDialog.cause.multimedia.map((url, index) => (
-                        <div
-                          key={index}
-                          className="relative w-full h-32 rounded-lg overflow-hidden"
-                        >
-                          <Image
-                            src={url}
-                            alt={`Multimedia ${index + 1}`}
-                            className="object-cover w-full h-full"
-                            width={400}
-                            height={200}
-                          />
-                        </div>
-                      ))}
+                      {allMedia.map((url: string, index: number) => {
+                        const isVideo = url.match(/\.(mp4|mov|webm)$/i);
+                        const isYouTube =
+                          url.includes("youtube") || url.includes("youtu.be");
+                        const isTikTok = url.includes("tiktok");
+                        const isDrive = url.includes("drive.google");
+
+                        // Extract YouTube video ID for embed
+                        let embedUrl = "";
+                        if (isYouTube) {
+                          const videoIdMatch = url.match(
+                            /(?:youtube\.com.*(?:\?|&)v=|youtu\.be\/)([^&#]+)/
+                          );
+                          const videoId = videoIdMatch ? videoIdMatch[1] : null;
+                          if (videoId) {
+                            embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                          }
+                        }
+
+                        return (
+                          <div
+                            key={index}
+                            className="relative w-full h-48 rounded-lg overflow-hidden"
+                          >
+                            {isVideo ? (
+                              <video
+                                controls
+                                className="w-full h-full object-cover rounded-lg"
+                                src={url}
+                              />
+                            ) : isYouTube && embedUrl ? (
+                              <iframe
+                                src={embedUrl}
+                                title={`YouTube video ${index + 1}`}
+                                className="w-full h-full rounded-lg"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            ) : isTikTok ? (
+                              (() => {
+                                const tiktokIdMatch = url.match(/video\/(\d+)/);
+                                const tiktokId = tiktokIdMatch
+                                  ? tiktokIdMatch[1]
+                                  : null;
+                                return tiktokId ? (
+                                  <iframe
+                                    src={`https://www.tiktok.com/embed/${tiktokId}`}
+                                    title={`TikTok video ${index + 1}`}
+                                    className="w-full h-full rounded-lg"
+                                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                                    allowFullScreen
+                                  />
+                                ) : (
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline text-sm text-center p-2"
+                                  >
+                                    Open TikTok Video
+                                  </a>
+                                );
+                              })()
+                            ) : isDrive ? (
+                              (() => {
+                                const fileIdMatch = url.match(/\/d\/([^/]+)/);
+                                const fileId = fileIdMatch
+                                  ? fileIdMatch[1]
+                                  : null;
+                                return fileId ? (
+                                  <iframe
+                                    src={`https://drive.google.com/file/d/${fileId}/preview`}
+                                    title={`Google Drive file ${index + 1}`}
+                                    className="w-full h-full rounded-lg"
+                                    allow="autoplay"
+                                    allowFullScreen
+                                  />
+                                ) : (
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline text-sm text-center p-2"
+                                  >
+                                    Open Google Drive File
+                                  </a>
+                                );
+                              })()
+                            ) : (
+                              <Image
+                                src={url}
+                                alt={`Multimedia ${index + 1}`}
+                                className="object-cover w-full h-full"
+                                width={400}
+                                height={200}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                )}
-
-              {/* Description */}
-              {/* <div className="space-y-2">
-                <h3 className="font-medium">Description</h3>
-                <p className="text-sm whitespace-pre-line">
-                  {detailDialog.cause.description}
-                </p>
-              </div> */}
+                ) : null;
+              })()}
 
               {/* Additional Sections */}
               {detailDialog.cause.sections &&
+                Array.isArray(detailDialog.cause.sections) &&
                 detailDialog.cause.sections.length > 0 && (
                   <div className="space-y-4">
                     <h3 className="font-medium">Additional Sections</h3>
-                    {detailDialog.cause.sections.map((section, index) => (
-                      <div key={index} className="p-4 border rounded-lg">
-                        <h4 className="font-medium mb-2">{section.heading}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {section.description}
-                        </p>
-                      </div>
-                    ))}
+                    {detailDialog.cause.sections.map(
+                      (section: any, index: number) => (
+                        <div key={index} className="p-4 border rounded-lg">
+                          <h4 className="font-medium mb-2">
+                            {section.heading}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {section.description}
+                          </p>
+                        </div>
+                      )
+                    )}
                   </div>
                 )}
 
@@ -492,18 +575,23 @@ export default function ManageCauses() {
                   <div className="space-y-1 text-sm">
                     <p>
                       <span className="font-medium">Goal:</span> ₦
-                      {detailDialog.cause.goal.toLocaleString()}
+                      {detailDialog.cause.goal?.toLocaleString?.() ||
+                        detailDialog.cause.goal}
                     </p>
                     <p>
                       <span className="font-medium">Raised:</span> ₦
-                      {detailDialog.cause.raised.toLocaleString()}
+                      {detailDialog.cause.raised?.toLocaleString?.() ||
+                        detailDialog.cause.raised}
                     </p>
                     <p>
                       <span className="font-medium">Progress:</span>{" "}
-                      {(
-                        (detailDialog.cause.raised / detailDialog.cause.goal) *
-                        100
-                      ).toFixed(1)}
+                      {detailDialog.cause.goal && detailDialog.cause.raised
+                        ? (
+                            (detailDialog.cause.raised /
+                              detailDialog.cause.goal) *
+                            100
+                          ).toFixed(1)
+                        : "-"}
                       %
                     </p>
                   </div>

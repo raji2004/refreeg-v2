@@ -8,25 +8,35 @@ import { KycVerification, KycStatus } from "@/types/kyc-types";
 export function useKyc(userId: string | undefined) {
   const queryClient = useQueryClient();
 
+  // Fetch KYC verification record
   const {
-    data: isVerified,
+    data: kycVerification,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<KycVerification | null>({
     queryKey: ["kyc", userId],
     queryFn: () => hasKycVerification(userId!),
     enabled: !!userId,
   });
 
+  // Update KYC status
   const updateKycMutation = useMutation({
-    mutationFn: (status: boolean) => updateKycStatus(userId!, status),
+    mutationFn: ({
+      verificationId,
+      status,
+      notes,
+    }: {
+      verificationId: string;
+      status: KycStatus; // "approved" | "rejected"
+      notes?: string;
+    }) => updateKycStatus(verificationId, status, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["kyc", userId] });
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
       toast({
         title: "KYC status updated",
         description:
-          "Your KYC verification status has been updated successfully.",
+          "The KYC verification status has been updated successfully.",
       });
     },
     onError: (error: any) => {
@@ -39,7 +49,8 @@ export function useKyc(userId: string | undefined) {
   });
 
   return {
-    isVerified: isVerified ?? false,
+    kycVerification, // full record: id, status, notes, timestamps, etc.
+    isVerified: kycVerification?.status === "approved",
     isLoading,
     error: error as string | null,
     updateKycStatus: updateKycMutation.mutate,

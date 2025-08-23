@@ -15,19 +15,29 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_verified, full_name, bio, profile_photo")
-        .eq("id", user.id)
+      // Check KYC verification status
+      const { data: kycVerification } = await supabase
+        .from("kyc_verifications")
+        .select("status")
+        .eq("user_id", user.id)
         .single();
 
-      // Check if KYC is verified
-      if (!profile?.is_verified) {
+      // Check if KYC exists
+      if (!kycVerification) {
         return NextResponse.redirect(
           new URL("/dashboard/settings?error=kyc_required", request.url)
         );
       }
 
+      // If KYC exists but is not approved
+      if (kycVerification.status !== "approved") {
+        return NextResponse.redirect(
+          new URL(
+            `/dashboard/settings?error=kyc_${kycVerification.status}`,
+            request.url
+          )
+        );
+      }
       // Check if profile is complete (has full name, bio, and avatar)
       const { isComplete } = await isProfileComplete(user.id);
       if (!isComplete) {

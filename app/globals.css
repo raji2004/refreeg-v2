@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent Chrome autofill styles */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px white inset !important; /* keep white background */
+  -webkit-text-fill-color: #000 !important; /* keep black text */
+  transition: background-color 5000s ease-in-out 0s; /* disable flashing */
+}
+
+/* Ensure focus does not change bg/text */
+input:focus,
+textarea:focus,
+select:focus {
+  background-color: white !important;
+  color: #000 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: #003366 !important; /* optional: keep blue border, or set your brand */
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

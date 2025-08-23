@@ -3,6 +3,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { KycVerification, KycStatus } from "@/types/kyc-types";
+import {
+  sendKycSubmittedEmail,
+  sendKycApprovedEmail,
+  sendKycRejectedEmail,
+} from "@/services/mail";
 
 export async function uploadKycDocument(
   userId: string,
@@ -102,6 +107,23 @@ export async function uploadKycDocument(
       if (updateError) {
         return { documentUrl: "", error: updateError.message };
       }
+
+      // Send email notification for resubmission
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("id", userId)
+          .single();
+
+        if (profile?.email) {
+          await sendKycSubmittedEmail(profile.email, personalData.fullName);
+        }
+      } catch (emailError) {
+        console.error("Error sending KYC submission email:", emailError);
+        // Don't fail the KYC submission if email fails
+      }
+
       return { documentUrl: signedUrlData.signedUrl, error: null };
     } else {
       // Insert new record
@@ -170,6 +192,23 @@ export async function uploadKycDocument(
       if (insertError) {
         return { documentUrl: "", error: insertError.message };
       }
+
+      // Send email notification for new submission
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("id", userId)
+          .single();
+
+        if (profile?.email) {
+          await sendKycSubmittedEmail(profile.email, personalData.fullName);
+        }
+      } catch (emailError) {
+        console.error("Error sending KYC submission email:", emailError);
+        // Don't fail the KYC submission if email fails
+      }
+
       return { documentUrl: signedUrlData.signedUrl, error: null };
     }
   } catch (error) {
@@ -245,7 +284,7 @@ export async function updateVerificationStatus(
     // Get the user_id from the verification record
     const { data: verification, error: fetchError } = await supabase
       .from("kyc_verifications")
-      .select("user_id")
+      .select("user_id, full_name")
       .eq("id", verificationId)
       .single();
 
@@ -258,6 +297,34 @@ export async function updateVerificationStatus(
     }
 
     if (verification) {
+      // Send email notification based on status
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("id", verification.user_id)
+          .single();
+
+        if (profile?.email) {
+          if (status === "approved") {
+            await sendKycApprovedEmail(
+              profile.email,
+              verification.full_name || "User"
+            );
+          } else if (status === "rejected") {
+            await sendKycRejectedEmail(
+              profile.email,
+              verification.full_name || "User",
+              notes ||
+                "Your KYC verification was rejected. Please review and resubmit."
+            );
+          }
+        }
+      } catch (emailError) {
+        console.error("Error sending KYC status email:", emailError);
+        // Don't fail the status update if email fails
+      }
+
       if (status === "approved") {
         // Update user profile to mark as verified
         const { error: profileError } = await supabase

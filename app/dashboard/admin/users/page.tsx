@@ -90,6 +90,11 @@ export default async function AdminUsersPage({
       )
     : users;
 
+  // Find users with KYC status 'pending'
+  const kycAttentionUsers = filteredUsers.filter(
+    (u) => u.kyc_status === "pending"
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -98,6 +103,31 @@ export default async function AdminUsersPage({
           View and manage user accounts and permissions.
         </p>
       </div>
+
+      {/* KYC Notification Banner */}
+      {kycAttentionUsers.length > 0 && (
+        <div className="rounded-md bg-yellow-50 border border-yellow-300 p-4 flex items-center gap-4">
+          <Shield className="h-6 w-6 text-yellow-600" />
+          <div className="flex-1">
+            <span className="font-medium text-yellow-800">
+              {kycAttentionUsers.length} KYC submission
+              {kycAttentionUsers.length > 1 ? "s" : ""} require review
+            </span>
+            <span className="block text-yellow-700 text-sm">
+              There {kycAttentionUsers.length === 1 ? "is" : "are"}{" "}
+              {kycAttentionUsers.length} user
+              {kycAttentionUsers.length > 1 ? "s" : ""} with new or edited KYC
+              submissions awaiting your attention.
+            </span>
+          </div>
+          <Link
+            href={`/dashboard/admin/users/kyc/${kycAttentionUsers[0].id}`}
+            className="ml-4 px-3 py-1 rounded bg-yellow-200 text-yellow-900 font-medium hover:bg-yellow-300 transition"
+          >
+            Review Now
+          </Link>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

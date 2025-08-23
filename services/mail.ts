@@ -119,3 +119,52 @@ export async function sendBankAccountAddedEmail(context: {
     },
   });
 }
+
+// KYC Email Notifications
+export async function sendKycSubmittedEmail(
+  userEmail: string,
+  userName: string
+) {
+  return sendMail({
+    to: userEmail,
+    subject: "KYC Verification Submitted - Refreeg",
+    templateName: "kyc-submitted",
+    context: {
+      userName,
+      organizationName: "Refreeg",
+      reviewTimeframe: "3-5 business days",
+    },
+  });
+}
+
+export async function sendKycApprovedEmail(
+  userEmail: string,
+  userName: string
+) {
+  return sendMail({
+    to: userEmail,
+    subject: "KYC Verification Approved - Refreeg",
+    templateName: "kyc-approved",
+    context: {
+      userName,
+      organizationName: "Refreeg",
+    },
+  });
+}
+
+export async function sendKycRejectedEmail(
+  userEmail: string,
+  userName: string,
+  rejectionReason: string
+) {
+  return sendMail({
+    to: userEmail,
+    subject: "KYC Verification Update - Refreeg",
+    templateName: "kyc-rejected",
+    context: {
+      userName,
+      organizationName: "Refreeg",
+      rejectionReason,
+    },
+  });
+}

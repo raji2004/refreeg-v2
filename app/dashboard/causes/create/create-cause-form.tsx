@@ -50,6 +50,7 @@ type FormData = {
   startDate: Date | undefined;
   endDate: Date | undefined;
   multimedia: File[];
+  videoLinks: string[]; // NEW
 };
 
 type FormErrors = {
@@ -73,6 +74,7 @@ type CauseFormData = {
   startDate: Date | undefined;
   endDate: Date | undefined;
   multimedia: File[];
+  videoLinks: string[]; // NEW
 };
 
 const validateForm = (formData: FormData): FormErrors => {
@@ -159,8 +161,11 @@ export default function CreateCauseForm() {
     startDate: undefined,
     endDate: undefined,
     multimedia: [],
+    videoLinks: [], // NEW
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [videoLinkInput, setVideoLinkInput] = useState("");
+  const [videoLinkError, setVideoLinkError] = useState<string | null>(null);
 
   // Auto-save draft to localStorage
   useEffect(() => {
@@ -177,6 +182,7 @@ export default function CreateCauseForm() {
           ? new Date(parsedDraft.endDate)
           : undefined,
         multimedia: [],
+        videoLinks: parsedDraft.videoLinks || [], // NEW
       }));
     }
   }, []);
@@ -355,6 +361,7 @@ export default function CreateCauseForm() {
       startDate: formData.startDate,
       endDate: formData.endDate,
       multimedia: formData.multimedia,
+      videoLinks: formData.videoLinks, // NEW
     };
     try {
       await sendCauseUnderReviewEmail({
@@ -688,86 +695,37 @@ export default function CreateCauseForm() {
                 </div>
               )}
             </div>
-
             <div className="mt-8 space-y-4">
               <div className="space-y-2">
-                <Label>Additional Multimedia</Label>
+                <Label>Additional Images</Label>
                 <p className="text-sm text-muted-foreground">
-                  Enhance your cause with images and videos. Total size must not
-                  exceed 100MB.
+                  Enhance your cause with images. Total size must not exceed
+                  100MB.
                 </p>
                 <ImageUpload
                   onUpload={(files) => handleMultimediaUpload(files)}
                   maxFiles={10}
-                  accept="image/*,video/*"
-                  //   multiple={true}
+                  accept="image/*"
                 />
                 {errors.multimedia && (
                   <p className="text-sm text-red-500">{errors.multimedia}</p>
                 )}
               </div>
-
               {formData.multimedia &&
                 Array.isArray(formData.multimedia) &&
                 formData.multimedia.length > 0 && (
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">
-                      Uploaded Files ({formData.multimedia.length})
+                      Uploaded Images ({formData.multimedia.length})
                     </h4>
-                    <p className="text-xs text-muted-foreground">
-                      Total Size:{" "}
-                      {(
-                        (formData.multimedia && formData.multimedia.length > 0
-                          ? formData.multimedia.reduce(
-                              (acc, file) => acc + file.size,
-                              0
-                            )
-                          : 0) /
-                        (1024 * 1024)
-                      ).toFixed(2)}
-                      MB of 100MB
-                    </p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {formData.multimedia.map((file, index) => (
                         <div key={index} className="relative group">
-                          {file.type.startsWith("image/") ? (
-                            <img
-                              src={URL.createObjectURL(file)}
-                              alt={`Multimedia ${index + 1}`}
-                              className="h-32 w-full object-cover rounded-md"
-                            />
-                          ) : (
-                            <div className="h-32 w-full bg-muted rounded-md flex items-center justify-center">
-                              <div className="text-center">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-8 w-8 mx-auto mb-2"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                                  />
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                  />
-                                </svg>
-                                <p className="text-xs truncate max-w-[90%] mx-auto">
-                                  {file.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {(file.size / (1024 * 1024)).toFixed(2)}MB
-                                </p>
-                              </div>
-                            </div>
-                          )}
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Multimedia ${index + 1}`}
+                            className="h-32 w-full object-cover rounded-md"
+                          />
                           <Button
                             type="button"
                             variant="destructive"
@@ -782,6 +740,77 @@ export default function CreateCauseForm() {
                     </div>
                   </div>
                 )}
+            </div>
+            {/* Video Links */}
+            <div className="mt-8 space-y-2">
+              <Label>Video Links (YouTube, TikTok, etc.)</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="url"
+                  placeholder="Paste video link and press Add"
+                  value={videoLinkInput}
+                  onChange={(e) => setVideoLinkInput(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    // Basic URL validation
+                    try {
+                      const url = new URL(videoLinkInput);
+                      if (!/^https?:\/\//.test(videoLinkInput)) {
+                        setVideoLinkError("Enter a valid URL");
+                        return;
+                      }
+                      setFormData((prev) => ({
+                        ...prev,
+                        videoLinks: [...prev.videoLinks, videoLinkInput],
+                      }));
+                      setVideoLinkInput("");
+                      setVideoLinkError(null);
+                    } catch {
+                      setVideoLinkError("Enter a valid URL");
+                    }
+                  }}
+                  disabled={!videoLinkInput}
+                >
+                  Add
+                </Button>
+              </div>
+              {videoLinkError && (
+                <p className="text-sm text-red-500">{videoLinkError}</p>
+              )}
+              {formData.videoLinks.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {formData.videoLinks.map((link, idx) => (
+                    <li key={idx} className="flex items-center gap-2">
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline truncate max-w-xs"
+                      >
+                        {link}
+                      </a>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            videoLinks: prev.videoLinks.filter(
+                              (_, i) => i !== idx
+                            ),
+                          }))
+                        }
+                      >
+                        Remove
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         );
