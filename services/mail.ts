@@ -133,29 +133,51 @@ export async function sendBankAccountAddedEmail(context: {
   });
 }
 
-
-
-// Convenience function for sending login notification emails
-export async function sendLoginNotificationEmail(context: {
-  ipAddress?: string;
-  device?: string;
-  loginTime?: string;
-}) {
-  const user = await getCurrentUser();
-  if (!user) {
-    throw new Error("User not found");
-  }
-  const profile = await getProfile(user.id);
+// KYC Email Notifications
+export async function sendKycSubmittedEmail(
+  userEmail: string,
+  userName: string
+) {
   return sendMail({
-    to: profile?.email || "",
-    subject: "New Login Notification",
-    templateName: "login-notification",
+    to: userEmail,
+    subject: "KYC Verification Submitted - Refreeg",
+    templateName: "kyc-submitted",
     context: {
-      ...context,
-      userName: profile?.full_name || "User",
-      loginTime: context.loginTime || new Date().toLocaleString(),
-      device: context.device || "Unknown Device",
-      ipAddress: context.ipAddress || "Unknown IP",
+      userName,
+      organizationName: "Refreeg",
+      reviewTimeframe: "3-5 business days",
+    },
+  });
+}
+
+export async function sendKycApprovedEmail(
+  userEmail: string,
+  userName: string
+) {
+  return sendMail({
+    to: userEmail,
+    subject: "KYC Verification Approved - Refreeg",
+    templateName: "kyc-approved",
+    context: {
+      userName,
+      organizationName: "Refreeg",
+    },
+  });
+}
+
+export async function sendKycRejectedEmail(
+  userEmail: string,
+  userName: string,
+  rejectionReason: string
+) {
+  return sendMail({
+    to: userEmail,
+    subject: "KYC Verification Update - Refreeg",
+    templateName: "kyc-rejected",
+    context: {
+      userName,
+      organizationName: "Refreeg",
+      rejectionReason,
     },
   });
 }
