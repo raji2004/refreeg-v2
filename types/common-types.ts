@@ -1,5 +1,16 @@
 import { Profile } from "./profile-types";
 
+// Window interface extensions
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: any[] }) => Promise<any>;
+      on: (event: string, callback: (...args: any[]) => void) => void;
+      removeListener: (event: string, callback: (...args: any[]) => void) => void;
+    };
+  }
+}
+
 export type Json =
   | string
   | number
@@ -39,18 +50,7 @@ export interface CauseSection {
   description: string;
 }
 
-export interface CauseFormData {
-  title: string;
-  category: string;
-  goal: string | number;
-  currency: string;
-  coverImage: File | null;
-  image?: string;
-  multimedia?: File[];
-  sections: CauseSection[];
-  startDate?: Date | undefined;
-  endDate?: Date | undefined;
-}
+// CauseFormData moved to cause-types.ts to avoid conflicts
 
 export interface PetitionSection {
   heading: string;
@@ -116,36 +116,7 @@ export interface CauseFilterOptions {
   offset?: number;
 }
 
-export interface Cause {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string;
-  category: string;
-  goal: number;
-  raised: number;
-  status: CauseStatus;
-  image: string | null;
-  created_at: string;
-  updated_at: string;
-  rejection_reason?: string | null;
-  days_active?: number | null;
-  sections?: CauseSection[];
-  profiles?: {
-    name: string;
-    email: string;
-  };
-}
-
-export interface CauseWithUser extends Cause {
-  user: {
-    name: string;
-    email: string;
-    sub_account_code: string;
-  };
-  multimedia?: string[];
-  sections: CauseSection[];
-}
+// Cause types moved to cause-types.ts to avoid conflicts
 
 export interface PetitionFilterOptions {
   category?: string;

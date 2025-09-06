@@ -139,7 +139,7 @@ export function MetaMaskDonationButton({
     setTxHash(null);
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum!);
+      const provider = new ethers.BrowserProvider(window.ethereum as any);
       const signer = await provider.getSigner();
       const amountInWei = ethers.parseUnits(amount.toString(), token.decimals);
 

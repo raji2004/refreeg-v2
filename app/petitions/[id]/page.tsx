@@ -30,6 +30,7 @@ import Link from "next/link";
 import MultimediaCarousel from "@/components/MultimediaCarousel";
 import { SignersList } from "@/components/signers-list";
 import { CommentsSection } from "@/components/comments/comment-section";
+import { PetitionNFTStatus } from "@/components/petition-nft-status";
 import { useRouter } from "next/navigation";
 
 // Mock data for a petition
@@ -406,6 +407,14 @@ export default async function PetitionDetailPage({
                   status={petition.status}
                   subaccount={petition?.user?.sub_account_code}
                 />
+                
+                {/* NFT Status for signed users */}
+                {user && (
+                  <PetitionNFTStatus 
+                    petitionId={petition.id} 
+                    userId={user.id} 
+                  />
+                )}
               </div>
             </CardContent>
           </Card>

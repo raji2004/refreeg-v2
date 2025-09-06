@@ -16,7 +16,7 @@ export function useWallet(userId: string | undefined) {
     queryFn: async () => {
       if (!userId) return false;
       const profile = await getProfile(userId);
-      return !!profile?.crypto_wallets?.ethereum;
+      return !!profile?.crypto_wallets?.metamask_address;
     },
     enabled: !!userId,
   });

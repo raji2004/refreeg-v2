@@ -241,9 +241,15 @@ export default async function CauseDetailPage({
               </div>
               <DonorsList donors={[...donors, ...cryptoDonations.map((crypto: any) => ({
                 id: crypto.id,
-                name: crypto.user_id === "00000000-0000-0000-0000-000000000000" ? "Anonymous Crypto Donor" : "Crypto Donor",
+                cause_id: crypto.cause_id,
+                user_id: crypto.user_id,
                 amount: crypto.amount_in_naira,
-                message: `Donated ${crypto.amount_in_sol} ${crypto.currency} via ${crypto.wallet_type}`,
+                name: crypto.user_id === "00000000-0000-0000-0000-000000000000" ? "Anonymous Crypto Donor" : "Crypto Donor",
+                email: "",
+                message: `Donated ${crypto.amount_in_crypto} ${crypto.currency} via ${crypto.wallet_type}`,
+                is_anonymous: crypto.user_id === "00000000-0000-0000-0000-000000000000",
+                status: "completed" as const,
+                receipt_url: null,
                 created_at: crypto.created_at,
               }))]} />
             </TabsContent>

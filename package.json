@@ -51,7 +51,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
-    "date-fns": "^4.1.0",
+    "date-fns": "^3.6.0",
     "embla-carousel-react": "8.5.1",
     "ethers": "^6.15.0",
     "framer-motion": "^12.23.6",
@@ -83,11 +83,8 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-<<<<<<< HEAD
-    "hardhat": "^3.0.4",
-=======
+    "hardhat": "^2.26.0",
     "mini-css-extract-plugin": "^2.9.4",
->>>>>>> origin/petition-flow
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"

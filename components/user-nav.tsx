@@ -84,6 +84,7 @@ export function UserNav() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           {/* Mobile-only dashboard link inside menu */}
+          <DropdownMenuGroup>
           <div className="md:hidden">
             <DropdownMenuItem asChild>
               <Link href="/dashboard">Dashboard</Link>
@@ -137,6 +138,7 @@ export function UserNav() {
                 </DropdownMenuItem>
               </>
             )}
+          </div>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem

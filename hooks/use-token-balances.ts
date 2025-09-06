@@ -25,7 +25,7 @@ export function useTokenBalances(walletAddress: string | null, chainId: number |
     setError(null);
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(window.ethereum as any);
       const network = Object.values(SUPPORTED_NETWORKS).find(n => n.chainId === chainId);
       
       if (!network) {

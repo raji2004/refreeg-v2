@@ -37,7 +37,7 @@ export function EnhancedCryptoDonationSection({
     const checkActiveStreams = async () => {
       try {
         const status = await getLiveCryptoStreamingStatus(causeId);
-        setHasActiveStreams(status && status.active_streams_count > 0);
+        setHasActiveStreams(status ? status.active_streams_count > 0 : false);
       } catch (error) {
         console.error("Error checking active streams:", error);
       }

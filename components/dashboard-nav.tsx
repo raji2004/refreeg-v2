@@ -14,6 +14,7 @@ import {
   UserCog,
   ClipboardCheckIcon,
   DollarSign,
+  Image,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useAuth } from "@/hooks/use-auth";
@@ -40,6 +41,11 @@ const userNavItems = [
     title: "My Donations",
     href: "/dashboard/donations",
     icon: Users,
+  },
+  {
+    title: "My NFTs",
+    href: "/dashboard/nfts",
+    icon: Image,
   },
   {
     title: "Settings",

@@ -34,13 +34,13 @@ export async function POST(request: NextRequest) {
     const donationData = {
       causeId,
       txHash,
-      amountInCrypto: verification.amount,
-      amountInNaira: verification.amountInNaira,
-      donorWalletAddress: verification.from,
-      recipientAddress: verification.to,
+      amountInCrypto: verification.amount || 0,
+      amountInNaira: verification.amountInNaira || 0,
+      donorWalletAddress: verification.from || "",
+      recipientAddress: verification.to || "",
       network,
-      currency: verification.currency,
-      walletType: verification.walletType,
+      currency: verification.currency || "",
+      walletType: verification.walletType || "",
     };
 
     const result = await recordCryptoDonation(donationData);

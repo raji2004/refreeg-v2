@@ -1,14 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import SolanaDonationButton from "./SolanaDonationButton";
+import { SolanaDonationButton } from "./SolanaDonationButton";
 
 interface SolanaDonationButtonWrapperProps {
   causeId: string;
+  recipientAddress: string;
 }
 
 export default function SolanaDonationButtonWrapper({
   causeId,
+  recipientAddress,
 }: SolanaDonationButtonWrapperProps) {
   const router = useRouter();
 
@@ -20,6 +22,7 @@ export default function SolanaDonationButtonWrapper({
   return (
     <SolanaDonationButton
       causeId={causeId}
+      recipientAddress={recipientAddress}
       onDonationSuccess={handleDonationSuccess}
     />
   );
