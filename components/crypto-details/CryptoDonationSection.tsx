@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MetaMaskDonationButton } from "./MetaMaskDonationButton";
 import { SolanaDonationButton } from "./SolanaDonationButton";
@@ -7,14 +8,18 @@ import { SolanaDonationButton } from "./SolanaDonationButton";
 interface CryptoDonationSectionProps {
   causeId: string;
   recipientAddress: string;
-  onDonationSuccess?: (amountInNaira: number) => void;
 }
 
 export function CryptoDonationSection({
   causeId,
   recipientAddress,
-  onDonationSuccess,
 }: CryptoDonationSectionProps) {
+  const router = useRouter();
+
+  const handleDonationSuccess = (amountInNaira: number) => {
+    // Refresh the page to update the progress bar and donor count
+    router.refresh();
+  };
   return (
     <div className="space-y-4">
       <div className="text-center">
@@ -34,7 +39,7 @@ export function CryptoDonationSection({
           <MetaMaskDonationButton
             causeId={causeId}
             recipientAddress={recipientAddress}
-            onDonationSuccess={onDonationSuccess}
+            onDonationSuccess={handleDonationSuccess}
           />
         </TabsContent>
         
@@ -42,7 +47,7 @@ export function CryptoDonationSection({
           <SolanaDonationButton
             causeId={causeId}
             recipientAddress={recipientAddress}
-            onDonationSuccess={onDonationSuccess}
+            onDonationSuccess={handleDonationSuccess}
           />
         </TabsContent>
       </Tabs>

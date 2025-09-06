@@ -16,9 +16,8 @@ export interface CryptoDonationData {
 }
 
 export async function recordCryptoDonation(donationData: CryptoDonationData) {
-  const supabase = createClient();
-
   try {
+    const supabase = await createClient();
     // Insert crypto donation record
     const { data, error: cryptoError } = await supabase
       .from("crypto_donations")
@@ -64,9 +63,9 @@ export async function recordCryptoDonation(donationData: CryptoDonationData) {
 }
 
 export async function getCryptoDonationsForCause(causeId: string) {
-  const supabase = createClient();
-
   try {
+    const supabase = await createClient();
+    
     const { data, error } = await supabase
       .from("crypto_donations")
       .select("*")
@@ -75,7 +74,7 @@ export async function getCryptoDonationsForCause(causeId: string) {
 
     if (error) {
       console.error("Error fetching crypto donations:", error);
-      throw new Error("Failed to fetch crypto donations");
+      return [];
     }
 
     return data || [];

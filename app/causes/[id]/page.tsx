@@ -309,7 +309,6 @@ export default async function CauseDetailPage({
                   <CryptoDonationSection 
                     causeId={cause.id} 
                     recipientAddress={creatorProfile?.crypto_wallets?.metamask_address || creatorProfile?.crypto_wallets?.solana_address || ""}
-                    onDonationSuccess={() => window.location.reload()}
                   />
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
