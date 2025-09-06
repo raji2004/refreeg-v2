@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge"
 import { Download, ExternalLink } from "lucide-react"
 import { listUserDonations } from "@/actions"
 
-// Mock data for user's donations
 const mockUserDonations = [
   {
     id: "1",

@@ -21,7 +21,6 @@ import {
   Sparkles,
 } from "lucide-react";
 
-// Mock data for causes
 const mockCauses = [
   {
     id: "1",

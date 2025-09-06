@@ -127,6 +127,9 @@ export function UserNav() {
                   <Link href="/dashboard/admin/users">Manage Users</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/dashboard/admin/matching-pools">Matching Pools</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/dashboard/admin/analytics">Analytics</Link>
                 </DropdownMenuItem>
               </>

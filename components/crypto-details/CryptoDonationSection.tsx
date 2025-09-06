@@ -7,12 +7,14 @@ import { SolanaDonationButton } from "./SolanaDonationButton";
 
 interface CryptoDonationSectionProps {
   causeId: string;
-  recipientAddress: string;
+  metamaskAddress?: string | null;
+  solanaAddress?: string | null;
 }
 
 export function CryptoDonationSection({
   causeId,
-  recipientAddress,
+  metamaskAddress,
+  solanaAddress,
 }: CryptoDonationSectionProps) {
   const router = useRouter();
 
@@ -38,7 +40,7 @@ export function CryptoDonationSection({
         <TabsContent value="metamask" className="mt-4">
           <MetaMaskDonationButton
             causeId={causeId}
-            recipientAddress={recipientAddress}
+            recipientAddress={metamaskAddress || ""}
             onDonationSuccess={handleDonationSuccess}
           />
         </TabsContent>
@@ -46,7 +48,7 @@ export function CryptoDonationSection({
         <TabsContent value="solana" className="mt-4">
           <SolanaDonationButton
             causeId={causeId}
-            recipientAddress={recipientAddress}
+            recipientAddress={solanaAddress || ""}
             onDonationSuccess={handleDonationSuccess}
           />
         </TabsContent>

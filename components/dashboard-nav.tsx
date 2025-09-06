@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { BarChart3, FileText, Home, Settings, Users, Shield, UserCog, ClipboardCheckIcon } from "lucide-react"
+import { BarChart3, FileText, Home, Settings, Users, Shield, UserCog, ClipboardCheckIcon, DollarSign } from "lucide-react"
 import { useAdmin } from "@/hooks/use-admin"
 import { useAuth } from "@/hooks/use-auth"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -43,6 +43,11 @@ const adminNavItems = [
     title: "Manage Users",
     href: "/dashboard/admin/users",
     icon: UserCog,
+  },
+  {
+    title: "Matching Pools",
+    href: "/dashboard/admin/matching-pools",
+    icon: DollarSign,
   },
   {
     title: "Analytics",

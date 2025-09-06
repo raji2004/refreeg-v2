@@ -9,7 +9,7 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import { useAuth } from "@/hooks/use-auth";
-import { recordCryptoDonation } from "@/actions/crypto-donation-actions";
+import { createCryptoStreamingDonation } from "@/actions/crypto-streaming-actions";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,12 +35,18 @@ interface SolanaDonationButtonProps {
   causeId: string;
   recipientAddress: string;
   onDonationSuccess?: (amountInNaira: number) => void;
+  isStreamingEnabled?: boolean;
+  streamingDuration?: number;
+  streamingInterval?: number;
 }
 
 export function SolanaDonationButton({
   causeId,
   recipientAddress,
   onDonationSuccess,
+  isStreamingEnabled = false,
+  streamingDuration = 7,
+  streamingInterval = 1,
 }: SolanaDonationButtonProps) {
   const [donationAmount, setDonationAmount] = useState("0.1");
   const [nairaInput, setNairaInput] = useState("30.25");
@@ -280,25 +286,74 @@ export function SolanaDonationButton({
       const solAmount = parseFloat(donationAmount);
 
       try {
-        await recordCryptoDonation({
-          causeId,
-          txHash: signature,
-          amountInCrypto: solAmount,
-          amountInNaira: nairaAmount,
-          donorWalletAddress: walletAddress,
-          recipientAddress,
-          network: "solana",
-          currency: "SOL",
-          walletType: "solana",
-          userId: user?.id || "00000000-0000-0000-0000-000000000000",
-        });
+        if (isStreamingEnabled) {
+          try {
+            await createCryptoStreamingDonation({
+              causeId,
+              donorId: user?.id,
+              donorName: user?.user_metadata?.full_name || "Anonymous",
+              donorEmail: user?.email || "anonymous@example.com",
+              totalAmount: nairaAmount,
+              streamDurationDays: streamingDuration,
+              streamIntervalSeconds: streamingInterval,
+              cryptoCurrency: "SOL",
+              cryptoNetwork: "solana",
+              donorWalletAddress: walletAddress,
+              recipientWalletAddress: recipientAddress,
+              totalCryptoAmount: solAmount,
+            });
+
+            toast({
+              title: "Crypto Streaming Started",
+              description: `Your SOL tokens are now streaming over ${streamingDuration} days!`,
+            });
+          } catch (cryptoStreamError) {
+            console.log("Crypto streaming not available, falling back to regular streaming");
+            const { createStreamingDonation } = await import("@/actions/streaming-donation-actions");
+            await createStreamingDonation({
+              causeId,
+              donorId: user?.id,
+              donorName: user?.user_metadata?.full_name || "Anonymous",
+              donorEmail: user?.email || "anonymous@example.com",
+              totalAmount: nairaAmount,
+              streamDurationDays: streamingDuration,
+              streamIntervalSeconds: streamingInterval,
+            });
+
+            toast({
+              title: "Streaming Started",
+              description: `Your donation is now streaming over ${streamingDuration} days!`,
+            });
+          }
+        } else {
+          // Regular one-time donation - verify via API
+          const response = await fetch("/api/crypto-donations/verify", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              txHash: signature,
+              network: "solana",
+              causeId,
+              expectedRecipient: recipientAddress,
+              expectedAmount: solAmount,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || "Failed to verify donation");
+          }
+
+          toast({
+            title: "Success",
+            description: "Thank you for your donation!",
+          });
+        }
 
         onDonationSuccess?.(nairaAmount);
-
-        toast({
-          title: "Success",
-          description: "Thank you for your donation!",
-        });
       } catch (logError) {
         console.error("Failed to log transaction:", logError);
         toast({
@@ -408,10 +463,10 @@ export function SolanaDonationButton({
         {isDonating ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processing...
+            {isStreamingEnabled ? "Starting Stream..." : "Processing..."}
           </>
         ) : (
-          "Donate with SOL"
+          isStreamingEnabled ? "Stream SOL" : "Donate with SOL"
         )}
       </Button>
 

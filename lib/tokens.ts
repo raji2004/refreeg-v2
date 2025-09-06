@@ -3,7 +3,7 @@ export interface TokenInfo {
   symbol: string;
   name: string;
   decimals: number;
-  exchangeRate: number; // Mock exchange rate to NGN
+  exchangeRate: number;
 }
 
 export const NETWORK_TOKENS: Record<string, TokenInfo[]> = {
@@ -17,7 +17,7 @@ export const NETWORK_TOKENS: Record<string, TokenInfo[]> = {
       exchangeRate: 450000,
     },
     {
-      address: "0xA0b86a33E6441b8c4C8C0d4Cecc0fA193c329786",
+      address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
       symbol: "USDC",
       name: "USD Coin",
       decimals: 6,

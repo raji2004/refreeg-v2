@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import type { Donation, DonationWithCause, DonationFormData } from "@/types"
+import { processMatchingForDonation } from "./matching-pool-actions"
 
 /**
  * Create a new donation
@@ -25,7 +26,7 @@ export async function createDonation(
       email: donationData.email,
       message: donationData.message || null,
       is_anonymous: donationData.isAnonymous,
-      status: "completed", // For now, all donations are immediately completed
+      status: "completed",
     })
     .select()
     .single()
@@ -33,6 +34,23 @@ export async function createDonation(
   if (error) {
     console.error("Error creating donation:", error)
     throw error
+  }
+
+  // Process matching for this donation
+  try {
+    const matchingResult = await processMatchingForDonation(
+      causeId,
+      data.id,
+      'donation',
+      typeof donationData.amount === "string" ? Number.parseFloat(donationData.amount) : donationData.amount
+    );
+    
+    if (matchingResult.success && matchingResult.matched_amount > 0) {
+      console.log(`Donation matched! Added ${matchingResult.matched_amount} to cause`);
+    }
+  } catch (matchingError) {
+    console.error("Error processing matching for donation:", matchingError);
+    // Don't throw here - the donation was successful, matching is a bonus
   }
 
   revalidatePath(`/causes/${causeId}`)

@@ -5,7 +5,7 @@ import { ethers } from "ethers";
 import { useMultiWallet } from "@/hooks/use-multi-wallet";
 import { useTokenBalances } from "@/hooks/use-token-balances";
 import { useAuth } from "@/hooks/use-auth";
-import { recordCryptoDonation } from "@/actions/crypto-donation-actions";
+import { createCryptoStreamingDonation } from "@/actions/crypto-streaming-actions";
 import { SUPPORTED_NETWORKS } from "@/lib/networks";
 import { getTokensForNetwork, getNativeToken } from "@/lib/tokens";
 import { Button } from "@/components/ui/button";
@@ -19,12 +19,18 @@ interface MetaMaskDonationButtonProps {
   causeId: string;
   recipientAddress: string;
   onDonationSuccess?: (amountInNaira: number) => void;
+  isStreamingEnabled?: boolean;
+  streamingDuration?: number;
+  streamingInterval?: number;
 }
 
 export function MetaMaskDonationButton({
   causeId,
   recipientAddress,
   onDonationSuccess,
+  isStreamingEnabled = false,
+  streamingDuration = 7,
+  streamingInterval = 1,
 }: MetaMaskDonationButtonProps) {
   const [donationAmount, setDonationAmount] = useState("0.01");
   const [nairaAmount, setNairaAmount] = useState("4.50");
@@ -173,25 +179,74 @@ export function MetaMaskDonationButton({
       if (receipt.status === 1) {
         // Transaction successful, record in database
         try {
-          await recordCryptoDonation({
-            causeId,
-            txHash: tx.hash,
-            amountInCrypto: amount,
-            amountInNaira: parseFloat(nairaAmount),
-            donorWalletAddress: walletInfo.address,
-            recipientAddress,
-            network: walletInfo.network,
-            currency: token.symbol,
-            walletType: "metamask",
-            userId: user?.id || "00000000-0000-0000-0000-000000000000",
-          });
+        if (isStreamingEnabled) {
+          try {
+            await createCryptoStreamingDonation({
+              causeId,
+              donorId: user?.id,
+              donorName: user?.user_metadata?.full_name || "Anonymous",
+              donorEmail: user?.email || "anonymous@example.com",
+              totalAmount: parseFloat(nairaAmount),
+              streamDurationDays: streamingDuration,
+              streamIntervalSeconds: streamingInterval,
+              cryptoCurrency: token.symbol,
+              cryptoNetwork: walletInfo.network,
+              donorWalletAddress: walletInfo.address,
+              recipientWalletAddress: recipientAddress,
+              totalCryptoAmount: amount,
+            });
+
+            toast({
+              title: "Crypto Streaming Started",
+              description: `Your ${token.symbol} tokens are now streaming over ${streamingDuration} days!`,
+            });
+          } catch (cryptoStreamError) {
+            console.log("Crypto streaming not available, falling back to regular streaming");
+            const { createStreamingDonation } = await import("@/actions/streaming-donation-actions");
+            await createStreamingDonation({
+              causeId,
+              donorId: user?.id,
+              donorName: user?.user_metadata?.full_name || "Anonymous",
+              donorEmail: user?.email || "anonymous@example.com",
+              totalAmount: parseFloat(nairaAmount),
+              streamDurationDays: streamingDuration,
+              streamIntervalSeconds: streamingInterval,
+            });
+
+            toast({
+              title: "Streaming Started",
+              description: `Your donation is now streaming over ${streamingDuration} days!`,
+            });
+          }
+        } else {
+            // Regular one-time donation - verify via API
+            const response = await fetch("/api/crypto-donations/verify", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                txHash: tx.hash,
+                network: walletInfo.network,
+                causeId,
+                expectedRecipient: recipientAddress,
+                expectedAmount: amount,
+              }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+              throw new Error(result.error || "Failed to verify donation");
+            }
+
+            toast({
+              title: "Success",
+              description: "Thank you for your donation!",
+            });
+          }
 
           onDonationSuccess?.(parseFloat(nairaAmount));
-
-          toast({
-            title: "Success",
-            description: "Thank you for your donation!",
-          });
         } catch (dbError) {
           console.error("Error recording donation:", dbError);
           toast({
@@ -330,10 +385,12 @@ export function MetaMaskDonationButton({
         {isDonating ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processing...
+            {isStreamingEnabled ? "Starting Stream..." : "Processing..."}
           </>
         ) : (
-          `Donate ${balances.find(t => t.address === selectedToken)?.symbol}`
+          isStreamingEnabled 
+            ? `Stream ${balances.find(t => t.address === selectedToken)?.symbol}`
+            : `Donate ${balances.find(t => t.address === selectedToken)?.symbol}`
         )}
       </Button>
 

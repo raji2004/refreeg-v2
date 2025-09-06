@@ -62,14 +62,13 @@ export function useMultiWallet() {
       // Save to database
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
+        const { data: profile } = await supabase
           .from("profiles")
-          .update({
-            crypto_wallets: {
-              metamask_address: address,
-            },
-          })
-          .eq("id", user.id);
+          .select("crypto_wallets")
+          .eq("id", user.id)
+          .single();
+        const merged = { ...(profile?.crypto_wallets ?? {}), metamask_address: address };
+        await supabase.from("profiles").update({ crypto_wallets: merged }).eq("id", user.id);
       }
 
       return walletInfo;
@@ -105,14 +104,13 @@ export function useMultiWallet() {
       // Save to database
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
+        const { data: profile } = await supabase
           .from("profiles")
-          .update({
-            crypto_wallets: {
-              solana_address: address,
-            },
-          })
-          .eq("id", user.id);
+          .select("crypto_wallets")
+          .eq("id", user.id)
+          .single();
+        const merged = { ...(profile?.crypto_wallets ?? {}), solana_address: address };
+        await supabase.from("profiles").update({ crypto_wallets: merged }).eq("id", user.id);
       }
 
       return walletInfo;

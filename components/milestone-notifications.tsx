@@ -71,7 +71,6 @@ export function MilestoneNotifications({
     // Show browser notification if supported
     showNotification(title, { body, icon });
 
-    // Fallback to toast notification
     toast({
       title,
       description: body,

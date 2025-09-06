@@ -1,4 +1,3 @@
-// Mock categories
 export const categories = [
     { id: "education", name: "Education" },
     { id: "health", name: "Healthcare" },

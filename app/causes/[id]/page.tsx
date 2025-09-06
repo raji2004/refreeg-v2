@@ -19,9 +19,11 @@ import {
 import { notFound } from "next/navigation";
 import { ShareModal } from "@/components/share-modal";
 import { getBaseURL } from "@/lib/utils";
-import { CryptoDonationSection } from "@/components/crypto-details/CryptoDonationSection";
+import { EnhancedCryptoDonationSection } from "@/components/crypto-details/EnhancedCryptoDonationSection";
 import { getCryptoDonationsForCause } from "@/actions/crypto-donation-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MatchingStatus } from "@/components/MatchingStatus";
+import { LiveProgressBar } from "@/components/streaming/LiveProgressBar";
 import {
   AlertCircle,
   Facebook,
@@ -260,20 +262,11 @@ export default async function CauseDetailPage({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">
-                    ₦{cause.raised.toLocaleString()}
-                  </span>
-                  <span className="text-muted-foreground">
-                    of ₦{cause.goal.toLocaleString()}
-                  </span>
-                </div>
-                <Progress value={percentRaised} />
-                <div className="text-sm text-muted-foreground text-right">
-                  {percentRaised}% raised
-                </div>
-              </div>
+              <LiveProgressBar 
+                causeId={cause.id}
+                initialRaised={cause.raised}
+                goal={cause.goal}
+              />
 
               <div className="text-sm">
                 <div className="flex justify-between py-1">
@@ -296,6 +289,9 @@ export default async function CauseDetailPage({
             </CardContent>
           </Card>
 
+          {/* Matching Pool Status */}
+          <MatchingStatus causeId={cause.id} />
+
           <Card>
             <CardHeader>
               <CardTitle>Make a Donation</CardTitle>
@@ -306,9 +302,10 @@ export default async function CauseDetailPage({
             <CardContent className="space-y-4">
               {hasCreatorWallet ? (
                 <div className="space-y-4">
-                  <CryptoDonationSection 
-                    causeId={cause.id} 
-                    recipientAddress={creatorProfile?.crypto_wallets?.metamask_address || creatorProfile?.crypto_wallets?.solana_address || ""}
+                  <EnhancedCryptoDonationSection 
+                    causeId={cause.id}
+                    metamaskAddress={creatorProfile?.crypto_wallets?.metamask_address || ""}
+                    solanaAddress={creatorProfile?.crypto_wallets?.solana_address || ""}
                   />
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">

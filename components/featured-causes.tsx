@@ -21,7 +21,6 @@ import {
   Sparkles,
 } from "lucide-react";
 
-// Mock data for featured causes
 // const featuredCauses = [
 //   {
 //     id: 1,

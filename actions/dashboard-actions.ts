@@ -183,9 +183,9 @@ export async function getCauseAnalytics(causeId: string) {
 
     // Get engagement metrics
     const engagement = {
-        shares: cause.shared, // TODO: Implement actual share tracking
+        shares: cause.shared,
         comments: donations.filter(d => d.message && d.message.trim() !== '').length, // Count donations with non-empty messages as comments
-        views: 0, // TODO: Implement actual view tracking
+        views: 0,
         conversionRate: cause.shared > 0 ? (uniqueDonors / cause.shared) * 100 : 0, // Calculate conversion rate based on shares to donors ratio
     }
 

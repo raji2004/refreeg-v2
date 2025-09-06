@@ -21,7 +21,6 @@ import {
 import { deleteCause, getUserCausesWithStatus } from "@/actions";
 import { CauseDropdown } from "./cause-dropdown";
 
-// Mock data for user's causes
 const mockUserCauses = [
   {
     id: "1",

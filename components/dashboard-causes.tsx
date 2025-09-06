@@ -6,7 +6,6 @@ import { Progress } from "@/components/ui/progress"
 import { Plus } from "lucide-react"
 import { getCurrentUser, getUserCauses } from "@/actions"
 
-// Mock data for user's causes
 // const userCauses = [
 //   {
 //     id: "1",
