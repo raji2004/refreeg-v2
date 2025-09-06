@@ -67,7 +67,7 @@ export default function FAQ() {
         className="flex justify-center gap-3 mb-10"
       >
         {categories.map((cat) => (
-          <button
+          <Button
             key={cat.value}
             onClick={() => {
               setActiveCategory(cat.value);
@@ -77,12 +77,13 @@ export default function FAQ() {
             className={cn(
               "px-4 py-2 rounded-full text-sm font-medium border transition-colors",
               activeCategory === cat.value
-                ? "bg-blue-600 text-white border-blue-600"
+                ? "bg-[#003366] text-white border-[#003366]"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
             )}
+            
           >
             {cat.label}
-          </button>
+          </Button>
         ))}
       </motion.div>
 
@@ -105,14 +106,16 @@ export default function FAQ() {
           {!showAll ? (
             <Button
               onClick={() => setShowAll(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="text-white"
+              variant="secondary"
             >
               View More
             </Button>
           ) : (
             <Button
               onClick={() => setShowAll(false)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="text-white"
+              variant="secondary"
             >
               Show Less
             </Button>

@@ -15,13 +15,15 @@ interface CommentProps {
   causeId: string;
   currentUserId?: string;
   onCommentDeleted: (commentId: string) => void;
+  entityType?: "cause" | "petition";
 }
 
-export function CommentComponent({ 
-  comment, 
-  causeId, 
+export function CommentComponent({
+  comment,
+  causeId,
   currentUserId,
-  onCommentDeleted
+  onCommentDeleted,
+  entityType,
 }: CommentProps) {
   const [showReplies, setShowReplies] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -30,9 +32,9 @@ export function CommentComponent({
   const handleDelete = async () => {
     try {
       const response = await fetch(`/api/comments/${comment.id}`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
-      
+
       if (response.ok) {
         onCommentDeleted(comment.id);
       }
@@ -44,18 +46,18 @@ export function CommentComponent({
   const handleEdit = async (content: string) => {
     try {
       const response = await fetch(`/api/comments/${comment.id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ content }),
       });
-      
+
       if (response.ok) {
         const updatedComment = await response.json();
-        setReplies(replies.map(r => 
-          r.id === updatedComment.id ? updatedComment : r
-        ));
+        setReplies(
+          replies.map((r) => (r.id === updatedComment.id ? updatedComment : r))
+        );
         setIsEditing(false);
       }
     } catch (error) {
@@ -87,16 +89,20 @@ export function CommentComponent({
         </div>
         <div className="flex-grow">
           <div className="flex items-center gap-2">
-            <Link 
+            <Link
               href={`/profile/${comment.user_id}`}
               className="font-medium hover:underline"
             >
               {comment.user.full_name || "Anonymous"}
             </Link>
             <span className="text-sm text-muted-foreground">
-              {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+              {formatDistanceToNow(new Date(comment.created_at), {
+                addSuffix: true,
+              })}
               {comment.is_edited && (
-                <sup className="text-xs text-muted-foreground ml-1">(edited)</sup>
+                <sup className="text-xs text-muted-foreground ml-1">
+                  (edited)
+                </sup>
               )}
             </span>
           </div>
@@ -110,26 +116,26 @@ export function CommentComponent({
           ) : (
             <p className="mt-1 text-sm">{comment.content}</p>
           )}
-          
+
           <div className="mt-2 flex items-center gap-4">
-            <button 
+            <button
               onClick={() => setShowReplies(!showReplies)}
               className="text-sm text-muted-foreground hover:text-primary"
             >
-              {comment.replies_count === 1 
-                ? "1 reply" 
+              {comment.replies_count === 1
+                ? "1 reply"
                 : `${comment.replies_count || 0} replies`}
             </button>
 
             {currentUserId === comment.user_id && (
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => setIsEditing(true)}
                   className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
                 >
                   <Pencil size={14} /> Edit
                 </button>
-                <button 
+                <button
                   onClick={handleDelete}
                   className="text-sm text-muted-foreground hover:text-destructive flex items-center gap-1"
                 >
@@ -141,12 +147,13 @@ export function CommentComponent({
 
           {currentUserId && !isEditing && (
             <div className="mt-3">
-              <ReplyForm 
+              <ReplyForm
                 causeId={causeId}
                 parentId={comment.id}
                 onReplyAdded={(newReply) => {
                   setReplies([...replies, newReply]);
                 }}
+                entityType={entityType}
               />
             </div>
           )}
@@ -156,12 +163,13 @@ export function CommentComponent({
       {showReplies && replies.length > 0 && (
         <div className="ml-12 mt-4 space-y-4 border-l-2 pl-4">
           {replies.map((reply) => (
-            <CommentComponent 
+            <CommentComponent
               key={reply.id}
               comment={reply}
               causeId={causeId}
               currentUserId={currentUserId}
               onCommentDeleted={onCommentDeleted}
+              entityType={entityType}
             />
           ))}
         </div>

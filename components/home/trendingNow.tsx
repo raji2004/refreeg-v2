@@ -83,62 +83,63 @@ export async function TrendingCauses() {
                 key={cause.id}
                 className="pl-4 basis-[85%] sm:basis-[50%] md:basis-[33.33%]"
               >
-                <div className="relative z-0 overflow-visible h-full">
-                  <Link href={`/causes/${cause.id}`} className="group block">
-                    <AnimatedCard>
-                      <Card className="cursor-pointer transition hover:shadow-2xl shadow-lg h-full flex flex-col border border-gray-300">
-                        <div className="aspect-video w-full overflow-hidden rounded-t-lg">
-                          <img
-                            src={cause.image || "/placeholder.svg"}
-                            alt={cause.title}
-                            className="object-cover w-full h-full"
-                          />
+                <Link
+                  href={`/causes/${cause.id}`}
+                  className="group block h-full"
+                >
+                  <AnimatedCard>
+                    <Card className="overflow-hidden cursor-pointer transition hover:shadow-2xl shadow-lg h-full flex flex-col border border-gray-300">
+                      <div className="aspect-video w-full overflow-hidden rounded-t-lg">
+                        <img
+                          src={cause.image || "/placeholder.svg"}
+                          alt={cause.title}
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                      <CardHeader className="flex flex-col flex-1 p-4 ">
+                        <CardTitle>
+                          <H4>{cause.title}</H4>
+                          <P className="font-extralight">
+                            {cause.profiles?.full_name || "Unknown"}
+                          </P>
+                        </CardTitle>
+                        <hr className="border-t-2 border-gray-400" />
+                        <div className="flex justify-between items-center pt-2 text-xs">
+                          <P>Raised</P>
+                          <P>
+                            {cause.goal > 0
+                              ? Math.round((cause.raised / cause.goal) * 100)
+                              : 0}
+                            {cause.days_active} days active
+                          </P>
                         </div>
-                        <CardHeader className="flex flex-col flex-1 p-4 ">
-                          <CardTitle>
-                            <H4>{cause.title}</H4>
-                            <P className="font-extralight">
-                              {cause.profiles?.full_name || "Unknown"}
-                            </P>
-                          </CardTitle>
-                          <hr className="border-t-2 border-gray-400" />
-                          <div className="flex justify-between items-center pt-2 text-xs">
-                            <P>Raised</P>
-                            <P>
-                              {cause.goal > 0
-                                ? Math.round((cause.raised / cause.goal) * 100)
-                                : 0}
-                              {cause.days_active} days active
-                            </P>
+                      </CardHeader>
+                      <div className="mt-auto w-full">
+                        <CardContent>
+                          <div className="space-y-2">
+                            <Progress
+                              value={(cause.raised / cause.goal) * 100}
+                              className="h-2 bg-muted"
+                            />
                           </div>
-                        </CardHeader>
-                        <div className="mt-auto w-full">
-                          <CardContent>
-                            <div className="space-y-2">
-                              <Progress
-                                value={(cause.raised / cause.goal) * 100}
-                                className="h-2 bg-muted"
-                              />
-                            </div>
-                          </CardContent>
-                          <CardFooter>
-                            <div className="w-full flex justify-between">
-                              <span className="flex flex-col">
-                                <H4>₦{cause.raised?.toLocaleString()}</H4>
-                                <P className="font-light">
-                                  Funded of ₦{cause.goal?.toLocaleString()}
-                                </P>
-                              </span>
-                              <span>
-                                <DonateButton />
-                              </span>
-                            </div>
-                          </CardFooter>
-                        </div>
-                      </Card>
-                    </AnimatedCard>
-                  </Link>
-                </div>
+                        </CardContent>
+                        <CardFooter>
+                          <div className="w-full flex justify-between">
+                            <span className="flex flex-col">
+                              <H4>₦{cause.raised?.toLocaleString()}</H4>
+                              <P className="font-light">
+                                Funded of ₦{cause.goal?.toLocaleString()}
+                              </P>
+                            </span>
+                            <span>
+                              <DonateButton type="cause" disableLink />
+                            </span>
+                          </div>
+                        </CardFooter>
+                      </div>
+                    </Card>
+                  </AnimatedCard>
+                </Link>
               </CarouselItem>
             );
           })}

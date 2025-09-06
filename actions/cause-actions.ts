@@ -25,7 +25,8 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
       profiles!inner (
         full_name,
         email,
-        sub_account_code
+        sub_account_code,
+        profile_photo
       ),
       cause_sections (
         id,
@@ -59,6 +60,7 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
       name: data.profiles?.full_name || "Anonymous",
       email: data.profiles?.email || "",
       sub_account_code: data.profiles?.sub_account_code || "",
+      profile_photo: data.profiles?.profile_photo || null,
     },
     sections: data.cause_sections || [],
   } as unknown as CauseWithUser;
@@ -180,7 +182,7 @@ export async function createCause(
     .insert({
       user_id: userId,
       title: causeData.title,
-      // description: causeData.description,
+      description: causeData.description, // <-- ensure this is included
       category: causeData.category,
       goal:
         typeof causeData.goal === "string"
@@ -261,7 +263,7 @@ export async function updateCause(
   // Prepare the update data
   const updateData: any = {
     title: causeData.title,
-    // description: causeData.description,
+    description: causeData.description, // <-- ensure this is included
     category: causeData.category,
     goal: causeData.goal,
     status: "pending",
@@ -369,7 +371,7 @@ export async function listCauses(
 
   let query = supabase
     .from("causes")
-    .select("*,profiles(full_name,email)")
+    .select("*,profiles(full_name,email,profile_photo)")
     .order("created_at", { ascending: false });
 
   // Apply filters

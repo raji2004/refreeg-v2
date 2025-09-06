@@ -948,7 +948,21 @@ export default function CreateCauseForm() {
         </CardDescription>
         <Progress value={(currentStep / 5) * 100} className="mt-4" />
       </CardHeader>
-      <form onSubmit={handleSubmit} className="space-y-8" autoComplete="off">
+      <form
+        className="space-y-8"
+        autoComplete="off"
+        onKeyDown={(e) => {
+          if (
+            currentStep === 5 &&
+            e.key === "Enter" &&
+            e.target instanceof HTMLElement &&
+            e.target.tagName !== "TEXTAREA" &&
+            e.target.tagName !== "BUTTON"
+          ) {
+            e.preventDefault();
+          }
+        }}
+      >
         <CardContent className="space-y-4">{renderStep()}</CardContent>
 
         <CardFooter className="flex justify-between">
@@ -965,7 +979,11 @@ export default function CreateCauseForm() {
               Next
             </Button>
           ) : (
-            <Button type="submit" disabled={isLoading || submitting}>
+            <Button
+              type="button"
+              disabled={isLoading || submitting}
+              onClick={handleSubmit}
+            >
               {isLoading || submitting ? (
                 <>
                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />

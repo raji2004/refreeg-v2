@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getCountries, ALL_COUNTRIES } from "@/app/utils/countryUtils";
 
 export default function StepAddressDetails({
   formData,
@@ -24,18 +25,17 @@ export default function StepAddressDetails({
   const [countries, setCountries] = useState<string[]>([]);
   const [loadingCountries, setLoadingCountries] = useState(false);
 
-  // Fetch countries on component mount
+  // Fetch countries on component mount with fallback
   useEffect(() => {
     const fetchCountries = async () => {
       setLoadingCountries(true);
       try {
-        const response = await fetch("/api/countries");
-        if (response.ok) {
-          const data = await response.json();
-          setCountries(data);
-        }
+        const countryList = await getCountries();
+        setCountries(countryList);
       } catch (error) {
         console.error("Error fetching countries:", error);
+        // Use the static fallback list directly
+        setCountries(ALL_COUNTRIES);
       } finally {
         setLoadingCountries(false);
       }
@@ -91,7 +91,7 @@ export default function StepAddressDetails({
         </div>
 
         {/* City */}
-        <div className="flex flex-col gap-1.5 flex-1">
+        <div className="flex flex-col gap-1.5 flex-1 w-full">
           <Label htmlFor="city">City</Label>
           <Input
             id="city"
@@ -109,7 +109,7 @@ export default function StepAddressDetails({
         </div>
 
         {/* Country (from API) */}
-        <div className="flex flex-col gap-1.5 flex-1">
+        <div className="flex flex-col gap-1.5 flex-1 w-full">
           <Label htmlFor="country">Country</Label>
           <Select
             value={formData.country || ""}
@@ -127,11 +127,17 @@ export default function StepAddressDetails({
               />
             </SelectTrigger>
             <SelectContent>
-              {countries.map((country) => (
-                <SelectItem key={country} value={country}>
-                  {country}
+              {countries.length > 0 ? (
+                countries.map((country) => (
+                  <SelectItem key={country} value={country}>
+                    {country}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no-countries" disabled>
+                  No countries available
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
           {touched.country && errors.country && (
@@ -142,7 +148,7 @@ export default function StepAddressDetails({
         </div>
 
         {/* State (now just input, no API select) */}
-        <div className="flex flex-col gap-1.5 flex-1">
+        <div className="flex flex-col gap-1.5 flex-1 w-full">
           <Label htmlFor="state">State</Label>
           <Input
             id="state"
@@ -160,7 +166,7 @@ export default function StepAddressDetails({
         </div>
 
         {/* Postal Code */}
-        <div className="flex flex-col gap-1.5 flex-1">
+        <div className="flex flex-col gap-1.5 flex-1 w-full">
           <Label htmlFor="postal">Postal Code</Label>
           <Input
             id="postal"

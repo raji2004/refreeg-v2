@@ -10,7 +10,9 @@ export type Json =
 
 // Status types
 export type CauseStatus = "pending" | "approved" | "rejected";
+export type PetitionStatus = "pending" | "approved" | "rejected";
 export type DonationStatus = "pending" | "completed" | "failed";
+export type SignatureStatus = "pending" | "signed" | "rejected";
 
 // Form data types
 export interface ProfileFormData {
@@ -50,7 +52,34 @@ export interface CauseFormData {
   endDate?: Date | undefined;
 }
 
+export interface PetitionSection {
+  heading: string;
+  description: string;
+}
+
+export interface PetitionFormData {
+  title: string;
+  description: string;
+  category: string;
+  goal: string | number;
+  currency: string;
+  coverImage: File | null;
+  image?: string;
+  multimedia?: File[];
+  sections?: { heading: string; description: string }[];
+  startDate?: Date | undefined;
+  endDate?: Date | undefined;
+}
+
 export interface DonationFormData {
+  amount: string | number;
+  name: string;
+  email: string;
+  message: string;
+  isAnonymous: boolean;
+}
+
+export interface SignatureFormData {
   amount: string | number;
   name: string;
   email: string;
@@ -116,6 +145,84 @@ export interface CauseWithUser extends Cause {
   };
   multimedia?: string[];
   sections: CauseSection[];
+}
+
+export interface PetitionFilterOptions {
+  category?: string;
+  status?: CauseStatus;
+  userId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface Petition {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  category: string;
+  goal: number;
+  raised: number;
+  status: PetitionStatus;
+  rejection_reason: string | null;
+  created_at: string;
+  updated_at: string;
+  image?: string | null;
+  days_active?: number | null;
+  sections?: PetitionSection[];
+  profiles?: {
+    full_name: string;
+    email: string;
+  };
+}
+
+export interface PetitionWithUser extends Petition {
+  user: {
+    name: string;
+    email: string;
+    sub_account_code: string;
+  };
+
+  sections: PetitionSection[];
+}
+
+export interface PetitionFilterOptions {
+  category?: string;
+  status?: CauseStatus;
+  userId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface Petition {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  category: string;
+  goal: number;
+  raised: number;
+  status: PetitionStatus;
+  rejection_reason: string | null;
+  created_at: string;
+  updated_at: string;
+  image?: string | null;
+  days_active?: number | null;
+  sections?: PetitionSection[];
+  profiles?: {
+    full_name: string;
+    email: string;
+  };
+}
+
+export interface PetitionWithUser extends Petition {
+  user: {
+    name: string;
+    email: string;
+    sub_account_code: string;
+  };
+
+  sections: PetitionSection[];
 }
 
 export interface Comment {

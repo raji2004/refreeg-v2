@@ -4,12 +4,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-export function CommentForm({ 
-  causeId, 
-  onCommentAdded 
-}: { 
+export function CommentForm({
+  causeId,
+  onCommentAdded,
+  entityType,
+}: {
   causeId: string;
   onCommentAdded: (comment: any) => void;
+  entityType?: "cause" | "petition";
 }) {
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,19 +22,20 @@ export function CommentForm({
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/comments', {
-        method: 'POST',
+      const response = await fetch("/api/comments", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           causeId,
-          content
+          content,
+          entityType,
         }),
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to post comment');
+        throw new Error("Failed to post comment");
       }
 
       const newComment = await response.json();

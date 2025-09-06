@@ -159,7 +159,7 @@ export default function KycSetupPage() {
         </div>
       )}
       <div className="flex-1 flex items-start md:px-10">
-        <Card className="w-full border-none shadow-none flex flex-col">
+        <Card className="w-full h-full border-none shadow-none flex flex-col">
           <CardHeader>
             <CardTitle className="text-neutral-950 text-4xl font-bold font-montserrat">
               {step === 0 && "Upload a proof of your identity"}
@@ -217,11 +217,11 @@ export default function KycSetupPage() {
           </CardContent>
 
           {/* BOTTOM RIGHT BUTTONS - sticky to bottom of card */}
-          <div className="mt-auto flex justify-end px-6 pb-8 gap-4 sticky bottom-0 bg-white z-10 border-t border-neutral-100">
+          <div className="mt-auto flex justify-end px-6 pb-8 gap-4 bg-white z-10 border-t border-neutral-100">
             {step > 0 && step < 3 && (
               <Button
                 variant="outline"
-                className="w-64 h-16 px-10 font-montserrat text-md flex items-center gap-2"
+                className="w-full h-12 text-sm px-6 md:w-64 md:h-16 md:px-10 md:text-md font-montserrat flex items-center gap-2"
                 onClick={() => setStep(step - 1)}
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -230,7 +230,7 @@ export default function KycSetupPage() {
             )}
             {step === 0 && (
               <Button
-                className="w-64 h-16 px-10 bg-primaryShades-700 text-white font-semibold font-montserrat text-md flex items-center gap-2"
+                className="w-full h-12 text-sm px-6 md:w-64 md:h-16 md:px-10 md:text-md bg-primaryShades-700 text-white font-semibold font-montserrat flex items-center gap-2"
                 onClick={() => validateIdentityDetails() && setStep(1)}
               >
                 Next <ArrowRight className="w-4 h-4" />
@@ -238,7 +238,7 @@ export default function KycSetupPage() {
             )}
             {step === 1 && (
               <Button
-                className="w-64 h-16 px-10 bg-primaryShades-700 text-white font-semibold font-montserrat text-md flex items-center gap-2"
+                className="w-full h-12 text-sm px-6 md:w-64 md:h-16 md:px-10 md:text-md bg-primaryShades-700 text-white font-semibold font-montserrat flex items-center gap-2"
                 onClick={() => validateAddressDetails() && setStep(2)}
               >
                 Next <ArrowRight className="w-4 h-4" />
@@ -246,7 +246,7 @@ export default function KycSetupPage() {
             )}
             {step === 2 && (
               <Button
-                className="w-64 h-16 px-10 bg-primaryShades-700 text-white font-semibold font-montserrat text-md flex items-center gap-2"
+                className="w-full h-12 text-sm px-6 md:w-64 md:h-16 md:px-10 md:text-md bg-primaryShades-700 text-white font-semibold font-montserrat flex items-center gap-2"
                 onClick={() => validateDocument() && setStep(3)}
               >
                 Next <ArrowRight className="w-4 h-4" />

@@ -76,17 +76,19 @@ export async function FeaturedCauses() {
         </div>
         <CarouselContent className="mt-6 mb-6 ml-4 mr-4">
           {featuredCauses.map((cause) => {
+            const percentFunded = cause.goal
+              ? Math.min(Math.round((cause.raised / cause.goal) * 100), 100)
+              : 0;
+
             return (
               <CarouselItem
                 key={cause.id}
-                className="pl-4 basis-[85%] sm:basis-[50%] md:basis-[33.33%]"
+                className="basis-[85%] sm:basis-[50%] md:basis-[33.33%]"
               >
-                <Link
-                  href={`/causes/${cause.id}`}
-                  className="group block h-full"
-                >
+                <Link href={`/causes/${cause.id}`} className="group block h-full">
                   <AnimatedCard>
-                    <Card className="overflow-hidden cursor-pointer transition hover:shadow-2xl shadow-lg h-full flex flex-col border border-gray-300 ">
+                    <Card className="overflow-hidden cursor-pointer transition hover:shadow-2xl shadow-lg h-[420px] flex flex-col border border-gray-300">
+                      {/* Image */}
                       <div className="aspect-video w-full overflow-hidden">
                         <img
                           src={cause.image || "/placeholder.svg"}
@@ -94,10 +96,12 @@ export async function FeaturedCauses() {
                           className="object-cover w-full h-full"
                         />
                       </div>
-                      <CardHeader className="flex flex-col flex-1 p-4 ">
+
+                      {/* Content */}
+                      <CardHeader className="flex flex-col flex-1 p-4">
                         <CardTitle>
-                          <H4>{cause.title}</H4>
-                          <P className="font-extralight">
+                          <H4 className="line-clamp-2">{cause.title}</H4>
+                          <P className="font-extralight truncate">
                             {cause.profiles?.full_name || "Unknown"}
                           </P>
                         </CardTitle>
@@ -105,18 +109,18 @@ export async function FeaturedCauses() {
                         <div className="flex justify-between items-center pt-2 text-xs">
                           <P>Raised</P>
                           <P>
-                            {cause.goal > 0
-                              ? Math.round((cause.raised / cause.goal) * 100)
-                              : 0}
-                            {cause.days_active} days active
+                            {percentFunded}% • {Number(cause.days_active || 0)}{" "}
+                            days left
                           </P>
                         </div>
                       </CardHeader>
+
+                      {/* Progress + Footer */}
                       <div className="mt-auto w-full">
                         <CardContent>
                           <div className="space-y-2">
                             <Progress
-                              value={(cause.raised / cause.goal) * 100}
+                              value={percentFunded}
                               className="h-2 bg-muted"
                             />
                           </div>
@@ -130,7 +134,11 @@ export async function FeaturedCauses() {
                               </P>
                             </span>
                             <span>
-                              <DonateButton />
+                              <DonateButton
+                                type="cause"
+                                id={cause.id}
+                                disableLink
+                              />
                             </span>
                           </div>
                         </CardFooter>
@@ -143,6 +151,7 @@ export async function FeaturedCauses() {
           })}
         </CarouselContent>
       </Carousel>
+
       {/* View All Causes Button */}
       <div className="flex justify-center mt-6">
         <Link href="/causes">

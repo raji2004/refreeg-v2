@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Logo } from "@/components/logo";
 // Import the useAdmin hook
 import { useAdmin } from "@/hooks/use-admin";
+import { MobileSidebar } from "@/components/mobile-sidebar";
 import { LayoutDashboard, ShieldAlert } from "lucide-react";
 import {
   DropdownMenu,
@@ -52,10 +53,11 @@ export function Header() {
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
   const [aboutUsOpen, setAboutUsOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="mx-12 flex h-16 items-center justify-between">
         <div className="flex items-center gap-6 md:gap-10">
           <Logo />
           <nav className="hidden gap-6 md:flex">
@@ -68,6 +70,16 @@ export function Header() {
               }`}
             >
               Causes
+            </Link>
+            <Link
+              href="/petitions"
+              className={`text-sm font-medium transition-colors hover:text-secondary ${
+                pathname === "/causes"
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              }`}
+            >
+              Petitions
             </Link>
             <Link
               href="/how-it-works"
@@ -168,11 +180,46 @@ export function Header() {
         </div>
         <div className="flex items-center gap-5">
           {/* <ThemeToggle /> */}
-          <Link href="/dashboard/causes/create">
+          <Link href="/dashboard/causes/create" className="hidden sm:block">
             <Button variant="outline" size="sm">
               List a Cause
             </Button>
           </Link>
+          <Link href="/dashboard/petitions/create" className="hidden sm:block">
+            <Button variant="outline" size="sm">
+              Create a Petition
+            </Button>
+          </Link>
+          {/* Mobile hamburger menu */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden bg-white hover:bg-gray-100"
+            onClick={() => setMobileSidebarOpen(true)}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </Button>
+          {/* Desktop dashboard link visible when logged in */}
+          {!isLoading && user && (
+            <Link href="/dashboard" className="hidden md:block">
+              <Button variant="ghost" size="sm">
+                Dashboard
+              </Button>
+            </Link>
+          )}
           {!isLoading && !user ? (
             <div className="flex items-center gap-2">
               <Link href="/auth/signin">
@@ -182,10 +229,26 @@ export function Header() {
               </Link>
             </div>
           ) : (
-            <UserNav />
+            <>
+              {/* Mobile: show hamburger user menu */}
+              <div className="md:hidden">
+                <UserNav />
+              </div>
+              {/* Desktop: show avatar only (dropdown inside) */}
+              <div className="hidden md:block">
+                <UserNav />
+              </div>
+            </>
           )}
         </div>
       </div>
+
+      {/* Mobile Sidebar */}
+      <MobileSidebar
+        isOpen={mobileSidebarOpen}
+        onClose={() => setMobileSidebarOpen(false)}
+        isDashboard={pathname.startsWith("/dashboard")}
+      />
     </header>
   );
 }

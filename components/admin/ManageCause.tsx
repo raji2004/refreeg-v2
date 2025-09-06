@@ -120,9 +120,10 @@ export default function ManageCauses() {
     const previewCause: CauseWithUser = {
       ...cause,
       user: (cause as CauseWithUser).user || {
-        name: cause.profiles?.name || "Anonymous",
-        email: "",
+        name: (cause as any).profiles?.full_name || "Anonymous",
+        email: (cause as any).profiles?.email || "",
         sub_account_code: "",
+        profile_photo: (cause as any).profiles?.profile_photo || null,
       },
       sections: (cause as CauseWithUser).sections || [],
       multimedia: (cause as CauseWithUser).multimedia || [],
@@ -206,7 +207,28 @@ export default function ManageCauses() {
                       <TableCell>{cause.category}</TableCell>
                       <TableCell>₦{cause.goal.toLocaleString()}</TableCell>
                       <TableCell>
-                        {cause.profiles?.name || "Anonymous"}
+                        <div className="flex items-center gap-3">
+                          {(cause as any).profiles?.profile_photo ? (
+                            <Image
+                              src={(cause as any).profiles.profile_photo}
+                              alt={(cause as any).profiles?.full_name || "User"}
+                              width={32}
+                              height={32}
+                              className="rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-xs font-medium text-gray-600">
+                                {((cause as any).profiles?.full_name || "A")
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <span className="font-medium">
+                            {(cause as any).profiles?.full_name || "Anonymous"}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -356,11 +378,32 @@ export default function ManageCauses() {
                       {previewDialog.cause.title}
                     </h1>
 
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>
-                        Created by{" "}
-                        {previewDialog.cause.user?.name || "Anonymous"}
-                      </span>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        {(previewDialog.cause.user as any)?.profile_photo ? (
+                          <Image
+                            src={
+                              (previewDialog.cause.user as any).profile_photo
+                            }
+                            alt={previewDialog.cause.user?.name || "User"}
+                            width={24}
+                            height={24}
+                            className="rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-xs font-medium text-gray-600">
+                              {(previewDialog.cause.user?.name || "A")
+                                .charAt(0)
+                                .toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <span>
+                          Created by{" "}
+                          {previewDialog.cause.user?.name || "Anonymous"}
+                        </span>
+                      </div>
                       <span>•</span>
                       <span>
                         {previewDialog.cause.created_at

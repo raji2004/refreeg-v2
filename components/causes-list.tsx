@@ -1,12 +1,3 @@
-import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PaginationButton } from "@/components/pagination-button";
@@ -19,7 +10,9 @@ import {
   AlertTriangle,
   PawPrint,
   Sparkles,
+  Briefcase,
 } from "lucide-react";
+import { ExpandableCard } from "./ExpandableCard";
 
 const mockCauses = [
   {
@@ -191,6 +184,11 @@ export async function CausesList({
       name: "Creative",
       icon: <Sparkles className="mr-1 h-4 w-4" />,
     },
+    {
+      id: "business",
+      name: "Business",
+      icon: <Briefcase className="mr-1 h-4 w-4" />,
+    },
   ];
 
   const causes = await listCauses({
@@ -223,55 +221,16 @@ export async function CausesList({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {paginatedCauses.map((cause) => {
-          const categoryData = categoriesWithIcons.find(
-            (cat) => cat.id === cause.category
-          );
-
-          return (
-            <Card key={cause.id} className="overflow-hidden">
-              <div className="aspect-video w-full overflow-hidden">
-                <img
-                  src={cause.image || "/placeholder.svg"}
-                  alt={cause.title}
-                  className="object-cover w-full h-full"
-                />
-              </div>
-              <CardHeader className="space-y-2 p-4">
-                <CardTitle className="line-clamp-1">{cause.title}</CardTitle>
-                {/* <CardDescription className="line-clamp-2">
-                  {cause.description}
-                </CardDescription> */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs bg-muted text-foreground px-2 py-1 rounded-full flex items-center capitalize">
-                    {categoryData?.icon}
-                    {categoryData?.name || cause.category}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">
-                      ₦{cause.raised.toLocaleString()}
-                    </span>
-                    <span className="text-muted-foreground">
-                      of ₦{cause.goal.toLocaleString()}
-                    </span>
-                  </div>
-                  <Progress value={(cause.raised / cause.goal) * 100} />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Link href={`/causes/${cause.id}`} className="w-full">
-                  <Button className="w-full">Donate Now</Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          );
-        })}
-      </div>
+      {/* 🔄 swap out old Shadcn cards */}
+      <ExpandableCard
+        items={paginatedCauses.map((cause) => ({
+          ...cause,
+          description: cause.description || "",
+          raised: cause.raised,
+          signatures: undefined,
+        }))}
+        type="cause"
+      />
 
       {totalPages > 1 && (
         <div className="flex justify-center pt-6">

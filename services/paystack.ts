@@ -4,14 +4,12 @@ import { getBaseURL } from "@/lib/utils";
 
 const PAYSTACK_KEY = process.env.NEXT_PUBLIC_PAYSTACK_KEY;
 
-
 // Check if API key exists
 if (!PAYSTACK_KEY) {
   console.warn(
     "WARNING: No Paystack API key found in environment variables. API calls will fail."
   );
 }
-
 
 const Paystack = {
   api: axios.create({
@@ -24,14 +22,16 @@ const Paystack = {
 
   initializeTransaction: async function (data: TransactionData) {
     try {
-      console.log('Initializing transaction with data:', data);
+      console.log("Initializing transaction with data:", data);
 
       // Validate required fields
       if (!data.amount) {
-        throw new Error('Missing required fields for transaction initialization');
+        throw new Error(
+          "Missing required fields for transaction initialization"
+        );
       }
-      const baseUrl = await getBaseURL()
-     console.log(data.isAnonymous)
+      const baseUrl = await getBaseURL();
+      console.log(data.isAnonymous);
       const requestData = {
         currency: "NGN",
         email: data.email,
@@ -51,9 +51,10 @@ const Paystack = {
         },
       };
 
-
-      const response = await this.api.post("/transaction/initialize", requestData);
-
+      const response = await this.api.post(
+        "/transaction/initialize",
+        requestData
+      );
 
       return response.data.data as {
         authorization_url: string;
@@ -61,16 +62,16 @@ const Paystack = {
         access_code: string;
       };
     } catch (error: any) {
-      console.error('Paystack initialization error:', {
+      console.error("Paystack initialization error:", {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
-        data: error.response?.data?.message
+        data: error.response?.data?.message,
       });
 
       throw new Error(
         error.response?.data?.message ||
-        'Failed to initialize payment transaction'
+          "Failed to initialize payment transaction"
       );
     }
   },
@@ -111,12 +112,9 @@ const Paystack = {
     bankCode: string
   ) {
     try {
-     
       const response = await this.api.get("/bank/resolve", {
         params: { account_number: accountNumber, bank_code: bankCode },
       });
-
-
 
       return response.data.data as {
         account_name: string;

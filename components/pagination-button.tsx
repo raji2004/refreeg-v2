@@ -1,24 +1,27 @@
-"use client"
+"use client";
 
-import { usePathname, useSearchParams, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PaginationButtonProps {
-  currentPage: number
-  totalPages: number
+  currentPage: number;
+  totalPages: number;
 }
 
-export function PaginationButton({ currentPage, totalPages }: PaginationButtonProps) {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const router = useRouter()
+export function PaginationButton({
+  currentPage,
+  totalPages,
+}: PaginationButtonProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const createPageURL = (pageNumber: number) => {
-    const params = new URLSearchParams(searchParams)
-    params.set("page", pageNumber.toString())
-    return `${pathname}?${params.toString()}`
-  }
+    const params = new URLSearchParams(searchParams);
+    params.set("page", pageNumber.toString());
+    return `${pathname}?${params.toString()}`;
+  };
 
   return (
     <div className="flex items-center gap-2">
@@ -44,6 +47,5 @@ export function PaginationButton({ currentPage, totalPages }: PaginationButtonPr
         <span className="sr-only">Next page</span>
       </Button>
     </div>
-  )
+  );
 }
-

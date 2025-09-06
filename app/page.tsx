@@ -6,24 +6,41 @@ import LaunchYourCauseInSeconds from "@/components/home/launchYourCauseInSeconds
 import { TrendingCauses } from "@/components/home/trendingNow";
 import WhyItStandsOut from "@/components/home/whyitStandsOut";
 import HowitWorksYT from "@/components/home/howitWorksYT";
+import { FeaturedPetitions } from "@/components/home/featured-petitions";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen mt-16 mx-6 md:mx-12">
+    <div className="flex flex-col min-h-screen mt-16 ">
       <Hero />
 
-      <LaunchYourCauseInSeconds />
+      <div className="mx-8">
+        <LaunchYourCauseInSeconds />
+      </div>
 
-      <TrendingCauses />
+      <div className="mx-8">
+        <TrendingCauses />
+      </div>
 
-      <WhyItStandsOut />
+      <div className="">
+        <WhyItStandsOut />
+      </div>
 
       {/* Featured Causes */}
-      <FeaturedCauses />
+      <div className="mx-8">
+        <FeaturedCauses />
+      </div>
 
-      <HowitWorksYT />
+      <div className="mx-8">
+        <FeaturedPetitions />
+      </div>
 
-      <FAQ />
+      <div className="">
+        <HowitWorksYT />
+      </div>
+
+      <div className="mx-8">
+        <FAQ />
+      </div>
     </div>
   );
 }

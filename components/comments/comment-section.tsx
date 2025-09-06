@@ -9,27 +9,29 @@ interface CommentsSectionProps {
   comments: Comment[];
   causeId: string;
   currentUserId?: string;
-  onCommentAdded: (newComment: Comment) => void;
-  onCommentDeleted: (commentId: string) => void;
+  onCommentAdded?: (newComment: Comment) => void;
+  onCommentDeleted?: (commentId: string) => void;
+  entityType?: "cause" | "petition";
 }
 
-export function CommentsSection({ 
-  comments, 
-  causeId, 
+export function CommentsSection({
+  comments,
+  causeId,
   currentUserId,
   onCommentAdded,
-  onCommentDeleted
+  onCommentDeleted,
+  entityType,
 }: CommentsSectionProps) {
   const [localComments, setLocalComments] = useState<Comment[]>(comments);
 
   const handleCommentAdded = async (newComment: Comment) => {
-    setLocalComments(prev => [newComment, ...prev]);
-    onCommentAdded(newComment);
+    setLocalComments((prev) => [newComment, ...prev]);
+    onCommentAdded?.(newComment);
   };
 
   const handleCommentDeleted = (deletedCommentId: string) => {
-    setLocalComments(prev => prev.filter(c => c.id !== deletedCommentId));
-    onCommentDeleted(deletedCommentId);
+    setLocalComments((prev) => prev.filter((c) => c.id !== deletedCommentId));
+    onCommentDeleted?.(deletedCommentId);
   };
 
   return (
@@ -37,16 +39,17 @@ export function CommentsSection({
       {currentUserId && (
         <div className="mb-6">
           <h3 className="text-lg font-semibold mb-3">Post a Comment</h3>
-          <CommentForm 
-            causeId={causeId} 
-            onCommentAdded={handleCommentAdded} 
+          <CommentForm
+            causeId={causeId}
+            onCommentAdded={handleCommentAdded}
+            entityType={entityType}
           />
         </div>
       )}
 
       <div>
         <h3 className="text-lg font-semibold mb-4">Recent Comments</h3>
-        
+
         {localComments.length > 0 ? (
           <div className="space-y-6">
             {localComments.map((comment) => (
@@ -56,6 +59,7 @@ export function CommentsSection({
                 causeId={causeId}
                 currentUserId={currentUserId}
                 onCommentDeleted={handleCommentDeleted}
+                entityType={entityType}
               />
             ))}
           </div>

@@ -1,20 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Share2,
-  MessageSquare,
-  Instagram,
-  Twitter,
-  Linkedin,
-} from "lucide-react";
-import {
-  FaWhatsapp,
-  FaInstagram,
-  FaTwitter,
-  FaLinkedin,
-  FaXing,
-} from "react-icons/fa";
+import { Share2 } from "lucide-react";
+import { FaWhatsapp, FaInstagram, FaTwitter, FaLinkedin } from "react-icons/fa";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -30,17 +18,40 @@ import { saveCauseShare } from "@/actions/cause-actions";
 interface ShareModalProps {
   url: string;
   title: string;
-  causeId: string;
+  entityId: string;
+  entityType: "cause" | "petition"; // 👈 required
 }
 
-export function ShareModal({ url, title, causeId }: ShareModalProps) {
+export function ShareModal({
+  url,
+  title,
+  entityId,
+  entityType,
+}: ShareModalProps) {
   const { toast } = useToast();
 
-  // Pre-built template for sharing
-  const shareMessage = `🙏 Please support my cause on RefreeG! Every little bit helps: ${url}`;
+  // ✅ entity-specific templates
+  const templates = {
+    cause: {
+      shareMessage: `🙏 Please support my cause on RefreeG! Every little bit helps: ${url}`,
+      dialogTitle: "Share this cause",
+      dialogDescription:
+        "Spread the word! Share this cause with your network using our pre-written message.",
+    },
+    petition: {
+      shareMessage: `🖊️ I just signed this petition on RefreeG. Join me in making a difference: ${url}`,
+      dialogTitle: "Share this petition",
+      dialogDescription:
+        "Help gather more support! Share this petition with your network using our pre-written message.",
+    },
+  } as const;
+
+  // ✅ ensure fallback
+  const { shareMessage, dialogTitle, dialogDescription } =
+    templates[entityType] || templates["cause"];
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(shareMessage); // Now copies the full message with template
+    navigator.clipboard.writeText(shareMessage);
     toast({
       title: "Copied!",
       description: "The share message has been copied to your clipboard.",
@@ -51,7 +62,6 @@ export function ShareModal({ url, title, causeId }: ShareModalProps) {
     let shareUrl = "";
     const encodedMessage = encodeURIComponent(shareMessage);
     const encodedUrl = encodeURIComponent(url);
-    const encodedTitle = encodeURIComponent(title);
 
     switch (platform) {
       case "whatsapp":
@@ -64,18 +74,17 @@ export function ShareModal({ url, title, causeId }: ShareModalProps) {
         shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
         break;
       case "instagram":
-        // Instagram doesn't support direct sharing via URL
         navigator.clipboard.writeText(shareMessage);
         toast({
-          title: "Instagram sharing",
+          title: "Instagram",
           description:
-            "Share message copied! You can now paste it on Instagram.",
+            "Message copied! Paste it into Instagram manually to share.",
         });
         return;
     }
 
     try {
-      await saveCauseShare(causeId);
+      await saveCauseShare(entityId);
       window.open(shareUrl, "_blank");
     } catch (error) {
       console.error("Error saving share:", error);
@@ -97,10 +106,8 @@ export function ShareModal({ url, title, causeId }: ShareModalProps) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Share this cause</DialogTitle>
-          <DialogDescription>
-            Share this cause with your network using our pre-written message
-          </DialogDescription>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
         <div className="flex justify-center gap-6 py-4">
           <Button

@@ -1,3 +1,5 @@
+import path from "path";
+
 let userConfig = undefined;
 try {
   userConfig = await import("./v0-user-next.config");
@@ -30,27 +32,47 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
     serverActions: {
-      bodySizeLimit: "100mb", // Adjust the body size limit as needed
+      bodySizeLimit: "100mb",
     },
+  },
+  webpack(config, { dev, isServer }) {
+    // Aceternity UI may import CSS that requires MiniCssExtractPlugin in prod
+    if (!dev && !isServer) {
+      const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+      config.plugins.push(
+        new MiniCssExtractPlugin({
+          filename: "static/css/[name].[contenthash].css",
+          chunkFilename: "static/css/[id].[contenthash].css",
+        })
+      );
+
+      // Make sure CSS loader uses the plugin
+      const cssRule = config.module.rules.find(
+        (r) => r.test && r.test.toString().includes(".css")
+      );
+      if (cssRule) {
+        cssRule.use = [
+          MiniCssExtractPlugin.loader,
+          "css-loader",
+          "postcss-loader",
+        ];
+      }
+    }
+
+    return config;
   },
 };
 
 mergeConfig(nextConfig, userConfig);
 
 function mergeConfig(nextConfig, userConfig) {
-  if (!userConfig) {
-    return;
-  }
-
+  if (!userConfig) return;
   for (const key in userConfig) {
     if (
       typeof nextConfig[key] === "object" &&
       !Array.isArray(nextConfig[key])
     ) {
-      nextConfig[key] = {
-        ...nextConfig[key],
-        ...userConfig[key],
-      };
+      nextConfig[key] = { ...nextConfig[key], ...userConfig[key] };
     } else {
       nextConfig[key] = userConfig[key];
     }

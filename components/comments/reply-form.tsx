@@ -4,14 +4,16 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-export function ReplyForm({ 
-  causeId, 
+export function ReplyForm({
+  causeId,
   parentId,
-  onReplyAdded 
-}: { 
+  onReplyAdded,
+  entityType,
+}: {
   causeId: string;
   parentId: string;
   onReplyAdded: (reply: any) => void;
+  entityType?: "cause" | "petition";
 }) {
   const [content, setContent] = useState("");
   const [isReplying, setIsReplying] = useState(false);
@@ -23,20 +25,21 @@ export function ReplyForm({
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/comments', {
-        method: 'POST',
+      const response = await fetch("/api/comments", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           causeId,
           parentId,
-          content
+          content,
+          entityType,
         }),
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to post reply');
+        throw new Error("Failed to post reply");
       }
 
       const newReply = await response.json();

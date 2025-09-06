@@ -1,30 +1,33 @@
-"use client"
+"use client";
 
-import { useRouter, usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { useRouter, usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface Category {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface CausesFilterProps {
-  categories: Category[]
-  selectedCategory: string
+  categories: Category[];
+  selectedCategory: string;
 }
 
-export function CausesFilter({ categories, selectedCategory }: CausesFilterProps) {
-  const router = useRouter()
-  const pathname = usePathname()
+export function CausesFilter({
+  categories,
+  selectedCategory,
+}: CausesFilterProps) {
+  const router = useRouter();
+  const pathname = usePathname();
 
   const handleCategoryChange = (categoryId: string) => {
-    const params = new URLSearchParams()
+    const params = new URLSearchParams();
     if (categoryId !== "all") {
-      params.set("category", categoryId)
+      params.set("category", categoryId);
     }
-    router.push(`${pathname}?${params.toString()}`)
-  }
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   return (
     <div className="relative">
@@ -44,6 +47,5 @@ export function CausesFilter({ categories, selectedCategory }: CausesFilterProps
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
     </div>
-  )
+  );
 }
-

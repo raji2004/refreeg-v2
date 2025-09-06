@@ -1,22 +1,31 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Donation } from "@/types"
-
-
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Donation } from "@/types";
 
 interface DonorsListProps {
-  donors: Donation[]
+  donors: Donation[];
 }
 
 export function DonorsList({ donors }: DonorsListProps) {
   // Sort donors by date (most recent first)
-  const sortedDonors = [...donors].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  const sortedDonors = [...donors].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Recent Donors</h2>
       {sortedDonors.length === 0 ? (
-        <p className="text-muted-foreground">No donations yet. Be the first to donate!</p>
+        <p className="text-muted-foreground">
+          No donations yet. Be the first to donate!
+        </p>
       ) : (
         <div className="space-y-4">
           {sortedDonors.map((donor) => (
@@ -46,13 +55,17 @@ export function DonorsList({ donors }: DonorsListProps) {
                     </CardDescription>
                   </div>
                   <div className="ml-auto">
-                    <span className="font-bold">₦{donor.amount.toLocaleString()}</span>
+                    <span className="font-bold">
+                      ₦{donor.amount.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               </CardHeader>
               {donor.message && (
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">{donor.message}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {donor.message}
+                  </p>
                 </CardContent>
               )}
             </Card>
@@ -60,6 +73,5 @@ export function DonorsList({ donors }: DonorsListProps) {
         </div>
       )}
     </div>
-  )
+  );
 }
-

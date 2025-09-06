@@ -23,6 +23,7 @@ export function UserNav() {
   const [profile, setProfile] = useState<any>(null);
   // Add the useAdmin hook to check for admin/manager access
   const { isAdminOrManager, isLoading: adminLoading } = useAdmin(user?.id);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -54,12 +55,18 @@ export function UserNav() {
 
   return (
     <div className=" pt-1.5">
-
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-9 w-9 rounded-full border-[#150aec] border">
+          <Button
+            variant="ghost"
+            className="relative h-9 w-9 rounded-full border-[#150aec] border"
+            aria-label="User menu"
+          >
             <Avatar className="h-9 w-9">
-              <AvatarImage src={profile?.profile_photo || user.user_metadata?.avatar_url} alt={user.email || ""} />
+              <AvatarImage
+                src={profile?.profile_photo || user.user_metadata?.avatar_url}
+                alt={user.email || ""}
+              />
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
           </Button>
@@ -76,14 +83,10 @@ export function UserNav() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuGroup>
+          {/* Mobile-only dashboard link inside menu */}
+          <div className="md:hidden">
             <DropdownMenuItem asChild>
-              <Link
-                href="/dashboard"
-                className="hover:bg-[#0070E0] focus:bg-[#0070E0] transition-colors"
-              >
-                Dashboard
-              </Link>
+              <Link href="/dashboard">Dashboard</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link
@@ -144,6 +147,6 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </div> 
-  )
+    </div>
+  );
 }

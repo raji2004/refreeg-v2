@@ -145,7 +145,10 @@ const Hero = () => {
     >
       {/* TEXT */}
       <div className="flex flex-col gap-4 max-w-[925px] w-full justify-center items-center text-center">
-        <motion.div className="flex gap-2 items-center" {...slideUp(0.1)}>
+        <motion.div
+          className="flex gap-2 items-center py-2 px-3 bg-[#FAFAFA] border border-[#E8E8E8] rounded-3xl"
+          {...slideUp(0.1)}
+        >
           <Image src="/Users.svg" alt="Users icon" width={20} height={20} />
           <P>Join thousands already fundraising on RefreeG</P>
         </motion.div>
@@ -162,7 +165,11 @@ const Hero = () => {
         </motion.div>
         <div className="flex gap-4">
           <motion.div {...slideFrom(-20, 0.4)}>
-            <Button asChild className="px-3.5 py-2 bg-blue-700 text-white">
+            <Button
+              asChild
+              className="px-3.5 py-2 text-white"
+              variant="secondary"
+            >
               <Link href="/causes">Explore Causes</Link>
             </Button>
           </motion.div>

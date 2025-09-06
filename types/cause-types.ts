@@ -20,6 +20,7 @@ export interface Cause {
   profiles?: {
     full_name: string;
     email: string;
+    profile_photo: string | null;
   };
 }
 export interface subHeadings {
@@ -47,6 +48,7 @@ export interface CauseWithUser extends Cause {
     name: string;
     email: string;
     sub_account_code?: string;
+    profile_photo?: string | null;
   };
 }
 
