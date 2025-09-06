@@ -106,15 +106,22 @@ export default function MaticDonationButton({
         console.log("Found cause, fetching profile for user:", cause.user_id);
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("polygon_wallet")
+          .select("polygon_wallet, crypto_wallets")
           .eq("id", cause.user_id)
           .single();
+
+        console.log("Profile data:", profile);
+        console.log("Profile error:", profileError);
 
         if (profileError) throw profileError;
         if (!profile) throw new Error("Creator not found");
 
-        console.log("Recipient wallet address:", profile.polygon_wallet);
-        setRecipientAddress(profile.polygon_wallet || null);
+        // Try new crypto_wallets structure first, fallback to old polygon_wallet
+        const walletAddress = profile.crypto_wallets?.polygon || profile.polygon_wallet;
+        console.log("Crypto wallets:", profile.crypto_wallets);
+        console.log("Polygon wallet:", profile.polygon_wallet);
+        console.log("Final wallet address:", walletAddress);
+        setRecipientAddress(walletAddress || null);
       } catch (err) {
         console.error("Error fetching recipient address:", err);
         setError("Failed to load recipient wallet information");

@@ -9,6 +9,10 @@ import { toast } from "@/components/ui/use-toast"
 import { getCurrentUser } from "@/actions/auth-actions"
 import { updateProfile } from "@/actions"
 import { sendLoginNotificationEmail } from "@/services/mail"
+
+// Create a single client instance outside the hook
+const supabase = createClient()
+
 // Helper to extract a simple device/OS string from user agent
 function getDeviceInfo() {
   if (typeof window === "undefined") return "Unknown Device";
@@ -20,11 +24,11 @@ function getDeviceInfo() {
   if (/Linux/.test(ua)) return "Linux";
   return "Other";
 }
+
 export function useAuth() {
   const [user, setUser] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
     const getUser = async () => {

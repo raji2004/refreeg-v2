@@ -16,10 +16,11 @@ import {
   getProfile,
   listDonationsForCause,
 } from "@/actions";
+import { getCryptoDonationsForCause } from "@/actions/crypto-donation-actions";
 import { notFound } from "next/navigation";
 import { ShareModal } from "@/components/share-modal";
 import { getBaseURL } from "@/lib/utils";
-import SolanaDonationButtonWrapper from "@/components/crypto-details/SolanaDonationButtonWrapper";
+import { CryptoDonationSection } from "@/components/crypto-details/CryptoDonationSection";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertCircle,
@@ -46,12 +47,35 @@ export default async function CauseDetailPage({
   }
 
   const donors = await listDonationsForCause(cause.id);
+  const cryptoDonations = await getCryptoDonationsForCause(cause.id);
   const comments = await listCommentsForCause(cause.id);
   const formattedDate = new Date(cause.created_at).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+
+  // Combine regular and crypto donations for the donors list
+  const allDonations = [
+    ...donors.map(d => ({
+      id: d.id,
+      name: d.name,
+      amount: d.amount,
+      created_at: d.created_at,
+      message: d.message,
+      type: 'regular' as const
+    })),
+    ...cryptoDonations.map(cd => ({
+      id: cd.id,
+      name: cd.user_id === "00000000-0000-0000-0000-000000000000" 
+        ? `Anonymous Crypto Donor (${cd.currency})` 
+        : `Crypto Donor (${cd.currency})`,
+      amount: cd.amount_in_naira,
+      created_at: cd.created_at,
+      message: `Donated ${cd.amount_in_crypto} ${cd.currency} via ${cd.wallet_type}`,
+      type: 'crypto' as const
+    }))
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const percentRaised = Math.min(
     Math.round((cause.raised / cause.goal) * 100),
@@ -68,7 +92,11 @@ export default async function CauseDetailPage({
 
   const baseUrl = getBaseURL();
   const creatorProfile = await getProfile(cause.user_id);
-  const hasCreatorWallet = !!creatorProfile?.solana_wallet;
+  // Check if creator has any crypto wallet using the new simplified structure
+  const hasCreatorWallet = creatorProfile?.crypto_wallets && (
+    (creatorProfile.crypto_wallets.metamask_address && creatorProfile.crypto_wallets.metamask_address !== '') ||
+    (creatorProfile.crypto_wallets.solana_address && creatorProfile.crypto_wallets.solana_address !== '')
+  );
 
   let socialMedia = {
     twitter: "",
@@ -233,7 +261,7 @@ export default async function CauseDetailPage({
                   </AlertDescription>
                 </Alert>
               </div>
-              <DonorsList donors={donors} />
+              <DonorsList donors={allDonations as any} />
             </TabsContent>
             <CommentsTabWrapper
               initialComments={comments}
@@ -270,7 +298,7 @@ export default async function CauseDetailPage({
               <div className="text-sm">
                 <div className="flex justify-between py-1">
                   <span>Total donors</span>
-                  <span className="font-medium">{donors.length}</span>
+                  <span className="font-medium">{allDonations.length}</span>
                 </div>
                 <div className="flex justify-between py-1 border-t">
                   <span>Days active</span>
@@ -298,14 +326,15 @@ export default async function CauseDetailPage({
             <CardContent className="space-y-4">
               {hasCreatorWallet ? (
                 <div className="space-y-4">
-                  <SolanaDonationButtonWrapper causeId={cause.id} />
+                  <CryptoDonationSection causeId={cause.id} />
+                  
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
                       <span className="bg-background px-2 text-muted-foreground">
-                        Or donate with
+                        Or donate with traditional payment
                       </span>
                     </div>
                     <DonationForm
