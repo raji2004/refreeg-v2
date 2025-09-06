@@ -25,6 +25,10 @@ export interface Profile {
   account_type?: "individual" | "organization";
   bio: string | null;
   solana_wallet?: string | null;
+  crypto_wallets?: {
+    metamask_address?: string | null;
+    solana_address?: string | null;
+  } | null;
   social_media?: {
     twitter?: string | null;
     facebook?: string | null;

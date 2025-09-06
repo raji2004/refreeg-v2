@@ -19,7 +19,8 @@ import {
 import { notFound } from "next/navigation";
 import { ShareModal } from "@/components/share-modal";
 import { getBaseURL } from "@/lib/utils";
-import SolanaDonationButtonWrapper from "@/components/crypto-details/SolanaDonationButtonWrapper";
+import { CryptoDonationSection } from "@/components/crypto-details/CryptoDonationSection";
+import { getCryptoDonationsForCause } from "@/actions/crypto-donation-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertCircle,
@@ -46,6 +47,7 @@ export default async function CauseDetailPage({
   }
 
   const donors = await listDonationsForCause(cause.id);
+  const cryptoDonations = await getCryptoDonationsForCause(cause.id);
   const comments = await listCommentsForCause(cause.id);
   const formattedDate = new Date(cause.created_at).toLocaleDateString("en-US", {
     year: "numeric",
@@ -68,7 +70,7 @@ export default async function CauseDetailPage({
 
   const baseUrl = getBaseURL();
   const creatorProfile = await getProfile(cause.user_id);
-  const hasCreatorWallet = !!creatorProfile?.solana_wallet;
+  const hasCreatorWallet = !!(creatorProfile?.crypto_wallets?.metamask_address || creatorProfile?.crypto_wallets?.solana_address);
 
   let socialMedia = {
     twitter: "",
@@ -233,7 +235,13 @@ export default async function CauseDetailPage({
                   </AlertDescription>
                 </Alert>
               </div>
-              <DonorsList donors={donors} />
+              <DonorsList donors={[...donors, ...cryptoDonations.map((crypto: any) => ({
+                id: crypto.id,
+                name: crypto.user_id === "00000000-0000-0000-0000-000000000000" ? "Anonymous Crypto Donor" : "Crypto Donor",
+                amount: crypto.amount_in_naira,
+                message: `Donated ${crypto.amount_in_sol} ${crypto.currency} via ${crypto.wallet_type}`,
+                created_at: crypto.created_at,
+              }))]} />
             </TabsContent>
             <CommentsTabWrapper
               initialComments={comments}
@@ -270,7 +278,7 @@ export default async function CauseDetailPage({
               <div className="text-sm">
                 <div className="flex justify-between py-1">
                   <span>Total donors</span>
-                  <span className="font-medium">{donors.length}</span>
+                  <span className="font-medium">{donors.length + cryptoDonations.length}</span>
                 </div>
                 <div className="flex justify-between py-1 border-t">
                   <span>Days active</span>
@@ -298,7 +306,11 @@ export default async function CauseDetailPage({
             <CardContent className="space-y-4">
               {hasCreatorWallet ? (
                 <div className="space-y-4">
-                  <SolanaDonationButtonWrapper causeId={cause.id} />
+                  <CryptoDonationSection 
+                    causeId={cause.id} 
+                    recipientAddress={creatorProfile?.crypto_wallets?.metamask_address || creatorProfile?.crypto_wallets?.solana_address || ""}
+                    onDonationSuccess={() => window.location.reload()}
+                  />
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                       <span className="w-full border-t" />
