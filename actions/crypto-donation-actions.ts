@@ -18,15 +18,20 @@ export interface CryptoDonationData {
 
 export async function recordCryptoDonation(donationData: CryptoDonationData) {
   try {
+    console.log("Recording crypto donation with data:", donationData);
     const supabase = await createClient();
     
     // Get the authenticated user server-side
     const { data: { user } } = await supabase.auth.getUser();
+    console.log("Authenticated user:", user?.id || "No user");
     
-    // Insert crypto donation record with idempotency
+    // For now, use null user_id for anonymous donations
+    const userId = user?.id || null;
+    
+    // Insert crypto donation record
     const { data, error: cryptoError } = await supabase
       .from("crypto_donations")
-      .upsert([
+      .insert([
         {
           cause_id: donationData.causeId,
           tx_signature: donationData.txHash,
@@ -34,19 +39,25 @@ export async function recordCryptoDonation(donationData: CryptoDonationData) {
           amount_in_naira: donationData.amountInNaira,
           wallet_address: donationData.donorWalletAddress,
           recipient_address: donationData.recipientAddress,
-          user_id: user?.id ?? "00000000-0000-0000-0000-000000000000",
+          user_id: userId,
           payment_method: donationData.currency,
           status: "pending",
           network: donationData.network,
           currency: donationData.currency,
           wallet_type: donationData.walletType,
         },
-      ], { onConflict: "tx_signature" })
+      ])
       .select();
 
     if (cryptoError) {
       console.error("Error recording crypto donation:", cryptoError);
-      throw new Error("Failed to record crypto donation");
+      console.error("Crypto error details:", {
+        message: cryptoError.message,
+        code: cryptoError.code,
+        details: cryptoError.details,
+        hint: cryptoError.hint
+      });
+      return { success: false, error: cryptoError.message };
     }
 
 

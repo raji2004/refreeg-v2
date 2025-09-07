@@ -4,8 +4,9 @@ import { recordCryptoDonation, confirmCryptoDonation } from "@/actions/crypto-do
 
 // Verify and record a crypto donation
 export async function POST(request: NextRequest) {
+  let body;
   try {
-    const body = await request.json();
+    body = await request.json();
     const { txHash, network, causeId, expectedRecipient, expectedAmount } = body;
 
     if (!txHash || !network || !causeId || !expectedRecipient || !expectedAmount) {
@@ -62,8 +63,16 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error("Error verifying crypto donation:", error);
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      body: body || "Failed to parse body"
+    });
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error"
+      },
       { status: 500 }
     );
   }
