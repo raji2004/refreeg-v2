@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { recordCryptoDonation, confirmCryptoDonation } from "@/actions/crypto-donation-actions";
+import { getTokensForNetwork } from "@/lib/tokens";
 
 // Verify and record a crypto donation
 export async function POST(request: NextRequest) {
@@ -94,14 +95,19 @@ async function verifyTransactionOnChain(
       };
     }
 
+    // Get the correct exchange rate for the network
+    const tokens = getTokensForNetwork(network);
+    const nativeToken = tokens.find(token => token.address === "0x0000000000000000000000000000000000000000");
+    const exchangeRate = nativeToken?.exchangeRate || 1500; // Fallback to 1500 if not found
+
     await new Promise(resolve => setTimeout(resolve, 1000));
     return {
       valid: true,
       amount: expectedAmount,
-      amountInNaira: expectedAmount * 1500,
+      amountInNaira: expectedAmount * exchangeRate,
       from: "0x1234567890123456789012345678901234567890",
       to: expectedRecipient,
-      currency: network === "solana" ? "SOL" : "ETH",
+      currency: nativeToken?.symbol || (network === "solana" ? "SOL" : "ETH"),
       walletType: network === "solana" ? "phantom" : "metamask",
     };
   } catch (error) {
