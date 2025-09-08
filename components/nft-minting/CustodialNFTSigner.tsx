@@ -7,20 +7,75 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle, ExternalLink, Wallet } from "lucide-react";
 
+// Helper functions for explorer URLs
+const getExplorerUrl = (network: string, type: 'tx' | 'address', hash: string): string => {
+  const explorers = {
+    polygon: 'https://polygonscan.com',
+    ethereum: 'https://etherscan.io',
+    bsc: 'https://bscscan.com',
+    arbitrum: 'https://arbiscan.io',
+    optimism: 'https://optimistic.etherscan.io',
+    base: 'https://basescan.org',
+    avalanche: 'https://snowtrace.io',
+    solana: 'https://explorer.solana.com'
+  };
+  
+  const baseUrl = explorers[network as keyof typeof explorers] || explorers.polygon;
+  return `${baseUrl}/${type}/${hash}`;
+};
+
+const getExplorerName = (network: string): string => {
+  const names = {
+    polygon: 'PolygonScan',
+    ethereum: 'Etherscan',
+    bsc: 'BSCScan',
+    arbitrum: 'Arbiscan',
+    optimism: 'Optimism Explorer',
+    base: 'BaseScan',
+    avalanche: 'Snowtrace',
+    solana: 'Solana Explorer'
+  };
+  
+  return names[network as keyof typeof names] || 'Explorer';
+};
+
+const getOpenSeaUrl = (network: string, contractAddress: string, tokenId: string): string | null => {
+  if (network === 'solana') return null; // Solana doesn't use OpenSea
+  
+  const slugs = {
+    polygon: 'matic',
+    ethereum: 'ethereum',
+    bsc: 'bsc',
+    arbitrum: 'arbitrum',
+    optimism: 'optimism',
+    base: 'base',
+    avalanche: 'avalanche'
+  };
+  
+  const slug = slugs[network as keyof typeof slugs];
+  if (!slug) return null;
+  
+  return `https://opensea.io/assets/${slug}/${contractAddress}/${tokenId}`;
+};
+
 interface CustodialNFTSignerProps {
   petitionId: string;
   petitionTitle: string;
   onNFTMinted?: (tokenId: string, txHash: string) => void;
+  network?: string;
+  contractAddress?: string;
 }
 
 export function CustodialNFTSigner({ 
   petitionId, 
   petitionTitle,
-  onNFTMinted 
+  onNFTMinted,
+  network = 'polygon',
+  contractAddress = process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS || '0x6c52c4bc5c182bae9228ffe203cc16132764f1de'
 }: CustodialNFTSignerProps) {
   const [message, setMessage] = useState("");
   const [isMinting, setIsMinting] = useState(false);
-  const [mintedNFT, setMintedNFT] = useState<{ tokenId: string; txHash: string } | null>(null);
+  const [mintedNFT, setMintedNFT] = useState<{ tokenId: string; txHash: string; network?: string; contractAddress?: string } | null>(null);
   const { toast } = useToast();
 
   const handleMintNFT = async () => {
@@ -43,7 +98,6 @@ export function CustodialNFTSigner({
         },
         body: JSON.stringify({
           petitionId,
-          signerAddress: "custodial-user", // We'll use a placeholder for custodial users
           message: message.trim()
         })
       });
@@ -56,7 +110,9 @@ export function CustodialNFTSigner({
 
       setMintedNFT({
         tokenId: result.signature.tokenId,
-        txHash: result.signature.txHash
+        txHash: result.signature.txHash,
+        network: result.signature.network || network,
+        contractAddress: result.signature.contractAddress || contractAddress
       });
 
       toast({
@@ -108,15 +164,23 @@ export function CustodialNFTSigner({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.open(`https://polygonscan.com/tx/${mintedNFT.txHash}`, '_blank')}
+              onClick={() => {
+                const explorerUrl = getExplorerUrl(mintedNFT.network || network, 'tx', mintedNFT.txHash);
+                window.open(explorerUrl, '_blank', 'noopener,noreferrer');
+              }}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
-              View on PolygonScan
+              View on {getExplorerName(mintedNFT.network || network)}
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.open(`https://opensea.io/assets/matic/0x96b7cbfB002bc9c30c5BF28C18821F60FAfF595b/${mintedNFT.tokenId}`, '_blank')}
+              onClick={() => {
+                const openseaUrl = getOpenSeaUrl(mintedNFT.network || network, mintedNFT.contractAddress || contractAddress, mintedNFT.tokenId);
+                if (openseaUrl) {
+                  window.open(openseaUrl, '_blank', 'noopener,noreferrer');
+                }
+              }}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               View on OpenSea
@@ -176,7 +240,7 @@ export function CustodialNFTSigner({
 
         <div className="text-xs text-gray-500 text-center">
           <p>This will create a unique NFT on Polygon blockchain using our custodial wallet</p>
-          <p>Contract: <span className="font-mono">0x96b7cbfB002bc9c30c5BF28C18821F60FAfF595b</span></p>
+          <p>Contract: <span className="font-mono">{contractAddress}</span></p>
         </div>
       </CardContent>
     </Card>

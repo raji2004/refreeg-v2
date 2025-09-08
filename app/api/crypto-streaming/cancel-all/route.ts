@@ -1,7 +1,30 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  // Check for admin secret header
+  const adminSecret = request.headers.get('x-admin-secret');
+  const expectedSecret = process.env.ADMIN_CANCEL_ALL_SECRET;
+  
+  if (!expectedSecret) {
+    console.error('ADMIN_CANCEL_ALL_SECRET environment variable not set');
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
+  
+  if (!adminSecret) {
+    console.warn('Unauthorized attempt to cancel all streams - missing secret header');
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  
+  // Timing-safe comparison
+  const isValidSecret = adminSecret.length === expectedSecret.length && 
+    adminSecret.split('').every((char, i) => char === expectedSecret[i]);
+    
+  if (!isValidSecret) {
+    console.warn('Unauthorized attempt to cancel all streams - invalid secret');
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     const supabase = await createClient();
     

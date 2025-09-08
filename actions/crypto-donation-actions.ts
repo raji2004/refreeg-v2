@@ -35,7 +35,7 @@ export async function recordCryptoDonation(donationData: CryptoDonationData) {
         {
           cause_id: donationData.causeId,
           tx_signature: donationData.txHash,
-          amount_in_sol: donationData.amountInCrypto,
+          amount_in_crypto: donationData.amountInCrypto,
           amount_in_naira: donationData.amountInNaira,
           wallet_address: donationData.donorWalletAddress,
           recipient_address: donationData.recipientAddress,
@@ -50,31 +50,20 @@ export async function recordCryptoDonation(donationData: CryptoDonationData) {
       .select();
 
     if (cryptoError) {
-      console.error("Error recording crypto donation:", cryptoError);
-      console.error("Crypto error details:", {
-        message: cryptoError.message,
-        code: cryptoError.code,
-        details: cryptoError.details,
-        hint: cryptoError.hint
-      });
-      return { success: false, error: cryptoError.message };
-    }
-
-
-    try {
-      const matchingResult = await processMatchingForDonation(
-        donationData.causeId,
-        data[0].id,
-        'crypto_donation',
-        donationData.amountInNaira
-      );
-      
-      if (matchingResult.success && matchingResult.matched_amount > 0) {
-        console.log(`Crypto donation matched! Added ${matchingResult.matched_amount} to cause`);
+      console.error("Error recording crypto donation:", cryptoError.message);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("Crypto error details:", {
+          message: cryptoError.message,
+          code: cryptoError.code,
+          details: cryptoError.details,
+          hint: cryptoError.hint
+        });
       }
-    } catch (matchingError) {
-      console.error("Error processing matching for crypto donation:", matchingError);
+      return { success: false, error: "Failed to record crypto donation" };
     }
+
+
+    // Matching will be processed during confirmation, not during recording
 
     return { success: true, data };
   } catch (error) {
@@ -83,15 +72,17 @@ export async function recordCryptoDonation(donationData: CryptoDonationData) {
   }
 }
 
-export async function confirmCryptoDonation(txHash: string) {
+export async function confirmCryptoDonation(txHash: string, network: string) {
   try {
     const supabase = await createClient();
     
-    // Update donation status to completed
+    // Update donation status to completed (only if currently pending)
     const { data: donation, error: updateError } = await supabase
       .from("crypto_donations")
       .update({ status: "completed" })
       .eq("tx_signature", txHash)
+      .eq("network", network)
+      .eq("status", "pending")
       .select()
       .single();
 
@@ -100,6 +91,7 @@ export async function confirmCryptoDonation(txHash: string) {
       throw new Error("Failed to confirm crypto donation");
     }
 
+    // Only process if a row was actually updated (idempotent)
     if (donation) {
       // Now increment the cause's raised amount
       const { error: incrementError } = await supabase.rpc("increment_cause_raised", {
@@ -112,21 +104,7 @@ export async function confirmCryptoDonation(txHash: string) {
         throw new Error("Failed to update cause progress");
       }
 
-      // Process matching for this confirmed crypto donation
-      try {
-        const matchingResult = await processMatchingForDonation(
-          donation.cause_id,
-          donation.id,
-          'crypto_donation',
-          donation.amount_in_naira
-        );
-        
-        if (matchingResult.success && matchingResult.matched_amount > 0) {
-          console.log(`Crypto donation matched! Added ${matchingResult.matched_amount} to cause`);
-        }
-      } catch (matchingError) {
-        console.error("Error processing matching for crypto donation:", matchingError);
-      }
+      // Matching already processed during recording, no need to duplicate
     }
 
     return { success: true, data: donation };

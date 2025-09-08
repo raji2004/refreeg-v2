@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getLiveCryptoStreamingStatus } from "@/actions/crypto-streaming-actions";
+import { formatCurrency } from "@/lib/utils";
 
 interface LiveCryptoStreamingCounterProps {
   causeId: string;
@@ -16,15 +17,13 @@ export function LiveCryptoStreamingCounter({ causeId }: LiveCryptoStreamingCount
   const [cryptoCurrency, setCryptoCurrency] = useState("");
   const [accumulatedNaira, setAccumulatedNaira] = useState(0); // Accumulated Naira changes
   const [lastNairaUpdate, setLastNairaUpdate] = useState<Date | null>(null); // Last time Naira was updated
+  
+  // Refs to avoid stale closures
+  const accumulatedNairaRef = useRef(0);
+  const lastNairaUpdateRef = useRef<Date | null>(null);
+  const targetAmountRef = useRef(0);
+  const isAnimatingRef = useRef(false);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
 
   const formatCryptoAmount = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -51,22 +50,28 @@ export function LiveCryptoStreamingCounter({ causeId }: LiveCryptoStreamingCount
           const newStreamRate = status.current_crypto_stream_rate_per_second;
           const newCryptoCurrency = status.crypto_currency || "CRYPTO";
           
-          if (newTargetAmount !== targetAmount) {
+          // Update refs
+          targetAmountRef.current = newTargetAmount;
+          
+          if (newTargetAmount !== targetAmountRef.current) {
             // Calculate the Naira equivalent of the crypto change
-            const cryptoChange = newTargetAmount - targetAmount;
+            const cryptoChange = newTargetAmount - targetAmountRef.current;
             const nairaChange = cryptoChange * 302.5; // Conversion rate
             
             // Accumulate the Naira change
-            const newAccumulatedNaira = accumulatedNaira + nairaChange;
+            const newAccumulatedNaira = accumulatedNairaRef.current + nairaChange;
+            accumulatedNairaRef.current = newAccumulatedNaira;
             
             // Check if 1 hour has passed since last Naira update
             const now = new Date();
             const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
-            const shouldUpdateNaira = !lastNairaUpdate || lastNairaUpdate < oneHourAgo;
+            const shouldUpdateNaira = !lastNairaUpdateRef.current || lastNairaUpdateRef.current < oneHourAgo;
             
             // Always update crypto amounts, but only update Naira display every hour
             if (shouldUpdateNaira) {
-              setAccumulatedNaira(0); // Reset accumulator
+              accumulatedNairaRef.current = 0; // Reset accumulator
+              lastNairaUpdateRef.current = now;
+              setAccumulatedNaira(0);
               setLastNairaUpdate(now);
               setTargetAmount(newTargetAmount);
               setStreamRate(newStreamRate);
@@ -82,6 +87,10 @@ export function LiveCryptoStreamingCounter({ causeId }: LiveCryptoStreamingCount
               setStreamRate(newStreamRate);
               setCryptoCurrency(newCryptoCurrency);
             }
+          } else {
+            // Update stream rate even if amount hasn't changed
+            setStreamRate(newStreamRate);
+            setCryptoCurrency(newCryptoCurrency);
           }
         }
       } catch (error) {
@@ -97,6 +106,9 @@ export function LiveCryptoStreamingCounter({ causeId }: LiveCryptoStreamingCount
   }, [causeId, targetAmount]);
 
   const animateToAmount = (target: number) => {
+    if (isAnimatingRef.current) return; // Prevent overlapping animations
+    
+    isAnimatingRef.current = true;
     setIsAnimating(true);
     const startAmount = currentAmount;
     const difference = target - startAmount;
@@ -114,6 +126,7 @@ export function LiveCryptoStreamingCounter({ causeId }: LiveCryptoStreamingCount
       if (step >= steps) {
         setCurrentAmount(target);
         clearInterval(timer);
+        isAnimatingRef.current = false;
         setIsAnimating(false);
       }
     }, stepDuration);
@@ -140,7 +153,7 @@ export function LiveCryptoStreamingCounter({ causeId }: LiveCryptoStreamingCount
       {/* Main Amount with Counting Animation - Flashing Digits */}
       <div className="text-5xl font-bold text-green-600 mb-2">
         <span className={`${isAnimating ? "animate-pulse" : ""} ${isAnimating ? "text-green-500" : "text-green-600"}`}>
-          {formatCurrency(currentAmount * 302.5)}
+          {formatCurrency(currentAmount * (process.env.NEXT_PUBLIC_NGN_PER_CRYPTO_RATE ? parseFloat(process.env.NEXT_PUBLIC_NGN_PER_CRYPTO_RATE) : 302.5))}
         </span>
         {isAnimating && (
           <span className="text-green-400 ml-2 animate-bounce text-3xl">↗️</span>

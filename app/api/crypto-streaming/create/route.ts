@@ -19,11 +19,35 @@ export async function POST(request: Request) {
       totalCryptoAmount
     } = body;
 
-    // Validate required fields (donorId can be null for anonymous donations)
-    if (!causeId || !donorName || !donorEmail || !totalAmount || 
-        !streamDurationDays || !streamIntervalSeconds || !cryptoCurrency || 
-        !cryptoNetwork || !donorWalletAddress || !recipientWalletAddress || 
-        !totalCryptoAmount) {
+    // Validate and coerce numeric fields
+    const numericFields = {
+      totalAmount: Number(totalAmount),
+      totalCryptoAmount: Number(totalCryptoAmount),
+      streamDurationDays: Number(streamDurationDays),
+      streamIntervalSeconds: Number(streamIntervalSeconds)
+    };
+    
+    // Check for invalid numeric values
+    for (const [field, value] of Object.entries(numericFields)) {
+      if (!Number.isFinite(value) || value <= 0) {
+        return NextResponse.json({ 
+          success: false, 
+          error: `Invalid ${field}: must be a positive number` 
+        }, { status: 400 });
+      }
+    }
+    
+    // Validate stream interval is not longer than duration
+    if (numericFields.streamIntervalSeconds > numericFields.streamDurationDays * 86400) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "Stream interval cannot be longer than stream duration" 
+      }, { status: 400 });
+    }
+    
+    // Validate required string fields
+    if (!causeId || !donorName || !donorEmail || !cryptoCurrency || 
+        !cryptoNetwork || !donorWalletAddress || !recipientWalletAddress) {
       return NextResponse.json({ 
         success: false, 
         error: "Missing required fields" 
@@ -31,14 +55,27 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
+    
+    // Get authenticated user for server-side validation
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "Authentication required" 
+      }, { status: 401 });
+    }
+    
+    // Use server-derived donor information
+    const serverDonorId = user.id;
+    const serverDonorEmail = user.email || donorEmail;
 
-    // Calculate streaming parameters
-    const totalStreamingAmount = totalAmount;
-    const streamDurationSeconds = streamDurationDays * 24 * 60 * 60;
-    const streamRatePerSecond = totalAmount / streamDurationSeconds;
-    const cryptoStreamRatePerSecond = totalCryptoAmount / streamDurationSeconds;
-    const remainingAmount = totalAmount;
-    const remainingCryptoAmount = totalCryptoAmount;
+    // Calculate streaming parameters using validated numeric values
+    const totalStreamingAmount = numericFields.totalAmount;
+    const streamDurationSeconds = numericFields.streamDurationDays * 24 * 60 * 60;
+    const streamRatePerSecond = numericFields.totalAmount / streamDurationSeconds;
+    const cryptoStreamRatePerSecond = numericFields.totalCryptoAmount / streamDurationSeconds;
+    const remainingAmount = numericFields.totalAmount;
+    const remainingCryptoAmount = numericFields.totalCryptoAmount;
 
     // Create crypto streaming donation
     const { data, error } = await supabase
@@ -46,18 +83,18 @@ export async function POST(request: Request) {
       .insert([
         {
           cause_id: causeId,
-          donor_id: donorId,
+          donor_id: serverDonorId,
           donor_name: donorName,
-          donor_email: donorEmail,
-          total_amount: totalStreamingAmount,
+          donor_email: serverDonorEmail,
+          total_amount: numericFields.totalAmount,
           streamed_amount: 0,
           remaining_amount: remainingAmount,
           stream_duration_seconds: streamDurationSeconds,
           stream_rate_per_second: streamRatePerSecond,
-          stream_interval_seconds: streamIntervalSeconds,
+          stream_interval_seconds: numericFields.streamIntervalSeconds,
           crypto_currency: cryptoCurrency,
           crypto_network: cryptoNetwork,
-          total_crypto_amount: totalCryptoAmount,
+          total_crypto_amount: numericFields.totalCryptoAmount,
           streamed_crypto_amount: 0,
           remaining_crypto_amount: remainingCryptoAmount,
           crypto_stream_rate_per_second: cryptoStreamRatePerSecond,

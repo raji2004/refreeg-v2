@@ -27,14 +27,7 @@ export function PetitionNFTSigner({
   const { toast } = useToast();
 
   const handleMintNFT = async () => {
-    if (!message.trim()) {
-      toast({
-        title: "Message Required",
-        description: "Please enter a message for your petition signature.",
-        variant: "destructive"
-      });
-      return;
-    }
+    // Allow empty messages since it's optional
 
     setIsMinting(true);
 
@@ -47,13 +40,30 @@ export function PetitionNFTSigner({
         body: JSON.stringify({
           petitionId,
           signerAddress: "0x0000000000000000000000000000000000000000", // Placeholder - would be user's wallet
-          message: message.trim()
+          message: message.trim() || null
         }),
       });
 
+      if (!response.ok) {
+        let errorMessage = "Failed to mint NFT";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          try {
+            const errorText = await response.text();
+            errorMessage = errorText || errorMessage;
+          } catch {
+            // Use default error message
+          }
+        }
+        throw new Error(errorMessage);
+      }
+      
       const result = await response.json();
-
-      if (result.success) {
+      if (!result.success) {
+        throw new Error(result.error || "Failed to mint NFT");
+      }
         setMintedNFT({
           tokenId: result.signature.tokenId.toString(),
           txHash: result.signature.txHash

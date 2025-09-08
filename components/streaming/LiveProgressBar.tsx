@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Progress } from "@/components/ui/progress";
 import { getLiveStreamingStatus } from "@/actions/streaming-donation-actions";
 
@@ -13,30 +13,68 @@ interface LiveProgressBarProps {
 export function LiveProgressBar({ causeId, initialRaised, goal }: LiveProgressBarProps) {
   const [currentRaised, setCurrentRaised] = useState(initialRaised);
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Refs to avoid stale closures and prevent overlapping calls
+  const inFlightRef = useRef(false);
+  const currentRaisedRef = useRef(initialRaised);
+  const initialRaisedRef = useRef(initialRaised);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Update refs when state changes
+  currentRaisedRef.current = currentRaised;
+  initialRaisedRef.current = initialRaised;
 
   useEffect(() => {
     const updateProgress = async () => {
+      // Prevent overlapping calls
+      if (inFlightRef.current) return;
+      
+      inFlightRef.current = true;
       try {
         const status = await getLiveStreamingStatus(causeId);
         if (status) {
-          const newRaised = initialRaised + status.total_streamed_amount;
-          if (newRaised !== currentRaised) {
+          const newRaised = initialRaisedRef.current + status.total_streamed_amount;
+          if (newRaised !== currentRaisedRef.current) {
             setIsUpdating(true);
             setCurrentRaised(newRaised);
-            setTimeout(() => setIsUpdating(false), 1000);
+            
+            // Clear existing timeout
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+            }
+            
+            // Set new timeout
+            timeoutRef.current = setTimeout(() => setIsUpdating(false), 1000);
           }
         }
       } catch (error) {
         console.error("Error updating progress:", error);
+      } finally {
+        inFlightRef.current = false;
       }
     };
 
     // Update every 2 seconds
-    const interval = setInterval(updateProgress, 2000);
-    return () => clearInterval(interval);
-  }, [causeId, initialRaised, currentRaised]);
+    intervalRef.current = setInterval(updateProgress, 2000);
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [causeId, initialRaised]); // Removed currentRaised from dependencies
 
-  const percentRaised = Math.min(Math.round((currentRaised / goal) * 100), 100);
+  // Safe percentage calculation with proper validation
+  const percentRaised = (() => {
+    if (!Number.isFinite(goal) || goal <= 0 || !Number.isFinite(currentRaised)) {
+      return 0;
+    }
+    return Math.min(Math.round((currentRaised / goal) * 100), 100);
+  })();
 
   return (
     <div className="space-y-2">

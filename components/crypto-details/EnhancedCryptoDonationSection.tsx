@@ -148,33 +148,57 @@ export function EnhancedCryptoDonationSection({
               </p>
             </div>
 
-            <Tabs defaultValue="metamask" className="w-full">
+            <Tabs defaultValue={metamaskAddress ? "metamask" : "solana"} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="metamask">MetaMask</TabsTrigger>
-                <TabsTrigger value="solana">Phantom (Solana)</TabsTrigger>
+                {metamaskAddress ? (
+                  <TabsTrigger value="metamask">MetaMask</TabsTrigger>
+                ) : (
+                  <div className="px-3 py-1.5 text-sm text-muted-foreground">MetaMask (Recipient address missing)</div>
+                )}
+                {solanaAddress ? (
+                  <TabsTrigger value="solana">Phantom (Solana)</TabsTrigger>
+                ) : (
+                  <div className="px-3 py-1.5 text-sm text-muted-foreground">Phantom (Recipient address missing)</div>
+                )}
               </TabsList>
               
-              <TabsContent value="metamask" className="mt-4">
-                <MetaMaskDonationButton
-                  causeId={causeId}
-                  recipientAddress={metamaskAddress || ""}
-                  onDonationSuccess={handleDonationSuccess}
-                  isStreamingEnabled={isStreamingEnabled}
-                  streamingDuration={parseInt(streamingDuration)}
-                  streamingInterval={parseInt(streamingInterval)}
-                />
-              </TabsContent>
+              {metamaskAddress ? (
+                <TabsContent value="metamask" className="mt-4">
+                  <MetaMaskDonationButton
+                    causeId={causeId}
+                    recipientAddress={metamaskAddress}
+                    onDonationSuccess={handleDonationSuccess}
+                    isStreamingEnabled={isStreamingEnabled}
+                    streamingDuration={parseInt(streamingDuration)}
+                    streamingInterval={parseInt(streamingInterval)}
+                  />
+                </TabsContent>
+              ) : (
+                <TabsContent value="metamask" className="mt-4">
+                  <div className="text-center py-4 text-muted-foreground">
+                    Recipient address missing for MetaMask donations
+                  </div>
+                </TabsContent>
+              )}
               
-              <TabsContent value="solana" className="mt-4">
-                <SolanaDonationButton
-                  causeId={causeId}
-                  recipientAddress={solanaAddress || ""}
-                  onDonationSuccess={handleDonationSuccess}
-                  isStreamingEnabled={isStreamingEnabled}
-                  streamingDuration={parseInt(streamingDuration)}
-                  streamingInterval={parseInt(streamingInterval)}
-                />
-              </TabsContent>
+              {solanaAddress ? (
+                <TabsContent value="solana" className="mt-4">
+                  <SolanaDonationButton
+                    causeId={causeId}
+                    recipientAddress={solanaAddress}
+                    onDonationSuccess={handleDonationSuccess}
+                    isStreamingEnabled={isStreamingEnabled}
+                    streamingDuration={parseInt(streamingDuration)}
+                    streamingInterval={parseInt(streamingInterval)}
+                  />
+                </TabsContent>
+              ) : (
+                <TabsContent value="solana" className="mt-4">
+                  <div className="text-center py-4 text-muted-foreground">
+                    Recipient address missing for Solana donations
+                  </div>
+                </TabsContent>
+              )}
             </Tabs>
           </div>
         </CardContent>

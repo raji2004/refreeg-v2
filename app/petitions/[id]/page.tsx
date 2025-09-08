@@ -1,4 +1,3 @@
-"use client";
 
 import {
   Card,
@@ -36,7 +35,6 @@ import { PetitionNFTStatus } from "@/components/petition-nft-status";
 import { PetitionNFTSigner } from "@/components/nft-minting/PetitionNFTSigner";
 import { RealNFTSigner } from "@/components/nft-minting/RealNFTSigner";
 import { CustodialNFTSigner } from "@/components/nft-minting/CustodialNFTSigner";
-import { useRouter } from "next/navigation";
 
 // Mock data for a petition
 const mockPetition = {
@@ -98,10 +96,10 @@ const mockSigners = [
 export default async function PetitionDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const myparams = params;
-  const petition = await getPetition(myparams.id);
+  const { id } = await params;
+  const petition = await getPetition(id);
   if (!petition) {
     notFound();
   }
@@ -180,7 +178,6 @@ export default async function PetitionDetailPage({
     socialMedia.instagram ||
     socialMedia.linkedin;
 
-  const router = useRouter();
 
   // Multimedia logic (carousel)
   const allMedia = Array.isArray((petition as any).multimedia)
@@ -215,14 +212,12 @@ export default async function PetitionDetailPage({
           {/* Edit button for owner */}
           {isOwner && (
             <div className="flex justify-end">
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                onClick={() =>
-                  router.push(`/dashboard/petitions/${petition.id}/edit`)
-                }
+              <Link
+                href={`/dashboard/petitions/${petition.id}/edit`}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition inline-block"
               >
                 Edit Petition
-              </button>
+              </Link>
             </div>
           )}
           <Tabs defaultValue="about">
@@ -419,11 +414,6 @@ export default async function PetitionDetailPage({
                     <CustodialNFTSigner
                       petitionId={petition.id}
                       petitionTitle={petition.title}
-                      onNFTMinted={(tokenId, txHash) => {
-                        console.log(`NFT minted: Token ID ${tokenId}, TX: ${txHash}`);
-                        // You can add additional logic here, like refreshing the page
-                        window.location.reload();
-                      }}
                     />
                   </div>
                 )}

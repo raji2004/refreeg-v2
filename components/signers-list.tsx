@@ -25,18 +25,25 @@ export function SignersList({ signers }: SignersListProps) {
                 <div className="flex items-center gap-4">
                   <Avatar>
                     <AvatarFallback>
-                      {signer.name === "Anonymous"
-                        ? "A"
-                        : signer.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .toUpperCase()
-                            .substring(0, 2)}
+                      {(() => {
+                        const displayName = signer.is_anonymous ? "Anonymous" : (signer.name || "").trim() || "—";
+                        if (displayName === "Anonymous") return "A";
+                        const initials = displayName
+                          .split(/\s+/)
+                          .filter(segment => segment.length > 0)
+                          .slice(0, 2)
+                          .map(segment => segment.charAt(0))
+                          .join("")
+                          .toUpperCase()
+                          .substring(0, 2);
+                        return initials || "—";
+                      })()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-base">{signer.name}</CardTitle>
+                    <CardTitle className="text-base">
+                      {signer.is_anonymous ? "Anonymous" : (signer.name || "").trim() || "—"}
+                    </CardTitle>
                     <CardDescription>
                       {new Date(signer.created_at).toLocaleDateString("en-US", {
                         year: "numeric",
@@ -50,7 +57,7 @@ export function SignersList({ signers }: SignersListProps) {
                   </div>
                 </div>
               </CardHeader>
-              {signer.message && (
+              {signer.message && !signer.is_anonymous && (
                 <CardContent>
                   <p className="text-sm text-muted-foreground">{signer.message}</p>
                 </CardContent>

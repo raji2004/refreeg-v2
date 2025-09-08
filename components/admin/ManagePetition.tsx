@@ -24,6 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Icons } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
+import { useAdmin } from "@/hooks/use-admin";
 import { toast } from "@/components/ui/use-toast";
 import Image from "next/image";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -55,13 +56,14 @@ import NavigationLoader from "../NavigationLoader";
 export default function ManagePetition() {
   const router = useRouter();
   const { user } = useAuth();
+  const { isAdmin, isManager, isAdminOrManager, isLoading: isAdminLoading } = useAdmin(user?.id);
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<PetitionStatus>("pending");
 
   const { data: petitions = [], isLoading } = useQuery<Petition[]>({
     queryKey: ["adminPetitions", activeTab],
     queryFn: () => listPetitions({ status: activeTab }),
-    enabled: !!user?.id,
+    enabled: !!user?.id && isAdminOrManager,
   });
 
   const approveMutation = useMutation({
@@ -154,7 +156,19 @@ export default function ManagePetition() {
   const closeDetailDialog = () =>
     setDetailDialog({ open: false, petition: null, isLoading: false });
 
-  if (isLoading) {
+  // Early return for non-admin users
+  if (!isAdminLoading && !isAdminOrManager) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600">You do not have permission to access this page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || isAdminLoading) {
     return <NavigationLoader />;
   }
 

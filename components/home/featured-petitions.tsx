@@ -62,10 +62,16 @@ export async function FeaturedPetitions() {
   const petitionsWithSigners = await Promise.all(
     featuredPetitions.map(async (petition) => {
       const signers = await listSignaturesForPetition(petition.id);
-      const percentSigned = Math.min(
-        Math.round(((signers?.length || 0) / petition.goal) * 100),
-        100
-      );
+      const percentSigned = (() => {
+        const goal = Number(petition.goal);
+        if (!goal || goal <= 0) {
+          return 0;
+        }
+        return Math.min(
+          Math.round(((signers?.length || 0) / goal) * 100),
+          100
+        );
+      })();
       return { ...petition, signers, percentSigned };
     })
   );

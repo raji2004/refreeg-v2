@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getLiveStreamingStatus } from "@/actions/streaming-donation-actions";
+import { formatCurrency } from "@/lib/utils";
 
 interface LiveStreamingCounterProps {
   causeId: string;
@@ -15,23 +16,16 @@ export function LiveStreamingCounter({ causeId }: LiveStreamingCounterProps) {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [accumulatedAmount, setAccumulatedAmount] = useState(0); // Accumulated amount changes
   const [lastAmountUpdate, setLastAmountUpdate] = useState<Date | null>(null); // Last time amount was updated
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
+  
+  // Refs to avoid stale closures
+  const accumulatedAmountRef = useRef(0);
+  const lastAmountUpdateRef = useRef<Date | null>(null);
+  const targetAmountRef = useRef(0);
+  const isAnimatingRef = useRef(false);
+  const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const formatRate = (rate: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(rate);
+    return formatCurrency(rate);
   };
 
   useEffect(() => {
@@ -42,21 +36,27 @@ export function LiveStreamingCounter({ causeId }: LiveStreamingCounterProps) {
           const newTargetAmount = status.total_streamed_amount;
           const newStreamRate = status.current_stream_rate_per_second;
           
-          if (newTargetAmount !== targetAmount) {
+          // Update refs
+          targetAmountRef.current = newTargetAmount;
+          
+          if (newTargetAmount !== targetAmountRef.current) {
             // Calculate the amount change
-            const amountChange = newTargetAmount - targetAmount;
+            const amountChange = newTargetAmount - targetAmountRef.current;
             
             // Accumulate the change
-            const newAccumulatedAmount = accumulatedAmount + amountChange;
+            const newAccumulatedAmount = accumulatedAmountRef.current + amountChange;
+            accumulatedAmountRef.current = newAccumulatedAmount;
             
             // Check if 1 hour has passed since last amount update
             const now = new Date();
             const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
-            const shouldUpdateAmount = !lastAmountUpdate || lastAmountUpdate < oneHourAgo;
+            const shouldUpdateAmount = !lastAmountUpdateRef.current || lastAmountUpdateRef.current < oneHourAgo;
             
             // Only update amount display every hour
             if (shouldUpdateAmount) {
-              setAccumulatedAmount(0); // Reset accumulator
+              accumulatedAmountRef.current = 0; // Reset accumulator
+              lastAmountUpdateRef.current = now;
+              setAccumulatedAmount(0);
               setLastAmountUpdate(now);
               setTargetAmount(newTargetAmount);
               setStreamRate(newStreamRate);
@@ -70,6 +70,9 @@ export function LiveStreamingCounter({ causeId }: LiveStreamingCounterProps) {
               // Still update stream rate for display
               setStreamRate(newStreamRate);
             }
+          } else {
+            // Update stream rate even if amount hasn't changed
+            setStreamRate(newStreamRate);
           }
         }
       } catch (error) {
@@ -82,9 +85,12 @@ export function LiveStreamingCounter({ causeId }: LiveStreamingCounterProps) {
     updateStatus(); // Initial load
 
     return () => clearInterval(interval);
-  }, [causeId, targetAmount]);
+  }, [causeId, targetAmount, accumulatedAmount, lastAmountUpdate]);
 
   const animateToAmount = (target: number) => {
+    if (isAnimatingRef.current) return; // Prevent overlapping animations
+    
+    isAnimatingRef.current = true;
     setIsAnimating(true);
     const startAmount = currentAmount;
     const difference = target - startAmount;
@@ -102,9 +108,13 @@ export function LiveStreamingCounter({ causeId }: LiveStreamingCounterProps) {
       if (step >= steps) {
         setCurrentAmount(target);
         clearInterval(timer);
+        isAnimatingRef.current = false;
         setIsAnimating(false);
       }
     }, stepDuration);
+    
+    // Store timer ref for cleanup
+    animationTimerRef.current = timer;
   };
 
   const formatToSignificantFigures = (num: number, figures: number = 4) => {

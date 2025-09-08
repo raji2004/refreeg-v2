@@ -1,42 +1,75 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { getLiveStreamingStatus } from "@/actions/streaming-donation-actions";
 import { LiveStreamingCounter } from "./LiveStreamingCounter";
 import { DollarSign, Activity, Clock, TrendingUp } from "lucide-react";
+import type { LiveStreamingStatus as LiveStreamingStatusType } from "@/actions/streaming-donation-actions";
 
 interface LiveStreamingStatusProps {
   causeId: string;
 }
 
 export function LiveStreamingStatus({ causeId }: LiveStreamingStatusProps) {
-  const [status, setStatus] = useState<any>(null);
+  const [status, setStatus] = useState<LiveStreamingStatusType | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  
+  // Refs to prevent overlapping calls and late responses
+  const inFlightRef = useRef(false);
+  const mountedRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const loadStatus = useCallback(async () => {
+    // Prevent overlapping calls
+    if (inFlightRef.current) return;
+    
+    inFlightRef.current = true;
+    
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    abortControllerRef.current = new AbortController();
+    
+    try {
+      const data = await getLiveStreamingStatus(causeId);
+      
+      // Only update state if component is still mounted
+      if (mountedRef.current) {
+        setStatus(data);
+        setLastUpdate(new Date());
+      }
+    } catch (error) {
+      if (mountedRef.current) {
+        console.error("Error loading streaming status:", error);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+      inFlightRef.current = false;
+    }
+  }, [causeId]);
 
   useEffect(() => {
     loadStatus();
     
     // Update every second for real-time effect
-    const interval = setInterval(loadStatus, 1000);
+    const interval = setInterval(() => loadStatus(), 1000);
     
-    return () => clearInterval(interval);
-  }, [causeId]);
-
-  const loadStatus = async () => {
-    try {
-      const data = await getLiveStreamingStatus(causeId);
-      setStatus(data);
-      setLastUpdate(new Date());
-    } catch (error) {
-      console.error("Error loading streaming status:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      clearInterval(interval);
+      mountedRef.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [loadStatus]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', {
@@ -72,8 +105,8 @@ export function LiveStreamingStatus({ causeId }: LiveStreamingStatusProps) {
     return null;
   }
 
-  const progressPercentage = status.total_streaming_amount > 0 
-    ? (status.total_streamed_amount / status.total_streaming_amount) * 100
+  const progressPercentage = status && status.total_streaming_amount > 0 
+    ? Math.min(Math.round((status.total_streamed_amount / status.total_streaming_amount) * 100), 100)
     : 0;
 
   return (

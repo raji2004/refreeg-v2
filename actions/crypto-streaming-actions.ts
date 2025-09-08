@@ -51,11 +51,34 @@ export async function createCryptoStreamingDonation(donationData: {
   try {
     const supabase = await createClient();
     
-    // Calculate streaming parameters
-    const streamDurationSeconds = donationData.streamDurationDays * 24 * 60 * 60;
+    // Validate inputs
+    if (donationData.streamDurationDays <= 0) {
+      throw new Error("Stream duration must be positive");
+    }
+    if (donationData.totalAmount <= 0 || donationData.totalCryptoAmount <= 0) {
+      throw new Error("Amounts must be positive");
+    }
+    
     const streamIntervalSeconds = donationData.streamIntervalSeconds || 1;
-    const streamRatePerSecond = donationData.totalAmount / streamDurationSeconds;
-    const cryptoStreamRatePerSecond = donationData.totalCryptoAmount / streamDurationSeconds;
+    if (streamIntervalSeconds <= 0) {
+      throw new Error("Stream interval must be positive");
+    }
+    
+    // Validate crypto currency and network
+    const allowedCurrencies = ['ETH', 'BTC', 'MATIC', 'USDC', 'USDT'];
+    const allowedNetworks = ['ethereum', 'polygon', 'bitcoin', 'arbitrum', 'optimism'];
+    
+    if (!allowedCurrencies.includes(donationData.cryptoCurrency)) {
+      throw new Error(`Unsupported crypto currency: ${donationData.cryptoCurrency}`);
+    }
+    if (!allowedNetworks.includes(donationData.cryptoNetwork)) {
+      throw new Error(`Unsupported crypto network: ${donationData.cryptoNetwork}`);
+    }
+    
+    // Calculate streaming parameters using precise arithmetic
+    const streamDurationSeconds = Math.floor(donationData.streamDurationDays * 24 * 60 * 60);
+    const streamRatePerSecond = Math.floor((donationData.totalAmount * 100) / streamDurationSeconds) / 100; // Convert to cents for precision
+    const cryptoStreamRatePerSecond = Math.floor((donationData.totalCryptoAmount * 1000000) / streamDurationSeconds) / 1000000; // 6 decimal precision
     
     console.log("Creating crypto streaming donation with parameters:", {
       causeId: donationData.causeId,
@@ -88,6 +111,7 @@ export async function createCryptoStreamingDonation(donationData: {
           total_crypto_amount: donationData.totalCryptoAmount,
           remaining_crypto_amount: donationData.totalCryptoAmount,
           streamed_crypto_amount: 0,
+        streamed_amount: 0,
           crypto_stream_rate_per_second: cryptoStreamRatePerSecond,
         },
       ])

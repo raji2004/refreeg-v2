@@ -40,14 +40,6 @@ export function StreamingDonationForm({ causeId, onDonationSuccess }: StreamingD
     try {
       setIsLoading(true);
       
-      console.log("Creating streaming donation with data:", {
-        causeId,
-        donorName: formData.donorName,
-        donorEmail: formData.donorEmail,
-        totalAmount: parseFloat(formData.totalAmount),
-        streamDurationDays: parseInt(formData.streamDuration),
-        streamIntervalSeconds: parseInt(formData.streamInterval),
-      });
       
       const result = await createStreamingDonation({
         causeId,
@@ -58,7 +50,8 @@ export function StreamingDonationForm({ causeId, onDonationSuccess }: StreamingD
         streamIntervalSeconds: parseInt(formData.streamInterval),
       });
 
-      console.log("Streaming donation result:", result);
+      // Log only safe status information
+      console.log("Streaming donation created successfully");
 
       if (result.success) {
         toast({

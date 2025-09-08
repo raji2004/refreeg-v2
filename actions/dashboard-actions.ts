@@ -224,10 +224,10 @@ export async function getPetitionDashboardStats(userId: string) {
         .eq("user_id", userId)
 
     if (signaturesError) {
-        console.error("Error fetching donations:", signaturesError)
+        console.error("Error fetching signatures:", signaturesError)
         return {
             totalRaised: 0,
-            totalDonors: 0,
+            totalSigners: 0,
             activePetitions: 0,
         }
     }
@@ -261,14 +261,14 @@ export async function getPetitionDashboardStats(userId: string) {
         console.error("Error fetching petitions:", petitionsError)
         return {
             totalRaised,
-            totalDonors: signers?.length || 0,
+            totalSigners: signers?.length || 0,
             activePetitions: 0,
         }
     }
 
     return {
         totalRaised: formatCurrency(totalRaised),
-        totalDonors: signers?.length || 0,
+        totalSigners: signers?.length || 0,
         activePetitions: petitions?.length || 0,
     }
 }
@@ -396,9 +396,9 @@ export async function getPetitionAnalytics(petitionId: string) {
 
     // Get engagement metrics
     const engagement = {
-        shares: petition.shared, // TODO: Implement actual share tracking
+        shares: petition.shared,
         comments: signatures.filter(s => s.message && s.message.trim() !== '').length, // Count donations with non-empty messages as comments
-        views: 0, // TODO: Implement actual view tracking
+        views: 0,
         conversionRate: petition.shared > 0 ? (uniqueSigners / petition.shared) * 100 : 0, // Calculate conversion rate based on shares to donors ratio
     }
 

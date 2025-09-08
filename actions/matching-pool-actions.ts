@@ -48,18 +48,42 @@ export async function createMatchingPool(poolData: {
   try {
     const supabase = await createClient();
     
-    // Create the matching pool
+    // Validate inputs
+    if (!poolData.name?.trim()) {
+      throw new Error("Pool name is required");
+    }
+    if (poolData.total_amount <= 0) {
+      throw new Error("Total amount must be positive");
+    }
+    if (poolData.matching_ratio < 0 || poolData.matching_ratio > 1) {
+      throw new Error("Matching ratio must be between 0 and 1");
+    }
+    if (poolData.start_date && poolData.end_date && new Date(poolData.start_date) > new Date(poolData.end_date)) {
+      throw new Error("Start date must be before end date");
+    }
+    
+    // Get authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("Authentication required");
+    }
+    
+    // Deduplicate cause IDs
+    const uniqueCauseIds = [...new Set(poolData.cause_ids)];
+    
+    // Create the matching pool with created_by
     const { data: pool, error: poolError } = await supabase
       .from("matching_pools")
       .insert([
         {
-          name: poolData.name,
-          description: poolData.description,
+          name: poolData.name.trim(),
+          description: poolData.description?.trim(),
           total_amount: poolData.total_amount,
           remaining_amount: poolData.total_amount,
           matching_ratio: poolData.matching_ratio,
           start_date: poolData.start_date,
           end_date: poolData.end_date,
+          created_by: user.id,
         },
       ])
       .select()
@@ -71,8 +95,8 @@ export async function createMatchingPool(poolData: {
     }
 
     // Add causes to the matching pool
-    if (poolData.cause_ids.length > 0) {
-      const causeInserts = poolData.cause_ids.map(causeId => ({
+    if (uniqueCauseIds.length > 0) {
+      const causeInserts = uniqueCauseIds.map(causeId => ({
         matching_pool_id: pool.id,
         cause_id: causeId,
       }));
@@ -82,6 +106,8 @@ export async function createMatchingPool(poolData: {
         .insert(causeInserts);
 
       if (causesError) {
+        // Compensating delete if cause insertion fails
+        await supabase.from("matching_pools").delete().eq("id", pool.id);
         console.error("Error adding causes to matching pool:", causesError);
         throw new Error("Failed to add causes to matching pool");
       }
@@ -158,9 +184,34 @@ export async function updateMatchingPool(
   try {
     const supabase = await createClient();
     
+    // Whitelist of allowed mutable fields (exclude protected columns)
+    const allowedFields = ['name', 'description', 'is_active', 'matching_ratio', 'start_date', 'end_date', 'max_amount'];
+    const protectedFields = ['id', 'remaining_amount', 'created_by', 'created_at', 'updated_at'];
+    
+    // Build sanitized updates object
+    const sanitizedUpdates: any = {};
+    for (const key of allowedFields) {
+      if (key in updates && updates[key as keyof MatchingPool] !== undefined) {
+        sanitizedUpdates[key] = updates[key as keyof MatchingPool];
+      }
+    }
+    
+    // Validate date ordering if both dates are present
+    if (sanitizedUpdates.start_date && sanitizedUpdates.end_date) {
+      const startDate = new Date(sanitizedUpdates.start_date);
+      const endDate = new Date(sanitizedUpdates.end_date);
+      
+      if (startDate > endDate) {
+        throw new Error('Start date must be before or equal to end date');
+      }
+    }
+    
+    // Always update the timestamp
+    sanitizedUpdates.updated_at = new Date().toISOString();
+    
     const { data, error } = await supabase
       .from("matching_pools")
-      .update(updates)
+      .update(sanitizedUpdates)
       .eq("id", poolId)
       .select()
       .single();
@@ -185,14 +236,17 @@ export async function addCausesToMatchingPool(
   try {
     const supabase = await createClient();
     
-    const causeInserts = causeIds.map(causeId => ({
+    // Deduplicate causeIds
+    const uniqueCauseIds = [...new Set(causeIds)];
+    
+    const causeInserts = uniqueCauseIds.map(causeId => ({
       matching_pool_id: poolId,
       cause_id: causeId,
     }));
 
     const { error } = await supabase
       .from("matching_pool_causes")
-      .insert(causeInserts);
+      .upsert(causeInserts, { onConflict: 'matching_pool_id,cause_id' });
 
     if (error) {
       console.error("Error adding causes to matching pool:", error);
@@ -283,10 +337,26 @@ export async function processMatchingForDonation(
       return { success: false, matched_amount: 0 };
     }
 
+    // Normalize and validate RPC result
+    if (!data) {
+      console.warn("RPC returned null/undefined data");
+      return { success: false, matched_amount: 0, pool_id: null };
+    }
+    
+    let normalizedResult;
+    if (Array.isArray(data)) {
+      normalizedResult = data.length > 0 ? data[0] : {};
+    } else if (typeof data === 'object') {
+      normalizedResult = data;
+    } else {
+      console.warn("Unexpected RPC response shape:", typeof data);
+      return { success: false, matched_amount: 0, pool_id: null };
+    }
+    
     return { 
-      success: data[0]?.success || false, 
-      matched_amount: data[0]?.matched_amount || 0,
-      pool_id: data[0]?.pool_id
+      success: Boolean(normalizedResult?.success), 
+      matched_amount: Number(normalizedResult?.matched_amount) || 0,
+      pool_id: normalizedResult?.pool_id || null
     };
   } catch (error) {
     console.error("Error in processMatchingForDonation:", error);
@@ -308,7 +378,14 @@ export async function isCauseEligibleForMatching(causeId: string) {
       return false;
     }
 
-    return data || false;
+    // Normalize boolean return value
+    if (typeof data === 'boolean') {
+      return data;
+    }
+    if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && 'is_eligible' in data[0]) {
+      return Boolean(data[0].is_eligible);
+    }
+    return Boolean(data);
   } catch (error) {
     console.error("Error in isCauseEligibleForMatching:", error);
     return false;
@@ -329,7 +406,20 @@ export async function getMatchingPoolForCause(causeId: string) {
       return null;
     }
 
-    return data[0] || null;
+    // Normalize RPC result before indexing
+    if (!data) {
+      return null;
+    }
+    
+    if (Array.isArray(data)) {
+      return data.length > 0 ? data[0] : null;
+    }
+    
+    if (typeof data === 'object') {
+      return data;
+    }
+    
+    return null;
   } catch (error) {
     console.error("Error in getMatchingPoolForCause:", error);
     return null;

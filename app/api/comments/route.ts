@@ -14,6 +14,11 @@ export async function POST(request: Request) {
   if (!causeId || !content) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
+  
+  // Validate entityType if provided
+  if (entityType && !['petition', 'cause'].includes(entityType)) {
+    return NextResponse.json({ error: "Invalid entityType" }, { status: 400 });
+  }
 
   try {
     const isPetition = entityType === "petition";
@@ -70,6 +75,11 @@ export async function GET(request: Request) {
 
   if (!causeId)
     return NextResponse.json({ error: "causeId required" }, { status: 400 });
+    
+  // Validate entityType
+  if (!entityType || !['petition', 'cause'].includes(entityType)) {
+    return NextResponse.json({ error: "invalid or missing entityType" }, { status: 400 });
+  }
 
   try {
     const isPetition = entityType === "petition";

@@ -23,6 +23,32 @@ export async function getPetition(
 ): Promise<PetitionWithUser | null> {
   const supabase = await createClient();
   const user = await getCurrentUser();
+  
+  // First check access with minimal data
+  const { data: accessData, error: accessError } = await supabase
+    .from("petitions")
+    .select("status, user_id")
+    .eq("id", petitionId)
+    .single();
+    
+  if (accessError) {
+    if (accessError.code === "PGRST116") {
+      return null;
+    }
+    console.error("Error fetching petition access:", accessError);
+    throw accessError;
+  }
+  
+  // Check access before full fetch
+  if (
+    (accessData?.status === "pending" || accessData?.status === "rejected") &&
+    user?.id !== accessData?.user_id
+  ) {
+    redirect("/");
+    return null;
+  }
+  
+  // Now fetch full petition data
   const { data, error } = await supabase
     .from("petitions")
     .select(
@@ -43,14 +69,6 @@ export async function getPetition(
     )
     .eq("id", petitionId)
     .single();
-
-  if (
-    (data?.status === "pending" || data?.status === "rejected") &&
-    user?.id !== data?.user_id
-  ) {
-    redirect("/");
-    return null;
-  }
   if (error) {
     if (error.code === "PGRST116") {
       return null;
@@ -137,7 +155,6 @@ export async function createPetition(
     );
   }
 
-  console.log("Uploaded");
 
   // Calculate days_active from start and end dates
   let daysActive = null;
@@ -189,11 +206,12 @@ export async function createPetition(
       title: petitionData.title,
       description: petitionData.description,
       category: petitionData.category,
-      status: "active", // All petitions start as active
+      status: "pending", // All petitions start as pending
       image: coverImageUrl, // Store the cover image URL
-      nft_enabled: true, // Enable NFT functionality
+      nft_enabled: petitionData.nft_enabled ?? true, // Enable NFT functionality by default
+      contract_address: "0x6c52c4bc5c182bae9228ffe203cc16132764f1de", // Default contract address
       signature_count: 0, // Start with 0 signatures
-      network: "polygon_mainnet", // Default to Polygon mainnet
+      network: petitionData.network ?? "polygon_mainnet", // Default to Polygon mainnet
     })
     .select()
     .single();

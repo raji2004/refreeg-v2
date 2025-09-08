@@ -1,6 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
+
+// Helper function to format dates for datetime-local input
+const formatForDatetimeLocal = (dateString: string): string => {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -154,8 +165,8 @@ export function MatchingPoolManager() {
       description: pool.description || "",
       total_amount: pool.total_amount.toString(),
       matching_ratio: pool.matching_ratio.toString(),
-      start_date: pool.start_date ? new Date(pool.start_date).toISOString().slice(0, 16) : "",
-      end_date: pool.end_date ? new Date(pool.end_date).toISOString().slice(0, 16) : "",
+      start_date: pool.start_date ? formatForDatetimeLocal(pool.start_date) : "",
+      end_date: pool.end_date ? formatForDatetimeLocal(pool.end_date) : "",
       cause_ids: [],
     });
     setActiveTab("create");
@@ -214,6 +225,17 @@ export function MatchingPoolManager() {
       });
       return;
     }
+    
+    // Validate cause ID format (UUID v4)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(newCauseId.trim())) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid cause ID format",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       setLoading(true);
@@ -248,7 +270,13 @@ export function MatchingPoolManager() {
   };
 
   const formatRatio = (ratio: number) => {
-    return `1:${Math.round(1 / ratio)}`;
+    if (!Number.isFinite(ratio) || ratio <= 0) {
+      return '—';
+    }
+    if (ratio < 1) {
+      return `1:${Math.round(1 / ratio)}`;
+    }
+    return `${Math.round(ratio)}:1`;
   };
 
   return (

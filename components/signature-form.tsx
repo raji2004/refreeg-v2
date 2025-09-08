@@ -55,7 +55,6 @@ export function SignatureForm({
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  console.log(formData.isAnonymous);
   const handleSwitchChange = (checked: boolean) => {
     setFormData((prev) => ({ ...prev, isAnonymous: checked }));
   };
@@ -71,7 +70,7 @@ export function SignatureForm({
     const ok = await createUserSignature(petitionId, profile.id, {
       amount: 1,
       email: formData.email,
-      name: formData.name,
+      name: formData.isAnonymous ? "" : formData.name, // Clear name if anonymous
       message: formData.message,
       isAnonymous: formData.isAnonymous,
     });

@@ -92,16 +92,23 @@ export async function MyPetitionsList({
       ? petitions
       : petitions.filter((petition) => petition.status === status);
 
-  // 2. Then attach signature counts
-  const petitionsWithSigners = await Promise.all(
-    filteredPetitions.map(async (petition) => {
-      const signers = await listSignaturesForPetition(petition.id);
-      return {
-        ...petition,
-        signatures: signers.length,
-      };
-    })
-  );
+  // 2. Get signature counts in a single query
+  const petitionIds = filteredPetitions.map(p => p.id);
+  const { data: signatureCounts } = await supabase
+    .from("signatures")
+    .select("petition_id")
+    .in("petition_id", petitionIds);
+  
+  // Group counts by petition_id
+  const countsByPetitionId = (signatureCounts || []).reduce((acc, sig) => {
+    acc[sig.petition_id] = (acc[sig.petition_id] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const petitionsWithSigners = filteredPetitions.map(petition => ({
+    ...petition,
+    signatures: countsByPetitionId[petition.id] || 0,
+  }));
 
   if (petitionsWithSigners.length === 0) {
     return (
@@ -169,10 +176,16 @@ export async function MyPetitionsList({
                 </span>
               </div>
               <Progress
-                value={Math.min(
-                  (petition.signatures / petition.goal) * 100,
-                  100
-                )}
+                value={(() => {
+                  const goal = Number(petition.goal);
+                  if (!goal || goal <= 0) {
+                    return 0;
+                  }
+                  return Math.min(
+                    (petition.signatures / goal) * 100,
+                    100
+                  );
+                })()}
               />
             </div>
             <div className="mt-4 text-sm text-muted-foreground">

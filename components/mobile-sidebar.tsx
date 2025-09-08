@@ -16,7 +16,7 @@ import {
   Settings,
   BarChart3,
   UserCog,
-  ClipboardCheckIcon,
+  ClipboardCheck,
   Shield,
   ChevronDown,
   ChevronUp,
@@ -110,7 +110,7 @@ const adminNavItems = [
   {
     title: "Logs",
     href: "/dashboard/admin/logs",
-    icon: ClipboardCheckIcon,
+    icon: ClipboardCheck,
   },
 ];
 
@@ -147,7 +147,7 @@ export function MobileSidebar({
     <>
       {/* Backdrop */}
       {isOpen && (
-        <div className="fixed inset-0  z-40 md:hidden" onClick={onClose} />
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onClick={onClose} aria-hidden="true" />
       )}
 
       {/* Sidebar */}

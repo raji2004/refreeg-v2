@@ -7,6 +7,7 @@ import type {
   SignatureWithPetition,
   SignatureFormData,
 } from "@/types";
+import { getCustodialWallet } from "@/lib/blockchain/custodial-wallet";
 
 /**
  * Create a new signature for a petition
@@ -29,23 +30,37 @@ export async function createSignature(
 
     if (existingError) {
       console.error("Error checking existing signature:", existingError);
+      throw new Error("Failed to verify existing signature");
     }
     if ((existingCount || 0) > 0) {
       throw new Error("You have already signed this petition");
     }
   }
 
+  // First, check if the petition has NFT functionality enabled
+  const { data: petition, error: petitionError } = await supabase
+    .from("petitions")
+    .select("id, title, nft_enabled, contract_address")
+    .eq("id", petitionId)
+    .single();
+
+  if (petitionError || !petition) {
+    console.error("Error fetching petition:", petitionError);
+    throw new Error("Petition not found");
+  }
+
+  // Create the signature first
   const { data, error } = await supabase
     .from("signatures")
     .insert({
       petition_id: petitionId,
       ...(userId ? { user_id: userId } : {}),
-      amount:
-        signatureData?.amount === undefined || signatureData?.amount === null
-          ? 1
-          : typeof signatureData.amount === "string"
-          ? Number.parseFloat(signatureData.amount)
-          : signatureData.amount,
+      amount: (() => {
+        const parsedValue = typeof signatureData?.amount === "string" 
+          ? parseFloat(signatureData.amount)
+          : signatureData?.amount;
+        return Math.max(1, parsedValue || 0);
+      })(),
       name:
         String(signatureData.isAnonymous).toLocaleLowerCase() === "true"
           ? "Anonymous"
@@ -65,6 +80,50 @@ export async function createSignature(
     }
     console.error("Error creating signature:", error);
     throw error;
+  }
+
+  // If NFT functionality is enabled, mint an NFT automatically
+  if (petition.nft_enabled && petition.contract_address) {
+    try {
+      const custodialWallet = getCustodialWallet();
+      
+      // Use a default address for anonymous users or get user's address
+      const signerAddress = userId ? 
+        `0x${userId.replace(/-/g, '').substring(0, 40)}` : // Generate a deterministic address from user ID
+        "0x0000000000000000000000000000000000000000"; // Default address for anonymous users
+
+      // Mint the NFT using the custodial wallet
+      const mintResult = await custodialWallet.mintPetitionNFT(
+        petitionId,
+        signatureData.message || `Signed petition: ${petition.title}`,
+        signerAddress
+      );
+
+      if (mintResult.success) {
+        // Record the NFT minting in the petition_signatures table
+        await supabase
+          .from("petition_signatures")
+          .insert({
+            petition_id: petitionId,
+            signer_address: signerAddress,
+            token_id: parseInt(mintResult.tokenId),
+            signature_message: signatureData.message || `Signed petition: ${petition.title}`,
+            tx_hash: mintResult.txHash
+          });
+
+        console.log(`NFT minted successfully for petition ${petitionId}:`, {
+          tokenId: mintResult.tokenId,
+          txHash: mintResult.txHash,
+          signerAddress
+        });
+      } else {
+        console.error("Failed to mint NFT:", mintResult.error);
+        // Don't fail the signature creation if NFT minting fails
+      }
+    } catch (nftError) {
+      console.error("Error minting NFT for petition signature:", nftError);
+      // Don't fail the signature creation if NFT minting fails
+    }
   }
 
   revalidatePath(`/petitions/${petitionId}`);
@@ -139,6 +198,10 @@ export async function listUserSignatures(
   }
 
   // Transform the response to match our SignatureWithPetition type
+  if (!data) {
+    return [];
+  }
+  
   return data.map((item) => ({
     ...item,
     petition: {

@@ -132,7 +132,7 @@ export async function TrendingCauses() {
                               </P>
                             </span>
                             <span>
-                              <DonateButton type="cause" disableLink />
+                              <DonateButton type="cause" id={cause.id} disableLink />
                             </span>
                           </div>
                         </CardFooter>

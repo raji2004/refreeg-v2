@@ -308,7 +308,19 @@ export function SolanaDonationButton({
               description: `Your SOL tokens are now streaming over ${streamingDuration} days!`,
             });
           } catch (cryptoStreamError) {
-            console.log("Crypto streaming not available, falling back to regular streaming");
+            console.error("Crypto streaming failed:", cryptoStreamError);
+            
+            // Show user confirmation dialog
+            const shouldProceed = window.confirm(
+              `Crypto streaming failed: ${cryptoStreamError instanceof Error ? cryptoStreamError.message : 'Unknown error'}\n\n` +
+              `Would you like to proceed with regular streaming instead?\n` +
+              `This will convert your ${streamingDuration}-day crypto streaming to regular streaming.`
+            );
+            
+            if (!shouldProceed) {
+              throw cryptoStreamError; // Re-throw to show error to user
+            }
+            
             const { createStreamingDonation } = await import("@/actions/streaming-donation-actions");
             await createStreamingDonation({
               causeId,

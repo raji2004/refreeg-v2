@@ -29,6 +29,8 @@ export function PetitionNFTStatus({ petitionId, userId }: PetitionNFTStatusProps
   useEffect(() => {
     if (userId) {
       loadNFTStatus();
+    } else {
+      setLoading(false);
     }
   }, [petitionId, userId]);
 

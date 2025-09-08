@@ -239,18 +239,18 @@ export default async function CauseDetailPage({
                   </AlertDescription>
                 </Alert>
               </div>
-              <DonorsList donors={[...donors, ...cryptoDonations.map((crypto: any) => ({
-                id: crypto.id,
-                cause_id: crypto.cause_id,
-                user_id: crypto.user_id,
-                amount: crypto.amount_in_naira,
-                name: crypto.user_id === "00000000-0000-0000-0000-000000000000" ? "Anonymous Crypto Donor" : "Crypto Donor",
+              <DonorsList donors={[...donors, ...(Array.isArray(cryptoDonations) ? cryptoDonations : []).map((crypto: any) => ({
+                id: crypto?.id || '',
+                cause_id: crypto?.cause_id || '',
+                user_id: crypto?.user_id || '',
+                amount: Number(crypto?.amount_in_naira) || 0,
+                name: crypto?.user_id === "00000000-0000-0000-0000-000000000000" ? "Anonymous Crypto Donor" : "Crypto Donor",
                 email: "",
-                message: `Donated ${crypto.amount_in_crypto} ${crypto.currency} via ${crypto.wallet_type}`,
-                is_anonymous: crypto.user_id === "00000000-0000-0000-0000-000000000000",
+                message: `Donated ${crypto?.amount_in_crypto || '0'} ${crypto?.currency || 'CRYPTO'} via ${crypto?.wallet_type || 'unknown'}`,
+                is_anonymous: crypto?.user_id === "00000000-0000-0000-0000-000000000000",
                 status: "completed" as const,
                 receipt_url: null,
-                created_at: crypto.created_at,
+                created_at: crypto?.created_at || new Date().toISOString(),
               }))]} />
             </TabsContent>
             <CommentsTabWrapper
@@ -309,7 +309,7 @@ export default async function CauseDetailPage({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {hasCreatorWallet ? (
+              {hasCreatorWallet && (creatorProfile?.crypto_wallets?.metamask_address || creatorProfile?.crypto_wallets?.solana_address) ? (
                 <div className="space-y-4">
                   <EnhancedCryptoDonationSection 
                     causeId={cause.id}

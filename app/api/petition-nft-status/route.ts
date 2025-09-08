@@ -21,6 +21,10 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (petitionError) {
+      // Check for PostgREST "not found" error
+      if (petitionError.code === "PGRST116" || petitionError.message?.includes("PGRST116") || petitionError.message?.includes("0 rows returned")) {
+        return NextResponse.json({ error: "Not Found" }, { status: 404 });
+      }
       console.error("Error fetching petition:", petitionError);
       return NextResponse.json({ error: "Failed to fetch petition" }, { status: 500 });
     }
@@ -56,6 +60,17 @@ export async function GET(request: NextRequest) {
 
     // Helper function to generate explorer links
     const getExplorerLinks = (network: string, contractAddress: string, tokenId: string, txHash: string) => {
+      // Handle Solana separately
+      if (network === 'solana') {
+        return {
+          contractUrl: contractAddress ? `https://explorer.solana.com/address/${contractAddress}?cluster=mainnet` : null,
+          tokenUrl: tokenId ? `https://explorer.solana.com/token/${tokenId}?cluster=mainnet` : null,
+          transactionUrl: txHash ? `https://explorer.solana.com/tx/${txHash}?cluster=mainnet` : null,
+          openseaUrl: null, // Solana doesn't use OpenSea
+        };
+      }
+      
+      // EVM networks
       const baseUrls = {
         polygon_mainnet: "https://polygonscan.com",
         polygon_amoy: "https://amoy.polygonscan.com",
@@ -68,7 +83,6 @@ export async function GET(request: NextRequest) {
         optimism: "https://optimistic.etherscan.io",
         base: "https://basescan.org",
         avalanche: "https://snowtrace.io",
-        solana: "https://explorer.solana.com",
       };
 
       const baseUrl = baseUrls[network as keyof typeof baseUrls] || baseUrls.polygon_mainnet;

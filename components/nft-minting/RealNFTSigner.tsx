@@ -128,6 +128,54 @@ export function RealNFTSigner({
 
     try {
       const provider = new ethers.BrowserProvider(window.ethereum as any);
+      
+      // Check network before proceeding
+      const network = await provider.getNetwork();
+      const requiredChainId = BigInt(137); // Polygon mainnet
+      
+      if (network.chainId !== requiredChainId) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x89' }], // Polygon mainnet
+          });
+        } catch (switchError: any) {
+          if (switchError.code === 4902) {
+            // Chain not added, try to add it
+            try {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x89',
+                  chainName: 'Polygon Mainnet',
+                  rpcUrls: ['https://polygon-rpc.com'],
+                  nativeCurrency: {
+                    name: 'MATIC',
+                    symbol: 'MATIC',
+                    decimals: 18,
+                  },
+                  blockExplorerUrls: ['https://polygonscan.com'],
+                }],
+              });
+            } catch (addError) {
+              toast({
+                title: "Network Error",
+                description: "Please switch to Polygon network manually.",
+                variant: "destructive"
+              });
+              return;
+            }
+          } else {
+            toast({
+              title: "Network Error",
+              description: "Please switch to Polygon network.",
+              variant: "destructive"
+            });
+            return;
+          }
+        }
+      }
+      
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
@@ -146,14 +194,21 @@ export function RealNFTSigner({
       const receipt = await tx.wait();
       
       if (receipt.status === 1) {
-        // Get the token ID from the event logs
-        const event = receipt.logs.find((log: any) => 
-          log.topics[0] === ethers.id("PetitionSigned(uint256,address,uint256)")
-        );
-        
+        // Get the token ID from the event logs using ABI parsing
+        const iface = new ethers.Interface(CONTRACT_ABI);
         let tokenId = "1"; // Default fallback
-        if (event) {
-          tokenId = ethers.getBigInt(event.topics[3]).toString();
+        
+        for (const log of receipt.logs) {
+          try {
+            const parsedLog = iface.parseLog(log);
+            if (parsedLog && parsedLog.name === "PetitionSigned") {
+              tokenId = parsedLog.args.tokenId.toString();
+              break;
+            }
+          } catch (parseError) {
+            // Continue to next log if parsing fails
+            continue;
+          }
         }
 
         setMintedNFT({

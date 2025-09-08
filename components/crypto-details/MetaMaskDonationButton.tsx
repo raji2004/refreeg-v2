@@ -96,6 +96,16 @@ export function MetaMaskDonationButton({
       return;
     }
 
+    // Validate recipient address
+    if (!recipientAddress || !ethers.isAddress(recipientAddress.trim())) {
+      toast({
+        title: "Error",
+        description: "Invalid recipient address",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!selectedToken || balances.length === 0) {
       toast({
         title: "Error",
@@ -231,6 +241,13 @@ export function MetaMaskDonationButton({
                 causeId,
                 expectedRecipient: recipientAddress,
                 expectedAmount: amount,
+                // Add token metadata for ERC-20 transfers
+                ...(token && token.address !== "0x0000000000000000000000000000000000000000" && {
+                  isERC20: true,
+                  tokenAddress: token.address,
+                  tokenDecimals: token.decimals,
+                  tokenSymbol: token.symbol
+                })
               }),
             });
 

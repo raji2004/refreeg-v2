@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { saveCauseShare } from "@/actions/cause-actions";
+import { savePetitionShare } from "@/actions/petition-actions";
 
 interface ShareModalProps {
   url: string;
@@ -84,7 +85,12 @@ export function ShareModal({
     }
 
     try {
-      await saveCauseShare(entityId);
+      // Use the appropriate save function based on entity type
+      if (entityType === "cause") {
+        await saveCauseShare(entityId);
+      } else if (entityType === "petition") {
+        await savePetitionShare(entityId);
+      }
       window.open(shareUrl, "_blank");
     } catch (error) {
       console.error("Error saving share:", error);
