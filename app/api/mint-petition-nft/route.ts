@@ -6,10 +6,10 @@ export async function POST(request: NextRequest) {
   try {
     const { petitionId, signerAddress, message } = await request.json();
 
-    if (!petitionId || !signerAddress || !message) {
+    if (!petitionId || !signerAddress) {
       return NextResponse.json({
         success: false,
-        error: "Missing required fields: petitionId, signerAddress, message"
+        error: "Missing required fields: petitionId, signerAddress"
       }, { status: 400 });
     }
 

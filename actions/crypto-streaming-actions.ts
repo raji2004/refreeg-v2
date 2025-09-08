@@ -1,8 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { ethers } from "ethers";
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import crypto from "node:crypto";
 
 export interface CryptoStreamingDonation {
   id: string;
@@ -126,6 +125,8 @@ export async function createCryptoStreamingDonation(donationData: {
 export async function processCryptoStreamingDonations() {
   try {
     const supabase = await createClient();
+    const configuredRate = Number(process.env.EXCHANGE_RATE_NGN_PER_CRYPTO);
+    const nairaPerCrypto = Number.isFinite(configuredRate) && configuredRate > 0 ? configuredRate : 302.5;
     
     console.log("Processing crypto streaming donations...");
     
@@ -173,8 +174,8 @@ export async function processCryptoStreamingDonations() {
           // Update donation record
           const newStreamedCryptoAmount = donation.streamed_crypto_amount + amountToProcess;
           const newRemainingCryptoAmount = donation.remaining_crypto_amount - amountToProcess;
-          const newStreamedAmount = donation.streamed_amount + (amountToProcess * 302.5);
-          const newRemainingAmount = donation.remaining_amount - (amountToProcess * 302.5);
+          const newStreamedAmount = donation.streamed_amount + (amountToProcess * nairaPerCrypto);
+          const newRemainingAmount = donation.remaining_amount - (amountToProcess * nairaPerCrypto);
           const isComplete = newRemainingCryptoAmount <= 0;
 
           await supabase
@@ -201,21 +202,21 @@ export async function processCryptoStreamingDonations() {
               await supabase
                 .from("causes")
                 .update({
-                  raised: (currentCause.raised || 0) + (amountToProcess * 302.5),
+                  raised: (currentCause.raised || 0) + (amountToProcess * nairaPerCrypto),
                   updated_at: new Date().toISOString(),
                 })
                 .eq("id", donation.cause_id);
             }
 
           // Record transaction
-          const txHash = `crypto_stream_${donation.id}_${Date.now()}`;
+          const txHash = crypto.randomUUID();
           await supabase
             .from("crypto_streaming_transactions")
             .insert([
               {
                 crypto_streaming_donation_id: donation.id,
                 amount: amountToProcess,
-                amount_in_naira: amountToProcess * 302.5,
+                amount_in_naira: amountToProcess * nairaPerCrypto,
                 transaction_type: "stream",
                 transaction_hash: txHash,
                 processed_at: new Date().toISOString(),
@@ -236,52 +237,6 @@ export async function processCryptoStreamingDonations() {
   } catch (error) {
     console.error("Error in processCryptoStreamingDonations:", error);
     return { success: false, processedCount: 0, error: error instanceof Error ? error.message : 'Unknown error' };
-  }
-}
-
-// Transfer Solana tokens
-async function transferSolana(
-  fromAddress: string,
-  toAddress: string,
-  amount: number
-): Promise<string | null> {
-  try {
-    // This would require the donor's private key or a different approach
-    console.log(`Simulating SOL transfer: ${amount} SOL from ${fromAddress} to ${toAddress}`);
-    
-    // In a real implementation, you would:
-    // 1. Get the donor's private key (securely)
-    // 2. Create and sign the transaction
-    // 3. Send it to the network
-    
-    return `simulated_sol_tx_${Date.now()}`;
-  } catch (error) {
-    console.error("Error transferring SOL:", error);
-    return null;
-  }
-}
-
-// Transfer EVM tokens
-async function transferEVM(
-  network: string,
-  fromAddress: string,
-  toAddress: string,
-  amount: number,
-  currency: string
-): Promise<string | null> {
-  try {
-    // This would require the donor's private key or a different approach
-    console.log(`Simulating ${currency} transfer on ${network}: ${amount} from ${fromAddress} to ${toAddress}`);
-    
-    // In a real implementation, you would:
-    // 1. Get the donor's private key (securely)
-    // 2. Create and sign the transaction
-    // 3. Send it to the network
-    
-    return `simulated_${network}_tx_${Date.now()}`;
-  } catch (error) {
-    console.error(`Error transferring ${currency} on ${network}:`, error);
-    return null;
   }
 }
 

@@ -3,7 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
+    if (process.env.NODE_ENV !== "development") {
+      return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+    }
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
     
     // Execute the SQL to fix the petition_signatures table
     const { data, error } = await supabase.rpc('exec', {
@@ -39,9 +46,11 @@ export async function POST(request: NextRequest) {
     
     // Verify the table structure
     const { data: columns, error: columnsError } = await supabase
-      .from("petition_signatures")
-      .select("*")
-      .limit(1);
+      .from("information_schema.columns")
+      .select("column_name, ordinal_position")
+      .eq("table_name", "petition_signatures")
+      .eq("table_schema", "public")
+      .order("ordinal_position", { ascending: true });
     
     if (columnsError) {
       console.error("Error verifying table structure:", columnsError);
@@ -55,7 +64,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "petition_signatures table fixed successfully",
-      columns: columns ? Object.keys(columns[0] || {}) : []
+      columns: (columns || []).map((c: any) => c.column_name)
     });
   } catch (error) {
     console.error("Error fixing petition_signatures table:", error);

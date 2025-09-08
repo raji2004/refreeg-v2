@@ -20,6 +20,21 @@ export async function POST(request: Request) {
     const table = isPetition ? "petition_comments" : "comments";
     const idColumn = isPetition ? "petition_id" : "cause_id";
 
+    // If replying to a comment, ensure the parent belongs to the same entity
+    if (parentId) {
+      const { data: parent, error: parentError } = await supabase
+        .from(table)
+        .select(`${idColumn}`)
+        .eq("id", parentId)
+        .single();
+      if (parentError || !parent) {
+        return NextResponse.json({ error: "Invalid parent comment" }, { status: 400 });
+      }
+      if (parent[idColumn] !== causeId) {
+        return NextResponse.json({ error: "Parent comment does not match entity" }, { status: 400 });
+      }
+    }
+
     const { data: comment, error } = await supabase
       .from(table)
       .insert({
