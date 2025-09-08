@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS public.petitions (
     image TEXT,
     contract_address TEXT,
     contract_petition_id INTEGER,
-    network TEXT,
+    network TEXT DEFAULT 'polygon_mainnet',
     nft_enabled BOOLEAN DEFAULT false,
     signature_count INTEGER DEFAULT 0,
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'closed', 'completed')),

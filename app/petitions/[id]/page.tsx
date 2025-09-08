@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Card,
   CardContent,
@@ -31,6 +33,9 @@ import MultimediaCarousel from "@/components/MultimediaCarousel";
 import { SignersList } from "@/components/signers-list";
 import { CommentsSection } from "@/components/comments/comment-section";
 import { PetitionNFTStatus } from "@/components/petition-nft-status";
+import { PetitionNFTSigner } from "@/components/nft-minting/PetitionNFTSigner";
+import { RealNFTSigner } from "@/components/nft-minting/RealNFTSigner";
+import { CustodialNFTSigner } from "@/components/nft-minting/CustodialNFTSigner";
 import { useRouter } from "next/navigation";
 
 // Mock data for a petition
@@ -407,6 +412,21 @@ export default async function PetitionDetailPage({
                   status={petition.status}
                   subaccount={petition?.user?.sub_account_code}
                 />
+                
+                {/* NFT Signing Component - Custodial (No Wallet Required) */}
+                {petition.nft_enabled && petition.contract_address && (
+                  <div className="mt-6">
+                    <CustodialNFTSigner
+                      petitionId={petition.id}
+                      petitionTitle={petition.title}
+                      onNFTMinted={(tokenId, txHash) => {
+                        console.log(`NFT minted: Token ID ${tokenId}, TX: ${txHash}`);
+                        // You can add additional logic here, like refreshing the page
+                        window.location.reload();
+                      }}
+                    />
+                  </div>
+                )}
                 
                 {/* NFT Status for signed users */}
                 {user && (

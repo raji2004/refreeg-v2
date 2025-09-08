@@ -187,16 +187,13 @@ export async function createPetition(
     .insert({
       user_id: userId,
       title: petitionData.title,
-      description: petitionData.description, // <-- ensure this is included
+      description: petitionData.description,
       category: petitionData.category,
-      goal:
-        typeof petitionData.goal === "string"
-          ? Number.parseFloat(petitionData.goal)
-          : petitionData.goal,
-      status: "pending", // All petitions start as pending
+      status: "active", // All petitions start as active
       image: coverImageUrl, // Store the cover image URL
-      days_active: daysActive, // Store the calculated days active
-      multimedia: multimediaUrls, // Store multimedia URLs as JSON array
+      nft_enabled: true, // Enable NFT functionality
+      signature_count: 0, // Start with 0 signatures
+      network: "polygon_mainnet", // Default to Polygon mainnet
     })
     .select()
     .single();

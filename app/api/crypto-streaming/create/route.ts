@@ -19,8 +19,8 @@ export async function POST(request: Request) {
       totalCryptoAmount
     } = body;
 
-    // Validate required fields
-    if (!causeId || !donorId || !donorName || !donorEmail || !totalAmount || 
+    // Validate required fields (donorId can be null for anonymous donations)
+    if (!causeId || !donorName || !donorEmail || !totalAmount || 
         !streamDurationDays || !streamIntervalSeconds || !cryptoCurrency || 
         !cryptoNetwork || !donorWalletAddress || !recipientWalletAddress || 
         !totalCryptoAmount) {

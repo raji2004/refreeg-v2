@@ -26,17 +26,20 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user has signed this petition
-    const { data: signature, error: signatureError } = await supabase
+    const { data: signatures, error: signatureError } = await supabase
       .from("petition_signatures")
       .select("token_id, tx_hash")
       .eq("petition_id", petitionId)
-      .eq("signer_address", userId)
-      .single();
+      .eq("signer_address", userId) // userId is actually the signer_address
+      .order("created_at", { ascending: false })
+      .limit(1);
 
-    if (signatureError && signatureError.code !== "PGRST116") {
+    if (signatureError) {
       console.error("Error fetching signature:", signatureError);
       return NextResponse.json({ error: "Failed to fetch signature" }, { status: 500 });
     }
+
+    const signature = signatures && signatures.length > 0 ? signatures[0] : null;
 
     // Determine status
     let status: "not_signed" | "signed_no_nft" | "nft_pending" | "nft_minted";
@@ -51,6 +54,43 @@ export async function GET(request: NextRequest) {
       status = "nft_pending";
     }
 
+    // Helper function to generate explorer links
+    const getExplorerLinks = (network: string, contractAddress: string, tokenId: string, txHash: string) => {
+      const baseUrls = {
+        polygon_mainnet: "https://polygonscan.com",
+        polygon_amoy: "https://amoy.polygonscan.com",
+        ethereum: "https://etherscan.io",
+        sepolia: "https://sepolia.etherscan.io",
+        bsc: "https://bscscan.com",
+        bsc_testnet: "https://testnet.bscscan.com",
+        arbitrum: "https://arbiscan.io",
+        arbitrum_sepolia: "https://sepolia.arbiscan.io",
+        optimism: "https://optimistic.etherscan.io",
+        base: "https://basescan.org",
+        avalanche: "https://snowtrace.io",
+        solana: "https://explorer.solana.com",
+      };
+
+      const baseUrl = baseUrls[network as keyof typeof baseUrls] || baseUrls.polygon_mainnet;
+      
+      return {
+        contractUrl: contractAddress ? `${baseUrl}/address/${contractAddress}` : null,
+        tokenUrl: contractAddress && tokenId ? `${baseUrl}/token/${contractAddress}?a=${tokenId}` : null,
+        transactionUrl: txHash ? `${baseUrl}/tx/${txHash}` : null,
+        openseaUrl: contractAddress && tokenId ? 
+          (network.includes('polygon') ? 
+            `https://opensea.io/assets/matic/${contractAddress}/${tokenId}` :
+            `https://opensea.io/assets/ethereum/${contractAddress}/${tokenId}`) : null,
+      };
+    };
+
+    const network = petition.network || "polygon_amoy";
+    const contractAddress = petition.contract_address || "";
+    const tokenId = signature?.token_id?.toString() || "";
+    const txHash = signature?.tx_hash || "";
+    
+    const explorerLinks = getExplorerLinks(network, contractAddress, tokenId, txHash);
+
     const nftStatus = {
       hasSigned: !!signature,
       nftEnabled: petition.nft_enabled || false,
@@ -59,6 +99,7 @@ export async function GET(request: NextRequest) {
       contractAddress: petition.contract_address,
       network: petition.network,
       status,
+      explorerLinks,
     };
 
     return NextResponse.json({ status: nftStatus });
