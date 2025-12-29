@@ -33,21 +33,15 @@ type StepProps = {
 type ReferralRow = {
   id: string;
   referrer_id?: string | null;
+  referee_id?: string | null;
   registered: boolean | null;
   referee_email: string | null;
   created_at: string | null;
   reward?: string | null;
   profiles?: {
-    full_name: string | null;
+    first_name: string | null;
     email: string | null;
-    avatar_url: string | null;
   } | null;
-};
-
-type DebugInfo = {
-  userId?: string;
-  userEmail?: string | null;
-  rowCount: number;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -90,6 +84,7 @@ const CopyToast: React.FC<{ visible: boolean }> = ({ visible }) => (
 
 export default function ReferralPage() {
   const { user } = useAuth();
+  const supabase = createClient();
 
   const [referralLink, setReferralLink] = useState("");
   const [copied, setCopied] = useState(false);
@@ -101,8 +96,7 @@ export default function ReferralPage() {
 
   const [referrals, setReferrals] = useState<ReferralRow[]>([]);
   const [shareOpen, setShareOpen] = useState(false);
-
-  const [debug, setDebug] = useState<DebugInfo>({ rowCount: 0 });
+  const [loading, setLoading] = useState(true);
 
   /* ------------------------------------------------------------------------ */
   /*                             Load All Referral Data                       */
@@ -110,88 +104,101 @@ export default function ReferralPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const supabase = createClient();
+      try {
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
 
-      // If useAuth hasn't loaded yet, fallback to Supabase auth
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
+        const currentUser = user || authUser;
+        if (!currentUser?.id) {
+          setLoading(false);
+          return;
+        }
 
-      const currentUser = user || authUser;
-      if (!currentUser?.id) return;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("referral_code")
+          .eq("id", currentUser.id)
+          .single();
 
-      setDebug({
-        userId: currentUser.id,
-        userEmail: (currentUser as any).email ?? null,
-        rowCount: 0,
-      });
+        const code = profile?.referral_code || currentUser.id;
+        const baseUrl =
+          typeof window !== "undefined" ? window.location.origin : "";
+        setReferralLink(`${baseUrl}/auth/signup?ref=${code}`);
 
-      // 1) Get referral code from profiles, fallback to user id
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("referral_code")
-        .eq("id", currentUser.id)
-        .single();
+        const { data: rows, error } = await supabase
+          .from("referrals")
+          .select(
+            `
+              id,
+              referrer_id,
+              referee_email,
+              registered,
+              reward,
+              created_at,
+              referee_id
+            `
+          )
+          .eq("referrer_id", currentUser.id)
+          .order("created_at", { ascending: false });
 
-      const code = profile?.referral_code || currentUser.id;
+        if (error) {
+          console.error("Error fetching referrals:", error);
+        }
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_SITE_URL ||
-        (typeof window !== "undefined" ? window.location.origin : "");
+        let enrichedRows: ReferralRow[] = [];
 
-      setReferralLink(`${baseUrl}/auth/signup?ref=${code}`);
+        if (rows && rows.length > 0) {
+          const refereeIds = rows
+            .map((row) => row.referee_id)
+            .filter((id): id is string => !!id);
 
-      // 2) Load referral rows with joined profile
-      const { data: rows, error } = await supabase
-        .from("referrals")
-        .select(
-          `
-            id,
-            referrer_id,
-            referee_email,
-            registered,
-            reward,
-            created_at,
-            profiles:referee_id (
-              full_name,
-              email
-            )
-          `
-        )
-        .eq("referrer_id", currentUser.id);
-      console.log("ROWS:", rows);
-      if (error) {
-        console.error("REFERRAL QUERY ERROR:", error);
+          let profileMap: Record<
+            string,
+            { first_name: string | null; email: string | null }
+          > = {};
+
+          if (refereeIds.length > 0) {
+            const { data: profilesData } = await supabase
+              .from("profiles")
+              .select("id, first_name, email")
+              .in("id", refereeIds);
+
+            if (profilesData) {
+              profilesData.forEach((p) => {
+                profileMap[p.id] = p;
+              });
+            }
+          }
+
+          enrichedRows = rows.map((row) => ({
+            ...row,
+            profiles: row.referee_id ? profileMap[row.referee_id] || null : null,
+          }));
+        }
+
+        setReferrals(enrichedRows);
+
+        const totalSignUps = enrichedRows.filter((r) => r.registered).length;
+        const totalPoints = totalSignUps * 5;
+
+        setInvites(enrichedRows.length);
+        setSignUps(totalSignUps);
+        setPoints(totalPoints);
+
+        let currentTier = "Tier 1";
+        if (totalPoints >= 505) {
+          currentTier = "Tier 3";
+        } else if (totalPoints >= 205) {
+          currentTier = "Tier 2";
+        }
+
+        setTier(currentTier);
+      } catch (err) {
+        console.error("Unexpected error:", err);
+      } finally {
+        setLoading(false);
       }
-
-      // Handle profiles array from Supabase (even single relations return arrays)
-      const safeRows: ReferralRow[] = (rows || []).map((row: any) => ({
-        ...row,
-        profiles: Array.isArray(row.profiles)
-          ? row.profiles[0] || null
-          : row.profiles || null,
-      }));
-
-      setReferrals(safeRows);
-      setDebug((prev) => ({ ...prev, rowCount: safeRows.length }));
-
-      // 3) Compute stats
-      const totalSignUps = safeRows.filter((r) => r.registered).length;
-      const totalPoints = totalSignUps * 5;
-
-      setInvites(safeRows.length);
-      setSignUps(totalSignUps);
-      setPoints(totalPoints);
-
-      // Updated Tier Logic to match your 205/505 requirements
-      let currentTier = "Tier 1";
-      if (totalPoints >= 505) {
-        currentTier = "Tier 3";
-      } else if (totalPoints >= 205) {
-        currentTier = "Tier 2";
-      }
-
-      setTier(currentTier);
     };
 
     loadData();
@@ -446,45 +453,68 @@ export default function ReferralPage() {
           variants={fadeUp}>
           {/* Header */}
           <div className="grid grid-cols-4 bg-[#0065FF] px-4 py-3 text-sm font-medium text-white">
-            <span>Friends Account</span>
+            <span>Friend</span>
             <span>Registered</span>
-            <span>Reg Date</span>
-            <span>Rewards</span>
+            <span>Date</span>
+            <span>Reward</span>
           </div>
 
           {/* Divider */}
           <div className="h-[2px] w-full bg-black/40" />
 
           {/* Body */}
-          {referrals.length === 0 ? (
-            <div className="py-10 text-center text-base font-semibold text-gray-500">
-              No Data
+          {loading ? (
+            <div className="py-10 text-center text-sm text-gray-500">
+              Loading data...
+            </div>
+          ) : referrals.length === 0 ? (
+            <div className="py-10 text-center text-sm text-gray-500">
+              No referrals yet
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
               {referrals.map((ref) => {
                 const profile = ref.profiles;
-                const name = profile?.full_name || "Pending user";
-                const email = profile?.email || ref.referee_email || "Unknown";
+                const name =
+                  profile?.first_name ||
+                  ref.referee_email?.split("@")[0] ||
+                  "Pending User";
+                const email = ref.referee_email || "Unknown";
                 const registered = !!ref.registered;
                 const date = ref.created_at
                   ? new Date(ref.created_at).toLocaleDateString()
                   : "—";
-                const reward = registered ? "5 pts" : "—";
+                const reward = registered ? "+5 pts" : "Pending";
 
                 return (
                   <div
                     key={ref.id}
-                    className="grid grid-cols-4 px-4 py-3 text-sm text-gray-700">
-                    <div className="flex flex-col">
-                      <span className="truncate font-medium">{name}</span>
+                    className="grid grid-cols-4 items-center px-4 py-3 text-sm text-gray-700">
+                    <div className="flex flex-col overflow-hidden">
+                      <span className="truncate font-medium capitalize">
+                        {name}
+                      </span>
                       <span className="truncate text-xs text-gray-500">
                         {email}
                       </span>
                     </div>
-                    <span>{registered ? "Yes" : "No"}</span>
+                    <div>
+                      <span
+                        className={`rounded-full px-2 py-1 text-xs ${
+                          registered
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}>
+                        {registered ? "Yes" : "No"}
+                      </span>
+                    </div>
                     <span>{date}</span>
-                    <span>{reward}</span>
+                    <span
+                      className={
+                        registered ? "font-bold text-green-600" : "text-gray-400"
+                      }>
+                      {reward}
+                    </span>
                   </div>
                 );
               })}
