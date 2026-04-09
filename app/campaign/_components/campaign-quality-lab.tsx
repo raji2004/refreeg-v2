@@ -265,7 +265,7 @@ function HeaderMeta({
           </span>
         </div>
 
-        {/* RIGHT: Button (always visible) */}
+        {/* RIGHT: Pledge button hidden for now
         <div className="w-full sm:w-auto">
           <Button
             onClick={() => router.push(`/causes/${cause.id}/pledge`)}
@@ -275,6 +275,7 @@ function HeaderMeta({
             Make a Pledge
           </Button>
         </div>
+        */}
       </div>
     </motion.div>
   );
@@ -1302,7 +1303,7 @@ export default function CampaignQualityLab({
                 raisedToday={raisedToday}
               />
             </div>
-            <PledgesCard cause={cause} profile={profile} />
+            {/* <PledgesCard cause={cause} profile={profile} /> */}
             <CampaignHealthCard
               donorsPreview={donorsPreview}
               causeId={cause.id}
