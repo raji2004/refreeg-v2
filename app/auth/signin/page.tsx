@@ -113,7 +113,6 @@ export default function SignInPage() {
 
             <div className="my-2 h-[1px] w-full bg-gradient-to-r from-transparent via-neutral-300 to-transparent" />
 
-            {/*
             <div className="flex flex-col space-y-4">
               <button
                 className="group/btn shadow-input relative flex h-10 w-full items-center justify-center space-x-2 rounded-md bg-gray-50 px-4 font-medium text-black"
@@ -131,7 +130,6 @@ export default function SignInPage() {
                 <BottomGradient />
               </button>
             </div>
-            */}
 
             <div className="mt-6 text-center text-sm text-neutral-600">
               Don&apos;t have an account?{" "}

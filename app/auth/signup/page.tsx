@@ -209,7 +209,6 @@ export default function SignUpPage() {
 
             <div className="my-2 h-[1px] w-full bg-gradient-to-r from-transparent via-neutral-300 to-transparent" />
 
-            {/*
             <button
               type="button"
               onClick={signInWithGoogle}
@@ -225,7 +224,6 @@ export default function SignUpPage() {
               <span className="text-sm text-neutral-700">Google</span>
               <BottomGradient />
             </button>
-            */}
 
             <div className="mt-6 text-center text-sm text-neutral-600">
               Already have an account?{" "}
