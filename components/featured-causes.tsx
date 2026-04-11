@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { listCauses } from "@/actions/cause-actions";
 import { DonateButton } from "@/components/donate-button";
+import Image from "next/image";
 import {
   GraduationCap,
   HeartPulse,
@@ -141,11 +142,12 @@ export async function FeaturedCauses() {
         return (
           <Link key={cause.id} href={`/causes/${cause.id}`} className="group">
             <Card className="overflow-hidden cursor-pointer transition hover:shadow-lg h-full flex flex-col">
-              <div className="aspect-video w-full overflow-hidden">
-                <img
+              <div className="relative aspect-video w-full overflow-hidden">
+                <Image
                   src={cause.image || "/placeholder.svg"}
                   alt={cause.title}
-                  className="object-cover w-full h-full"
+                  fill
+                  className="object-cover"
                 />
               </div>
               <CardHeader className="flex flex-col flex-1 p-4">

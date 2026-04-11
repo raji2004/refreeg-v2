@@ -2,6 +2,7 @@
 
 import React, { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
 import { useOutsideClick } from "@/hooks/use-outside-click";
 
 export function ExpandableCardDemo() {
@@ -70,13 +71,13 @@ export function ExpandableCardDemo() {
               ref={ref}
               className="w-full max-w-[500px]  h-full md:h-fit md:max-h-[90%]  flex flex-col bg-white dark:bg-neutral-900 sm:rounded-3xl overflow-hidden"
             >
-              <motion.div layoutId={`image-${active.title}-${id}`}>
-                <img
-                  width={200}
-                  height={200}
+              <motion.div layoutId={`image-${active.title}-${id}`} className="relative w-full h-80 lg:h-80">
+                <Image
+                  fill
+                  unoptimized
                   src={active.src}
                   alt={active.title}
-                  className="w-full h-80 lg:h-80 sm:rounded-tr-lg sm:rounded-tl-lg object-cover object-top"
+                  className="sm:rounded-tr-lg sm:rounded-tl-lg object-cover object-top"
                 />
               </motion.div>
 
@@ -133,13 +134,13 @@ export function ExpandableCardDemo() {
             className="p-4 flex flex-col md:flex-row justify-between items-center hover:bg-neutral-50 dark:hover:bg-neutral-800 rounded-xl cursor-pointer"
           >
             <div className="flex gap-4 flex-col md:flex-row ">
-              <motion.div layoutId={`image-${card.title}-${id}`}>
-                <img
-                  width={100}
-                  height={100}
+              <motion.div layoutId={`image-${card.title}-${id}`} className="relative h-40 w-40 md:h-14 md:w-14 shrink-0">
+                <Image
+                  fill
+                  unoptimized
                   src={card.src}
                   alt={card.title}
-                  className="h-40 w-40 md:h-14 md:w-14 rounded-lg object-cover object-top"
+                  className="rounded-lg object-cover object-top"
                 />
               </motion.div>
               <div className="">

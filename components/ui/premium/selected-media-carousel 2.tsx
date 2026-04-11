@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 interface SelectedMediaCarouselProps {
   files: File[];
@@ -52,10 +53,12 @@ export function SelectedMediaCarousel({
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black/20"
                   >
-                    <img
+                    <Image
                       src={url}
                       alt={`Preview ${index}`}
-                      className="object-cover w-full h-full"
+                      fill
+                      unoptimized
+                      className="object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
 
@@ -101,10 +104,12 @@ export function SelectedMediaCarousel({
               transition={{ delay: index * 0.05 }}
               className="relative group aspect-video rounded-2xl overflow-hidden shadow-lg border border-brand/5 bg-black/5"
             >
-              <img
+              <Image
                 src={url}
                 alt={`Preview ${index}`}
-                className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
+                fill
+                unoptimized
+                className="object-cover transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
                 <Button

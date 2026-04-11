@@ -65,14 +65,15 @@ const MobileSlider = () => {
       {[...HERO_IMAGES, ...HERO_IMAGES, ...HERO_IMAGES].map((src, index) => (
         <motion.div
           key={index}
-          className="flex-shrink-0 flex justify-center items-center w-[200px] h-[150px]"
+          className="relative flex-shrink-0 flex justify-center items-center w-[200px] h-[150px]"
           initial={{ opacity: 0, y: 40 }}
           animate={imageControls[index % HERO_IMAGES.length]}
         >
-          <img
+          <Image
             src={src}
             alt={`Hero image ${index + 1}`}
-            className="object-cover rounded-xl shadow-lg w-full h-full"
+            fill
+            className="object-cover rounded-xl shadow-lg"
           />
         </motion.div>
       ))}
@@ -118,14 +119,15 @@ const DesktopSlider = () => {
       {[...HERO_IMAGES, ...HERO_IMAGES, ...HERO_IMAGES].map((src, index) => (
         <motion.div
           key={index}
-          className="flex-shrink-0 flex justify-center items-center w-[325px] h-[200px]"
+          className="relative flex-shrink-0 flex justify-center items-center w-[325px] h-[200px]"
           initial={{ opacity: 0, y: 40 }}
           animate={imageControls[index % HERO_IMAGES.length]}
         >
-          <img
+          <Image
             src={src}
             alt={`Hero image ${index + 1}`}
-            className="object-cover rounded-xl shadow-lg w-full h-full"
+            fill
+            className="object-cover rounded-xl shadow-lg"
           />
         </motion.div>
       ))}

@@ -33,6 +33,7 @@ import { SignersList } from "@/components/signers-list";
 import { CommentsSection } from "@/components/comments/comment-section";
 import { Signature } from "@/types";
 import { Metadata } from "next";
+import Image from "next/image";
 
 // Mock data for a petition
 const mockPetition = {
@@ -271,11 +272,12 @@ export default async function PetitionDetailPage({
                 title={petition.title}
               />
             ) : (
-              <div className="aspect-video w-full overflow-hidden rounded-lg">
-                <img
+              <div className="relative aspect-video w-full overflow-hidden rounded-lg">
+                <Image
                   src={petition.image ?? "/placeholder.svg"}
                   alt={petition.title}
-                  className="object-cover w-full h-full"
+                  fill
+                  className="object-cover"
                 />
               </div>
             );

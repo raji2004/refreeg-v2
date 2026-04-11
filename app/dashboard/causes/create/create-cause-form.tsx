@@ -1,5 +1,5 @@
 "use client";
-
+import Image from "next/image";
 import type React from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -979,10 +979,12 @@ export default function CreateCauseForm() {
                   />
                   {formData.coverImage && (
                     <div className="mt-4 relative group aspect-video rounded-xl overflow-hidden shadow-sm border border-brand/10">
-                      <img
+                      <Image
                         src={URL.createObjectURL(formData.coverImage)}
                         alt="Cover Preview"
-                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                        fill
+                        unoptimized
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Button

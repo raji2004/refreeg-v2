@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ExternalLink } from "lucide-react";
+import Image from "next/image";
 
 export default function Web3WalletGuide() {
   const router = useRouter();
@@ -41,9 +42,11 @@ export default function Web3WalletGuide() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <img
+                      <Image
                         src="/metamask.svg"
                         alt="MetaMask"
+                        width={24}
+                        height={24}
                         className="w-6 h-6"
                       />
                       MetaMask
@@ -79,9 +82,11 @@ export default function Web3WalletGuide() {
                 {/* <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <img
+                      <Image
                         src="/walletconnect-logo.svg"
                         alt="WalletConnect"
+                        width={24}
+                        height={24}
                         className="w-6 h-6"
                       />
                       WalletConnect

@@ -6,6 +6,7 @@ import { UploadCloud } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { useCallback, useState } from "react";
 import { compressImage } from "@/utils/image-compression";
+import Image from "next/image";
 
 const documentTypes = [
   "NIN",
@@ -112,11 +113,13 @@ export default function StepDocumentUpload({
           <input {...getInputProps()} />
           {file ? (
             file.type.startsWith("image/") ? (
-              <div className="w-full h-full bg-gray-100 rounded-xl flex items-center justify-center p-3">
-                <img
+              <div className="relative w-full h-full bg-gray-100 rounded-xl flex items-center justify-center p-3">
+                <Image
                   src={URL.createObjectURL(file)}
                   alt="Preview"
-                  className="max-w-full max-h-full object-contain rounded"
+                  fill
+                  unoptimized
+                  className="object-contain rounded"
                 />
               </div>
             ) : (

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 import {
   Carousel,
@@ -71,12 +72,13 @@ export default function FeaturedPetitionsCarousel({ petitions }) {
               <AnimatedCard>
                 <Card className="overflow-hidden cursor-pointer transition h-[420px] flex flex-col border border-gray-300">
                   
-                  <div className="aspect-video w-full overflow-hidden">
-                    <img
+                  <div className="relative aspect-video w-full overflow-hidden">
+                    <Image
+                      fill
+                      unoptimized
                       src={petition.image || "/placeholder.svg"}
                       alt={petition.title}
-                      loading="lazy"
-                      className="object-cover w-full h-full"
+                      className="object-cover"
                     />
                   </div>
 

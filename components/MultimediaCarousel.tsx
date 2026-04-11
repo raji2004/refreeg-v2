@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Image from "next/image";
 
 interface MediaItem {
   type: "image" | "video";
@@ -176,10 +177,11 @@ export default function MultimediaCarousel({
     } else {
       // Image
       return (
-        <img
+        <Image
           src={item.url}
           alt={`${title} - Image ${idx + 1}`}
-          className="object-cover w-full h-full"
+          fill
+          className="object-cover"
         />
       );
     }

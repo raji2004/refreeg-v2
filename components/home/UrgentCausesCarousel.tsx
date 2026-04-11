@@ -23,6 +23,7 @@ import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
 import { H4, P } from "../typograpy";
 import AnimatedCard from "./components/AnimatedCard";
+import Image from "next/image";
 
 type Cause = {
   id: string;
@@ -70,12 +71,12 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
         <AnimatedCard>
           <Card className="overflow-hidden cursor-pointer transition h-full flex flex-col border border-gray-300">
             
-            <div className="aspect-video w-full overflow-hidden rounded-t-lg">
-              <img
+            <div className="relative aspect-video w-full overflow-hidden rounded-t-lg">
+              <Image
                 src={cause.image || "/placeholder.svg"}
                 alt={cause.title}
-                loading="lazy"
-                className="object-cover w-full h-full"
+                fill
+                className="object-cover"
               />
             </div>
 

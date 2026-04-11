@@ -7,6 +7,7 @@ import {
   useScroll,
   useMotionValueEvent,
 } from "framer-motion";
+import Image from "next/image";
 
 import React, { useRef, useState } from "react";
 
@@ -243,12 +244,15 @@ export const NavbarLogo = () => {
       href="#"
       className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
     >
-      <img
-        src="https://assets.aceternity.com/logo-dark.png"
-        alt="logo"
-        width={30}
-        height={30}
-      />
+      <div className="relative h-[30px] w-[30px]">
+        <Image
+          fill
+          unoptimized
+          src="https://assets.aceternity.com/logo-dark.png"
+          alt="logo"
+          className="object-contain"
+        />
+      </div>
       <span className="font-medium text-black dark:text-white">Startup</span>
     </a>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 import {
   Carousel,
@@ -72,12 +73,13 @@ export default function UrgentCausesCarousel({ causes }) {
                 <AnimatedCard>
                   <Card className="overflow-hidden cursor-pointer transition h-full flex flex-col border border-gray-300">
 
-                    <div className="aspect-video w-full overflow-hidden rounded-t-lg">
-                      <img
+                    <div className="relative aspect-video w-full overflow-hidden rounded-t-lg">
+                      <Image
+                        fill
+                        unoptimized
                         src={cause.image || "/placeholder.svg"}
                         alt={cause.title}
-                        loading="lazy"
-                        className="object-cover w-full h-full"
+                        className="object-cover"
                       />
                     </div>
 

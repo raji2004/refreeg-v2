@@ -9,10 +9,10 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
 import { H2, P, H4 } from "../typograpy";
-import { Button } from "../ui/button";
 import { listCauses } from "@/actions/cause-actions";
 import AnimatedCard from "./components/AnimatedCard";
 import AnimatedHeader from "@/components/home/components/AnimatedHeader";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 
 import {
@@ -93,11 +93,12 @@ export async function FeaturedCauses() {
                 >
                   <AnimatedCard>
                     <Card className="overflow-hidden cursor-pointer transition hover:shadow-2xl shadow-lg h-[420px] flex flex-col border border-gray-300">
-                      <div className="aspect-video w-full overflow-hidden">
-                        <img
+                      <div className="relative aspect-video w-full overflow-hidden">
+                        <Image
                           src={cause.image || "/placeholder.svg"}
                           alt={cause.title}
-                          className="object-cover w-full h-full"
+                          fill
+                          className="object-cover"
                         />
                       </div>
 

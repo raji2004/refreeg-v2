@@ -16,6 +16,7 @@ import {
 } from "@/actions/kyc-actions";
 import { getProfile } from "@/actions/profile-actions";
 import NavigationLoader from "@/components/NavigationLoader";
+import Image from "next/image";
 
 export default function KycReviewPage() {
   const router = useRouter();
@@ -127,11 +128,13 @@ export default function KycReviewPage() {
                   href={kyc.document_url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  className="block relative w-64 h-48 border rounded overflow-hidden"
                 >
-                  <img
+                  <Image
                     src={kyc.document_url}
                     alt="KYC Document"
-                    className="max-w-xs max-h-48 border rounded"
+                    fill
+                    className="object-contain"
                   />
                 </a>
               ) : (

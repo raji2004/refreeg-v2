@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 interface Step1Props {
   user: any;
@@ -43,9 +44,9 @@ export default function Step1({
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="mb-6"
+        className="mb-6 relative h-32 w-32"
       >
-        <img src="/onboarding1.png" alt="Illustration" className="h-32 w-32" />
+        <Image src="/onboarding1.png" alt="Illustration" fill className="object-contain" />
       </motion.div>
 
       {/* Title */}
