@@ -3,7 +3,13 @@
 import { useEffect, useRef, useCallback } from "react";
 
 export interface EventPayload {
-  type: "comment" | "share" | "donation" | "weekly_streak" | "monthly_active";
+  type:
+    | "comment"
+    | "like_comment"
+    | "share"
+    | "donation"
+    | "weekly_streak"
+    | "monthly_active";
   data: Record<string, any>;
   timestamp: string;
 }
@@ -13,6 +19,7 @@ type EventCallback = (payload: EventPayload) => void;
 interface ListenerOptions {
   userId?: string;
   onComment?: EventCallback;
+  onLikeComment?: EventCallback;
   onShare?: EventCallback;
   onDonation?: EventCallback;
   onWeeklyStreak?: EventCallback;
@@ -47,6 +54,9 @@ export function useEventListeners(options: ListenerOptions) {
           case "comment":
             options.onComment?.(payload);
             break;
+          case "like_comment":
+            options.onLikeComment?.(payload);
+            break;
           case "share":
             options.onShare?.(payload);
             break;
@@ -72,6 +82,7 @@ export function useEventListeners(options: ListenerOptions) {
   }, [
     options.userId,
     options.onComment,
+    options.onLikeComment,
     options.onShare,
     options.onDonation,
     options.onWeeklyStreak,

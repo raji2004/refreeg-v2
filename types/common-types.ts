@@ -112,6 +112,7 @@ export interface Event {
   user_id: string;
   event_type:
     | "comment"
+    | "like_comment"
     | "share"
     | "donation"
     | "login"
@@ -124,6 +125,7 @@ export interface Event {
 export interface RewardEvent {
   type:
     | "comment"
+    | "like_comment"
     | "share"
     | "donation"
     | "login"
@@ -139,28 +141,30 @@ export interface RewardTransaction {
   user_id: string;
   amount: number;
   transaction_type: string;
-  event_id: string;
-  status: "completed" | "pending" | "failed";
+  event_id: string | null;
+  status: "completed" | "pending" | "failed" | string;
   created_at: string;
-  updated_at?: string;
+  updated_at?: string | null;
 }
 
 export interface UserWallet {
   id: string;
   user_id: string;
   balance: number;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface UserStreak {
-  id: string;
+  id?: string;
   user_id: string;
   weekly_streak: number;
   is_monthly_active: boolean;
   last_active_date: string | null;
-  created_at: string;
-  updated_at: string;
+  active_days_this_month?: number;
+  quality_multiplier?: number;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface Category {

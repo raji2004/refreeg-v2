@@ -2,7 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { REWARD_AMOUNTS } from "@/lib/reward-constants";
+import {
+  calculateBaseReward,
+  EIZA_MONTHLY_ACTIVE_DAYS,
+  getRewardRule,
+  roundEiza,
+} from "@/lib/reward-constants";
 import type { RewardEvent } from "@/types";
 
 /**
@@ -10,31 +15,23 @@ import type { RewardEvent } from "@/types";
  */
 export async function recordEvent(event: RewardEvent) {
   try {
-    // Prevent multiple login rewards within a rolling 24-hour window
-    if (event.type === "login") {
-      try {
-        const recentLogin = await prisma.events.findFirst({
-          where: {
-            user_id: event.userId,
-            event_type: "login",
+    const rewardRule = getRewardRule(event.type);
+
+    if (rewardRule?.cooldownMs) {
+      const recentReward = await prisma.rewardTransaction.findFirst({
+        where: {
+          userId: event.userId,
+          transactionType: event.type,
+          createdAt: {
+            gte: new Date(Date.now() - rewardRule.cooldownMs),
           },
-          orderBy: { created_at: "desc" },
-          select: { id: true, created_at: true },
-        });
+        },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      });
 
-        if (recentLogin?.created_at) {
-          const lastLogin = new Date(recentLogin.created_at).getTime();
-          const now = Date.now();
-          const hours24 = 24 * 60 * 60 * 1000;
-
-          if (now - lastLogin < hours24) {
-            // A login event already recorded within 24 hours — do not award again
-            return recentLogin;
-          }
-        }
-      } catch (err) {
-        // If something goes wrong checking recent logins, log and continue to avoid breaking login flow
-        console.error("Error while verifying daily login reward:", err);
+      if (recentReward) {
+        return null;
       }
     }
 
@@ -47,28 +44,7 @@ export async function recordEvent(event: RewardEvent) {
       },
     });
 
-    // Calculate rewards based on event type
-    let rewardAmount = 0;
-    switch (event.type) {
-      case "comment":
-        rewardAmount = REWARD_AMOUNTS.comment;
-        break;
-      case "share":
-        rewardAmount = REWARD_AMOUNTS.share;
-        break;
-      case "donation":
-        rewardAmount = event.amount ? REWARD_AMOUNTS.donation(event.amount) : 0;
-        break;
-      case "login":
-        rewardAmount = REWARD_AMOUNTS.login;
-        break;
-      case "weekly_streak":
-        rewardAmount = REWARD_AMOUNTS.weekly_streak;
-        break;
-      case "monthly_active":
-        rewardAmount = REWARD_AMOUNTS.monthly_active;
-        break;
-    }
+    const rewardAmount = await calculateEligibleRewardAmount(event);
 
     if (rewardAmount > 0) {
       await addRewards(event.userId, rewardAmount, event.type, eventData.id);
@@ -109,7 +85,7 @@ export async function addRewards(
     });
 
     const currentBalance = Number(wallet?.balance || 0);
-    const newBalance = currentBalance + amount;
+    const newBalance = roundEiza(currentBalance + amount);
 
     await prisma.userWallet.upsert({
       where: { userId },
@@ -126,6 +102,100 @@ export async function addRewards(
     console.error("Error in addRewards:", error);
     throw error;
   }
+}
+
+async function calculateEligibleRewardAmount(event: RewardEvent) {
+  const baseReward = calculateBaseReward(event.type, event.amount);
+  if (baseReward <= 0) return 0;
+
+  const [multiplier, earnedToday] = await Promise.all([
+    getEngagementQualityMultiplier(event.userId),
+    getRewardsEarnedToday(event.userId, event.type),
+  ]);
+
+  if (multiplier <= 0) return 0;
+
+  const adjustedReward = roundEiza(baseReward * multiplier);
+  const rewardRule = getRewardRule(event.type);
+
+  if (!rewardRule?.dailyCap) {
+    return adjustedReward;
+  }
+
+  const remainingDailyCap = Math.max(0, rewardRule.dailyCap - earnedToday);
+  return roundEiza(Math.min(adjustedReward, remainingDailyCap));
+}
+
+async function getRewardsEarnedToday(userId: string, transactionType: string) {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const rewards = await prisma.rewardTransaction.aggregate({
+    where: {
+      userId,
+      transactionType,
+      status: "completed",
+      createdAt: {
+        gte: startOfDay,
+      },
+    },
+    _sum: {
+      amount: true,
+    },
+  });
+
+  return Number(rewards._sum.amount ?? 0);
+}
+
+async function getEngagementQualityMultiplier(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      createdAt: true,
+      isBlocked: true,
+      isVerified: true,
+      content_quality_score: true,
+      spam_flags: true,
+      upvotes_received: true,
+    },
+  });
+
+  if (!user || user.isBlocked) return 0;
+
+  const spamFlags = user.spam_flags ?? 0;
+  if (spamFlags >= 3) return 0;
+
+  const accountAgeDays =
+    (Date.now() - new Date(user.createdAt).getTime()) / (24 * 60 * 60 * 1000);
+  const rawQualityScore =
+    user.content_quality_score === null || user.content_quality_score === undefined
+      ? null
+      : Number(user.content_quality_score);
+  const qualityScore =
+    rawQualityScore !== null && rawQualityScore > 1
+      ? rawQualityScore / 100
+      : rawQualityScore;
+
+  let multiplier = 1;
+
+  if (spamFlags > 0 || (qualityScore !== null && qualityScore < 0.5)) {
+    multiplier = 0.5;
+  } else if (
+    accountAgeDays >= 90 &&
+    user.isVerified &&
+    (qualityScore ?? 0) >= 0.8 &&
+    (user.upvotes_received ?? 0) >= 50
+  ) {
+    multiplier = 2;
+  } else if (accountAgeDays >= 30 && (qualityScore ?? 0) >= 0.8) {
+    multiplier = 1.5;
+  }
+
+  if (accountAgeDays < 7) {
+    return Math.min(multiplier, 0.5);
+  }
+
+  return multiplier;
 }
 
 /**
@@ -145,8 +215,25 @@ export async function getUserWallet(userId: string) {
     ]);
 
     return {
-      wallet,
-      transactions,
+      wallet: wallet
+        ? {
+            id: wallet.id,
+            user_id: wallet.userId,
+            balance: Number(wallet.balance ?? 0),
+            created_at: wallet.createdAt?.toISOString() ?? null,
+            updated_at: wallet.updatedAt?.toISOString() ?? null,
+          }
+        : null,
+      transactions: transactions.map((transaction) => ({
+        id: transaction.id,
+        user_id: transaction.userId,
+        amount: Number(transaction.amount),
+        transaction_type: transaction.transactionType,
+        event_id: transaction.event_id ?? null,
+        status: transaction.status ?? "completed",
+        created_at: transaction.createdAt?.toISOString() ?? new Date().toISOString(),
+        updated_at: transaction.updatedAt?.toISOString() ?? null,
+      })),
       walletError: null,
       transactionsError: null,
     };
@@ -174,7 +261,6 @@ export async function updateUserStreaks(userId: string) {
     lastActive?.setHours(0, 0, 0, 0);
 
     let weeklyStreak = streakData?.weeklyStreak || 0;
-    let isMonthlyActive = streakData?.isMonthlyActive || false;
 
     // Check if this is a new day
     if (!lastActive || lastActive.getTime() !== today.getTime()) {
@@ -189,15 +275,16 @@ export async function updateUserStreaks(userId: string) {
       }
     }
 
-    // Check if it's a new month
     const month = today.getMonth();
     const year = today.getFullYear();
-    const streakMonth = lastActive ? lastActive.getMonth() : -1;
-    const streakYear = lastActive ? lastActive.getFullYear() : -1;
-
-    if (month !== streakMonth || year !== streakYear) {
-      isMonthlyActive = true;
-    }
+    const monthStart = new Date(year, month, 1);
+    const nextMonthStart = new Date(year, month + 1, 1);
+    const activeDaysThisMonth = await getActiveDaysInPeriod(
+      userId,
+      monthStart,
+      nextMonthStart,
+    );
+    const isMonthlyActive = activeDaysThisMonth >= EIZA_MONTHLY_ACTIVE_DAYS;
 
     // Update streak data
     const updatedStreak = await prisma.userStreak.upsert({
@@ -218,8 +305,21 @@ export async function updateUserStreaks(userId: string) {
     // Award rewards if milestones reached
     const hasWeeklyMilestone =
       weeklyStreak > 0 && weeklyStreak % 7 === 0 && streakData?.weeklyStreak !== weeklyStreak;
+    const monthlyRewardThisPeriod = isMonthlyActive
+      ? await prisma.rewardTransaction.findFirst({
+          where: {
+            userId,
+            transactionType: "monthly_active",
+            createdAt: {
+              gte: monthStart,
+              lt: nextMonthStart,
+            },
+          },
+          select: { id: true },
+        })
+      : null;
     const hasMonthlyMilestone =
-      isMonthlyActive && !streakData?.isMonthlyActive;
+      isMonthlyActive && !monthlyRewardThisPeriod;
 
     if (hasWeeklyMilestone) {
       await recordEvent({
@@ -244,7 +344,11 @@ export async function updateUserStreaks(userId: string) {
       await recordEvent({
         type: "monthly_active",
         userId,
-        metadata: { month: today.getMonth() + 1, year },
+        metadata: {
+          active_days: activeDaysThisMonth,
+          month: today.getMonth() + 1,
+          year,
+        },
       });
       // Emit SSE event
       try {
@@ -268,21 +372,66 @@ export async function updateUserStreaks(userId: string) {
   }
 }
 
+async function getActiveDaysInPeriod(userId: string, start: Date, end: Date) {
+  const loginEvents = await prisma.events.findMany({
+    where: {
+      user_id: userId,
+      event_type: "login",
+      created_at: {
+        gte: start,
+        lt: end,
+      },
+    },
+    select: {
+      created_at: true,
+    },
+  });
+
+  const activeDays = new Set(
+    loginEvents
+      .filter((event) => event.created_at)
+      .map((event) => new Date(event.created_at!).toISOString().slice(0, 10)),
+  );
+
+  return activeDays.size;
+}
+
 /**
  * Get user's streak and activity stats
  */
 export async function getUserStats(userId: string) {
   try {
-    const data = await prisma.userStreak.findUnique({
-      where: { userId },
-    });
+    const today = new Date();
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const nextMonthStart = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const [data, activeDaysThisMonth, qualityMultiplier] = await Promise.all([
+      prisma.userStreak.findUnique({
+        where: { userId },
+      }),
+      getActiveDaysInPeriod(userId, monthStart, nextMonthStart),
+      getEngagementQualityMultiplier(userId),
+    ]);
 
-    return data || {
-      userId,
-      weeklyStreak: 0,
-      isMonthlyActive: false,
-      lastActiveDate: null,
-    };
+    return data
+      ? {
+          id: data.id,
+          user_id: data.userId,
+          weekly_streak: data.weeklyStreak ?? 0,
+          is_monthly_active: data.isMonthlyActive ?? false,
+          last_active_date: data.lastActiveDate?.toISOString() ?? null,
+          active_days_this_month: activeDaysThisMonth,
+          quality_multiplier: qualityMultiplier,
+          created_at: data.createdAt?.toISOString() ?? null,
+          updated_at: data.updatedAt?.toISOString() ?? null,
+        }
+      : {
+          user_id: userId,
+          weekly_streak: 0,
+          is_monthly_active: false,
+          last_active_date: null,
+          active_days_this_month: activeDaysThisMonth,
+          quality_multiplier: qualityMultiplier,
+        };
   } catch (error) {
     console.error("Error in getUserStats:", error);
     throw error;
