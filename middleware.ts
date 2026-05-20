@@ -18,9 +18,77 @@ const PUBLIC_API_PREFIXES = [
   "/api/s3", // S3 image proxy (public images)
 ];
 
+const APP_ROUTE_PREFIXES = [
+  "/auth",
+  "/dashboard",
+  "/onboarding",
+  "/causes",
+  "/campaign",
+  "/petitions",
+  "/referrals",
+  "/[username]",
+  "/s",
+];
+
+const LANDING_ROUTE_PREFIXES = [
+  "/",
+  "/about-us",
+  "/how-it-works",
+  "/how-to-start-a-cause",
+  "/businesses",
+  "/creators",
+  "/non-profits",
+  "/disaster-relief",
+  "/healthcare",
+  "/crowdfund",
+  "/ai-agent",
+  "/coming-soon",
+  "/faq",
+  "/guide",
+  "/docs",
+  "/privacy",
+  "/terms",
+  "/theme",
+];
+
+function matchesPrefix(pathname: string, prefix: string): boolean {
+  if (prefix === "/") return pathname === "/";
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
+  const host = (req.headers.get("host") || "").toLowerCase();
   const user = req.auth?.user;
+
+  // ── 0. Host-based routing between landing and app subdomains ─────
+  // Keep local/staging hosts untouched; only enforce on production domains.
+  const isWwwHost = host === "www.refreeg.com";
+  const isAppsHost = host === "apps.refreeg.com";
+
+  if (isWwwHost) {
+    const isAppRoute = APP_ROUTE_PREFIXES.some((prefix) =>
+      matchesPrefix(pathname, prefix),
+    );
+
+    if (isAppRoute) {
+      const destination = new URL(req.url);
+      destination.hostname = "apps.refreeg.com";
+      return NextResponse.redirect(destination, 308);
+    }
+  }
+
+  if (isAppsHost) {
+    const isLandingRoute = LANDING_ROUTE_PREFIXES.some((prefix) =>
+      matchesPrefix(pathname, prefix),
+    );
+
+    if (isLandingRoute) {
+      const destination = new URL(req.url);
+      destination.hostname = "www.refreeg.com";
+      return NextResponse.redirect(destination, 308);
+    }
+  }
 
   // ── 1. Protect API routes ─────────────────────────────────────────
   // Return 401 for authenticated API routes when no session exists.
