@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { useInView, type MarginType } from "framer-motion";
+import { useInView } from "framer-motion";
 
 export function useAnimateInView(options?: {
   once?: boolean;
@@ -11,7 +11,7 @@ export function useAnimateInView(options?: {
 
   const isInView = useInView(ref, {
     once: options?.once ?? true,
-    margin: (options?.margin as MarginType) ?? "-100px",
+    margin: (options?.margin as any) ?? "-100px",
   });
 
   return { ref, isInView };

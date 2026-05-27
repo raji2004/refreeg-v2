@@ -10,7 +10,10 @@ import {
   EyeOff,
   History,
 } from "lucide-react";
-import { useEventListeners, type EventPayload } from "@/hooks/use-event-listeners";
+import {
+  useEventListeners,
+  type EventPayload,
+} from "@/hooks/use-event-listeners";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserWallet, getUserStats } from "@/actions/event-reward-actions";
 import { trackLogin } from "@/actions/auth-actions";
@@ -34,7 +37,10 @@ export default function EizaRewardsScreen() {
   const { user, isLoading: authLoading } = useAuth();
 
   const streakSeries = useMemo(() => buildStreakSeries(stats), [stats]);
-  const streakPath = useMemo(() => buildStreakPath(streakSeries), [streakSeries]);
+  const streakPath = useMemo(
+    () => buildStreakPath(streakSeries),
+    [streakSeries],
+  );
 
   // Fetch initial wallet data
   const fetchWalletData = useCallback(async () => {
@@ -46,22 +52,24 @@ export default function EizaRewardsScreen() {
     try {
       const walletData = await getUserWallet(user.id);
       if (walletData.wallet) {
-        setBalance(walletData.wallet.balance || 0);
+        setBalance(Number(walletData.wallet.balance) || 0);
       }
 
       // Format transactions for display
       if (walletData.transactions && Array.isArray(walletData.transactions)) {
-        const formatted = walletData.transactions.map((t: RewardTransaction) => ({
-          id: t.id,
-          label: formatTransactionLabel(t.transaction_type),
-          time: formatTime(t.created_at),
-          amount: `+${t.amount}`,
-        }));
+        const formatted = walletData.transactions.map(
+          (t: any) => ({
+            id: t.id,
+            label: formatTransactionLabel(t.transactionType || t.transaction_type),
+            time: formatTime(t.createdAt || t.created_at),
+            amount: `+${t.amount}`,
+          }),
+        );
         setTransactions(formatted);
       }
 
       const userStats = await getUserStats(user.id);
-      setStats(userStats);
+      setStats(userStats as any);
     } catch (error) {
       console.error("Error fetching wallet data:", error);
     } finally {
@@ -101,9 +109,7 @@ export default function EizaRewardsScreen() {
     onDonation: async (payload) => {
       handleEventPayload(payload);
     },
-    onLogin: async () => {
-      await handleLoginReward();
-    },
+    // onLogin handled separately by handleLoginReward
     onWeeklyStreak: async (payload) => {
       handleEventPayload(payload);
       await fetchWalletData();
@@ -153,7 +159,7 @@ export default function EizaRewardsScreen() {
 
   const visibleBalance = useMemo(
     () => (showBalance ? `${balance.toLocaleString()} EIZA` : "••••• EIZA"),
-    [showBalance, balance]
+    [showBalance, balance],
   );
   const displayedTransactions = showAllTransactions
     ? transactions
@@ -172,7 +178,9 @@ export default function EizaRewardsScreen() {
               >
                 <ArrowLeft size={16} />
               </Link>
-              <p className="text-sm font-medium text-blue-100">EIZA Rewards Wallet</p>
+              <p className="text-sm font-medium text-blue-100">
+                EIZA Rewards Wallet
+              </p>
             </div>
             <button
               type="button"
@@ -213,7 +221,11 @@ export default function EizaRewardsScreen() {
                     cx={x}
                     cy={y}
                     r="2"
-                    fill={point > 0 ? "rgba(16,185,129,0.95)" : "rgba(226,232,240,0.9)"}
+                    fill={
+                      point > 0
+                        ? "rgba(16,185,129,0.95)"
+                        : "rgba(226,232,240,0.9)"
+                    }
                   />
                 );
               })}
@@ -314,7 +326,9 @@ export default function EizaRewardsScreen() {
                         )}
                       </span>
                       <div>
-                        <p className="text-sm font-medium text-slate-700">{item.label}</p>
+                        <p className="text-sm font-medium text-slate-700">
+                          {item.label}
+                        </p>
                         <p className="text-xs text-slate-400">{item.time}</p>
                       </div>
                     </div>
@@ -335,7 +349,9 @@ export default function EizaRewardsScreen() {
                 onClick={() => setShowAllTransactions((prev) => !prev)}
                 className="w-full px-3 py-2 text-center text-xs font-semibold text-blue-600 transition hover:bg-blue-50 active:scale-[0.99]"
               >
-                {showAllTransactions ? "Show less transactions" : "View all transactions"}
+                {showAllTransactions
+                  ? "Show less transactions"
+                  : "View all transactions"}
               </button>
             )}
           </div>
@@ -361,7 +377,7 @@ function buildStreakSeries(stats: UserStreak | null): number[] {
   const dayMs = 24 * 60 * 60 * 1000;
   const daysSinceLastActive = Math.max(
     0,
-    Math.floor((today.getTime() - lastActive.getTime()) / dayMs)
+    Math.floor((today.getTime() - lastActive.getTime()) / dayMs),
   );
 
   const endIndex = 6 - daysSinceLastActive;
@@ -420,4 +436,3 @@ function formatTime(timestamp: string): string {
     year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
   });
 }
-

@@ -67,6 +67,7 @@
     "framer-motion": "^12.23.6",
     "handlebars": "^4.7.8",
     "input-otp": "1.4.1",
+    "jose": "^6.2.3",
     "lucide-react": "^0.454.0",
     "next": "15.2.6",
     "next-auth": "5.0.0-beta.31",

@@ -13,7 +13,7 @@ export default function ClientLayoutWrapper({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const hideNav = pathname.startsWith("/dashboard/settings/kyc-setup");
+  const hideNav = pathname.startsWith("/dashboard/settings/kyc-setup") || pathname.startsWith("/dashboard/admin/api-docs");
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.10),transparent_28%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.08),transparent_22%),linear-gradient(180deg,#f8fbff_0%,#eef4fb_48%,#f8fafc_100%)]">

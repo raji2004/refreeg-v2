@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth/auth";
 const PUBLIC_API_PREFIXES = [
   "/api/auth", // NextAuth routes
   "/api/bot", // Developer API — authenticated via API keys
+  "/api/mobile", // Mobile API - authenticated via custom JWT
   "/api/webhooks", // Incoming webhooks (Paystack, etc.)
   "/api/payments", // Guest donation checkout + verification
   "/api/cron", // Scheduled jobs (CRON_SECRET)

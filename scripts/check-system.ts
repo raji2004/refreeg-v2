@@ -1,9 +1,9 @@
 import { PrismaClient } from '@prisma/client'
 import { EC2Client, DescribeInstancesCommand, DescribeVolumesCommand } from '@aws-sdk/client-ec2'
-import * as dotenv from 'dotenv'
+// import * as dotenv from 'dotenv'
 import { execSync } from 'child_process'
 
-dotenv.config()
+// dotenv.config()
 
 async function main() {
   console.log('🔍 System Status Check Starting...\n')

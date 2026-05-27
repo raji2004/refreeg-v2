@@ -13,27 +13,23 @@ export async function GET(request: Request) {
       );
     }
 
-    // 1. Fetch the state and its cities in a single query
-    const state = await prisma.state.findFirst({
+    // 1. Fetch the cities directly
+    const cities = await prisma.city.findMany({
       where: {
-        name: { equals: stateName, mode: "insensitive" },
+        state_name: { equals: stateName, mode: "insensitive" },
       },
-      select: {
-        cities: {
-          select: { name: true },
-          orderBy: { name: "asc" },
-        },
-      },
+      select: { name: true },
+      orderBy: { name: "asc" },
     });
 
-    if (!state) {
+    if (cities.length === 0) {
       return NextResponse.json(
-        { error: "State not found" },
+        { error: "No cities found for state" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(state.cities.map((c) => c.name));
+    return NextResponse.json(cities.map((c: any) => c.name));
   } catch (error) {
     console.error("Cities API error:", error);
 
