@@ -11,7 +11,8 @@ export function getMediaUrl(key: string | null | undefined): string {
     key.startsWith("http://") ||
     key.startsWith("https://") ||
     key.startsWith("blob:") ||
-    key.startsWith("data:")
+    key.startsWith("data:") ||
+    key.startsWith("/api/s3/image")
   ) {
     return key;
   }
