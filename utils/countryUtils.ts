@@ -209,8 +209,9 @@ export const getCountries = async (): Promise<string[]> => {
       const data = await response.json();
       // If API returns valid data with countries, use it
       if (Array.isArray(data) && data.length > 0) {
-        // Map objects to strings if needed
-        return typeof data[0] === "object" ? data.map((c: any) => c.name) : data;
+        return data.map((item: any) =>
+          typeof item === "string" ? item : item.name,
+        );
       }
     }
     // If response is not OK or returns empty array, use fallback
@@ -228,7 +229,7 @@ export const getCountries = async (): Promise<string[]> => {
 export const searchCountries = (query: string): string[] => {
   const lowercaseQuery = query.toLowerCase();
   return ALL_COUNTRIES.filter((country) =>
-    country.toLowerCase().includes(lowercaseQuery)
+    country.toLowerCase().includes(lowercaseQuery),
   );
 };
 
@@ -241,7 +242,7 @@ export const isValidCountry = (country: string): boolean => {
 export const findCountry = (partialName: string): string | null => {
   const lowercasePartial = partialName.toLowerCase();
   const found = ALL_COUNTRIES.find((country) =>
-    country.toLowerCase().includes(lowercasePartial)
+    country.toLowerCase().includes(lowercasePartial),
   );
   return found || null;
 };

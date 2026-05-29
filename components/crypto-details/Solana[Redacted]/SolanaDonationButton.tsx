@@ -8,12 +8,15 @@ import {
   SystemProgram,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
-import { getRecipientSolanaWallet, createCryptoDonation } from "@/actions/crypto-actions";
+import {
+  getRecipientSolanaWallet,
+  createCryptoDonation,
+} from "@/actions/crypto-actions";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/actions/auth-actions";
 import { useToast } from "@/components/ui/use-toast";
-import NavigationLoader from "../NavigationLoader";
+import NavigationLoader from "../../NavigationLoader";
 
 const DEFAULT_SOL_TO_NAIRA_RATE = 346600;
 const SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com";
@@ -218,8 +221,6 @@ export default function SolDonationButton({
 
     fetchRecipientAddress();
   }, [causeId]);
-
-
 
   const checkWalletConnection = async () => {
     if (!window.solana?.isPhantom) {

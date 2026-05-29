@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ConnectSolanaWalletButton } from "@/components/crypto-details/ConnectSolanaWalletButton";
-import { DisconnectSolanaWalletButton } from "@/components/crypto-details/DisconnectSolanaWalletButton";
+import { ConnectSolanaWalletButton } from "@/components/crypto-details/Solana[Redacted]/ConnectSolanaWalletButton";
+import { DisconnectSolanaWalletButton } from "@/components/crypto-details/Solana[Redacted]/DisconnectSolanaWalletButton";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuthContext } from "@/components/auth-provider";
 import { getSolanaWallet } from "@/actions/profile-actions";
