@@ -474,6 +474,7 @@ export default function SolDonationButton({
       </div>
 
       <button
+        type="button"
         onClick={handleDonate}
         disabled={isDonating}
         className={`w-full py-2 px-4 rounded-md text-white font-medium ${

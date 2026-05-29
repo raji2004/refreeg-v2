@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
   BadgeCheck,
@@ -36,6 +36,7 @@ import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { followCampaign } from "@/actions/cause-actions";
 import { SupportErrorCta } from "@/components/support-error-cta";
+import { usePayment } from "@/hooks/use-payment";
 import {
   Dialog,
   DialogContent,
@@ -43,13 +44,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-
-const DonationForm = dynamic(
-  () => import("@/components/donation-form").then((mod) => mod.DonationForm),
-  {
-    loading: () => <Skeleton className="h-[400px] w-full rounded-xl" />,
-  },
-);
 
 const SolanaDonationButtonWrapper = dynamic(
   () => import("@/components/crypto-details/SolanaDonationButtonWrapper"),
@@ -757,6 +751,72 @@ function DonateCard({
   donorsPreview: { id: string; name: string; amount: number }[];
   raisedToday: number;
 }) {
+  const { initializePayment, isLoading } = usePayment();
+  const [name, setName] = useState(profile.name);
+  const [email, setEmail] = useState(profile.email);
+  const [message, setMessage] = useState("");
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const minimumDonation = 100;
+  const isCauseClosed =
+    cause.status === "pending" ||
+    cause.status === "rejected" ||
+    cause.status === "expired";
+
+  const plan =
+    recurring === "weekly"
+      ? process.env.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY
+      : recurring === "monthly"
+        ? process.env.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY
+        : undefined;
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitError("");
+
+    if (donation < minimumDonation) {
+      setSubmitError(`Minimum donation is ₦${minimumDonation}.`);
+      return;
+    }
+
+    if (!email.trim()) {
+      setSubmitError("Enter your email to continue.");
+      return;
+    }
+
+    if (!isAnonymous && !name.trim()) {
+      setSubmitError("Enter your name or donate anonymously.");
+      return;
+    }
+
+    try {
+      await initializePayment({
+        email,
+        amount: donation,
+        causeId: cause.id,
+        id: profile.id || undefined,
+        full_name: isAnonymous ? "Anonymous" : name,
+        serviceFee,
+        tipAmount: tip,
+        plan,
+        subaccounts: [
+          {
+            subaccount: cause?.user.sub_account_code || "",
+            share: donation * 100,
+          },
+        ],
+        message,
+        isAnonymous,
+      });
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Failed to initialize payment. Please try again.",
+      );
+    }
+  };
+
   return (
     <motion.div
       className="rounded-[14px] border border-[#E5E7EB] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-6"
@@ -765,142 +825,129 @@ function DonateCard({
       whileInView="show"
       viewport={{ once: true, amount: 0.2 }}
     >
-      <div className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
-          Donate
-        </p>
-        <HandHeart className="h-4 w-4 text-[#2563EB]" />
-      </div>
-
-      <h3 className="mt-3 text-xl font-semibold text-slate-900 sm:text-2xl">
-        Make a contribution
-      </h3>
-      <p className="mt-2 text-sm text-slate-600">
-        Rewards only apply to verified campaigns. Every milestone release is
-        publicly audited.
-      </p>
-
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        {donationPresets.map((amount) => (
-          <button
-            key={amount}
-            type="button"
-            onClick={() => setDonation(amount)}
-            className={`rounded-full border px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
-              donation === amount
-                ? "border-[#2563EB] bg-[#2563EB] text-white"
-                : "border-[#E5E7EB] bg-white text-[#64748B]"
-            }`}
-          >
-            ₦{amount.toLocaleString()}
-          </button>
-        ))}
-      </div>
-
-      <label className="mt-4 grid gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
-        <span className="text-xs uppercase tracking-[0.15em] text-slate-500">
-          Custom amount
-        </span>
-        <div className="flex items-stretch overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-          <span className="flex items-center justify-center bg-slate-900 px-3 text-sm font-semibold text-white">
-            ₦
-          </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={12}
-            value={donation ? donation.toString() : ""}
-            onChange={(event) => {
-              const next = event.target.value.replace(/\D/g, "");
-              const capped = next.slice(0, 12);
-              setDonation(capped ? Number(capped) : 0);
-            }}
-            className="w-full appearance-none bg-transparent px-3 py-2 text-right text-sm text-slate-900 outline-none"
-            placeholder="0"
-          />
+      <form onSubmit={handleSubmit}>
+        <div className="flex items-center justify-between">
+          <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
+            Donate
+          </p>
+          <HandHeart className="h-4 w-4 text-[#2563EB]" />
         </div>
-        <p className="text-xs text-slate-500">Enter any amount above ₦1.</p>
-      </label>
 
-      <div className="mt-4 grid gap-3">
-        <label className="grid gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-4 text-sm text-[#64748B]">
-          <span className="font-semibold text-slate-700">
-            Contribution schedule
+        <h3 className="mt-3 text-xl font-semibold text-slate-900 sm:text-2xl">
+          Make a contribution
+        </h3>
+        <p className="mt-2 text-sm text-slate-600">
+          Rewards only apply to verified campaigns. Every milestone release is
+          publicly audited.
+        </p>
+
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          {donationPresets.map((amount) => (
+            <button
+              key={amount}
+              type="button"
+              onClick={() => setDonation(amount)}
+              className={`rounded-full border px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
+                donation === amount
+                  ? "border-[#2563EB] bg-[#2563EB] text-white"
+                  : "border-[#E5E7EB] bg-white text-[#64748B]"
+              }`}
+            >
+              ₦{amount.toLocaleString()}
+            </button>
+          ))}
+        </div>
+
+        <label className="mt-4 grid gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
+          <span className="text-xs uppercase tracking-[0.15em] text-slate-500">
+            Custom amount
           </span>
-          <select
-            value={recurring}
-            onChange={(event) =>
-              setRecurring(
-                event.target.value as "one_time" | "weekly" | "monthly",
-              )
-            }
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-          >
-            <option value="one_time">One-time</option>
-            <option value="weekly">Every week</option>
-            <option value="monthly">Monthly</option>
-          </select>
+          <div className="flex items-stretch overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+            <span className="flex items-center justify-center bg-slate-900 px-3 text-sm font-semibold text-white">
+              ₦
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={12}
+              value={donation ? donation.toString() : ""}
+              onChange={(event) => {
+                const next = event.target.value.replace(/\D/g, "");
+                const capped = next.slice(0, 12);
+                setDonation(capped ? Number(capped) : 0);
+                if (submitError) setSubmitError("");
+              }}
+              className="w-full appearance-none bg-transparent px-3 py-2 text-right text-sm text-slate-900 outline-none"
+              placeholder="0"
+            />
+          </div>
+          <p className="text-xs text-slate-500">
+            Minimum donation is ₦{minimumDonation}.
+          </p>
         </label>
 
-        <label className="grid gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-4 text-sm text-[#64748B]">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-slate-700">Platform tip</span>
-            <span className="text-sm font-semibold text-slate-800">
-              Support Refreeg ops
+        <div className="mt-4 grid gap-3">
+          <label className="grid gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-4 text-sm text-[#64748B]">
+            <span className="font-semibold text-slate-700">
+              Contribution schedule
             </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {tipPresets.map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setTip(tip === value ? 0 : value)}
-                className={`rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
-                  tip === value
-                    ? "bg-[#0F172A] text-white shadow-[0_10px_18px_rgba(15,23,42,0.18)]"
-                    : "border border-[#E5E7EB] bg-white text-[#64748B]"
-                }`}
-              >
-                ₦{value.toLocaleString()}
-              </button>
-            ))}
-            <div className="col-span-2 sm:col-span-1">
-              <div className="flex items-stretch overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                <span className="flex items-center justify-center bg-slate-900 px-3 text-sm font-semibold text-white">
-                  ₦
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  value={tip}
-                  onChange={(event) => setTip(Number(event.target.value))}
-                  className="w-full bg-transparent px-3 py-2 text-right text-sm font-semibold text-slate-900 outline-none"
-                  placeholder="Custom"
-                />
-                {/* Hidden input to keep DonationForm logic intact */}
-                <input
-                  type="range"
-                  min={0}
-                  max={20}
-                  step={1}
-                  value={
-                    typeof tip === "number" && donation > 0
-                      ? Math.round((tip / donation) * 100)
-                      : 0
-                  }
-                  onChange={(e) => {
-                    const pct = Number(e.target.value);
-                    setTip(Math.round(donation * (pct / 100)));
-                  }}
-                  className="hidden"
-                />
+            <select
+              value={recurring}
+              onChange={(event) =>
+                setRecurring(
+                  event.target.value as "one_time" | "weekly" | "monthly",
+                )
+              }
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+            >
+              <option value="one_time">One-time</option>
+              <option value="weekly">Every week</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </label>
+
+          <label className="grid gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-4 text-sm text-[#64748B]">
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-semibold text-slate-700">Platform tip</span>
+              <span className="text-sm font-semibold text-slate-800">
+                Support Refreeg ops
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {tipPresets.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setTip(tip === value ? 0 : value)}
+                  className={`rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
+                    tip === value
+                      ? "bg-[#0F172A] text-white shadow-[0_10px_18px_rgba(15,23,42,0.18)]"
+                      : "border border-[#E5E7EB] bg-white text-[#64748B]"
+                  }`}
+                >
+                  ₦{value.toLocaleString()}
+                </button>
+              ))}
+              <div className="col-span-2 sm:col-span-1">
+                <div className="flex items-stretch overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                  <span className="flex items-center justify-center bg-slate-900 px-3 text-sm font-semibold text-white">
+                    ₦
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={tip}
+                    onChange={(event) => setTip(Number(event.target.value))}
+                    className="w-full bg-transparent px-3 py-2 text-right text-sm font-semibold text-slate-900 outline-none"
+                    placeholder="Custom"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </label>
-      </div>
+          </label>
+        </div>
 
-      <div className="mt-4 rounded-[14px] border border-[#E5E7EB] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+        <div className="mt-4 rounded-[14px] border border-[#E5E7EB] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
         <p className="text-xs uppercase tracking-[0.15em] text-[#64748B]">
           Impact estimate
         </p>
@@ -923,9 +970,9 @@ function DonateCard({
             )}
           </div>
         )}
-      </div>
+        </div>
 
-      <div className="mt-4 space-y-2 text-sm text-[#64748B]">
+        <div className="mt-4 space-y-2 text-sm text-[#64748B]">
         <div className="flex items-center justify-between">
           <span>Total raised today</span>
           <span className="text-[#0F172A] font-medium">
@@ -938,9 +985,9 @@ function DonateCard({
             ₦{totalWithTip.toLocaleString()}
           </span>
         </div>
-      </div>
+        </div>
 
-      <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-600">
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-600">
         <p className="text-[11px] uppercase tracking-[0.15em] font-semibold text-slate-700">
           Recent donors
         </p>
@@ -963,28 +1010,80 @@ function DonateCard({
             </span>
           )}
         </div>
-      </div>
+        </div>
 
-      <div className="mt-4 space-y-3">
-        {creatorHasWallet && <SolanaDonationButtonWrapper causeId={cause.id} />}
-        <DonationForm
-          causeId={cause.id}
-          profile={profile}
-          status={cause.status}
-          subaccount={cause?.user.sub_account_code ?? undefined}
-          causeName={cause.title}
-          causeUrl={`/causes/${cause.id}`}
-          recurring={recurring}
-          tip={tip}
-          initialAmount={donation}
-        />
+        <div className="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            Your Name
+            <input
+              type="text"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              disabled={isAnonymous}
+              required={!isAnonymous}
+              placeholder="Enter your name"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              placeholder="Enter your email"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            Message <span className="text-xs text-slate-400">(Optional)</span>
+            <textarea
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              placeholder="Leave a message of support"
+              rows={3}
+              className="resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+            />
+          </label>
+          <label className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700">
+            Donate anonymously
+            <input
+              type="checkbox"
+              checked={isAnonymous}
+              onChange={(event) => setIsAnonymous(event.target.checked)}
+              className="h-4 w-4 accent-[#2563EB]"
+            />
+          </label>
+        </div>
+
+        {submitError && (
+          <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">
+            {submitError}
+          </p>
+        )}
+
+        <div className="mt-4 space-y-3">
+          {creatorHasWallet && (
+            <SolanaDonationButtonWrapper causeId={cause.id} />
+          )}
+          <button
+            type="submit"
+            disabled={isLoading || isCauseClosed || donation < minimumDonation}
+            className="inline-flex w-full items-center justify-center rounded-xl bg-[#2563EB] px-4 py-3 text-base font-semibold text-white shadow-[0_12px_24px_rgba(37,99,235,0.25)] transition hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isLoading
+              ? "Processing..."
+              : `Donate ₦${totalWithTip.toLocaleString()}`}
+          </button>
         {/* <Link
           href={`/causes/${cause.id}/pledge`}
           className="inline-flex w-full items-center justify-center rounded-xl bg-[#2563EB] px-4 py-3 text-base font-semibold text-white shadow-[0_12px_24px_rgba(37,99,235,0.25)] transition hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
         >
           Pledge to donate later
         </Link> */}
-      </div>
+        </div>
+      </form>
 
       <div className="mt-4 flex items-start gap-2 text-xs text-[#64748B]">
         <ShieldAlert className="mt-0.5 h-4 w-4 text-[#F59E0B]" />
@@ -1234,7 +1333,7 @@ export default function CampaignQualityLab({
   creatorHasWallet,
   currentUserId,
 }: CampaignQualityLabProps) {
-  const [donation, setDonation] = useState(25);
+  const [donation, setDonation] = useState(100);
   const [activeTab, setActiveTab] = useState<TabKey>("Comments");
   const [recurring, setRecurring] = useState<"one_time" | "weekly" | "monthly">(
     "one_time",
