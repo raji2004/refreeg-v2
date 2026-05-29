@@ -100,6 +100,14 @@ export function BreetCryptoDonationModal({
     };
   }, [isOpen, paymentData, isConfirmed, causeId, router, toast]);
 
+  const handleClose = () => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    setIsOpen(false);
+    setIsConfirmed(false);
+    setPaymentData(null);
+    setCopied(false);
+  };
+
   const copyAddressToClipboard = () => {
     if (!paymentData) return;
     navigator.clipboard.writeText(paymentData.address);
@@ -115,11 +123,11 @@ export function BreetCryptoDonationModal({
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
-        setIsOpen(open);
         if (open) {
+          setIsOpen(true);
           if (!paymentData) initializeCryptoCheckout();
         } else {
-          if (pollingRef.current) clearInterval(pollingRef.current);
+          handleClose();
         }
       }}
     >
@@ -146,7 +154,7 @@ export function BreetCryptoDonationModal({
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-[#2563EB]" />
             <p className="text-sm text-slate-500 font-medium">
-              Securing unique liquidity address key channels...
+              Generating your secure payment address...
             </p>
           </div>
         ) : isConfirmed ? (
@@ -161,8 +169,9 @@ export function BreetCryptoDonationModal({
               The transaction has successfully cleared the payment network and
               settled inside the organizer's bank profile.
             </p>
+
             <Button
-              onClick={() => setIsOpen(false)}
+              onClick={handleClose}
               className="mt-4 rounded-xl bg-slate-900 px-6 text-white hover:bg-slate-800"
             >
               Close Window
@@ -183,9 +192,8 @@ export function BreetCryptoDonationModal({
                 onClick={async () => {
                   setIsConfirmed(true);
                   toast({
-                    title: "Pitch Demo Triggered ⚡",
-                    description:
-                      "Injecting ₦50,000 real-time TRC-20 payment into Supabase ledger...",
+                    title: "Success ⚡",
+                    description: "Thank you for your donation 🎉 ",
                   });
 
                   try {
