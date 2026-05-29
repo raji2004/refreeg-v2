@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 const BREET_BASE_URL = "https://api.breet.io/v1";
-const TARGET_ASSET_ID = "69b3e33d5aef202395e800e3";
+const TARGET_ASSET_ID = "615b3e2b5aef202395e801f4";
 
 export async function POST(req: Request) {
   try {
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     }
 
     console.log(
-      `🌐 Provisioning wallet from Breet for bank: ${bankAccountNumber}`,
+      `🌐 Provisioning TRC-20 wallet from Breet for bank: ${bankAccountNumber}`,
     );
 
     const controller = new AbortController();
@@ -99,20 +99,19 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("🛠️ Activating Sandbox local fail-safe mode...");
+    console.log("🛠️ Activating Sandbox local TRC-20 fail-safe mode...");
 
-    const mockSolanaUSDTAddress =
-      "4ZTAG47Cq4cfKV8WKBD26S8M8Jnxf7TX4B5SP3ViMs8A";
-    const mockQRCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${mockSolanaUSDTAddress}`;
+    const mockTronTRC20Address = "TX9zV2nmXv9nB1vN78nLmPvX7N8zV9bN8m";
+    const mockQRCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${mockTronTRC20Address}`;
 
     return NextResponse.json(
       {
         success: true,
         source: "SANDBOX_MOCK_FALLBACK_ACTIVE",
-        address: mockSolanaUSDTAddress,
+        address: mockTronTRC20Address,
         qr_code: mockQRCode,
         message:
-          "Breet Sandbox API lag detected. Operating under automated demo resiliency parameters.",
+          "Breet Sandbox API lag detected. Operating under automated TRC-20 demo resiliency parameters.",
       },
       { status: 200 },
     );

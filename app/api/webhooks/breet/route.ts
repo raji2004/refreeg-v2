@@ -88,7 +88,9 @@ export async function POST(req: Request) {
     const finalAmountNaira = Number(payload.amountSettled || 0);
     const cryptoReceived = Number(payload.cryptoAmount || 0);
 
-    console.log(`⚡ Forwarding payload to createCryptoDonation action...`);
+    console.log(
+      `⚡ Forwarding TRC-20 execution payload to createCryptoDonation action...`,
+    );
 
     const result = await createCryptoDonation({
       cause_id: causeId,
@@ -100,11 +102,13 @@ export async function POST(req: Request) {
       tx_signature: payload.txHash,
       donor_wallet_address: payload.sourceAddress || "External Exchange Node",
       recipient_address: payload.destinationAddress || "Breet Liquidity Node",
-      network: "Solana Mainnet",
+      network: "TRON Mainnet",
       currency: "USDT",
     });
 
-    console.log(`🎉 SUCCESS: Webhook execution completed. ID: ${result.id}`);
+    console.log(
+      `🎉 SUCCESS: TRC-20 Webhook processing completed. ID: ${result.id}`,
+    );
 
     return NextResponse.json(
       {
