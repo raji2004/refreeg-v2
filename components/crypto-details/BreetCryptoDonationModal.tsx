@@ -82,6 +82,10 @@ export function BreetCryptoDonationModal({
 
           if (checkResult.hasNewDonation) {
             setIsConfirmed(true);
+
+            // 🟢 Wipes local storage track if live ledger polling hits a match
+            localStorage.removeItem("donationAttempt");
+
             if (pollingRef.current) clearInterval(pollingRef.current);
             toast({
               title: "Payment Confirmed! 🎉",
@@ -169,7 +173,7 @@ export function BreetCryptoDonationModal({
             </h3>
             <p className="text-sm text-slate-500 px-6">
               Thank you! Your donation has been safely sent and converted to
-              local cash for the organizer."
+              local cash for the organizer.
             </p>
 
             <Button
@@ -197,6 +201,8 @@ export function BreetCryptoDonationModal({
                     title: "Success ⚡",
                     description: "Thank you for your donation! 🎉",
                   });
+
+                  localStorage.removeItem("donationAttempt");
 
                   try {
                     fetch("/api/breet-test-address").catch((err) =>
