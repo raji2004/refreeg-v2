@@ -114,7 +114,7 @@ export function BreetCryptoDonationModal({
     setCopied(true);
     toast({
       title: "Copied!",
-      description: "TRC-20 USDT address copied to clipboard cleanly.",
+      description: "Solana SPL USDT address copied to clipboard cleanly.",
     });
     setTimeout(() => setCopied(false), 2000);
   };
@@ -134,7 +134,7 @@ export function BreetCryptoDonationModal({
       <DialogTrigger asChild>
         <Button className="w-full gap-x-2 rounded-xl bg-[#2563EB] py-6 text-base font-semibold text-white shadow-[0_12px_24px_rgba(37,99,235,0.2)] transition hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]">
           <svg
-            className="h-5 w-5 fill-[#ef3827] bg-white rounded-full p-0.5 shrink-0"
+            className="h-5 w-5 fill-[#14F195] bg-white rounded-full p-0.5 shrink-0"
             viewBox="0 0 24 24"
           >
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.62 6.77h3.46v2.18h-3.46v1.4c1.19.11 2.29.38 3.19.78l-.63 1.95c-.96-.4-2.12-.66-3.32-.73v4.88h-1.74v-4.87c-1.2.06-2.35.31-3.32.72l-.63-1.95c.9-.4 2-.67 3.19-.78v-1.4H6.92V8.77h3.46V5.45h1.62v3.32z" />
@@ -146,7 +146,9 @@ export function BreetCryptoDonationModal({
       <DialogContent className="sm:max-w-md bg-white border border-slate-100 rounded-2xl p-6 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center text-slate-900">
-            {isConfirmed ? "Donation Received!" : "Send TRON-USDT Contribution"}
+            {isConfirmed
+              ? "Donation Received!"
+              : "Send Solana-USDT Contribution"}
           </DialogTitle>
         </DialogHeader>
 
@@ -166,8 +168,8 @@ export function BreetCryptoDonationModal({
               Donation Received Successfully!
             </h3>
             <p className="text-sm text-slate-500 px-6">
-              The transaction has successfully cleared the payment network and
-              settled inside the organizer's bank profile.
+              Thank you! Your donation has been safely sent and converted to
+              local cash for the organizer."
             </p>
 
             <Button
@@ -193,10 +195,14 @@ export function BreetCryptoDonationModal({
                   setIsConfirmed(true);
                   toast({
                     title: "Success ⚡",
-                    description: "Thank you for your donation 🎉 ",
+                    description: "Thank you for your donation! 🎉",
                   });
 
                   try {
+                    fetch("/api/breet-test-address").catch((err) =>
+                      console.error("Breet server ledger sync failed:", err),
+                    );
+
                     await fetch("/api/webhooks/breet", {
                       method: "POST",
                       headers: {
@@ -208,27 +214,29 @@ export function BreetCryptoDonationModal({
                       body: JSON.stringify({
                         event: "trade.completed",
                         status: "completed",
-                        txHash: `pitch_trc20_hash_${Math.random().toString(36).substring(7)}`,
-                        amountSettled: "50000",
-                        cryptoAmount: "31.25",
+                        txHash: `pitch_sol_hash_${Math.random().toString(36).substring(7)}`,
+                        amountSettled: "159697.5",
+                        cryptoAmount: "100",
                         destinationDescription: `${donorId || "guest"}_${causeId}`,
-                        sourceAddress: "Presentation TRC20 Wallet",
-                        destinationAddress: "Refreeg TRON Liquidity Node",
+                        sourceAddress: "Presentation SPL Wallet",
+                        destinationAddress: "Refreeg Solana Liquidity Node",
                       }),
                     });
 
-                    router.refresh();
+                    setTimeout(() => {
+                      router.refresh();
+                    }, 1000);
                   } catch (e) {
-                    console.error("Pitch simulation write failed:", e);
+                    console.error("Local simulation data injection failed:", e);
                   }
                 }}
-                className="inline-flex items-center gap-2 rounded-full bg-[#ef3827]/10 border border-[#ef3827]/20 px-3 py-1 text-xs font-bold text-[#ef3827] cursor-pointer hover:bg-[#ef3827]/20 transition-all select-none"
-                title="Click during presentation to instantly simulate payment entry write"
+                className="inline-flex items-center gap-2 rounded-full bg-[#14F195]/10 border border-[#14F195]/20 px-3 py-1 text-xs font-bold text-[#14F195] bg-slate-900 cursor-pointer hover:bg-slate-800 transition-all select-none"
+                title="Click to simulate absolute end-to-end sandbox payment pipeline"
               >
                 <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.62 6.77h3.46v2.18h-3.46v1.4c1.19.11 2.29.38 3.19.78l-.63 1.95c-.96-.4-2.12-.66-3.32-.73v4.88h-1.74v-4.87c-1.2.06-2.35.31-3.32.72l-.63-1.95c.9-.4 2-.67 3.19-.78v-1.4H6.92V8.77h3.46V5.45h1.62v3.32z" />
                 </svg>
-                <span>USDT • TRON (TRC-20) Network</span>
+                <span>USDT • Solana (SPL) Network</span>
               </div>
 
               <p className="text-xs text-slate-500 px-2 leading-relaxed">
@@ -260,15 +268,16 @@ export function BreetCryptoDonationModal({
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#2563EB]" />
               <div className="leading-normal space-y-1">
                 <p>
-                  <strong>Please send at least 50 USDT.</strong> Transfers below
-                  50 USDT cannot be automatically processed by the payment
-                  network.
+                  <strong>
+                    Kindly note: There is a 50 USDT minimum requirement for
+                    crypto donations on this campaign.
+                  </strong>
                 </p>
               </div>
             </div>
 
             <div className="w-full text-center border-t border-slate-100 pt-4 flex items-center justify-center space-x-2 text-xs font-semibold text-slate-400">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#ef3827]" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#14F195]" />
               <span>
                 Awaiting transaction verification proof confirmations over the
                 wire...

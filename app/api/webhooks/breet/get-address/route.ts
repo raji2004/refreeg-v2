@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 const BREET_BASE_URL = "https://api.breet.io/v1";
-const TARGET_ASSET_ID = "615b3e2b5aef202395e801f4";
+
+const TARGET_ASSET_ID = "USDT_B7ZDHS8D_TOR7";
 
 export async function POST(req: Request) {
   try {
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
     }
 
     console.log(
-      `🌐 Provisioning TRC-20 wallet from Breet for bank: ${bankAccountNumber}`,
+      `🌐 Provisioning Solana wallet from Breet for bank: ${bankAccountNumber}`,
     );
 
     const controller = new AbortController();
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
             label: compoundLabel,
             bankId: "25",
             accountNumber: bankAccountNumber,
-            narration: `Refreeg Checkout`,
+            narration: `Refreeg Solana Checkout`,
             autoSettlement: true,
           }),
         },
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
       clearTimeout(timeoutId);
       const result = await breetResponse.json();
 
-      if (result.success) {
+      if (result.success && result.data?.address) {
         return NextResponse.json({
           success: true,
           source: "LIVE_BREET_GATEWAY",
@@ -99,19 +100,19 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("🛠️ Activating Sandbox local TRC-20 fail-safe mode...");
+    console.log("🛠️ Activating Sandbox local Solana fail-safe mode...");
 
-    const mockTronTRC20Address = "TYrmsJGXAsM9651Wfb8y66UZ6gTj1s5hSK";
-    const mockQRCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${mockTronTRC20Address}`;
+    const mockSolanaAddress = "4ZTAG47Cq4cfKV8WKBD26S8M8Jnxf7TX4B5SP3ViMs8A";
+    const mockQRCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${mockSolanaAddress}`;
 
     return NextResponse.json(
       {
         success: true,
         source: "SANDBOX_MOCK_FALLBACK_ACTIVE",
-        address: mockTronTRC20Address,
+        address: mockSolanaAddress,
         qr_code: mockQRCode,
         message:
-          "Breet Sandbox API lag detected. Operating under automated TRC-20 demo resiliency parameters.",
+          "Breet Sandbox API latency detected. Operating under automated Solana demo resiliency parameters.",
       },
       { status: 200 },
     );

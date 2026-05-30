@@ -121,8 +121,15 @@ export async function POST(req: Request) {
     const finalAmountNaira = Number(payload.amountSettled || 0);
     const cryptoReceived = Number(payload.cryptoAmount || 0);
 
+    let verifiedNetwork = "Solana Mainnet";
+    const payloadAsset = payload.asset || "";
+
+    if (payloadAsset === "USDT_TRC20" || payloadAsset === "USDT_TRX_TEST2") {
+      verifiedNetwork = "TRON Mainnet";
+    }
+
     console.log(
-      `⚡ Forwarding validated mainnet execution to core data actions...`,
+      `⚡ Forwarding validated ${verifiedNetwork} execution to core data actions...`,
     );
 
     const result = await createCryptoDonation({
@@ -135,7 +142,7 @@ export async function POST(req: Request) {
       tx_signature: payload.txHash,
       donor_wallet_address: payload.sourceAddress || "External Exchange Node",
       recipient_address: payload.destinationAddress || "Breet Liquidity Node",
-      network: "TRON Mainnet",
+      network: verifiedNetwork,
       currency: "USDT",
     });
 
