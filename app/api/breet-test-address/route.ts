@@ -22,7 +22,7 @@ export async function GET() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        walletAddress: "TX9zV2nmXv9nB1vN78nLmPvX7N8zV9bN8m",
+        walletAddress: "TYrmsJGXAsM9651Wfb8y66UZ6gTj1s5hSK",
         asset: "USDT_TRC20",
         amountInUSD: 100,
         cryptoReceived: 100,

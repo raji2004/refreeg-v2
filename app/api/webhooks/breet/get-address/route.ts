@@ -101,7 +101,7 @@ export async function POST(req: Request) {
 
     console.log("🛠️ Activating Sandbox local TRC-20 fail-safe mode...");
 
-    const mockTronTRC20Address = "TX9zV2nmXv9nB1vN78nLmPvX7N8zV9bN8m";
+    const mockTronTRC20Address = "TYrmsJGXAsM9651Wfb8y66UZ6gTj1s5hSK";
     const mockQRCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${mockTronTRC20Address}`;
 
     return NextResponse.json(

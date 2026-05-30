@@ -20,7 +20,6 @@ export async function GET(req: Request) {
 
     if (checkStatus && causeId) {
       const dynamicWindow = new Date(Date.now() - 3 * 60 * 1000);
-
       const recentRecord = await prisma.crypto_donations.findFirst({
         where: {
           OR: [{ cause_id: causeId }, { status: "completed" }],
@@ -40,7 +39,6 @@ export async function GET(req: Request) {
         },
       );
     }
-
     return NextResponse.json({ error: "Missing criteria" }, { status: 400 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -49,28 +47,63 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const forwardedFor = req.headers.get("x-forwarded-for");
+    const clientIp = forwardedFor
+      ? forwardedFor.split(",")[0].trim()
+      : req.headers.get("x-real-ip");
+
+    if (
+      process.env.NODE_ENV === "production" &&
+      (!clientIp || !BREET_IPS.includes(clientIp))
+    ) {
+      console.warn(
+        `🛑 Blocked unauthorized webhook origin attempt from IP: ${clientIp}`,
+      );
+      return NextResponse.json(
+        { error: "Forbidden origin network" },
+        { status: 403 },
+      );
+    }
+
     const incomingSecret = req.headers.get("x-webhook-secret");
     if (incomingSecret !== process.env.NEXT_PUBLIC_BREET_WEBHOOK_SECRET) {
-      console.warn("❌ Webhook secret signature key mismatch.");
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      console.warn("❌ Webhook verification secret mismatch.");
+      return NextResponse.json(
+        { error: "Invalid signature key" },
+        { status: 401 },
+      );
     }
 
     const payload = await req.json();
 
+    if (!payload || !payload.event) {
+      return NextResponse.json(
+        { error: "Malformed payload container" },
+        { status: 400 },
+      );
+    }
+
     if (payload.event !== "trade.completed" || payload.status !== "completed") {
       return NextResponse.json({
         success: true,
-        message: "Ignoring non-terminal event state",
+        message: "Acknowledged and ignoring non-terminal event sequence state",
       });
     }
 
+    const uniqueBreetEventId = payload.id ? String(payload.id) : null;
+
     const existingTx = await prisma.crypto_donations.findFirst({
-      where: { tx_signature: payload.txHash },
+      where: {
+        OR: [
+          { tx_signature: payload.txHash },
+          ...(uniqueBreetEventId ? [{ tx_hash: uniqueBreetEventId }] : []),
+        ],
+      },
     });
 
     if (existingTx) {
       console.log(
-        `🛑 Hash ${payload.txHash} already processed. Exiting cleanly.`,
+        `🛑 Event ${payload.txHash || uniqueBreetEventId} already accounted for. Exiting cleanly.`,
       );
       return NextResponse.json({ success: true, message: "Already processed" });
     }
@@ -89,7 +122,7 @@ export async function POST(req: Request) {
     const cryptoReceived = Number(payload.cryptoAmount || 0);
 
     console.log(
-      `⚡ Forwarding TRC-20 execution payload to createCryptoDonation action...`,
+      `⚡ Forwarding validated mainnet execution to core data actions...`,
     );
 
     const result = await createCryptoDonation({
@@ -98,7 +131,7 @@ export async function POST(req: Request) {
       amount_in_naira: finalAmountNaira,
       amount_in_crypto: cryptoReceived,
       status: "completed",
-      tx_hash: payload.txHash,
+      tx_hash: uniqueBreetEventId || payload.txHash,
       tx_signature: payload.txHash,
       donor_wallet_address: payload.sourceAddress || "External Exchange Node",
       recipient_address: payload.destinationAddress || "Breet Liquidity Node",
@@ -107,7 +140,7 @@ export async function POST(req: Request) {
     });
 
     console.log(
-      `🎉 SUCCESS: TRC-20 Webhook processing completed. ID: ${result.id}`,
+      `🎉 SUCCESS: Webhook execution completed. Reference ID: ${result.id}`,
     );
 
     return NextResponse.json(
@@ -121,6 +154,7 @@ export async function POST(req: Request) {
     );
   } catch (error: any) {
     console.error("💥 WEBHOOK PIPELINE CRASH:", error.message);
+
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 },
