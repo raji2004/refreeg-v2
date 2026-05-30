@@ -1,36 +1,35 @@
 model Cause {
-  id              String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
-  userId          String    @map("user_id") @db.Uuid
-  title           String
-  description     String?
-  category        String
-  goal            Decimal   @db.Decimal
-  raised          Decimal?  @default(0) @db.Decimal
-  status          String?   @default("pending")
-  rejectionReason String?   @map("rejection_reason")
-  createdAt       DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  image           String?
-  shared          Decimal?  @default(0) @db.Decimal
-  daysActive      Int?      @map("days_active")
-  videoLinks      String[]  @default([]) @map("video_links")
-  multimedia      Json?
-  trust_score     Json?     @default("{\"impact\": \"B+\", \"readability\": \"A\", \"transparency\": \"High\"}")
-  verified_status String?   @default("pending")
-  summary         String?
-  location        String?
-  faqs            Json?     @default("[]")
-  start_date      DateTime? @db.Timestamptz(6)
-  end_date        DateTime? @db.Timestamptz(6)
-
-  user            User     @relation(fields: [userId], references: [id])
-  sections        cause_sections[]
-  donations       Donation[]
-  follows         campaign_follows[]
-  edits           cause_edits[]
-  shares          cause_shares[]
-  comments        comments[]
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId           String             @map("user_id") @db.Uuid
+  title            String
+  description      String?
+  category         String
+  goal             Decimal            @db.Decimal
+  raised           Decimal?           @default(0) @db.Decimal
+  status           String?            @default("pending")
+  rejectionReason  String?            @map("rejection_reason")
+  createdAt        DateTime?          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime?          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  image            String?
+  shared           Decimal?           @default(0) @db.Decimal
+  daysActive       Int?               @map("days_active")
+  videoLinks       String[]           @default([]) @map("video_links")
+  multimedia       Json?
+  trust_score      Json?              @default("{\"impact\": \"B+\", \"readability\": \"A\", \"transparency\": \"High\"}")
+  verified_status  String?            @default("pending")
+  summary          String?
+  location         String?
+  faqs             Json?              @default("[]")
+  start_date       DateTime?          @db.Timestamptz(6)
+  end_date         DateTime?          @db.Timestamptz(6)
+  follows          campaign_follows[]
+  edits            cause_edits[]
+  sections         cause_sections[]
+  shares           cause_shares[]
+  user             User               @relation(fields: [userId], references: [id])
+  comments         comments[]
   crypto_donations crypto_donations[]
+  donations        Donation[]
 
   @@index([daysActive], map: "idx_causes_days_active")
   @@index([status], map: "idx_causes_status")
@@ -40,7 +39,7 @@ model Cause {
 }
 
 model Donation {
-  id           String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   causeId      String    @map("cause_id") @db.Uuid
   userId       String?   @map("user_id") @db.Uuid
   amount       Decimal   @db.Decimal
@@ -52,9 +51,8 @@ model Donation {
   receipt_url  String?
   createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   tip_amount   Decimal?  @default(0) @db.Decimal
-
-  cause        Cause    @relation(fields: [causeId], references: [id])
-  user         User?    @relation(fields: [userId], references: [id])
+  cause        Cause     @relation(fields: [causeId], references: [id])
+  user         User?     @relation(fields: [userId], references: [id])
 
   @@index([causeId], map: "idx_donations_cause_id")
   @@index([userId], map: "idx_donations_user_id")
@@ -67,54 +65,51 @@ model campaign_follows {
   user_id    String?  @db.Uuid
   email      String
   created_at DateTime @default(now()) @db.Timestamptz(6)
+  cause      Cause    @relation(fields: [cause_id], references: [id])
+  user       User?    @relation(fields: [user_id], references: [id])
 
   @@unique([cause_id, email])
   @@index([cause_id], map: "idx_campaign_follows_cause_id")
   @@index([email], map: "idx_campaign_follows_email")
-
-  cause        Cause    @relation(fields: [cause_id], references: [id])
-  user         User?    @relation(fields: [user_id], references: [id])
 }
 
 model cause_edit_sections {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cause_edit_id String   @db.Uuid
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cause_edit_id String      @db.Uuid
   heading       String
   description   String
-  created_at    DateTime @default(now()) @db.Timestamptz(6)
-
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
   cause_edit    cause_edits @relation(fields: [cause_edit_id], references: [id])
 }
 
 model cause_edits {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  original_cause_id String    @db.Uuid
-  user_id           String    @db.Uuid
+  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  original_cause_id String                @db.Uuid
+  user_id           String                @db.Uuid
   title             String
-  description       String    @default("")
+  description       String                @default("")
   category          String
   goal              Int
   image             String?
-  multimedia        String[]  @default([])
-  video_links       String[]  @default([])
+  multimedia        String[]              @default([])
+  video_links       String[]              @default([])
   days_active       Int?
-  status            String    @default("pending")
+  status            String                @default("pending")
   rejection_reason  String?
-  created_at        DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime  @default(now()) @db.Timestamptz(6)
+  created_at        DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime              @default(now()) @db.Timestamptz(6)
   summary           String?
   location          String?
-  start_date        DateTime? @db.Timestamptz(6)
-  end_date          DateTime? @db.Timestamptz(6)
+  start_date        DateTime?             @db.Timestamptz(6)
+  end_date          DateTime?             @db.Timestamptz(6)
+  sections          cause_edit_sections[]
+  cause             Cause                 @relation(fields: [original_cause_id], references: [id])
+  user              User                  @relation(fields: [user_id], references: [id])
 
   @@index([created_at(sort: Desc)], map: "idx_cause_edits_created_at")
   @@index([original_cause_id], map: "idx_cause_edits_original_id")
   @@index([status], map: "idx_cause_edits_status")
   @@index([user_id], map: "idx_cause_edits_user_id")
-
-  cause         Cause    @relation(fields: [original_cause_id], references: [id])
-  user          User     @relation(fields: [user_id], references: [id])
-  sections      cause_edit_sections[]
 }
 
 model cause_sections {
@@ -123,8 +118,7 @@ model cause_sections {
   cause_id    String?  @db.Uuid
   heading     String?
   description String?
-
-  cause       Cause?    @relation(fields: [cause_id], references: [id])
+  cause       Cause?   @relation(fields: [cause_id], references: [id])
 }
 
 model cause_shares {
@@ -132,16 +126,15 @@ model cause_shares {
   user_id    String?   @db.Uuid
   cause_id   String    @db.Uuid
   created_at DateTime? @default(now()) @db.Timestamptz(6)
+  cause      Cause     @relation(fields: [cause_id], references: [id])
+  user       User?     @relation(fields: [user_id], references: [id])
 
   @@index([cause_id], map: "idx_cause_shares_cause_id")
   @@index([user_id], map: "idx_cause_shares_user_id")
-
-  cause       Cause     @relation(fields: [cause_id], references: [id])
-  user        User?     @relation(fields: [user_id], references: [id])
 }
 
 model comments {
-  id         String   @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   cause_id   String   @db.Uuid
   user_id    String   @db.Uuid
   content    String
@@ -149,17 +142,16 @@ model comments {
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
   is_edited  Boolean? @default(false)
+  cause      Cause    @relation(fields: [cause_id], references: [id])
+  user       User     @relation(fields: [user_id], references: [id])
 
   @@index([cause_id], map: "idx_comments_cause_id")
   @@index([parent_id], map: "idx_comments_parent_id")
   @@index([user_id], map: "idx_comments_user_id")
-
-  cause       Cause     @relation(fields: [cause_id], references: [id])
-  user        User      @relation(fields: [user_id], references: [id])
 }
 
 model crypto_donations {
-  id                   String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   cause_id             String    @db.Uuid
   user_id              String?   @db.Uuid
   amount_in_naira      Decimal   @db.Decimal
@@ -172,15 +164,14 @@ model crypto_donations {
   currency             String
   created_at           DateTime? @default(now()) @db.Timestamptz(6)
   tx_signature         String
+  cause                Cause     @relation(fields: [cause_id], references: [id])
+  user                 User?     @relation(fields: [user_id], references: [id])
 
   @@index([cause_id], map: "idx_crypto_donations_cause_id")
   @@index([created_at], map: "idx_crypto_donations_created_at")
   @@index([network], map: "idx_crypto_donations_network")
   @@index([tx_signature], map: "idx_crypto_donations_tx_signature")
   @@index([user_id], map: "idx_crypto_donations_user_id")
-
-  cause       Cause     @relation(fields: [cause_id], references: [id])
-  user        User?     @relation(fields: [user_id], references: [id])
 }
 
 model matching_donations {

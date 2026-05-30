@@ -1,439 +1,298 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import React from "react";
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
 import {
   Linkedin,
-  Mail,
-  MapPin,
-  MoveRight,
-  Phone,
-  Send,
   Youtube,
 } from "lucide-react";
+
 import {
   FaFacebookF,
   FaInstagram,
   FaTiktok,
   FaXTwitter,
 } from "react-icons/fa6";
-import { Logo } from "@/components/logo";
-import { contactLinks, legalLinks, quickLinks, socialLinks } from "@/lib/links";
-import { cn } from "@/lib/utils";
 
-type FooterLink = {
-  label: string;
-  href: string;
-};
+import { legalLinks, socialLinks } from "@/lib/links";
 
-const platformLinks: FooterLink[] = [
-  ...quickLinks.map((link) => ({ label: link.label, href: link.route })),
-  { label: "Explore Causes", href: "/causes" },
-  { label: "Petitions", href: "/petitions" },
-  { label: "How It Works", href: "/how-it-works" },
-];
+gsap.registerPlugin(ScrollTrigger);
 
-const resourceLinks: FooterLink[] = [
-  { label: "Start a Cause", href: "/dashboard/causes/create" },
-  { label: "Fees & Payouts", href: "/crowdfund/fees" },
-  { label: "FAQ", href: "/#faq" },
-  { label: "API", href: "/docs/api" },
+const footerColumns = [
+  {
+    title: "GIVE",
+    links: [
+      { label: "Discover causes", href: "/causes" },
+      { label: "Recurring giving", href: "/petitions" },
+      { label: "Import portfolio", href: "/businesses" },
+      { label: "Tax receipts", href: "/healthcare" },
+    ],
+  },
+  {
+    title: "RAISE",
+    links: [
+      { label: "Launch a campaign", href: "/how-it-works" },
+      { label: "Steward program", href: "/#faq" },
+      { label: "Verification", href: "/crowdfund/fees" },
+      { label: "Embed receipts", href: "/docs/api" },
+    ],
+  },
+  {
+    title: "TRUST",
+    links: [
+      { label: "Block explorer", href: "/how-it-works" },
+      { label: "Fee policy", href: "/#faq" },
+      { label: "Smart contracts", href: "/how-it-works" },
+      { label: "Audits", href: "/#faq" },
+    ],
+  },
+  {
+    title: "COMPANY",
+    links: [
+      { label: "About", href: "/how-it-works" },
+      { label: "Press", href: "/#faq" },
+      { label: "Careers", href: "/how-it-works" },
+      { label: "Contact", href: "/#faq" },
+    ],
+  },
 ];
 
 const socialItems = [
-  {
-    label: "TikTok",
-    href: socialLinks.tiktok,
-    icon: <FaTiktok className="h-5 w-5" />,
-  },
-  {
-    label: "X",
-    href: socialLinks.twitter,
-    icon: <FaXTwitter className="h-5 w-5" />,
-  },
-  {
-    label: "Instagram",
-    href: socialLinks.instagram,
-    icon: <FaInstagram className="h-5 w-5" />,
-  },
-  {
-    label: "LinkedIn",
-    href: socialLinks.linkedin,
-    icon: <Linkedin className="h-5 w-5" />,
-  },
-  {
-    label: "Facebook",
-    href: socialLinks.Facebook,
-    icon: <FaFacebookF className="h-5 w-5" />,
-  },
-  {
-    label: "YouTube",
-    href: socialLinks.Youtube,
-    icon: <Youtube className="h-5 w-5" />,
-  },
-  {
-    label: "Community",
-    href: socialLinks.community,
-    icon: <Send className="h-5 w-5" />,
-  },
+  { href: socialLinks.twitter, icon: <FaXTwitter className="h-4 w-4" /> },
+  { href: socialLinks.instagram, icon: <FaInstagram className="h-4 w-4" /> },
+  { href: socialLinks.linkedin, icon: <Linkedin className="h-4 w-4" /> },
+  { href: socialLinks.tiktok, icon: <FaTiktok className="h-4 w-4" /> },
+  { href: socialLinks.Facebook, icon: <FaFacebookF className="h-4 w-4" /> },
+  { href: socialLinks.Youtube, icon: <Youtube className="h-4 w-4" /> },
 ];
-
-const contactIcons = [
-  <Mail key="mail" className="h-4 w-4" />,
-  <Phone key="phone" className="h-4 w-4" />,
-  <MapPin key="map" className="h-4 w-4" />,
-];
-
-const routeThemes = {
-  default: {
-    shell:
-      "border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_30%),linear-gradient(180deg,#f8fbff_0%,#eef4fb_100%)]",
-    panel: "border-white/80 bg-white/80",
-    badge: "border-blue-200 bg-blue-50 text-secondary",
-  },
-  "/businesses": {
-    shell:
-      "border-emerald-200 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.15),_transparent_30%),linear-gradient(180deg,#f3fbf7_0%,#e8f6ef_100%)]",
-    panel: "border-white/80 bg-white/82",
-    badge: "border-emerald-200 bg-emerald-50 text-emerald-900",
-  },
-  "/non-profits": {
-    shell:
-      "border-violet-200 bg-[radial-gradient(circle_at_top_left,_rgba(139,92,246,0.15),_transparent_30%),linear-gradient(180deg,#fbf7ff_0%,#f4ecff_100%)]",
-    panel: "border-white/80 bg-white/82",
-    badge: "border-violet-200 bg-violet-50 text-violet-900",
-  },
-  "/healthcare": {
-    shell:
-      "border-rose-200 bg-[radial-gradient(circle_at_top_left,_rgba(225,29,72,0.14),_transparent_30%),linear-gradient(180deg,#fff8f8_0%,#fff1f3_100%)]",
-    panel: "border-white/80 bg-white/82",
-    badge: "border-rose-200 bg-rose-50 text-rose-900",
-  },
-  "/disaster-relief": {
-    shell:
-      "border-slate-700 bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.16),_transparent_30%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]",
-    panel: "border-white/10 bg-white/5",
-    badge: "border-white/10 bg-white/10 text-slate-100",
-  },
-} as const;
-
-function FooterLinkItem({ href, label }: FooterLink) {
-  const pathname = usePathname();
-  const isDarkTheme = pathname === "/disaster-relief";
-  const className =
-    isDarkTheme
-      ? "group inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/10 px-3 py-2.5 text-sm text-slate-200 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/14 hover:text-white active:scale-[0.99]"
-      : "group inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-transparent bg-white/55 px-3 py-2.5 text-sm text-slate-600 transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:bg-white hover:text-blue-700 active:scale-[0.99]";
-
-  const iconClassName = isDarkTheme
-    ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-slate-200 transition-all group-hover:bg-white/20 group-hover:text-white"
-    : "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-all group-hover:bg-blue-50 group-hover:text-blue-700";
-
-  if (href.startsWith("/")) {
-    return (
-      <Link href={href} className={className}>
-        <span>{label}</span>
-        <span className={iconClassName}>
-          <MoveRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-        </span>
-      </Link>
-    );
-  }
-
-  return (
-    <a href={href} className={className}>
-      <span>{label}</span>
-      <span className={iconClassName}>
-        <MoveRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-      </span>
-    </a>
-  );
-}
-
-function ContactItem({
-  href,
-  label,
-  icon,
-}: {
-  href: string;
-  label: string;
-  icon: React.ReactNode;
-}) {
-  const pathname = usePathname();
-  const isDarkTheme = pathname === "/disaster-relief";
-  const className =
-    isDarkTheme
-      ? "flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 text-sm leading-6 text-slate-200 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/14 hover:text-white"
-      : "flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-2.5 text-sm leading-6 text-slate-600 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950";
-  const content = (
-    <>
-      <span
-        className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl",
-          isDarkTheme
-            ? "bg-white/15 text-slate-100"
-            : "bg-slate-100 text-slate-500",
-        )}
-      >
-        {icon}
-      </span>
-      <span>{label}</span>
-    </>
-  );
-
-  if (href.startsWith("/")) {
-    return (
-      <Link href={href} className={className}>
-        {content}
-      </Link>
-    );
-  }
-
-  return (
-    <a
-      href={href}
-      className={className}
-      target={href.startsWith("http") ? "_blank" : undefined}
-      rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
-    >
-      {content}
-    </a>
-  );
-}
 
 export function Footer() {
-  const pathname = usePathname();
   const year = new Date().getFullYear();
-  const theme =
-    routeThemes[pathname as keyof typeof routeThemes] ?? routeThemes.default;
-  const isDarkTheme = pathname === "/disaster-relief";
+  const footerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: footerRef.current,
+          start: "top 80%",
+        },
+      });
+
+      // 1. Logo (big reveal)
+      tl.from(".footer-logo", {
+        y: 60,
+        opacity: 0,
+        scale: 0.9,
+        duration: 1,
+        ease: "power4.out",
+      })
+
+        // 2. Brand message (soft blur + slide)
+        .from(
+          ".footer-brand",
+          {
+            y: 40,
+            opacity: 0,
+            filter: "blur(8px)",
+            duration: 0.8,
+            ease: "power3.out",
+          },
+          "-=0.6"
+        )
+
+        // 3. Link columns (strong stagger for visibility)
+        .from(
+          ".footer-columns > div",
+          {
+            y: 70,
+            opacity: 0,
+            scale: 0.9,
+            rotateX: 10,
+            transformOrigin: "top",
+            stagger: 0.12,
+            duration: 0.9,
+            ease: "back.out(1.4)",
+          },
+          "-=0.5"
+        )
+
+        // 4. Social row (pop-in effect)
+        .from(
+          ".footer-social",
+          {
+            y: 30,
+            opacity: 0,
+            scale: 0.85,
+            duration: 0.7,
+            ease: "elastic.out(1, 0.6)",
+          },
+          "-=0.5"
+        )
+
+        // 5. Bottom section (clean finish)
+        .from(
+          ".footer-bottom",
+          {
+            y: 25,
+            opacity: 0,
+            duration: 0.6,
+            ease: "power2.out",
+          },
+          "-=0.4"
+        );
+
+    }, footerRef);
+
+    return () => ctx.revert();
+  }, []);
 
   return (
-    <footer className="bg-background px-4 pb-5 pt-10 sm:px-6 lg:px-8">
-      <div
-        className={cn(
-          "mx-auto max-w-7xl overflow-hidden rounded-[28px] border shadow-[0_20px_60px_-40px_rgba(15,23,42,0.35)]",
-          theme.shell,
-        )}
-      >
-        <div className="grid gap-6 p-4 sm:p-6 lg:p-8">
-          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-            <div
-              className={cn(
-                "rounded-[24px] border p-5 backdrop-blur sm:p-6",
-                theme.panel,
-              )}
-            >
-              <span
-                className={cn(
-                  "inline-flex w-fit items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]",
-                  isDarkTheme
-                    ? "border border-white/10 bg-white/10 text-slate-100"
-                    : "border border-slate-200 bg-white/80 text-slate-500",
-                )}
-              >
-                Contact
-              </span>
-              <div className="mt-5 grid gap-3">
-                {contactLinks.map((link, index) => (
-                  <ContactItem
-                    key={`${link.label}-${link.route}`}
-                    href={link.route}
-                    label={link.label}
-                    icon={contactIcons[index] ?? <Mail className="h-4 w-4" />}
-                  />
-                ))}
-              </div>
-            </div>
+    <footer ref={footerRef} className="bg-background text-black">
 
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div
-                className={cn(
-                  "rounded-[24px] border p-5 backdrop-blur sm:p-6",
-                  theme.panel,
-                )}
-              >
-                <span
-                  className={cn(
-                    "inline-flex w-fit items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]",
-                    isDarkTheme
-                      ? "border border-white/10 bg-white/10 text-slate-100"
-                      : "border border-slate-200 bg-white/80 text-slate-500",
-                  )}
-                >
-                  Platform
-                </span>
-                <div className="mt-5 flex flex-col gap-3">
-                  {platformLinks.map((link) => (
-                    <FooterLinkItem
-                      key={`${link.label}-${link.href}`}
-                      href={link.href}
-                      label={link.label}
-                    />
-                  ))}
-                </div>
-              </div>
+      <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
 
-              <div
-                className={cn(
-                  "rounded-[24px] border p-5 backdrop-blur sm:p-6",
-                  theme.panel,
-                )}
-              >
-                <span
-                  className={cn(
-                    "inline-flex w-fit items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]",
-                    isDarkTheme
-                      ? "border border-white/10 bg-white/10 text-slate-100"
-                      : "border border-slate-200 bg-white/80 text-slate-500",
-                  )}
-                >
-                  Resources
-                </span>
-                <div className="mt-5 flex flex-col gap-3">
-                  {resourceLinks.map((link) => (
-                    <FooterLinkItem
-                      key={`${link.label}-${link.href}`}
-                      href={link.href}
-                      label={link.label}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
+        {/* Logo */}
+        <div className="pb-4 footer-logo">
+          <Image
+            src="/logo.svg"
+            alt="RefreeG"
+            width={1920}
+            height={200}
+            className="h-auto w-full"
+          />
+        </div>
+
+        {/* Main Section */}
+        <div className="grid items-center gap-14 py-4 lg:grid-cols-[0.25fr_0.75fr]">
+
+          {/* Brand Message */}
+          <div className="footer-brand">
+            <p className="mt-4 max-w-lg text-[#0A3CB5] text-sm leading-snug">
+              Global giving, on-chain. Built so every dollar is traceable from your
+              wallet to the moment it lands.
+            </p>
           </div>
 
-          <div
-            className={cn(
-              "rounded-[24px] border p-5 backdrop-blur sm:p-6",
-              theme.panel,
-            )}
-          >
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-xl">
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]",
-                    isDarkTheme
-                      ? "border border-white/10 bg-white/10 text-slate-100"
-                      : "border border-slate-200 bg-white/80 text-slate-500",
-                  )}
-                >
-                  Social
-                </span>
-                <p
-                  className={cn(
-                    "mt-4 text-xl font-semibold sm:text-2xl",
-                    isDarkTheme ? "text-white" : "text-slate-950",
-                  )}
-                >
-                  Follow RefreeG
-                </p>
-                <p
-                  className={cn(
-                    "mt-3 text-sm leading-7",
-                    isDarkTheme ? "text-slate-300" : "text-slate-600",
-                  )}
-                >
-                  Stay close to new campaigns, platform updates, and community
-                  stories across our social channels.
-                </p>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <span
-                    className={cn(
-                      "rounded-full px-3 py-1 text-xs font-medium",
-                      isDarkTheme
-                        ? "bg-white/10 text-slate-100"
-                        : "bg-slate-100 text-slate-600",
-                    )}
-                  >
-                    Campaign updates
-                  </span>
-                  <span
-                    className={cn(
-                      "rounded-full px-3 py-1 text-xs font-medium",
-                      isDarkTheme
-                        ? "bg-white/10 text-slate-100"
-                        : "bg-slate-100 text-slate-600",
-                    )}
-                  >
-                    Community stories
-                  </span>
-                  <span
-                    className={cn(
-                      "rounded-full px-3 py-1 text-xs font-medium",
-                      isDarkTheme
-                        ? "bg-white/10 text-slate-100"
-                        : "bg-slate-100 text-slate-600",
-                    )}
-                  >
-                    Platform news
-                  </span>
-                </div>
-              </div>
+          {/* Link Columns */}
+          <div className="grid grid-cols-2 gap-10 md:grid-cols-4 footer-columns">
+            {footerColumns.map((column) => (
+              <div key={column.title}>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.18em]">
+                  {column.title}
+                </h3>
 
-              <div className="flex flex-wrap gap-3 lg:max-w-[620px] lg:justify-end">
-                {socialItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(
-                      "group inline-flex min-w-[140px] items-center gap-3 rounded-2xl px-4 py-3.5 text-sm transition-all hover:-translate-y-0.5 sm:min-w-fit",
-                      isDarkTheme
-                        ? "border border-white/10 bg-white/10 text-slate-100 hover:border-white/20 hover:bg-white/14 hover:text-white"
-                        : "border border-slate-200/70 bg-white/70 text-slate-600 hover:border-slate-300 hover:text-slate-950",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-colors",
-                        isDarkTheme
-                          ? "bg-white/15 text-slate-100 group-hover:bg-white group-hover:text-slate-950"
-                          : "bg-slate-100 text-slate-500 group-hover:bg-slate-900 group-hover:text-white",
-                      )}
-                    >
-                      {item.icon}
-                    </span>
-                    <span className="text-[15px] font-medium">
-                      {item.label}
-                    </span>
-                  </Link>
-                ))}
+                <ul className="mt-5 space-y-3">
+                  {column.links.map((link) => (
+                    <li key={link.label}>
+                      <Link
+                        href={link.href}
+                        className="text-sm transition-colors hover:text-[#0A3CB5]"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Social + Language */}
+        <div className="footer-social flex flex-col gap-6 pt-8 pb-4 md:flex-row md:items-center md:justify-between">
+
+          <div className="flex items-center border p-2 rounded-xl gap-3 text-sm">
+            <img
+              src="https://flagcdn.com/us.svg"
+              width="30"
+              alt="United States"
+            />
+            <span>United States · English</span>
           </div>
 
-          <div
-            className={cn(
-              "flex flex-col gap-4 border-t px-1 pt-2 text-sm md:flex-row md:items-center md:justify-between",
-              isDarkTheme
-                ? "border-white/10 text-slate-300"
-                : "border-white/50 text-slate-500",
-            )}
-          >
-            <p>Copyright © {year} RefreeG. Built by Eiza Innovations.</p>
+          <div className="flex flex-wrap items-center gap-3">
+            {socialItems.map((item, index) => (
+              <Link
+                key={index}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-10 w-10 items-center justify-center rounded-full border transition-all hover:-translate-y-1 hover:bg-muted"
+              >
+                {item.icon}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Legal + App Stores */}
+        <div className="footer-bottom w-full flex flex-col gap-8 py-4 lg:flex-row lg:items-center lg:justify-between">
+
+          <div className="w-3/4 flex flex-col gap-4 lg:flex-row lg:items-center">
+            <p className="text-sm">
+              © {year} RefreeG
+            </p>
 
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               {legalLinks.map((link) => (
                 <Link
-                  key={`${link.label}-legal`}
+                  key={link.label}
                   href={link.route}
-                  className={cn(
-                    "transition-colors",
-                    isDarkTheme
-                      ? "hover:text-white"
-                      : "hover:text-slate-950",
-                  )}
+                  className="text-sm transition-colors hover:text-[#0A3CB5]"
                 >
                   {link.label}
                 </Link>
               ))}
             </div>
           </div>
+
+          <div className="w-1/4 flex items-center gap-3">
+            <Link href="/" aria-label="App Store">
+              <Image
+                src="/appstorebadge.svg"
+                alt="App Store"
+                width={140}
+                height={42}
+                className="h-10 w-auto"
+              />
+            </Link>
+
+            <Link href="/" aria-label="Google Play">
+              <Image
+                src="/googleplay.svg"
+                alt="Google Play"
+                width={140}
+                height={42}
+                className="h-10 w-auto"
+              />
+            </Link>
+          </div>
+
         </div>
+
+        {/* Disclaimer */}
+        <div className="pt-4">
+          <p className="max-w-6xl text-xs font-medium leading-tight">
+            RefreeG is a next-generation decentralized philanthropy
+            infrastructure. All campaign funds are held in secure,
+            milestone-locked smart contract escrows and are only released upon
+            verified cryptographic or visual proof of spending.
+            <br />
+            <br />
+            By utilizing this platform, you acknowledge that blockchain
+            transactions are irreversible and that RefreeG operates as a
+            technological governance layer, not a traditional financial
+            institution or charitable trust.
+            <br />
+            <br />© 2026 RefreeG Labs Inc. All rights reserved.
+          </p>
+        </div>
+
       </div>
     </footer>
   );
