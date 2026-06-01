@@ -64,7 +64,7 @@ export function BreetCryptoDonationModal({
         variant: "destructive",
         title: "Gateway Connection Error",
         description:
-          "Breet Sandbox system latency detected. Please try refreshing again.",
+          "Unable to establish secure stablecoin rails. Please close and try again.",
       });
     } finally {
       setLoading(false);
@@ -83,7 +83,6 @@ export function BreetCryptoDonationModal({
           if (checkResult.hasNewDonation) {
             setIsConfirmed(true);
 
-            // 🟢 Wipes local storage track if live ledger polling hits a match
             localStorage.removeItem("donationAttempt");
 
             if (pollingRef.current) clearInterval(pollingRef.current);
@@ -194,51 +193,8 @@ export function BreetCryptoDonationModal({
             </div>
 
             <div className="w-full text-center space-y-3">
-              <div
-                onClick={async () => {
-                  setIsConfirmed(true);
-                  toast({
-                    title: "Success ⚡",
-                    description: "Thank you for your donation! 🎉",
-                  });
-
-                  localStorage.removeItem("donationAttempt");
-
-                  try {
-                    fetch("/api/breet-test-address").catch((err) =>
-                      console.error("Breet server ledger sync failed:", err),
-                    );
-
-                    await fetch("/api/webhooks/breet", {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        "x-webhook-secret":
-                          process.env.NEXT_PUBLIC_BREET_WEBHOOK_SECRET ||
-                          "fallback_secret_if_local",
-                      },
-                      body: JSON.stringify({
-                        event: "trade.completed",
-                        status: "completed",
-                        txHash: `pitch_sol_hash_${Math.random().toString(36).substring(7)}`,
-                        amountSettled: "159697.5",
-                        cryptoAmount: "100",
-                        destinationDescription: `${donorId || "guest"}_${causeId}`,
-                        sourceAddress: "Presentation SPL Wallet",
-                        destinationAddress: "Refreeg Solana Liquidity Node",
-                      }),
-                    });
-
-                    setTimeout(() => {
-                      router.refresh();
-                    }, 1000);
-                  } catch (e) {
-                    console.error("Local simulation data injection failed:", e);
-                  }
-                }}
-                className="inline-flex items-center gap-2 rounded-full bg-[#14F195]/10 border border-[#14F195]/20 px-3 py-1 text-xs font-bold text-[#14F195] bg-slate-900 cursor-pointer hover:bg-slate-800 transition-all select-none"
-                title="Click to simulate absolute end-to-end sandbox payment pipeline"
-              >
+              {/* 🟢 PRODUCTION CLEANUP: Removed the legacy click-simulation cursor wrappers */}
+              <div className="inline-flex items-center gap-2 rounded-full bg-[#14F195]/10 border border-[#14F195]/20 px-3 py-1 text-xs font-bold text-[#14F195] bg-slate-900 select-none">
                 <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.62 6.77h3.46v2.18h-3.46v1.4c1.19.11 2.29.38 3.19.78l-.63 1.95c-.96-.4-2.12-.66-3.32-.73v4.88h-1.74v-4.87c-1.2.06-2.35.31-3.32.72l-.63-1.95c.9-.4 2-.67 3.19-.78v-1.4H6.92V8.77h3.46V5.45h1.62v3.32z" />
                 </svg>
@@ -275,8 +231,8 @@ export function BreetCryptoDonationModal({
               <div className="leading-normal space-y-1">
                 <p>
                   <strong>
-                    Kindly note: There is a 50 USDT minimum requirement for
-                    crypto donations on this campaign.
+                    Kindly note: There is a 15 USDT minimum requirement for
+                    crypto donations on this network.
                   </strong>
                 </p>
               </div>
