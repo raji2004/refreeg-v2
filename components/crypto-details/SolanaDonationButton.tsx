@@ -8,10 +8,11 @@ import {
   SystemProgram,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
-import { getRecipientSolanaWallet, createCryptoDonation } from "@/actions/crypto-actions";
-import { useParams } from "next/navigation";
+import {
+  getRecipientSolanaWallet,
+  createCryptoDonation,
+} from "@/actions/crypto-actions";
 import Link from "next/link";
-import { getCurrentUser } from "@/actions/auth-actions";
 import { useToast } from "@/components/ui/use-toast";
 import NavigationLoader from "../NavigationLoader";
 
@@ -62,34 +63,16 @@ export default function SolDonationButton({
   const [recipientAddress, setRecipientAddress] = useState<string | null>(null);
   const [isLoadingAddress, setIsLoadingAddress] = useState(true);
   const [inputMode, setInputMode] = useState<"sol" | "naira">("sol");
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
   const nairaInputRef = useRef<HTMLInputElement>(null);
   const solInputRef = useRef<HTMLInputElement>(null);
 
-  const params = useParams();
   const { toast } = useToast();
 
   useEffect(() => {
     const getExchangeRate = async () => {
       const rate = await fetchSolToNairaRate();
       setExchangeRate(rate);
-
-      // Update the opposite field based on current input mode
-      if (inputMode === "sol") {
-        const amount = parseFloat(donationAmount);
-        if (!isNaN(amount) && amount > 0) {
-          const nairaValue = (amount * rate).toFixed(2);
-          setNairaInput(formatNumberWithCommas(nairaValue));
-        }
-      } else {
-        const cleanNaira = removeCommas(nairaInput);
-        const amount = parseFloat(cleanNaira);
-        if (!isNaN(amount) && amount > 0) {
-          const solValue = (amount / rate).toFixed(6);
-          setDonationAmount(solValue);
-        }
-      }
     };
     getExchangeRate();
 
@@ -229,7 +212,6 @@ export default function SolDonationButton({
     try {
       const response = await window.solana.connect();
       const publicKey = response.publicKey.toString();
-      setWalletAddress(publicKey);
       return publicKey;
     } catch (err) {
       console.error("Wallet connection error:", err);
@@ -411,7 +393,7 @@ export default function SolDonationButton({
           <p>The creator hasn't set up a Solana wallet address.</p>
           <p className="mt-2">
             <Link
-              href={`/cause/${params.cause_id}/payment`}
+              href={`/causes/${causeId}/donate`}
               className="text-purple-600 hover:underline"
             >
               Please use another payment method

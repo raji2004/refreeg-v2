@@ -80,6 +80,7 @@ const CommentsSection = dynamic(
 const tabs = ["Milestones", "Updates", "Budget", "Comments", "FAQ"] as const;
 const donationPresets = [1000, 10000, 100000, 1000000];
 const tipPresets = [100, 500, 1000];
+const MIN_DONATION_AMOUNT = 100;
 
 const trustTiles = (cause: CauseDetail) => [
   {
@@ -757,7 +758,6 @@ function DonateCard({
   const [message, setMessage] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const minimumDonation = 100;
   const isCauseClosed =
     cause.status === "pending" ||
     cause.status === "rejected" ||
@@ -773,29 +773,39 @@ function DonateCard({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitError("");
+    const trimmedEmail = email.trim();
+    const trimmedName = name.trim();
+    const trimmedMessage = message.trim();
 
-    if (donation < minimumDonation) {
-      setSubmitError(`Minimum donation is ₦${minimumDonation}.`);
+    if (donation < MIN_DONATION_AMOUNT) {
+      setSubmitError(`Minimum donation is ₦${MIN_DONATION_AMOUNT}.`);
       return;
     }
 
-    if (!email.trim()) {
+    if (!trimmedEmail) {
       setSubmitError("Enter your email to continue.");
       return;
     }
 
-    if (!isAnonymous && !name.trim()) {
+    if (!isAnonymous && !trimmedName) {
       setSubmitError("Enter your name or donate anonymously.");
+      return;
+    }
+
+    if (recurring !== "one_time" && !plan) {
+      setSubmitError(
+        "Recurring donations are not configured yet. Choose one-time to continue.",
+      );
       return;
     }
 
     try {
       await initializePayment({
-        email,
+        email: trimmedEmail,
         amount: donation,
         causeId: cause.id,
         id: profile.id || undefined,
-        full_name: isAnonymous ? "Anonymous" : name,
+        full_name: isAnonymous ? "Anonymous" : trimmedName,
         serviceFee,
         tipAmount: tip,
         plan,
@@ -805,7 +815,7 @@ function DonateCard({
             share: donation * 100,
           },
         ],
-        message,
+        message: trimmedMessage,
         isAnonymous,
       });
     } catch (error) {
@@ -882,7 +892,7 @@ function DonateCard({
             />
           </div>
           <p className="text-xs text-slate-500">
-            Minimum donation is ₦{minimumDonation}.
+            Minimum donation is ₦{MIN_DONATION_AMOUNT}.
           </p>
         </label>
 
@@ -893,11 +903,12 @@ function DonateCard({
             </span>
             <select
               value={recurring}
-              onChange={(event) =>
+              onChange={(event) => {
                 setRecurring(
                   event.target.value as "one_time" | "weekly" | "monthly",
-                )
-              }
+                );
+                if (submitError) setSubmitError("");
+              }}
               className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
             >
               <option value="one_time">One-time</option>
@@ -906,7 +917,7 @@ function DonateCard({
             </select>
           </label>
 
-          <label className="grid gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-4 text-sm text-[#64748B]">
+          <div className="grid gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-4 text-sm text-[#64748B]">
             <div className="flex items-center justify-between gap-3">
               <span className="font-semibold text-slate-700">Platform tip</span>
               <span className="text-sm font-semibold text-slate-800">
@@ -937,14 +948,17 @@ function DonateCard({
                     type="number"
                     min={0}
                     value={tip}
-                    onChange={(event) => setTip(Number(event.target.value))}
+                    onChange={(event) => {
+                      setTip(Math.max(0, Number(event.target.value) || 0));
+                      if (submitError) setSubmitError("");
+                    }}
                     className="w-full bg-transparent px-3 py-2 text-right text-sm font-semibold text-slate-900 outline-none"
                     placeholder="Custom"
                   />
                 </div>
               </div>
             </div>
-          </label>
+          </div>
         </div>
 
         <div className="mt-4 rounded-[14px] border border-[#E5E7EB] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
@@ -1018,7 +1032,10 @@ function DonateCard({
             <input
               type="text"
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => {
+                setName(event.target.value);
+                if (submitError) setSubmitError("");
+              }}
               disabled={isAnonymous}
               required={!isAnonymous}
               placeholder="Enter your name"
@@ -1030,7 +1047,10 @@ function DonateCard({
             <input
               type="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                if (submitError) setSubmitError("");
+              }}
               required
               placeholder="Enter your email"
               className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
@@ -1040,7 +1060,10 @@ function DonateCard({
             Message <span className="text-xs text-slate-400">(Optional)</span>
             <textarea
               value={message}
-              onChange={(event) => setMessage(event.target.value)}
+              onChange={(event) => {
+                setMessage(event.target.value);
+                if (submitError) setSubmitError("");
+              }}
               placeholder="Leave a message of support"
               rows={3}
               className="resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
@@ -1051,7 +1074,10 @@ function DonateCard({
             <input
               type="checkbox"
               checked={isAnonymous}
-              onChange={(event) => setIsAnonymous(event.target.checked)}
+              onChange={(event) => {
+                setIsAnonymous(event.target.checked);
+                if (submitError) setSubmitError("");
+              }}
               className="h-4 w-4 accent-[#2563EB]"
             />
           </label>
@@ -1063,13 +1089,12 @@ function DonateCard({
           </p>
         )}
 
-        <div className="mt-4 space-y-3">
-          {creatorHasWallet && (
-            <SolanaDonationButtonWrapper causeId={cause.id} />
-          )}
+        <div className="mt-4">
           <button
             type="submit"
-            disabled={isLoading || isCauseClosed || donation < minimumDonation}
+            disabled={
+              isLoading || isCauseClosed || donation < MIN_DONATION_AMOUNT
+            }
             className="inline-flex w-full items-center justify-center rounded-xl bg-[#2563EB] px-4 py-3 text-base font-semibold text-white shadow-[0_12px_24px_rgba(37,99,235,0.25)] transition hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading
@@ -1085,10 +1110,16 @@ function DonateCard({
         </div>
       </form>
 
+      {creatorHasWallet && (
+        <div className="mt-4">
+          <SolanaDonationButtonWrapper causeId={cause.id} />
+        </div>
+      )}
+
       <div className="mt-4 flex items-start gap-2 text-xs text-[#64748B]">
         <ShieldAlert className="mt-0.5 h-4 w-4 text-[#F59E0B]" />
-        Donations below ₦5 do not earn EIZA. Refunds or chargebacks remove
-        rewards.
+        Donations below ₦{MIN_DONATION_AMOUNT} do not earn EIZA. Refunds or
+        chargebacks remove rewards.
       </div>
 
       {!profile.id && (
