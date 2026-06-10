@@ -10,6 +10,7 @@ import { FeaturedPetitions } from "@/components/home/featured-petitions";
 import { UrgentCauses } from "@/components/home/urgentCauses";
 import CTASection from "@/components/home/cta-section";
 import Numbers from "@/components/numbers";
+import WhyOnChain from "@/components/home/WhyOnChain";
 
 import { Metadata } from "next";
 
@@ -40,6 +41,8 @@ export default async function Home({
       <div className="mx-8">
         <Numbers />
       </div>
+
+      <WhyOnChain />
 
       <div className="mx-8">
         <LaunchYourCauseInSeconds />
