@@ -42,11 +42,11 @@ export default async function Home({
         <Numbers />
       </div>
 
-      <WhyOnChain />
-
       <div className="mx-8">
         <LaunchYourCauseInSeconds />
       </div>
+
+      <WhyOnChain />
 
       <div className="mx-8">
         <UrgentCauses />
