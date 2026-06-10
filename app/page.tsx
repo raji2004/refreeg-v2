@@ -10,6 +10,8 @@ import { FeaturedPetitions } from "@/components/home/featured-petitions";
 import { UrgentCauses } from "@/components/home/urgentCauses";
 import CTASection from "@/components/home/cta-section";
 import Numbers from "@/components/numbers";
+import { AnnouncementMarquee } from "@/components/ui/announcement-marquee";
+import ProofFeatureSplit from "@/components/home/proof-feature-split";
 import WhyOnChain from "@/components/home/WhyOnChain";
 
 import { Metadata } from "next";
@@ -36,6 +38,7 @@ export default async function Home({
 
   return (
     <div className="flex flex-col min-h-screen mt-12 md:mt-16 ">
+      <AnnouncementMarquee />
       <Hero />
 
       <div className="mx-8">
@@ -63,6 +66,8 @@ export default async function Home({
       <div className="mx-8">
         <FeaturedPetitions />
       </div>
+
+      <ProofFeatureSplit />
 
       <div className="">
         <HowitWorksYT />

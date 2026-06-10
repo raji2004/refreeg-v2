@@ -73,6 +73,12 @@ select:focus {
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+
+    /* Announcement marquee tokens */
+    --announcement-background: 76 78% 59%;
+    --announcement-foreground: 220 81% 34%;
+    --announcement-status: 216 31% 18%;
+    --announcement-border: 83 57% 46%;
   }
 
   /* Dark theme commented out
@@ -313,4 +319,41 @@ select:focus {
 
 .animate-slow-spin {
   animation: slow-spin 20s linear infinite;
+}
+
+@keyframes announcement-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-announcement-marquee {
+  animation: announcement-marquee var(--marquee-duration, 44s) linear infinite;
+}
+
+.marquee-edge-fade {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 4%,
+    black 96%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 4%,
+    black 96%,
+    transparent 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-announcement-marquee {
+    animation: none;
+  }
 }
