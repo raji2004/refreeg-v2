@@ -12,6 +12,7 @@ import CTASection from "@/components/home/cta-section";
 import Numbers from "@/components/numbers";
 import { AnnouncementMarquee } from "@/components/ui/announcement-marquee";
 import ProofFeatureSplit from "@/components/home/proof-feature-split";
+import WhyOnChain from "@/components/home/WhyOnChain";
 
 import { Metadata } from "next";
 
@@ -47,6 +48,8 @@ export default async function Home({
       <div className="mx-8">
         <LaunchYourCauseInSeconds />
       </div>
+
+      <WhyOnChain />
 
       <div className="mx-8">
         <UrgentCauses />
