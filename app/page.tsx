@@ -13,8 +13,10 @@ import Numbers from "@/components/numbers";
 import { AnnouncementMarquee } from "@/components/ui/announcement-marquee";
 import ProofFeatureSplit from "@/components/home/proof-feature-split";
 import WhyOnChain from "@/components/home/WhyOnChain";
-
+import { RoutedOnChain } from "@/components/home/RoutedOnChain";
+import { MoneyTrail } from "@/components/home/MoneyTrail";
 import { Metadata } from "next";
+import Accountability from "@/components/home/Accountability";
 
 export const metadata: Metadata = {
   title: "RefreeG | Powering Social Impact Through Blockchain",
@@ -38,16 +40,27 @@ export default async function Home({
 
   return (
     <div className="flex flex-col min-h-screen mt-12 md:mt-16 ">
-      <AnnouncementMarquee />
       <Hero />
 
       <div className="mx-8">
-        <Numbers />
+        {/* <Numbers /> */}
       </div>
 
       <div className="mx-8">
-        <LaunchYourCauseInSeconds />
+        <RoutedOnChain />
+        {/* <LaunchYourCauseInSeconds /> */}
       </div>
+      <AnnouncementMarquee />
+
+      <MoneyTrail />
+
+      <AnnouncementMarquee />
+
+      <div className="mx-8">
+        <Accountability />
+      </div>
+
+      <ProofFeatureSplit />
 
       <WhyOnChain />
 
@@ -56,7 +69,7 @@ export default async function Home({
       </div>
 
       <div className="">
-        <WhyItStandsOut />
+        {/* <WhyItStandsOut /> */}
       </div>
 
       <div className="mx-8">
@@ -67,10 +80,10 @@ export default async function Home({
         <FeaturedPetitions />
       </div>
 
-      <ProofFeatureSplit />
+      
 
       <div className="">
-        <HowitWorksYT />
+        {/* <HowitWorksYT /> */}
       </div>
 
       <CTASection />

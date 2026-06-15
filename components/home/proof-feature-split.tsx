@@ -21,7 +21,7 @@ const sectionVariants = cva(
     variants: {
       variant: {
         light: "bg-[#e8e4d8] text-[#132326]",
-        dark: "bg-[#071331] text-[#f2efe8]",
+        dark: "bg-[#0F1422] text-[#f2efe8]",
         blue: "bg-[#1847cf] text-[#f2efe8]",
       },
     },
