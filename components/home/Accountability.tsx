@@ -16,36 +16,45 @@ export default function Accountability() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      const trigger = {
-        trigger: headlineRef.current,
-        start: "top 80%",
-      };
+      const triggerStart = window.innerWidth < 768 ? "top 90%" : "top 80%";
 
-      gsap.from(headlineRef.current, {
-        scrollTrigger: trigger,
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: headlineRef.current,
+          start: triggerStart,
+          toggleActions: "play none none reverse",
+        },
+      });
+
+      tl.from(headlineRef.current, {
         opacity: 0,
-        y: 32,
+        y: 40,
+        scale: 0.95,
+        filter: "blur(4px)",
         duration: 0.8,
-        ease: "power2.out",
-      });
-
-      gsap.from(subRef.current, {
-        scrollTrigger: trigger,
-        opacity: 0,
-        y: 20,
-        duration: 0.7,
-        delay: 0.15,
-        ease: "power2.out",
-      });
-
-      gsap.from(buttonsRef.current, {
-        scrollTrigger: trigger,
-        opacity: 0,
-        y: 16,
-        duration: 0.6,
-        delay: 0.28,
-        ease: "power2.out",
-      });
+        ease: "power3.out",
+      })
+        .from(
+          subRef.current,
+          {
+            opacity: 0,
+            y: 24,
+            duration: 0.7,
+            ease: "power3.out",
+          },
+          "-=0.4" // overlaps slightly with headline
+        )
+        .from(
+          buttonsRef.current?.children || [],
+          {
+            opacity: 0,
+            y: 16,
+            duration: 0.6,
+            ease: "power3.out",
+            stagger: 0.15, // cascade effect for buttons
+          },
+          "-=0.3"
+        );
     }, sectionRef);
 
     return () => ctx.revert();
@@ -86,12 +95,8 @@ export default function Accountability() {
               className="flex items-center justify-center gap-2 bg-[#1C3CD5] text-white text-[12px] font-medium rounded-full px-4 py-[14px] hover:opacity-90 transition-colors no-underline w-full sm:w-auto"
             >
               Give to a cause
-
               <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                <ChevronRight
-                  size={14}
-                  strokeWidth={2.5}
-                />
+                <ChevronRight size={14} strokeWidth={2.5} />
               </span>
             </Link>
 

@@ -43,13 +43,12 @@ export default async function Home({
       <Hero />
 
       <div className="mx-8">
-        {/* <Numbers /> */}
       </div>
 
       <div className="mx-8">
         <RoutedOnChain />
-        {/* <LaunchYourCauseInSeconds /> */}
       </div>
+
       <AnnouncementMarquee />
 
       <MoneyTrail />
@@ -60,12 +59,12 @@ export default async function Home({
         <Accountability />
       </div>
 
-      <ProofFeatureSplit />
+      {/* <ProofFeatureSplit /> */}
 
-      <WhyOnChain />
+      {/* <WhyOnChain /> */}
 
       <div className="mx-8">
-        <UrgentCauses />
+        {/* <UrgentCauses /> */}
       </div>
 
       <div className="">
@@ -73,11 +72,11 @@ export default async function Home({
       </div>
 
       <div className="mx-8">
-        <TrendingCauses />
+        {/* <TrendingCauses /> */}
       </div>
 
       <div className="mx-8">
-        <FeaturedPetitions />
+        {/* <FeaturedPetitions /> */}
       </div>
 
       
@@ -86,10 +85,10 @@ export default async function Home({
         {/* <HowitWorksYT /> */}
       </div>
 
-      <CTASection />
+      {/* <CTASection /> */}
 
       <div id="faq" className="md:mx-8">
-        <FAQ />
+        {/* <FAQ /> */}
       </div>
     </div>
   );
