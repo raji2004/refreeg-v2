@@ -166,34 +166,39 @@ export async function updateUserStreaks(userId: string) {
       where: { userId },
     });
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const lastActive = streakData?.lastActiveDate
-      ? new Date(streakData.lastActiveDate)
+    // Use UTC date strings (YYYY-MM-DD) to avoid local timezone issues
+    const todayUtcStr = new Date().toISOString().slice(0, 10);
+    const lastActiveUtcStr = streakData?.lastActiveDate
+      ? new Date(streakData.lastActiveDate).toISOString().slice(0, 10)
       : null;
-    lastActive?.setHours(0, 0, 0, 0);
 
     let weeklyStreak = streakData?.weeklyStreak || 0;
     let isMonthlyActive = streakData?.isMonthlyActive || false;
 
-    // Check if this is a new day
-    if (!lastActive || lastActive.getTime() !== today.getTime()) {
-      // Check if streak continues (yesterday)
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
+    // If lastActive is not today (UTC), update streak
+    if (!lastActiveUtcStr || lastActiveUtcStr !== todayUtcStr) {
+      // Check if streak continues (yesterday in UTC)
+      const yesterday = new Date();
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      const yesterdayUtcStr = yesterday.toISOString().slice(0, 10);
 
-      if (lastActive && lastActive.getTime() === yesterday.getTime()) {
+      if (lastActiveUtcStr && lastActiveUtcStr === yesterdayUtcStr) {
         weeklyStreak += 1;
       } else {
         weeklyStreak = 1;
       }
     }
 
-    // Check if it's a new month
-    const month = today.getMonth();
-    const year = today.getFullYear();
-    const streakMonth = lastActive ? lastActive.getMonth() : -1;
-    const streakYear = lastActive ? lastActive.getFullYear() : -1;
+    // Check if it's a new month in UTC
+    const todayUtc = new Date();
+    const month = todayUtc.getUTCMonth();
+    const year = todayUtc.getUTCFullYear();
+    const streakMonth = lastActiveUtcStr
+      ? new Date(lastActiveUtcStr + "T00:00:00Z").getUTCMonth()
+      : -1;
+    const streakYear = lastActiveUtcStr
+      ? new Date(lastActiveUtcStr + "T00:00:00Z").getUTCFullYear()
+      : -1;
 
     if (month !== streakMonth || year !== streakYear) {
       isMonthlyActive = true;
