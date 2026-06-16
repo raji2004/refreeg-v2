@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 
 /**
  * Server-side helper to verify that a user has approved KYC and a complete
@@ -10,14 +10,11 @@ import { createClient } from "@/lib/supabase/server";
 export async function requireKycAndProfile(
   userId: string
 ): Promise<string | null> {
-  const supabase = await createClient();
-
-  // 1. Check KYC status
-  const { data: kycVerification } = await supabase
-    .from("kyc_verifications")
-    .select("status")
-    .eq("user_id", userId)
-    .single();
+  // 1. Check KYC status via Prisma (fetch most recent)
+  const kycVerification = await prisma.kyc_verifications.findFirst({
+    where: { user_id: userId },
+    orderBy: { created_at: "desc" },
+  });
 
   if (!kycVerification) {
     return "/dashboard/settings/kyc?error=kyc_required";
@@ -27,15 +24,18 @@ export async function requireKycAndProfile(
     return `/dashboard/settings/kyc?error=kyc_${kycVerification.status}`;
   }
 
-  // 2. Check profile completeness (full_name + profile_photo)
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, profile_photo")
-    .eq("id", userId)
-    .single();
+  // 2. Check profile completeness (fullName + profilePhoto)
+  // Note: The model name is 'User' in Prisma, mapping to 'profiles' table.
+  const profile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      fullName: true,
+      profilePhoto: true,
+    },
+  });
 
-  const hasFullName = !!(profile?.full_name && profile.full_name.trim() !== "");
-  const hasPhoto = !!profile?.profile_photo;
+  const hasFullName = !!(profile?.fullName && profile.fullName.trim() !== "");
+  const hasPhoto = !!profile?.profilePhoto;
 
   if (!hasFullName || !hasPhoto) {
     return "/dashboard/settings/profile?error=profile_incomplete";

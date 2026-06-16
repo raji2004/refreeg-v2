@@ -6,22 +6,28 @@ import {
   setUserRole,
   listUsersWithRoles,
 } from "@/actions/role-actions";
-import { blockUser, unblockUser } from "@/actions/user-actions";
+import { blockUser, unblockUser } from "@/actions/admin-user-actions";
 import {
   updateCauseStatus,
-  listCauses,
+  listAdminCauses,
   getCauseEdits,
-} from "@/actions/cause-actions";
+} from "@/actions/admin-cause-actions";
 import {
   updatePetitionStatus,
-  listPetitions,
+  listAdminPetitions,
   getPetitionEdits,
-} from "@/actions/petition-actions";
+} from "@/actions/admin-petition-actions";
 import { logAdminActivity } from "@/actions/database-actions";
 import { toast } from "@/components/ui/use-toast";
 import type { CauseStatus, UserRole, UserWithRole } from "@/types";
 
-export function useAdmin(userId: string | undefined, status?: CauseStatus) {
+// Petition status type (doesn't have "expired")
+export type PetitionStatus = "pending" | "approved" | "rejected";
+
+export function useAdmin(
+  userId: string | undefined,
+  status?: CauseStatus | PetitionStatus,
+) {
   const queryClient = useQueryClient();
 
   const {
@@ -32,7 +38,7 @@ export function useAdmin(userId: string | undefined, status?: CauseStatus) {
     queryKey: ["userRole", userId],
     queryFn: () => (userId ? getUserRoleInfo(userId) : null),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
   });
 
@@ -215,9 +221,11 @@ export function useAdmin(userId: string | undefined, status?: CauseStatus) {
     queryFn: listUsersWithRoles,
     enabled: isAdminUser || isManagerUser,
   });
+
+  // Causes query - uses CauseStatus directly
   const { data: causes = [], isLoading: isCausesLoading } = useQuery({
     queryKey: ["adminCauses", status],
-    queryFn: () => listCauses({ status: status }),
+    queryFn: () => listAdminCauses(status as CauseStatus),
     enabled: isAdminUser || isManagerUser,
   });
 
@@ -227,9 +235,13 @@ export function useAdmin(userId: string | undefined, status?: CauseStatus) {
     enabled: isAdminUser || isManagerUser,
   });
 
+  // Petitions query - convert "expired" to undefined since Petition doesn't have expired
+  const petitionStatus =
+    status === "expired" ? undefined : (status as PetitionStatus);
+
   const { data: petitions = [], isLoading: isPetitionsLoading } = useQuery({
     queryKey: ["adminPetitions", status],
-    queryFn: () => listPetitions({ status: status }),
+    queryFn: () => listAdminPetitions(petitionStatus),
     enabled: isAdminUser || isManagerUser,
   });
 
@@ -328,7 +340,7 @@ export function useAdmin(userId: string | undefined, status?: CauseStatus) {
 
   const rejectCause = async (
     causeId: string,
-    reason: string
+    reason: string,
   ): Promise<boolean> => {
     if (!isAdminUser && !isManagerUser) {
       toast({
@@ -355,7 +367,7 @@ export function useAdmin(userId: string | undefined, status?: CauseStatus) {
 
   const rejectPetition = async (
     petitionId: string,
-    reason: string
+    reason: string,
   ): Promise<boolean> => {
     if (!isAdminUser && !isManagerUser) {
       toast({

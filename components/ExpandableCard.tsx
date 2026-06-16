@@ -6,7 +6,10 @@ import { useOutsideClick } from "@/hooks/use-outside-click";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 // TYPES
 interface ExpandableCardItem {
@@ -101,11 +104,16 @@ export function ExpandableCard({ items, type }: ExpandableCardProps) {
               ref={ref}
               className="w-full max-w-[500px] h-full md:h-fit md:max-h-[90%] flex flex-col bg-white sm:rounded-3xl overflow-hidden shadow-2xl"
             >
-              <img
-                src={active.image || "/placeholder-cause.jpg"}
-                alt={active.title}
-                className="w-full h-80 object-cover"
-              />
+              <div className="relative w-full h-80">
+                <Image
+                  src={getMediaUrl(active.image) || "/placeholder-cause.jpg"}
+                  alt={active.title}
+                  fill
+                  sizes="500px"
+                  className="object-cover"
+                  unoptimized={isProxyMediaUrl(getMediaUrl(active.image))}
+                />
+              </div>
 
               <div className="relative flex-1 overflow-y-auto p-4 space-y-4">
                 <h3 className="font-bold">{active.title}</h3>
@@ -177,9 +185,13 @@ export function ExpandableCard({ items, type }: ExpandableCardProps) {
           >
             {/* Mobile */}
             <div className="flex sm:hidden p-4 gap-4">
-              <img
-                src={item.image || "/placeholder-cause.jpg"}
-                className="h-20 w-20 rounded-lg object-cover"
+              <Image
+                src={getMediaUrl(item.image) || "/placeholder-cause.jpg"}
+                alt={item.title || ""}
+                width={80}
+                height={80}
+                className="rounded-lg object-cover"
+                unoptimized={isProxyMediaUrl(getMediaUrl(item.image))}
               />
 
               <div className="flex-1 flex flex-col gap-2">
@@ -207,10 +219,16 @@ export function ExpandableCard({ items, type }: ExpandableCardProps) {
 
             {/* Desktop */}
             <div className="hidden sm:flex flex-col p-4 gap-4">
-              <img
-                src={item.image || "/placeholder-cause.jpg"}
-                className="h-48 w-full rounded-lg object-cover"
-              />
+              <div className="relative h-48 w-full">
+                <Image
+                  src={getMediaUrl(item.image) || "/placeholder-cause.jpg"}
+                  alt={item.title || ""}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="rounded-lg object-cover"
+                  unoptimized={isProxyMediaUrl(getMediaUrl(item.image))}
+                />
+              </div>
 
               <h3 className="text-center">{item.title}</h3>
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, rateLimit, handlePreflight } from "@/utils/api-bot/api-auth";
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import crypto from "crypto";
 import { logApiRequest } from "@/utils/api-bot/request-logger";
@@ -33,24 +33,25 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = RegisterWebhookSchema.parse(body);
 
-    const supabase = await createClient();
-    
-    // Generate a secure secret for signing
     const secret = `wh_sec_${crypto.randomBytes(24).toString("hex")}`;
 
-    const { data, error } = await supabase
-      .from("api_webhooks")
-      .insert({
-        user_id: auth.userId!,
-        url: validated.url,
-        events: validated.events,
-        secret,
-        is_active: true
-      })
-      .select()
-      .single();
+    let data;
+    let error;
+    try {
+      data = await prisma.api_webhooks.create({
+        data: {
+          user_id: auth.userId!,
+          url: validated.url,
+          events: validated.events,
+          secret,
+          is_active: true
+        }
+      });
+    } catch (err) {
+      error = err;
+    }
 
-    if (error) {
+    if (error || !data) {
       console.error("Error registering webhook:", error);
       const response = errorResponse("Failed to register webhook", ApiErrorCode.DATABASE_ERROR, 500);
       await logApiRequest({ request: req, statusCode: response.status, apiKeyId: auth.apiKeyId, userId: auth.userId, mode: auth.mode, errorCode: ApiErrorCode.DATABASE_ERROR, startedAt });
@@ -93,11 +94,16 @@ export async function GET(req: NextRequest) {
     return auth.errorResponse;
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("api_webhooks")
-    .select("id, url, events, is_active, created_at")
-    .eq("user_id", auth.userId!);
+  let data: any[] = [];
+  let error;
+  try {
+    data = await prisma.api_webhooks.findMany({
+      where: { user_id: auth.userId! },
+      select: { id: true, url: true, events: true, is_active: true, created_at: true }
+    });
+  } catch (err) {
+    error = err;
+  }
 
   if (error) {
     const response = errorResponse("Failed to fetch webhooks", ApiErrorCode.DATABASE_ERROR, 500);

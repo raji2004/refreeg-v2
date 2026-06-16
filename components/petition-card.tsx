@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -12,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
 import { H4, P } from "./typograpy";
 import AnimatedCard from "./home/components/AnimatedCard";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 interface PetitionCardProps {
   petition: {
@@ -33,12 +35,14 @@ export function PetitionCard({ petition }: PetitionCardProps) {
     <Link href={`/petitions/${petition.id}`} className="group block h-full">
       <AnimatedCard>
         <Card className="overflow-hidden cursor-pointer transition h-[420px] flex flex-col border border-gray-300">
-          <div className="aspect-video w-full overflow-hidden">
-            <img
-              src={petition.image || "/placeholder.svg"}
+          <div className="aspect-video w-full overflow-hidden relative">
+            <Image
+              src={getMediaUrl(petition.image) || "/placeholder.svg"}
               alt={petition.title}
-              loading="lazy"
-              className="object-cover w-full h-full"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover"
+              unoptimized={isProxyMediaUrl(getMediaUrl(petition.image))}
             />
           </div>
 
@@ -55,14 +59,18 @@ export function PetitionCard({ petition }: PetitionCardProps) {
             <div className="flex justify-between items-center pt-2 text-xs">
               <P className="text-xs">Sign Now</P>
               <P className="text-xs">
-                {petition.percentRaised}% • {Number(petition.days_active || 0)} Days left
+                {petition.percentRaised}% • {Number(petition.days_active || 0)}{" "}
+                Days left
               </P>
             </div>
           </CardHeader>
 
           <div className="mt-auto w-full">
             <CardContent className="pb-4">
-              <Progress value={petition.percentRaised} className="h-2 bg-muted" />
+              <Progress
+                value={petition.percentRaised}
+                className="h-2 bg-muted"
+              />
             </CardContent>
 
             <CardFooter className="pt-0 border-t border-gray-100 mt-2">

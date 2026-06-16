@@ -1,7 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type {
   Petition,
@@ -22,32 +21,30 @@ import { cache } from "react";
 export async function getPetition(
   petitionId: string,
 ): Promise<PetitionWithUser | null> {
-  const supabase = await createClient();
   const user = await getCurrentUser();
-  const { data, error } = await supabase
-    .from("petitions")
-    .select(
-      `
-      *,
-      profiles!inner (
-        full_name,
-        email,
-        sub_account_code,
-        profile_photo
-      ),
-      petition_sections (
-        id,
-        heading,
-        description
-      )
-    `,
-    )
-    .eq("id", petitionId)
-    .single();
+
+  const petition = await prisma.petitions.findUnique({
+    where: { id: petitionId },
+    include: {
+      user: {
+        select: {
+          fullName: true,
+          email: true,
+          subAccountCode: true,
+          profilePhoto: true,
+        },
+      },
+      petition_sections: {
+        select: { id: true, heading: true, description: true },
+      },
+    },
+  });
+
+  if (!petition) return null;
 
   if (
-    (data?.status === "pending" || data?.status === "rejected") &&
-    user?.id !== data?.user_id
+    (petition.status === "pending" || petition.status === "rejected") &&
+    user?.id !== petition.user_id
   ) {
     const canView = user?.id ? await isAdminOrManager(user.id) : false;
     if (!canView) {
@@ -55,82 +52,68 @@ export async function getPetition(
       return null;
     }
   }
-  if (error) {
-    if (error.code === "PGRST116") {
-      return null;
-    }
-    console.error("Error fetching petition:", error);
-    throw error;
-  }
 
-  const petition = {
-    ...data,
+  return {
+    ...petition,
+    goal: Number(petition.goal),
+    raised: Number(petition.raised),
+    created_at: petition.created_at.toISOString(),
+    updated_at: petition.updated_at.toISOString(),
     user: {
-      name: data.profiles?.full_name || "Anonymous",
-      email: data.profiles?.email || "",
-      sub_account_code: data.profiles?.sub_account_code || "",
+      name: petition.user?.fullName || "Anonymous",
+      email: petition.user?.email || "",
+      sub_account_code: petition.user?.subAccountCode || "",
     },
-    sections: data.petition_sections || [],
-    multimedia: data.multimedia || [],
-    video_links: data.video_links || [],
+    sections: petition.petition_sections || [],
+    multimedia: petition.multimedia || [],
+    video_links: petition.video_links || [],
   } as unknown as PetitionWithUser;
-
-  delete (petition as any).profiles;
-  delete (petition as any).petition_sections;
-
-  return petition;
 }
 
-async function uploadImageToSupabase(
+async function uploadFileToS3(
   file: File,
   userId: string,
+  petitionId: string,
   type: "cover" | "additional",
 ): Promise<string> {
-  const supabase = await createClient();
-
-  const sanitizedOriginalName = file.name.replace(/[^\w\s.-]/g, "_");
-  const fileName = `${userId}-${Date.now()}-${type}-${sanitizedOriginalName}`;
-
-  const bucket = file.type.startsWith("video/")
-    ? "petition-videos"
-    : "profile-photos";
-
-
-
-  const { data: uploadData, error: uploadError } = await supabase.storage
-    .from(bucket)
-    .upload(fileName, file, {
-      cacheControl: "3600",
-      upsert: true,
+  const ext = file.name.split('.').pop() || 'file';
+  const uniqueId = Math.random().toString(36).substring(2, 15);
+  const isVideo = file.type.startsWith("video/");
+  
+  try {
+    const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
+    
+    const s3Key = generateS3Key({
+      entityType: "petitions",
+      userId,
+      entityId: petitionId,
+      mediaType: isVideo ? "videos" : "images",
+      filename: `${uniqueId}_${type}.${ext}`,
     });
 
-  if (uploadError) {
-    console.error("Error uploading image:", uploadError);
-    throw uploadError;
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await uploadToS3(buffer, s3Key, file.type);
+    return s3Key;
+  } catch (error: any) {
+    console.error("Error uploading file to S3:", error);
+    throw error;
   }
-
-  const { data: urlData } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(fileName);
-  return urlData.publicUrl;
 }
 
 export async function createPetition(
   userId: string,
   petitionData: PetitionFormData,
 ): Promise<Petition> {
-  const supabase = await createClient();
-
+  const petitionId = crypto.randomUUID();
   let coverImageUrl = null;
   if (petitionData.coverImage) {
-    coverImageUrl = await uploadImageToSupabase(
+    coverImageUrl = await uploadFileToS3(
       petitionData.coverImage,
       userId,
+      petitionId,
       "cover",
     );
   }
-
-
 
   let daysActive = null;
   if (petitionData.startDate && petitionData.endDate) {
@@ -161,7 +144,7 @@ export async function createPetition(
     try {
       multimediaUrls = await Promise.all(
         petitionData.multimedia.map((file) =>
-          uploadImageToSupabase(file, userId, "additional"),
+          uploadFileToS3(file, userId, petitionId, "additional"),
         ),
       );
     } catch (error) {
@@ -170,12 +153,11 @@ export async function createPetition(
     }
   }
 
-  const { data: petition, error: petitionError } = await supabase
-    .from("petitions")
-    .insert({
+  const petition = await prisma.petitions.create({
+    data: {
+      id: petitionId,
       user_id: userId,
       title: petitionData.title,
-      // description: petitionData.description,
       category: petitionData.category,
       goal:
         typeof petitionData.goal === "string"
@@ -186,47 +168,33 @@ export async function createPetition(
       days_active: daysActive,
       multimedia: multimediaUrls,
       video_links: petitionData.video_links || [],
-    })
-    .select()
-    .single();
-
-  if (petitionError) {
-    console.error("Error creating petition:", petitionError);
-    throw petitionError;
-  }
+    },
+  });
 
   if (petitionData.sections && petitionData.sections.length > 0) {
-    const sections = petitionData.sections.map((section) => ({
-      petition_id: petition.id,
-      heading: section.heading,
-      description: section.description,
-    }));
-
-    const { error: sectionsError } = await supabase
-      .from("petition_sections")
-      .insert(sections);
-
-    if (sectionsError) {
-      console.error("Error creating sections:", sectionsError);
-      throw sectionsError;
-    }
+    await prisma.petition_sections.createMany({
+      data: petitionData.sections.map((section) => ({
+        petition_id: petition.id,
+        heading: section.heading,
+        description: section.description,
+      })),
+    });
   }
 
+  // Send admin notification in background
   try {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", userId)
-      .single();
+    const profile = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { fullName: true, email: true },
+    });
 
     if (profile?.email) {
       const baseUrl =
         process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
       const reviewUrl = `${baseUrl}/dashboard/admin/petitions?tab=pending`;
 
-      // Send notification in background - do not await
       sendPetitionSubmissionAdminNotification(
-        profile.full_name || "User",
+        profile.fullName || "User",
         profile.email,
         petitionData.title,
         reviewUrl,
@@ -237,7 +205,14 @@ export async function createPetition(
   }
 
   revalidatePath("/dashboard/petitions");
-  return petition as Petition;
+
+  return {
+    ...petition,
+    goal: Number(petition.goal),
+    raised: Number(petition.raised),
+    created_at: petition.created_at.toISOString(),
+    updated_at: petition.updated_at.toISOString(),
+  } as unknown as Petition;
 }
 
 export async function updatePetition(
@@ -245,10 +220,8 @@ export async function updatePetition(
   userId: string,
   petitionData: Partial<PetitionFormData>,
 ): Promise<Petition> {
-  const supabase = await createClient();
-
   let coverImageUrl = petitionData.coverImage
-    ? await uploadImageToSupabase(petitionData.coverImage, userId, "cover")
+    ? await uploadFileToS3(petitionData.coverImage as File, userId, petitionId, "cover")
     : petitionData.image;
 
   let daysActive = null;
@@ -280,7 +253,7 @@ export async function updatePetition(
     try {
       multimediaUrls = await Promise.all(
         petitionData.multimedia.map((file) =>
-          uploadImageToSupabase(file, userId, "additional"),
+          uploadFileToS3(file as File, userId, petitionId, "additional"),
         ),
       );
     } catch (error) {
@@ -289,144 +262,122 @@ export async function updatePetition(
     }
   }
 
-  const editData: any = {
+  const editData = {
     original_petition_id: petitionId,
     user_id: userId,
-    title: petitionData.title,
+    title: petitionData.title!,
     description: petitionData.description || "",
-    category: petitionData.category,
+    category: petitionData.category!,
     goal:
       typeof petitionData.goal === "string"
         ? Number.parseFloat(petitionData.goal)
-        : petitionData.goal,
-    image: coverImageUrl,
+        : petitionData.goal!,
+    image: coverImageUrl || null,
     days_active: daysActive,
     multimedia: multimediaUrls.length > 0 ? multimediaUrls : [],
     video_links: petitionData.video_links || [],
     status: "pending",
   };
 
-  const { data, error } = await supabase
-    .from("petition_edits")
-    .insert(editData)
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error saving petition edit:", error);
-    throw error;
-  }
+  const edit = await prisma.petition_edits.create({
+    data: editData,
+  });
 
   if (petitionData.sections && petitionData.sections.length > 0) {
-    const sections = petitionData.sections.map((section) => ({
-      petition_edit_id: data.id,
-      heading: section.heading,
-      description: section.description,
-    }));
-
-    const { error: sectionsError } = await supabase
-      .from("petition_edit_sections")
-      .insert(sections);
-
-    if (sectionsError) {
-      console.error("Error creating petition edit sections:", sectionsError);
-      throw sectionsError;
-    }
+    await prisma.petition_edit_sections.createMany({
+      data: petitionData.sections.map((section) => ({
+        petition_edit_id: edit.id,
+        heading: section.heading,
+        description: section.description,
+      })),
+    });
   }
 
   revalidatePath("/dashboard/petitions");
-  return data;
+  return {
+    ...edit,
+    goal: Number(edit.goal),
+    raised: 0,
+    created_at: edit.created_at.toISOString(),
+    updated_at: edit.updated_at.toISOString(),
+  } as unknown as Petition;
 }
 
-export const listPetitions = cache(async (
-  options: PetitionFilterOptions = {},
-): Promise<Petition[]> => {
-  const supabase = await createClient();
+export const listPetitions = cache(
+  async (options: PetitionFilterOptions = {}): Promise<Petition[]> => {
+    // Build where clause dynamically
+    const where: any = {};
 
-  let query = supabase
-    .from("petitions")
-    .select("*,profiles(full_name,email,profile_photo)")
-    .order("created_at", { ascending: false });
-
-  if (options.category && options.category !== "all") {
-    query = query.eq("category", options.category);
-  }
-
-  if (options.status) {
-    query = query.eq("status", options.status);
-  } else {
-    if (!options.userId) {
-      query = query.eq("status", "approved");
+    if (options.category && options.category !== "all") {
+      where.category = options.category;
     }
-  }
 
-  if (options.userId) {
-    query = query.eq("user_id", options.userId);
-  }
+    if (options.status) {
+      where.status = options.status;
+    } else if (!options.userId) {
+      where.status = "approved";
+    }
 
-  if (options.limit) {
-    query = query.limit(options.limit);
-  }
+    if (options.userId) {
+      where.user_id = options.userId;
+    }
 
-  if (options.offset) {
-    query = query.range(
-      options.offset,
-      options.offset + (options.limit || 10) - 1,
-    );
-  }
+    const petitions = await prisma.petitions.findMany({
+      where,
+      orderBy: { created_at: "desc" },
+      take: options.limit || undefined,
+      skip: options.offset || undefined,
+      include: {
+        user: {
+          select: { fullName: true, email: true, profilePhoto: true },
+        },
+      },
+    });
 
-  const { data, error } = await query;
+    // Expiry side effect removed to optimize landing page (prevent unnecessary POST/UPDATE)
 
-  if (error) {
-    console.error("Error listing petitions:", error || "Unknown error");
-    throw error;
-  }
+    const mapped = petitions.map((p) => ({
+      ...p,
+      goal: Number(p.goal),
+      raised: Number(p.raised),
+      created_at: p.created_at.toISOString(),
+      updated_at: p.updated_at.toISOString(),
+      profiles: p.user
+        ? {
+            full_name: p.user.fullName || "",
+            email: p.user.email || "",
+            profile_photo: p.user.profilePhoto || null,
+          }
+        : undefined,
+    })) as unknown as Petition[];
 
-  const petitions = (data as Petition[]) || [];
-  
-  // Expiry side effect removed to optimize landing page (prevent unnecessary POST/UPDATE)
-
-  const isOwnerScoped = !!options.userId;
-  const result = isOwnerScoped
-    ? petitions
-    : petitions.filter((p) => p.status !== ("expired" as any));
-
-  return result;
-});
+    const isOwnerScoped = !!options.userId;
+    return isOwnerScoped
+      ? mapped
+      : mapped.filter((p) => p.status !== ("expired" as any));
+  },
+);
 
 export async function countPetitions(
   options: PetitionFilterOptions = {},
 ): Promise<number> {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("petitions")
-    .select("id", { count: "exact", head: true });
+  const where: any = {};
 
   if (options.category && options.category !== "all") {
-    query = query.eq("category", options.category);
+    where.category = options.category;
   }
 
   if (options.status) {
-    query = query.eq("status", options.status);
-  } else {
-    if (!options.userId) {
-      query = query.eq("status", "approved");
-    }
+    where.status = options.status;
+  } else if (!options.userId) {
+    where.status = "approved";
   }
 
   if (options.userId) {
-    query = query.eq("user_id", options.userId);
+    where.user_id = options.userId;
   }
 
-  const { count, error } = await query;
-
-  if (error) {
-    console.error("Error counting petitions:", error);
-    throw error;
-  }
-
-  return count || 0;
+  return prisma.petitions.count({ where });
 }
 
 export async function updatePetitionStatus(
@@ -440,303 +391,223 @@ export async function updatePetitionStatus(
   const isAuthorized = await isAdminOrManager(user.id);
   if (!isAuthorized) throw new Error("Unauthorized");
 
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.SUPABASE_SERVICE_ROLE_KEY
-  ) {
-    throw new Error("Server configuration error: Missing Supabase keys");
-  }
-
-  const supabaseAdmin = createSupabaseAdmin(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    },
-  );
-
   if (status === "approved") {
-    const { data: edit, error: editError } = await supabaseAdmin
-      .from("petition_edits")
-      .select("*")
-      .eq("original_petition_id", petitionId)
-      .eq("status", "pending")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-
-    if (editError && editError.code !== "PGRST116") {
-      console.error("Error fetching petition edit for approval:", editError);
-      throw editError;
-    }
+    // Check for pending edit
+    const edit = await prisma.petition_edits.findFirst({
+      where: {
+        original_petition_id: petitionId,
+        status: "pending",
+      },
+      orderBy: { created_at: "desc" },
+      include: {
+        petition_edit_sections: {
+          select: { heading: true, description: true },
+        },
+      },
+    });
 
     let updatedPetition;
 
     if (edit) {
-      const updateData: any = {
-        title: edit.title,
-        description: edit.description,
-        category: edit.category,
-        goal: edit.goal,
-        image: edit.image,
-        days_active: edit.days_active,
-        multimedia: edit.multimedia || [],
-        video_links: edit.video_links || [],
-        status: "approved",
-        updated_at: new Date().toISOString(),
-      };
-      const { data: updated, error: updateError } = await supabaseAdmin
-        .from("petitions")
-        .update(updateData)
-        .eq("id", petitionId)
-        .select()
-        .single();
-      if (updateError) {
-        console.error(
-          "Error updating petition with approved edit:",
-          updateError,
-        );
-        throw updateError;
-      }
-
-      const { data: editSections } = await supabaseAdmin
-        .from("petition_edit_sections")
-        .select("id, heading, description")
-        .eq("petition_edit_id", edit.id);
-
-      if (editSections && editSections.length > 0) {
-        const { error: delErr } = await supabaseAdmin
-          .from("petition_sections")
-          .delete()
-          .eq("petition_id", petitionId);
-        if (delErr) {
-          console.error("Failed to delete old petition sections", delErr);
-          throw delErr;
-        }
-
-        const { error: insErr } = await supabaseAdmin
-          .from("petition_sections")
-          .insert(
-            editSections.map((s: any) => ({
-              petition_id: petitionId,
-              heading: s.heading,
-              description: s.description,
-            })),
-          );
-        if (insErr) {
-          console.error("Failed to insert new petition sections", insErr);
-          throw insErr;
-        }
-      }
-
-      await supabaseAdmin
-        .from("petition_edit_sections")
-        .delete()
-        .eq("petition_edit_id", edit.id);
-      await supabaseAdmin.from("petition_edits").delete().eq("id", edit.id);
-
-      updatedPetition = updated;
-    } else {
-      const { data: updated, error: updateError } = await supabaseAdmin
-        .from("petitions")
-        .update({
+      // Update petition with edit data
+      updatedPetition = await prisma.petitions.update({
+        where: { id: petitionId },
+        data: {
+          title: edit.title,
+          description: edit.description,
+          category: edit.category,
+          goal: edit.goal,
+          image: edit.image,
+          days_active: edit.days_active,
+          multimedia: edit.multimedia || [],
+          video_links: edit.video_links || [],
           status: "approved",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", petitionId)
-        .select()
-        .single();
+          updated_at: new Date(),
+        },
+      });
 
-      if (updateError) {
-        console.error("Error approving petition:", updateError);
-        throw updateError;
+      // Replace sections if edit has sections
+      if (edit.petition_edit_sections.length > 0) {
+        await prisma.petition_sections.deleteMany({
+          where: { petition_id: petitionId },
+        });
+
+        await prisma.petition_sections.createMany({
+          data: edit.petition_edit_sections.map((s) => ({
+            petition_id: petitionId,
+            heading: s.heading,
+            description: s.description,
+          })),
+        });
       }
-      updatedPetition = updated;
-    }
 
-    const { data: petition } = await supabaseAdmin
-      .from("petitions")
-      .select("user_id, title, id")
-      .eq("id", petitionId)
-      .single();
-
-    if (petition) {
-      await sendPetitionApprovedEmailForUser(petition.user_id, {
-        petitionName: petition.title,
+      // Clean up edit and its sections
+      await prisma.petition_edit_sections.deleteMany({
+        where: { petition_edit_id: edit.id },
+      });
+      await prisma.petition_edits.delete({
+        where: { id: edit.id },
+      });
+    } else {
+      updatedPetition = await prisma.petitions.update({
+        where: { id: petitionId },
+        data: {
+          status: "approved",
+          updated_at: new Date(),
+        },
       });
     }
 
+    // Send approval email
+    try {
+      await sendPetitionApprovedEmailForUser(updatedPetition.user_id, {
+        petitionName: updatedPetition.title,
+      });
+    } catch (emailError) {
+      console.error("Error sending petition approval email:", emailError);
+    }
+
     revalidatePath("/dashboard/admin/petitions");
-    return updatedPetition as Petition;
+    return {
+      ...updatedPetition,
+      goal: Number(updatedPetition.goal),
+      raised: Number(updatedPetition.raised),
+      created_at: updatedPetition.created_at.toISOString(),
+      updated_at: updatedPetition.updated_at.toISOString(),
+    } as unknown as Petition;
   }
 
   if (status === "rejected") {
-    const { data: edit, error: editError } = await supabaseAdmin
-      .from("petition_edits")
-      .select("*")
-      .eq("original_petition_id", petitionId)
-      .eq("status", "pending")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+    // Check for pending edit
+    const edit = await prisma.petition_edits.findFirst({
+      where: {
+        original_petition_id: petitionId,
+        status: "pending",
+      },
+      orderBy: { created_at: "desc" },
+    });
 
-    if (edit && !editError) {
-      await supabaseAdmin
-        .from("petition_edits")
-        .update({ status: "rejected", rejection_reason: rejectionReason })
-        .eq("id", edit.id);
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from("petitions")
-      .update({
-        status: "rejected",
-        rejection_reason: rejectionReason,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", petitionId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error updating petition status:", error);
-      throw error;
-    }
-
-    const { data: petition } = await supabaseAdmin
-      .from("petitions")
-      .select("user_id, title, id")
-      .eq("id", petitionId)
-      .single();
-
-    if (petition) {
-      await sendPetitionRejectedEmailForUser(petition.user_id, {
-        petitionName: petition.title,
-        rejectionReason: rejectionReason,
+    if (edit) {
+      await prisma.petition_edits.update({
+        where: { id: edit.id },
+        data: {
+          status: "rejected",
+          rejection_reason: rejectionReason || null,
+        },
       });
     }
 
+    const updatedPetition = await prisma.petitions.update({
+      where: { id: petitionId },
+      data: {
+        status: "rejected",
+        rejection_reason: rejectionReason || null,
+        updated_at: new Date(),
+      },
+    });
+
+    // Send rejection email
+    try {
+      await sendPetitionRejectedEmailForUser(updatedPetition.user_id, {
+        petitionName: updatedPetition.title,
+        rejectionReason: rejectionReason,
+      });
+    } catch (emailError) {
+      console.error("Error sending petition rejection email:", emailError);
+    }
+
     revalidatePath("/dashboard/admin/petitions");
-    return data as Petition;
+    return {
+      ...updatedPetition,
+      goal: Number(updatedPetition.goal),
+      raised: Number(updatedPetition.raised),
+      created_at: updatedPetition.created_at.toISOString(),
+      updated_at: updatedPetition.updated_at.toISOString(),
+    } as unknown as Petition;
   }
 
   throw new Error(`Invalid status value: ${status}`);
 }
 
 export async function getPetitionEdits(): Promise<any[]> {
-  const supabase = await createClient();
+  const edits = await prisma.petition_edits.findMany({
+    where: { status: "pending" },
+    orderBy: { created_at: "desc" },
+    include: {
+      user: {
+        select: { fullName: true, email: true, profilePhoto: true },
+      },
+      petition_edit_sections: {
+        select: { id: true, heading: true, description: true },
+      },
+    },
+  });
 
-  const { data, error } = await supabase
-    .from("petition_edits")
-    .select(
-      `
-      *,
-      profiles!inner (
-        full_name,
-        email,
-        profile_photo
-      ),
-      petition_edit_sections (
-        id,
-        heading,
-        description
-      )
-    `,
-    )
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching petition edits:", error);
-    throw error;
-  }
-
-  return data || [];
+  return edits.map((edit) => ({
+    ...edit,
+    goal: Number(edit.goal),
+    created_at: edit.created_at.toISOString(),
+    updated_at: edit.updated_at.toISOString(),
+    profiles: edit.user
+      ? {
+          full_name: edit.user.fullName,
+          email: edit.user.email,
+          profile_photo: edit.user.profilePhoto,
+        }
+      : undefined,
+  }));
 }
 
 export async function getUserPetitions(userId: string): Promise<Petition[]> {
-  const supabase = await createClient();
+  const petitions = await prisma.petitions.findMany({
+    where: { user_id: userId },
+    orderBy: { created_at: "desc" },
+  });
 
-  const { data, error } = await supabase
-    .from("petitions")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching user petitions:", error);
-    throw error;
-  }
-
-  return data as Petition[];
+  return petitions.map((p) => ({
+    ...p,
+    goal: Number(p.goal),
+    raised: Number(p.raised),
+    created_at: p.created_at.toISOString(),
+    updated_at: p.updated_at.toISOString(),
+  })) as unknown as Petition[];
 }
 
 export async function getUserPetitionsWithStatus(
   userId: string,
   status?: string,
 ): Promise<Petition[]> {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("petitions")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+  const where: any = { user_id: userId };
 
   if (status && status !== "all") {
-    query = query.eq("status", status);
+    where.status = status;
   }
 
-  const { data, error } = await query;
+  const petitions = await prisma.petitions.findMany({
+    where,
+    orderBy: { created_at: "desc" },
+  });
 
-  if (error) {
-    console.error("Error fetching user petitions with status:", error);
-    throw error;
-  }
-
-  return data as Petition[];
+  return petitions.map((p) => ({
+    ...p,
+    goal: Number(p.goal),
+    raised: Number(p.raised),
+    created_at: p.created_at.toISOString(),
+    updated_at: p.updated_at.toISOString(),
+  })) as unknown as Petition[];
 }
 
 export async function deletePetition(petitionId: string): Promise<void> {
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("petitions")
-    .delete()
-    .eq("id", petitionId);
-
-  if (error) {
-    console.error("Error deleting petition:", error);
-    throw error;
-  }
+  await prisma.petitions.delete({
+    where: { id: petitionId },
+  });
 }
 
 export async function savePetitionShare(petitionId: string): Promise<void> {
-  const supabase = await createClient();
-
-  const { error: shareError, data: petitionData } = await supabase
-    .from("petitions")
-    .select("shared")
-    .eq("id", petitionId)
-    .single();
-  if (shareError) {
-    console.error("Error saving petition share:", shareError);
-    throw shareError;
-  }
-
-  const { data: mine, error: petitionError } = await supabase
-    .from("petitions")
-    .update({ shared: petitionData.shared + 1 })
-    .eq("id", petitionId)
-    .single();
-
-  if (petitionError) {
-    console.error("Error saving petition share:", petitionError);
-    throw petitionError;
-  }
-
-  return mine;
+  await prisma.petitions.update({
+    where: { id: petitionId },
+    data: {
+      shared: { increment: 1 },
+    },
+  });
 }

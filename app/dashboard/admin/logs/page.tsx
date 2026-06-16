@@ -1,7 +1,7 @@
 import AdminLogs from "@/components/admin/AdminLogs";
 import { listAdminLogs } from "@/actions/database-actions";
-import { createClient } from "@/lib/supabase/server";
-import { getUserRole } from "@/actions/role-actions";
+import { auth } from "@/lib/auth/auth";
+import { getUserRole } from "@/lib/auth/admin-auth";
 import { redirect } from "next/navigation";
 import {
   Card,
@@ -10,17 +10,17 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 
-async function page() {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+export default async function AdminLogsPage() {
+  // Get authenticated user from NextAuth
+  const session = await auth();
 
-  if (!authUser) {
-    redirect("/signin");
+  if (!session?.user?.id) {
+    redirect("/auth/signin");
   }
 
-  const role = await getUserRole(authUser.id);
+  // Check if user has admin or manager role
+  const role = await getUserRole(session.user.id);
+
   if (role !== "admin" && role !== "manager") {
     return (
       <Card>
@@ -53,5 +53,3 @@ async function page() {
     );
   }
 }
-
-export default page;

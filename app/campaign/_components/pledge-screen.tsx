@@ -8,6 +8,8 @@ import type { Cause } from "@/types";
 import { createPledge } from "@/actions/pledge-actions";
 import { usePayment } from "@/hooks/use-payment";
 import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/pledge-constants";
+import { getMediaUrl } from "@/lib/s3/media";
+import Image from "next/image";
 
 /** Local calendar YYYY-MM-DD (avoids UTC shifts from toISOString). */
 function formatLocalYYYYMMDD(date: Date) {
@@ -87,8 +89,7 @@ function StatItem({
 }
 
 export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
-  const { initializePledgeCheckout, isLoading: paymentLoading } =
-    usePayment();
+  const { initializePledgeCheckout, isLoading: paymentLoading } = usePayment();
 
   const [pledgeAmount, setPledgeAmount] = useState(25000);
   const [pledgeAmountInput, setPledgeAmountInput] = useState("25,000");
@@ -100,9 +101,7 @@ export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
   const [pledgeSubmitting, setPledgeSubmitting] = useState(false);
   const [pledgeError, setPledgeError] = useState<string | null>(null);
   const [pledgeId, setPledgeId] = useState<string | null>(null);
-  const [guestPledgeToken, setGuestPledgeToken] = useState<string | null>(
-    null,
-  );
+  const [guestPledgeToken, setGuestPledgeToken] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{
     amount?: string;
     date?: string;
@@ -379,18 +378,27 @@ export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
               <p className="font-semibold text-blue-900">How it works</p>
               <div className="flex justify-between">
                 <span>Card verification charge (paid now)</span>
-                <span className="font-semibold">₦{PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()}</span>
+                <span className="font-semibold">
+                  ₦{PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>Pledge amount charged on {pledgeDate || "your date"}</span>
+                <span>
+                  Pledge amount charged on {pledgeDate || "your date"}
+                </span>
                 <span className="font-semibold">
-                  ₦{pledgeAmount > 0 ? Number(pledgeAmount).toLocaleString() : "—"}
+                  ₦
+                  {pledgeAmount > 0
+                    ? Number(pledgeAmount).toLocaleString()
+                    : "—"}
                 </span>
               </div>
               <p className="text-xs text-blue-600 pt-0.5">
-                Paystack will show ₦{PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()} on checkout — that is the card
-                verification only. Your pledge of ₦{pledgeAmount > 0 ? Number(pledgeAmount).toLocaleString() : "—"} is
-                charged on {pledgeDate || "the date you pick"}.
+                Paystack will show ₦
+                {PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()} on checkout —
+                that is the card verification only. Your pledge of ₦
+                {pledgeAmount > 0 ? Number(pledgeAmount).toLocaleString() : "—"}{" "}
+                is charged on {pledgeDate || "the date you pick"}.
               </p>
             </div>
 
@@ -468,8 +476,12 @@ export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
                   </p>
                 )}
                 <p className="text-xs text-slate-500">
-                  Today, tomorrow, or any later day (not in the past).{cause.days_active ? ` Latest: last day of the campaign window.` : ""}{" "}
-                  We will use this date for the charge / reminder. SMS can be added later.
+                  Today, tomorrow, or any later day (not in the past).
+                  {cause.days_active
+                    ? ` Latest: last day of the campaign window.`
+                    : ""}{" "}
+                  We will use this date for the charge / reminder. SMS can be
+                  added later.
                 </p>
               </label>
 
@@ -576,12 +588,18 @@ export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
               <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
               <span>
                 Paystack checkout will show{" "}
-                <strong>₦{PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()}</strong> — this is only a
-                card-save verification. Your actual pledge of{" "}
                 <strong>
-                  ₦{pledgeAmount > 0 ? Number(pledgeAmount).toLocaleString() : "—"}
+                  ₦{PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()}
                 </strong>{" "}
-                will be charged on <strong>{pledgeDate || "your chosen date"}</strong>.
+                — this is only a card-save verification. Your actual pledge of{" "}
+                <strong>
+                  ₦
+                  {pledgeAmount > 0
+                    ? Number(pledgeAmount).toLocaleString()
+                    : "—"}
+                </strong>{" "}
+                will be charged on{" "}
+                <strong>{pledgeDate || "your chosen date"}</strong>.
               </span>
             </div>
           </motion.div>
@@ -599,12 +617,13 @@ export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
               Campaign
             </p>
             <div className="mt-3 flex items-start gap-3">
-              <div className="h-12 w-12 overflow-hidden rounded-lg bg-slate-100">
+              <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-slate-100">
                 {cause.image ? (
-                  <img
-                    src={cause.image}
+                  <Image
+                    src={getMediaUrl(cause.image)}
                     alt={cause.title}
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
                   />
                 ) : null}
               </div>
@@ -685,7 +704,9 @@ export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
             disabled={pledgeSubmitting || paymentLoading}
             className="flex-1 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {pledgeSubmitting || paymentLoading ? "Working…" : "Save & Paystack"}
+            {pledgeSubmitting || paymentLoading
+              ? "Working…"
+              : "Save & Paystack"}
           </button>
         </div>
       </div>

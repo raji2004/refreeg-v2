@@ -222,7 +222,7 @@ export default function CreateCauseForm() {
     coverImage: null,
     sections: [{ heading: "", description: "" }],
     startDate: startOfDay(new Date()),
-    endDate: addDays(startOfDay(new Date()), 30),
+    endDate: addDays(startOfDay(new Date()), 7),
     multimedia: [],
     videoLinks: [],
   });
@@ -234,15 +234,30 @@ export default function CreateCauseForm() {
     const savedDraft = localStorage.getItem("causeDraft");
     if (savedDraft) {
       const parsedDraft = JSON.parse(savedDraft);
+      const today = startOfDay(new Date());
+      const loadedStartDate = parsedDraft.startDate
+        ? new Date(parsedDraft.startDate)
+        : undefined;
+      
+      // Ensure start date is not in the past
+      const startDate = loadedStartDate && !isBefore(loadedStartDate, today)
+        ? loadedStartDate
+        : today;
+
+      const loadedEndDate = parsedDraft.endDate
+        ? new Date(parsedDraft.endDate)
+        : undefined;
+
+      // Ensure end date is after start date, default to 7 days if invalid
+      const endDate = loadedEndDate && isAfter(loadedEndDate, startDate)
+        ? loadedEndDate
+        : addDays(startDate, 7);
+
       setFormData((prev) => ({
         ...parsedDraft,
         coverImage: prev.coverImage,
-        startDate: parsedDraft.startDate
-          ? new Date(parsedDraft.startDate)
-          : undefined,
-        endDate: parsedDraft.endDate
-          ? new Date(parsedDraft.endDate)
-          : undefined,
+        startDate,
+        endDate,
         multimedia: [],
         videoLinks: parsedDraft.videoLinks || [],
       }));
@@ -310,7 +325,12 @@ export default function CreateCauseForm() {
 
     const cleanup = setupInactivityTracking();
     return cleanup;
-  }, [formData.title ? true : false, formData.category ? true : false, formData.goal ? true : false, user]);
+  }, [
+    formData.title ? true : false,
+    formData.category ? true : false,
+    formData.goal ? true : false,
+    user,
+  ]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -374,21 +394,24 @@ export default function CreateCauseForm() {
 
     try {
       const { compressImage } = await import("@/utils/image-compression");
-      
+
       const processedFiles = await Promise.all(
         files.map(async (file) => {
           if (file.type.startsWith("image/")) {
             return await compressImage(file, 1000, 0.7);
           }
           return file;
-        })
+        }),
       );
 
       const currentSize =
         formData.multimedia && formData.multimedia.length > 0
           ? formData.multimedia.reduce((acc, file) => acc + file.size, 0)
           : 0;
-      const newFilesSize = processedFiles.reduce((acc, file) => acc + file.size, 0);
+      const newFilesSize = processedFiles.reduce(
+        (acc, file) => acc + file.size,
+        0,
+      );
 
       if (currentSize + newFilesSize > MAX_TOTAL_SIZE) {
         setErrors((prev) => ({
@@ -600,7 +623,10 @@ export default function CreateCauseForm() {
                     htmlFor="summary"
                     className="text-sm font-semibold text-gray-700 sm:text-base"
                   >
-                    Short Summary <span className="text-gray-400 font-normal">(optional)</span>
+                    Short Summary{" "}
+                    <span className="text-gray-400 font-normal">
+                      (optional)
+                    </span>
                   </Label>
                   <Input
                     id="summary"
@@ -611,7 +637,7 @@ export default function CreateCauseForm() {
                     maxLength={200}
                     className={cn(
                       "h-11 premium-input sm:h-12",
-                      errors.summary ? "border-red-500" : ""
+                      errors.summary ? "border-red-500" : "",
                     )}
                   />
                   {errors.summary && (
@@ -625,7 +651,10 @@ export default function CreateCauseForm() {
                     htmlFor="location"
                     className="text-sm font-semibold text-gray-700 sm:text-base"
                   >
-                    Location <span className="text-gray-400 font-normal">(optional)</span>
+                    Location{" "}
+                    <span className="text-gray-400 font-normal">
+                      (optional)
+                    </span>
                   </Label>
                   <Input
                     id="location"
@@ -635,7 +664,7 @@ export default function CreateCauseForm() {
                     onChange={handleChange}
                     className={cn(
                       "h-11 premium-input sm:h-12",
-                      errors.location ? "border-red-500" : ""
+                      errors.location ? "border-red-500" : "",
                     )}
                   />
                   {errors.location && (
@@ -813,10 +842,10 @@ export default function CreateCauseForm() {
                         />
                         {attemptedStep === 2 &&
                           errors.sections?.[index]?.heading && (
-                          <p className="text-sm font-medium text-red-500">
-                            {errors.sections[index]?.heading}
-                          </p>
-                        )}
+                            <p className="text-sm font-medium text-red-500">
+                              {errors.sections[index]?.heading}
+                            </p>
+                          )}
                       </div>
                       <div className="space-y-2">
                         <Label
@@ -840,10 +869,10 @@ export default function CreateCauseForm() {
                         />
                         {attemptedStep === 2 &&
                           errors.sections?.[index]?.description && (
-                          <p className="text-sm font-medium text-red-500">
-                            Something has to be written here.
-                          </p>
-                        )}
+                            <p className="text-sm font-medium text-red-500">
+                              Something has to be written here.
+                            </p>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -868,7 +897,10 @@ export default function CreateCauseForm() {
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-8">
               <div className="space-y-4">
-                <Label htmlFor="start-date" className="mb-2 block text-sm font-semibold text-gray-700 sm:text-base">
+                <Label
+                  htmlFor="start-date"
+                  className="mb-2 block text-sm font-semibold text-gray-700 sm:text-base"
+                >
                   Start Date
                 </Label>
                 <Popover>
@@ -895,7 +927,10 @@ export default function CreateCauseForm() {
                       mode="single"
                       selected={formData.startDate}
                       onSelect={(date) => handleDateChange(date, "startDate")}
-                      disabled={(date) => isBefore(date, startOfDay(new Date()))}
+                      disabled={(date) =>
+                        isBefore(date, startOfDay(new Date()))
+                      }
+                      defaultMonth={formData.startDate || new Date()}
                       initialFocus
                     />
                   </PopoverContent>
@@ -908,7 +943,10 @@ export default function CreateCauseForm() {
               </div>
 
               <div className="space-y-4">
-                <Label htmlFor="end-date" className="mb-2 block text-sm font-semibold text-gray-700 sm:text-base">
+                <Label
+                  htmlFor="end-date"
+                  className="mb-2 block text-sm font-semibold text-gray-700 sm:text-base"
+                >
                   End Date
                 </Label>
                 <Popover>
@@ -941,6 +979,7 @@ export default function CreateCauseForm() {
                         const maxEnd = addDays(start, MAX_DURATION_DAYS);
                         return isBefore(date, start) || isAfter(date, maxEnd);
                       }}
+                      defaultMonth={formData.endDate || formData.startDate || new Date()}
                       initialFocus
                     />
                   </PopoverContent>
@@ -1166,7 +1205,10 @@ export default function CreateCauseForm() {
                         )}
                         {formData.category && (
                           <div className="flex items-center gap-1.5 text-sm font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-                            {categories.find((c) => c.id === formData.category)?.name}
+                            {
+                              categories.find((c) => c.id === formData.category)
+                                ?.name
+                            }
                           </div>
                         )}
                       </div>

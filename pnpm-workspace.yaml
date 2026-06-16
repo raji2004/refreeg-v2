@@ -1,6 +1,8 @@
 onlyBuiltDependencies:
   - '@heroui/shared-utils'
+  - '@prisma/client'
   - bufferutil
+  - prisma
   - sharp
   - utf-8-validate
 

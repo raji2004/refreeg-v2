@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, rateLimit, handlePreflight } from "@/utils/api-bot/api-auth";
 import { CreateCampaignSchema } from "@/utils/api-bot/schemas";
 import Paystack from "@/services/paystack";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/types/database-types";
+import { prisma } from "@/lib/prisma";
 import { dispatchWebhook } from "@/utils/api-bot/webhook-utils";
 import { logApiRequest } from "@/utils/api-bot/request-logger";
 import { resolveBankDetails } from "@/utils/api-bot/bank-resolver";
@@ -15,10 +14,7 @@ import {
 } from "@/utils/api-bot/response-utils";
 
 
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+
 
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
@@ -76,27 +72,33 @@ export async function POST(request: NextRequest) {
       return errorResponse("Internal error: Could not resolve bank details", ApiErrorCode.INTERNAL_ERROR, 500);
     }
 
-    const { data: campaign, error } = await supabaseAdmin.from("api_campaigns").insert({
-      developer_id: authRes.userId,
-      api_key_id: authRes.apiKeyId,
-      title: data.title,
-      description: data.description,
-      goal_amount: data.goal_amount,
-      payout_mode: data.payout_mode,
-      deadline: data.deadline || null,
-      category_id: data.category_id || null,
-      bank_account_number: bankDetails.bank_account_number!,
-      bank_code: bankDetails.bank_code!,
-      bank_account_name: bankDetails.bank_account_name!,
-      sub_account_code: bankDetails.sub_account_code,
-      bank_account_id: bankDetails.bank_account_id,
-      mode: authRes.mode,
-      status: "active",
-      currency: "NGN",
-      raised_amount: 0
-    }).select().single();
+    let campaign;
+    try {
+      campaign = await prisma.api_campaigns.create({
+        data: {
+          developer_id: authRes.userId!,
+          api_key_id: authRes.apiKeyId,
+          title: data.title,
+          description: data.description,
+          goal_amount: data.goal_amount,
+          payout_mode: data.payout_mode,
+          deadline: data.deadline ? new Date(data.deadline) : null,
+          bank_account_number: bankDetails.bank_account_number!,
+          bank_code: bankDetails.bank_code!,
+          bank_account_name: bankDetails.bank_account_name!,
+          sub_account_code: bankDetails.sub_account_code,
+          bank_account_id: bankDetails.bank_account_id,
+          mode: authRes.mode!,
+          status: "active",
+          currency: "NGN",
+          raised_amount: 0
+        }
+      });
+    } catch (e) {
+      console.error("Failed to create campaign", e);
+    }
 
-    if (error) {
+    if (!campaign) {
       const response = errorResponse("Failed to create campaign", ApiErrorCode.INTERNAL_ERROR, 500);
 
       await logApiRequest({ request, statusCode: response.status, apiKeyId: authRes.apiKeyId, userId: authRes.userId, mode: authRes.mode, errorCode: ApiErrorCode.INTERNAL_ERROR, startedAt });
@@ -136,15 +138,24 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "10"), 100);
   const offset = parseInt(url.searchParams.get("offset") || "0");
   
-  const { data: campaigns, error, count } = await supabaseAdmin
-    .from("api_campaigns")
-    .select("*", { count: 'exact' })
-    .eq("developer_id", authRes.userId)
-    .eq("mode", authRes.mode)
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  if (error) {
+  let campaigns = [];
+  let count = 0;
+  try {
+    const whereClause = {
+      developer_id: authRes.userId!,
+      mode: authRes.mode!
+    };
+    
+    [campaigns, count] = await Promise.all([
+      prisma.api_campaigns.findMany({
+        where: whereClause,
+        orderBy: { created_at: "desc" },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.api_campaigns.count({ where: whereClause })
+    ]);
+  } catch (error) {
     const response = errorResponse("Failed to fetch campaigns", ApiErrorCode.INTERNAL_ERROR, 500);
 
     await logApiRequest({ request, statusCode: response.status, apiKeyId: authRes.apiKeyId, userId: authRes.userId, mode: authRes.mode, errorCode: ApiErrorCode.INTERNAL_ERROR, startedAt });

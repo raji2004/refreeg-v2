@@ -1,8 +1,21 @@
 import { format } from "date-fns";
 import { listAdminApiCampaigns } from "@/actions/api-monitoring-actions";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
 
 export default async function ApiMonitoringCampaignsPage() {
@@ -33,7 +46,10 @@ export default async function ApiMonitoringCampaignsPage() {
             <TableBody>
               {campaigns.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={7}
+                    className="py-8 text-center text-muted-foreground"
+                  >
                     No API campaigns found.
                   </TableCell>
                 </TableRow>
@@ -44,27 +60,38 @@ export default async function ApiMonitoringCampaignsPage() {
                       <div className="flex flex-col">
                         <span className="font-medium">{campaign.title}</span>
                         <span className="text-xs text-muted-foreground">
-                          Goal: {formatCurrency(campaign.goalAmount)} · {campaign.payoutMode}
+                          Goal: {formatCurrency(campaign.goalAmount)} ·{" "}
+                          {campaign.payoutMode}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
                         <span>{campaign.developerName}</span>
-                        <span className="text-xs text-muted-foreground">{campaign.developerEmail}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {campaign.developerEmail}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={campaign.status === "active" ? "default" : "outline"}>
+                      <Badge
+                        variant={
+                          campaign.status === "active" ? "default" : "outline"
+                        }
+                      >
                         {campaign.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{campaign.mode}</Badge>
                     </TableCell>
-                    <TableCell>{formatCurrency(campaign.raisedAmount)}</TableCell>
+                    <TableCell>
+                      {formatCurrency(campaign.raisedAmount)}
+                    </TableCell>
                     <TableCell>{campaign.reportsCount}</TableCell>
-                    <TableCell>{format(new Date(campaign.createdAt), "MMM d, yyyy")}</TableCell>
+                    <TableCell>
+                      {format(new Date(campaign.createdAt), "MMM d, yyyy")}
+                    </TableCell>
                   </TableRow>
                 ))
               )}

@@ -1,5 +1,5 @@
-import { getCachedUser } from "@/lib/supabase/cached-user";
-import { getUserRole } from "@/actions/role-actions";
+import { auth } from "@/lib/auth/auth";
+import { getUserRole } from "@/lib/auth/admin-auth";
 import { redirect } from "next/navigation";
 
 const links = [
@@ -11,46 +11,60 @@ const links = [
   },
   {
     title: "API Donations",
-    description: "Track processed donation volume and RefreeG's 2% fee revenue.",
+    description:
+      "Track processed donation volume and RefreeG's 2% fee revenue.",
     href: "/dashboard/admin/api-monitoring/donations",
     icon: Coins,
   },
   {
     title: "Campaign Reports",
-    description: "Investigate flagged API campaigns and take them down when needed.",
+    description:
+      "Investigate flagged API campaigns and take them down when needed.",
     href: "/dashboard/admin/api-monitoring/reports",
     icon: AlertTriangle,
   },
   {
     title: "Usage Analytics",
-    description: "Monitor request volume, active keys, endpoint mix, and error rates.",
+    description:
+      "Monitor request volume, active keys, endpoint mix, and error rates.",
     href: "/dashboard/admin/api-monitoring/usage",
     icon: BarChart3,
   },
 ];
 
 import Link from "next/link";
-import { AlertTriangle, Activity, BarChart3, Coins, FolderKanban, KeyRound } from "lucide-react";
+import {
+  AlertTriangle,
+  Activity,
+  BarChart3,
+  Coins,
+  FolderKanban,
+  KeyRound,
+} from "lucide-react";
 import { getApiMonitoringSummary } from "@/actions/api-monitoring-actions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default async function ApiMonitoringPage() {
-  const [authResult, summary] = await Promise.all([
-    getCachedUser(),
-    getApiMonitoringSummary()
+  const [session, summary] = await Promise.all([
+    auth(),
+    getApiMonitoringSummary(),
   ]);
 
-  const { user, error: authError } = authResult;
-
-  if (!user || authError) {
+  if (!session?.user?.id) {
     redirect("/auth/signin");
   }
 
-  const role = await getUserRole(user.id);
+  const role = await getUserRole(session.user.id);
 
-  if (!role || (role !== "admin" && role !== "manager")) {
-     return (
+  if (role !== "admin" && role !== "manager") {
+    return (
       <Card>
         <CardHeader>
           <CardTitle>Access Denied</CardTitle>
@@ -153,14 +167,20 @@ export default async function ApiMonitoringPage() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           {links.map((item) => (
-            <Link key={item.href} href={item.href} className="rounded-lg border p-4 transition hover:bg-muted/50">
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-lg border p-4 transition hover:bg-muted/50"
+            >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
                     <item.icon className="h-4 w-4 text-primary" />
                     <h2 className="font-semibold">{item.title}</h2>
                   </div>
-                  <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {item.description}
+                  </p>
                 </div>
                 <Badge variant="outline">Open</Badge>
               </div>

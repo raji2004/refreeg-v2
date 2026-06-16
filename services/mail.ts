@@ -5,6 +5,7 @@ import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
 import Handlebars from "handlebars";
+import type { TemplateDelegate } from "handlebars";
 import { headers } from "next/headers";
 import { getCurrentUser } from "@/actions/auth-actions";
 import { getProfile } from "@/actions/profile-actions";
@@ -21,7 +22,7 @@ const transporter = nodemailer.createTransport({
 
 const TEMPLATE_DIR = path.join(process.cwd(), "services", "templates");
 
-function loadTemplate(templateName: string): HandlebarsTemplateDelegate {
+function loadTemplate(templateName: string): TemplateDelegate {
   const templatePath = path.join(TEMPLATE_DIR, `${templateName}.html`);
   const templateSource = fs.readFileSync(templatePath, "utf-8");
   return Handlebars.compile(templateSource);
@@ -31,7 +32,7 @@ interface SendMailOptions {
   to: string;
   subject: string;
   templateName: string;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
   from?: string;
   cc?: string[];
   bcc?: string[];
@@ -63,6 +64,42 @@ export async function sendMail({
   } catch (error) {
     return { success: false, error };
   }
+}
+
+export async function sendOtpEmail(context: {
+  email: string;
+  userName: string;
+  otpCode: string;
+}) {
+  const currentYear = new Date().getFullYear();
+
+  return sendMail({
+    to: context.email,
+    subject: "Your RefreeG Verification Code",
+    templateName: "otp-verification",
+    context: {
+      userName: context.userName,
+      otpCode: context.otpCode,
+      currentYear,
+    },
+  });
+}
+
+export async function sendPasswordResetEmail(context: {
+  email: string;
+  resetUrl: string;
+}) {
+  const currentYear = new Date().getFullYear();
+
+  return sendMail({
+    to: context.email,
+    subject: "Reset Your RefreeG Password",
+    templateName: "password-reset",
+    context: {
+      resetUrl: context.resetUrl,
+      currentYear,
+    },
+  });
 }
 
 export async function sendCauseUnderReviewEmail(context: {
@@ -347,7 +384,7 @@ export async function sendPetitionSubmissionAdminNotification(
       sent: successful,
       failed,
     };
-  } catch (error: any) {
+  } catch (error) {
     return {
       success: false,
       error:
@@ -359,12 +396,22 @@ export async function sendPetitionSubmissionAdminNotification(
 export async function sendLoginNotificationEmail(context: {
   device?: string;
   loginTime?: string;
+  email?: string;
+  userName?: string;
 }) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return { success: false, error: "User not found" };
+  let profileEmail = context.email || "";
+  let profileName = context.userName || "User";
+
+  if (!profileEmail) {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+    const profile = await getProfile(user.id);
+    profileEmail = profile?.email || "";
+    profileName = profile?.full_name || "User";
   }
-  const profile = await getProfile(user.id);
+
   const currentYear = new Date().getFullYear();
 
   // Resolve IP server-side from the request headers instead of
@@ -389,11 +436,11 @@ export async function sendLoginNotificationEmail(context: {
   }
 
   return sendMail({
-    to: profile?.email || "",
+    to: profileEmail,
     subject: "New Login Notification",
     templateName: "login-notification",
     context: {
-      userName: profile?.full_name || "User",
+      userName: profileName,
       loginTime: context.loginTime || new Date().toLocaleString(),
       device: context.device || "Unknown Device",
       ipAddress,
@@ -828,7 +875,7 @@ export async function sendDonationReceivedEmail({
   const showProgress =
     typeof amountRaised === "number" && typeof goalAmount === "number" && goalAmount > 0;
   const percent = showProgress
-    ? Math.min(Math.round((amountRaised! / goalAmount!) * 100), 100)
+    ? Math.min(Math.round(((amountRaised ?? 0) / (goalAmount ?? 1)) * 100), 100)
     : 0;
 
   return sendMail({

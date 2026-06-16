@@ -1,0 +1,30 @@
+model logs {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  action     String
+  admin_id   String?   @db.Uuid
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model short_urls {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  short_code   String    @unique @db.VarChar(10)
+  entity_id    String    @db.Uuid
+  entity_type  String    @db.VarChar(20)
+  original_url String
+  clicks       Int?      @default(0)
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([short_code], map: "idx_short_urls_code")
+  @@index([entity_id, entity_type], map: "idx_short_urls_entity")
+}
+
+model sub_description {
+  id             BigInt   @id @default(autoincrement())
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  description    String?
+  sub_heading_id BigInt?
+
+  @@map("sub-description")
+}

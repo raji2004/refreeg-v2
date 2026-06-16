@@ -1,8 +1,13 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Search, Satellite, Layers3, KeyRound, Globe, FlaskConical } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getUserRole } from "@/actions/role-actions";
+import {
+  Search,
+  Satellite,
+  Layers3,
+  KeyRound,
+  Globe,
+  FlaskConical,
+} from "lucide-react";
 import { redirect } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -23,6 +28,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getApiCampaigns } from "@/actions/admin-analytics-actions";
+import { getUserRole } from "@/lib/auth/admin-auth";
+import { auth } from "@/lib/auth/auth";
 
 const AdminAnalytics = dynamic(
   () => import("@/components/admin/AdminAnalytics"),
@@ -54,23 +62,6 @@ const AdminAnalytics = dynamic(
   },
 );
 
-type ApiCauseRow = {
-  id: string;
-  title: string;
-  status: string;
-  created_at: string;
-  api_key_id: string | null;
-};
-
-type ApiKeyRow = {
-  id: string;
-  name: string;
-  key_prefix: string;
-  mode: "live" | "test";
-};
-
-import { getCachedUser } from "@/lib/supabase/cached-user";
-
 export default async function AdminAnalyticsPage({
   searchParams,
 }: {
@@ -79,57 +70,15 @@ export default async function AdminAnalyticsPage({
   const params = await searchParams;
   const search = params?.search?.trim() || "";
 
+  const session = await auth();
 
-
-  const [authResult, apiCampaignsResult] = await Promise.all([
-    getCachedUser(),
-    (async () => {
-      try {
-        const supabase = await createClient();
-        const { data: apiCauses, error: causeError } = await (supabase as any)
-          .from("api_campaigns")
-          .select("id, title, status, created_at, api_key_id")
-          .order("created_at", { ascending: false })
-          .limit(50);
-
-        if (causeError) return { error: causeError.message };
-
-        const apiKeyIds = [
-          ...new Set(
-            (apiCauses || [])
-              .map((cause: any) => cause.api_key_id)
-              .filter((id: any): id is string => Boolean(id)),
-          ),
-        ];
-
-        let apiKeys: ApiKeyRow[] = [];
-        if (apiKeyIds.length > 0) {
-          const { data: keysData, error: keysError } = await (supabase as any)
-            .from("api_keys")
-            .select("id, name, key_prefix, mode")
-            .in("id", apiKeyIds);
-
-          if (!keysError) {
-            apiKeys = (keysData || []) as ApiKeyRow[];
-          }
-        }
-
-        return { apiCauses: (apiCauses || []), apiKeys };
-      } catch (err: any) {
-        return { error: err.message || "Failed to fetch API data" };
-      }
-    })()
-  ]);
-
-  const { user, error: authError } = authResult;
-
-  if (!user || authError) {
+  if (!session?.user?.id) {
     redirect("/auth/signin");
   }
 
-  const role = await getUserRole(user.id);
+  const role = await getUserRole(session.user.id);
 
-  if (!role || (role !== "admin" && role !== "manager")) {
+  if (role !== "admin" && role !== "manager") {
     return (
       <Card>
         <CardHeader>
@@ -142,104 +91,86 @@ export default async function AdminAnalyticsPage({
     );
   }
 
-  const apiCauses = 'apiCauses' in apiCampaignsResult ? (apiCampaignsResult as any).apiCauses : [];
-  const apiKeys = 'apiKeys' in apiCampaignsResult ? (apiCampaignsResult as any).apiKeys : [];
-  const apiCausesUnavailable = 'error' in apiCampaignsResult;
+  const { campaigns, stats } = await getApiCampaigns(search);
 
-  const keyMap = new Map(apiKeys.map((key: any) => [key.id, key]));
-
-  const apiCauseRows = apiCauses.map((cause: any) => {
-    const key = cause.api_key_id ? keyMap.get(cause.api_key_id) as ApiKeyRow | undefined : null;
-    return {
-      ...cause,
-      apiName: key?.name || "Unknown API",
-      apiPrefix: key?.key_prefix || "N/A",
-      apiMode: key?.mode || "unknown",
-    };
-  });
-
-  const filteredRows = search
-    ? apiCauseRows.filter((row: any) => {
-        const needle = search.toLowerCase();
-        return (
-          row.title.toLowerCase().includes(needle) ||
-          row.apiName.toLowerCase().includes(needle) ||
-          row.apiPrefix.toLowerCase().includes(needle) ||
-          row.apiMode.toLowerCase().includes(needle)
-        );
-      })
-    : apiCauseRows;
-
-  const totalCauses = apiCauseRows.length;
-  const uniqueApis = new Set(apiCauseRows.map((row: any) => row.apiPrefix)).size;
-  const liveCauses = apiCauseRows.filter((row: any) => row.apiMode === "live").length;
-  const testCauses = apiCauseRows.filter((row: any) => row.apiMode === "test").length;
+  const totalCauses = stats.total;
+  const uniqueApis = stats.uniqueApis;
+  const liveCauses = stats.liveCount;
+  const testCauses = stats.testCount;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Admin Analytics</h1>
-          <p className="text-muted-foreground">Monitor platform performance and API metrics.</p>
+          <p className="text-muted-foreground">
+            Monitor platform performance and API metrics.
+          </p>
         </div>
         <div className="flex gap-2">
-           <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/admin/api-monitoring">Detailed API Reports</Link>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/dashboard/admin/api-monitoring">
+              Detailed API Reports
+            </Link>
           </Button>
         </div>
       </div>
 
-      {!apiCausesUnavailable && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Total API causes</p>
-                  <p className="text-2xl font-semibold">{totalCauses}</p>
-                </div>
-                <Layers3 className="h-5 w-5 text-primary" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Total API causes
+                </p>
+                <p className="text-2xl font-semibold">{totalCauses}</p>
               </div>
-            </CardContent>
-          </Card>
+              <Layers3 className="h-5 w-5 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Unique APIs</p>
-                  <p className="text-2xl font-semibold">{uniqueApis}</p>
-                </div>
-                <KeyRound className="h-5 w-5 text-primary" />
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Unique APIs</p>
+                <p className="text-2xl font-semibold">{uniqueApis}</p>
               </div>
-            </CardContent>
-          </Card>
+              <KeyRound className="h-5 w-5 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Live mode causes</p>
-                  <p className="text-2xl font-semibold">{liveCauses}</p>
-                </div>
-                <Globe className="h-5 w-5 text-primary" />
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Live mode causes
+                </p>
+                <p className="text-2xl font-semibold">{liveCauses}</p>
               </div>
-            </CardContent>
-          </Card>
+              <Globe className="h-5 w-5 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Test mode causes</p>
-                  <p className="text-2xl font-semibold">{testCauses}</p>
-                </div>
-                <FlaskConical className="h-5 w-5 text-primary" />
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Test mode causes
+                </p>
+                <p className="text-2xl font-semibold">{testCauses}</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              <FlaskConical className="h-5 w-5 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid gap-6">
         <Card>
@@ -251,9 +182,7 @@ export default async function AdminAnalyticsPage({
                 </div>
                 <CardTitle>Recent API Causes</CardTitle>
               </div>
-              {!apiCausesUnavailable && (
-                <Badge variant="secondary">{filteredRows.length} shown</Badge>
-              )}
+              <Badge variant="secondary">{campaigns.length} shown</Badge>
             </div>
             <CardDescription>
               List of recent campaigns created via API keys.
@@ -277,11 +206,7 @@ export default async function AdminAnalyticsPage({
               )}
             </div>
 
-            {apiCausesUnavailable ? (
-              <p className="text-sm text-muted-foreground">
-                API cause data is not available yet in this environment.
-              </p>
-            ) : filteredRows.length === 0 ? (
+            {campaigns.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No API causes found{search ? ` for "${search}"` : ""}.
               </p>
@@ -299,32 +224,34 @@ export default async function AdminAnalyticsPage({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredRows.map((row: any) => (
-                      <TableRow key={row.id}>
+                    {campaigns.map((campaign) => (
+                      <TableRow key={campaign.id}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-primary/10 text-primary text-[10px] font-semibold">
                               API
                             </span>
-                            <span>{row.apiName}</span>
+                            <span>{campaign.apiName}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {row.apiPrefix}
+                          {campaign.apiPrefix}
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="capitalize">
-                            {row.apiMode}
+                            {campaign.apiMode}
                           </Badge>
                         </TableCell>
-                        <TableCell className="max-w-[260px] truncate">{row.title}</TableCell>
+                        <TableCell className="max-w-[260px] truncate">
+                          {campaign.title}
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="capitalize">
-                            {row.status}
+                            {campaign.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {new Date(row.created_at).toLocaleDateString()}
+                          {new Date(campaign.created_at).toLocaleDateString()}
                         </TableCell>
                       </TableRow>
                     ))}

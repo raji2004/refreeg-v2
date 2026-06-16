@@ -145,22 +145,28 @@ export async function MyCausesList({ status, userId }: MyCausesListProps) {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="font-medium">
-                  ₦{cause.raised.toLocaleString()}
+                  ₦{Number(cause.raised).toLocaleString()}
                 </span>
                 <span className="text-muted-foreground">
-                  of ₦{cause.goal.toLocaleString()}
+                  of ₦{Number(cause.goal).toLocaleString()}
                 </span>
               </div>
-              <Progress value={(cause.raised / cause.goal) * 100} />
+              <Progress
+                value={(Number(cause.raised) / Number(cause.goal)) * 100}
+              />
             </div>
             <div className="mt-4 text-sm text-muted-foreground">
               <div className="flex justify-between">
                 <span>Created:</span>
-                <span>{new Date(cause.created_at).toLocaleDateString()}</span>
+                <span>
+                  {new Date(cause.created_at || "").toLocaleDateString()}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Last updated:</span>
-                <span>{new Date(cause.updated_at).toLocaleDateString()}</span>
+                <span>
+                  {new Date(cause.updated_at || "").toLocaleDateString()}
+                </span>
               </div>
             </div>
             {cause.status === "rejected" && cause.rejection_reason && (

@@ -48,6 +48,7 @@ export interface CauseWithUser extends Cause {
     name: string;
     email: string;
     sub_account_code?: string;
+    username: string;
     profile_photo?: string | null;
   };
   isFollowing?: boolean;

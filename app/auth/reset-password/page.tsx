@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
+import { useRouter } from "next/navigation";
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
@@ -23,13 +24,17 @@ export default function ResetPasswordPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { resetPassword } = useAuth();
 
+  const router = useRouter();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await resetPassword(email);
-      setIsSubmitted(true);
+      const success = await resetPassword(email);
+      if (success) {
+        setIsSubmitted(true);
+      }
     } catch (error) {
     } finally {
       setIsLoading(false);
@@ -42,6 +47,14 @@ export default function ResetPasswordPage() {
         <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
           <Card>
             <CardHeader className="space-y-1">
+              <Button
+                variant="ghost"
+                className="w-fit mb-2"
+                onClick={() => router.back()}
+              >
+                ← Go back
+              </Button>
+
               <CardTitle className="text-2xl text-center">
                 Check your email
               </CardTitle>

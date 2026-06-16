@@ -1,6 +1,8 @@
 "use client";
 import React, { useState } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 interface MediaItem {
   type: "image" | "video";
@@ -40,7 +42,7 @@ export default function MultimediaCarousel({
     } catch {
       // Fallback regex if URL constructor fails
       const direct = rawUrl.match(
-        /(?:v=|be\/|embed\/|shorts\/)([A-Za-z0-9_-]{6,})/
+        /(?:v=|be\/|embed\/|shorts\/)([A-Za-z0-9_-]{6,})/,
       );
       return direct ? direct[1] : null;
     }
@@ -78,13 +80,13 @@ export default function MultimediaCarousel({
         url.match(/(youtube\.com|youtu\.be|tiktok\.com|drive\.google\.com)/i)
           ? "video"
           : "image",
-      url,
+      url: getMediaUrl(url),
     }));
   };
 
   const mediaItems = processMedia();
   const slides = coverImage
-    ? [{ type: "image" as const, url: coverImage }, ...mediaItems]
+    ? [{ type: "image" as const, url: getMediaUrl(coverImage) }, ...mediaItems]
     : mediaItems;
 
   const goTo = (idx: number) => setCurrent(idx);
@@ -177,11 +179,14 @@ export default function MultimediaCarousel({
     } else {
       // Image
       return (
-        <div className="flex h-full w-full items-center justify-center bg-slate-950">
-          <img
+        <div className="relative h-full w-full flex items-center justify-center bg-slate-950">
+          <Image
             src={item.url}
             alt={`${title} - Image ${idx + 1}`}
-            className="h-full w-full object-contain"
+            fill
+            sizes="(max-width: 768px) 100vw, 80vw"
+            className="object-contain"
+            unoptimized={isProxyMediaUrl(item.url)}
           />
         </div>
       );

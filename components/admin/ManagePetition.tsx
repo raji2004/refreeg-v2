@@ -260,7 +260,7 @@ export default function ManagePetition() {
                                   onClick={() =>
                                     openRejectDialog(
                                       item.type === "edit"
-                                        ? item.original_petition_id
+                                        ? (item as any).original_petition_id
                                         : item.id,
                                       item.title,
                                     )
@@ -272,7 +272,7 @@ export default function ManagePetition() {
                                   onClick={() =>
                                     handleApprove(
                                       item.type === "edit"
-                                        ? item.original_petition_id
+                                        ? (item as any).original_petition_id
                                         : item.id,
                                     )
                                   }

@@ -1,10 +1,3 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardCauses } from "@/components/dashboard-causes";
 import { DashboardStats } from "@/components/dashboard-stats";
@@ -13,26 +6,14 @@ import { DonationTrends } from "@/components/charts/donation-trends";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   ArrowRight,
   CircleDollarSign,
   HeartHandshake,
   Search,
-  Satellite,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
-import { getCachedUser } from "@/lib/supabase/cached-user";
-import { ApiCausesFilter } from "@/components/dashboard/ApiCausesFilter";
+import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import {
   getDashboardStats,
@@ -42,6 +23,7 @@ import {
   getUserPetitionsWithStats,
 } from "@/actions/dashboard-actions";
 import { getProfile } from "@/actions/profile-actions";
+import { getMediaUrl } from "@/lib/s3/media";
 
 import { Metadata } from "next";
 
@@ -49,13 +31,6 @@ export const metadata: Metadata = {
   title: "Dashboard",
   description:
     "Manage your causes, petitions, and track your social impact on RefreeG.",
-};
-
-type ApiKeyRow = {
-  id: string;
-  name: string;
-  key_prefix: string;
-  mode: "live" | "test";
 };
 
 const formatNaira = (value: number) =>
@@ -70,6 +45,14 @@ export default async function DashboardPage({
 }: {
   searchParams?: Promise<{ search?: string; mode?: string }>;
 }) {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/auth/signin");
+  }
+
+  const user = session.user;
+
   const params = ((await searchParams) || {}) as {
     search?: string;
     mode?: string;
@@ -77,165 +60,24 @@ export default async function DashboardPage({
   const search = params.search?.trim() || "";
   const modeFilter = params.mode || "all";
 
-  const [
-    authResult,
-    stats,
-    petitionStats,
-    donationTrends,
-    userCauses,
-    userPetitions,
-    apiCampaignsResult,
-  ] = await Promise.all([
-    getCachedUser(),
-    (async () => {
-      const { user } = await getCachedUser();
-      return user ? getDashboardStats(user.id) : null;
-    })(),
-    (async () => {
-      const { user } = await getCachedUser();
-      return user ? getPetitionDashboardStats(user.id) : null;
-    })(),
-    (async () => {
-      const { user } = await getCachedUser();
-      return user ? getDonationTrends(user.id) : [];
-    })(),
-    (async () => {
-      const { user } = await getCachedUser();
-      return user ? getUserCausesWithStats(user.id) : [];
-    })(),
-    (async () => {
-      const { user } = await getCachedUser();
-      return user ? getUserPetitionsWithStats(user.id) : [];
-    })(),
-    (async () => {
-      try {
-        const supabase = await createClient();
-        const canUseServiceRole =
-          !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
-          !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const [stats, petitionStats, donationTrends, userCauses, userPetitions] =
+    await Promise.all([
+      getDashboardStats(user.id as string),
+      getPetitionDashboardStats(user.id as string),
+      getDonationTrends(user.id as string),
+      getUserCausesWithStats(user.id as string),
+      getUserPetitionsWithStats(user.id as string),
+    ]);
 
-        const dbClient = canUseServiceRole
-          ? createSupabaseAdmin(
-              process.env.NEXT_PUBLIC_SUPABASE_URL!,
-              process.env.SUPABASE_SERVICE_ROLE_KEY!,
-              {
-                auth: {
-                  autoRefreshToken: false,
-                  persistSession: false,
-                },
-              },
-            )
-          : (supabase as any);
-
-        const { data: causeData, error: causeError } = await (dbClient as any)
-          .from("api_campaigns")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(50);
-
-        if (causeError) return { error: causeError.message };
-
-        const apiCauses = ((causeData || []) as any[]).map((row) => ({
-          id: row.id,
-          developer_id: row.developer_id,
-          title: row.title || row.name || "Untitled cause",
-          status: row.status || "unknown",
-          created_at: row.created_at,
-          api_key_id: row.api_key_id ?? null,
-          mode: row.mode,
-          goal_amount: row.goal_amount,
-          raised_amount: row.raised_amount,
-        }));
-
-        const apiKeyIds = [
-          ...new Set(
-            apiCauses
-              .map((cause) => cause.api_key_id)
-              .filter((id): id is string => Boolean(id)),
-          ),
-        ];
-
-        let apiKeys: ApiKeyRow[] = [];
-        if (apiKeyIds.length > 0) {
-          const { data: keyData, error: keyError } = await (dbClient as any)
-            .from("api_keys")
-            .select("id, name, key_prefix, mode")
-            .in("id", apiKeyIds);
-
-          if (!keyError) {
-            apiKeys = (keyData || []) as ApiKeyRow[];
-          }
-        }
-
-        return { apiCauses, apiKeys };
-      } catch (err) {
-        return {
-          error: err instanceof Error ? err.message : "Unexpected error",
-        };
-      }
-    })(),
-  ]);
-
-  const { user, error: authError } = authResult;
-
-  if (!user || authError) {
-    redirect("/auth/signin");
-  }
-
-  const profile = await getProfile(user.id);
-
-  const apiCauses =
-    "apiCauses" in apiCampaignsResult ? (apiCampaignsResult as any).apiCauses : [];
-  const apiKeys =
-    "apiKeys" in apiCampaignsResult ? (apiCampaignsResult as any).apiKeys : [];
-  const apiCausesUnavailable = "error" in apiCampaignsResult;
-  const apiCausesError =
-    "error" in apiCampaignsResult ? (apiCampaignsResult as any).error : "";
-
-  const keyMap = new Map(apiKeys.map((key: any) => [key.id, key]));
-
-  const apiCauseRows = apiCauses.map((cause: any) => {
-    const key = cause.api_key_id
-      ? (keyMap.get(cause.api_key_id) as ApiKeyRow | undefined)
-      : null;
-
-    return {
-      ...cause,
-      apiName: key?.name || "Unknown API",
-      apiPrefix: key?.key_prefix || "N/A",
-      apiMode: cause.mode || key?.mode || "unknown",
-      developerId: cause.developer_id || "N/A",
-    };
-  });
-
-  const filteredRows = apiCauseRows.filter((row: any) => {
-    let matchesSearch = true;
-    let matchesMode = true;
-
-    if (search) {
-      const needle = search.toLowerCase();
-      matchesSearch =
-        row.title.toLowerCase().includes(needle) ||
-        row.apiName.toLowerCase().includes(needle) ||
-        row.apiMode.toLowerCase().includes(needle) ||
-        row.developerId.toLowerCase().includes(needle);
-    }
-
-    if (modeFilter !== "all") {
-      matchesMode = row.apiMode === modeFilter;
-    }
-
-    return matchesSearch && matchesMode;
-  });
+  const profile = await getProfile(user.id as string);
 
   const firstName =
     profile?.full_name?.split(" ")?.[0] ||
-    user.user_metadata?.full_name?.split(" ")?.[0] ||
+    user.name?.split(" ")?.[0] ||
     user.email?.split("@")?.[0] ||
     "there";
   const avatarUrl =
-    profile?.profile_photo ||
-    (user.user_metadata?.avatar_url as string | undefined);
+    profile?.profile_photo || (user.image as string | undefined);
   const initials =
     firstName
       ?.split(" ")
@@ -265,7 +107,7 @@ export default async function DashboardPage({
             <div className="mt-4 flex items-center gap-3 sm:mt-5 sm:gap-5">
               <Avatar className="h-20 w-20 rounded-[26px] border-4 border-white/95 bg-blue-50 shadow-[0_24px_50px_-28px_rgba(37,99,235,0.65)] sm:h-28 sm:w-28 sm:rounded-[32px] sm:border-[5px]">
                 <AvatarImage
-                  src={avatarUrl}
+                  src={getMediaUrl(avatarUrl)}
                   alt={user.email || firstName}
                   className="object-cover object-center"
                 />
@@ -285,12 +127,18 @@ export default async function DashboardPage({
             </p>
 
             <div className="mt-5 grid gap-2 sm:mt-6 sm:flex sm:flex-wrap sm:gap-3">
-              <Link href="/dashboard/causes/create" className="w-full sm:w-auto">
+              <Link
+                href="/dashboard/causes/create"
+                className="w-full sm:w-auto"
+              >
                 <Badge className="flex w-full items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:border-blue-600 hover:bg-blue-600 hover:text-white">
                   Create cause
                 </Badge>
               </Link>
-              <Link href="/dashboard/petitions/create" className="w-full sm:w-auto">
+              <Link
+                href="/dashboard/petitions/create"
+                className="w-full sm:w-auto"
+              >
                 <Badge
                   variant="secondary"
                   className="flex w-full items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:border-blue-600 hover:bg-blue-600 hover:text-white"
@@ -367,10 +215,6 @@ export default async function DashboardPage({
               Manage everything in one place
             </p>
           </div>
-          <div className="inline-flex items-center gap-2 self-start rounded-full bg-slate-50 px-3 py-2 text-xs font-medium text-slate-500">
-            <Search className="h-3.5 w-3.5" />
-            Analytics includes API-created causes
-          </div>
         </div>
 
         <Tabs
@@ -404,150 +248,6 @@ export default async function DashboardPage({
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-5">
-            <Card className="rounded-[28px] border-slate-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_20px_50px_-38px_rgba(15,23,42,0.45)]">
-              <CardHeader className="pb-4">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                        <Satellite className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl text-slate-950">
-                          API Causes
-                        </CardTitle>
-                        <CardDescription className="text-sm text-slate-600">
-                          Separate table of APIs and causes created with them.
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </div>
-                  {!apiCausesUnavailable && (
-                    <Badge
-                      variant="secondary"
-                      className="w-fit rounded-full bg-blue-50 px-3 py-1 text-blue-700"
-                    >
-                      {filteredRows.length} shown
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="rounded-[24px] border border-slate-100 bg-white p-4">
-                  <ApiCausesFilter search={search} modeFilter={modeFilter} />
-                </div>
-
-                {apiCausesUnavailable ? (
-                  <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/80 p-6">
-                    <p className="text-sm text-slate-600">
-                      API cause data is not available yet.
-                    </p>
-                    {apiCausesError ? (
-                      <p className="mt-2 text-xs text-slate-500">
-                        {apiCausesError}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : filteredRows.length === 0 ? (
-                  <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/80 p-6">
-                    <p className="text-sm text-slate-600">
-                      No API causes found{search ? ` for "${search}"` : ""}.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
-                    <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                          <TableHead>API</TableHead>
-                          <TableHead>Developer ID</TableHead>
-                          <TableHead>Mode</TableHead>
-                          <TableHead>Cause</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Created</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredRows.map((row: any) => (
-                          <TableRow key={row.id} className="hover:bg-slate-50/70">
-                            <TableCell className="font-medium text-slate-950">
-                              {row.apiName}
-                            </TableCell>
-                            <TableCell className="text-xs text-slate-500">
-                              {row.developerId}
-                            </TableCell>
-                            <TableCell>
-                              {row.apiMode === "test" ? (
-                                <Badge
-                                  variant="outline"
-                                  className="border-amber-200 bg-amber-50 font-semibold capitalize text-amber-700"
-                                >
-                                  Test
-                                </Badge>
-                              ) : (
-                                <Badge
-                                  variant="outline"
-                                  className="border-emerald-200 bg-emerald-50 font-semibold capitalize text-emerald-700"
-                                >
-                                  Live
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="max-w-[260px] truncate text-slate-700">
-                              {row.title}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className="capitalize text-slate-600"
-                              >
-                                {row.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-xs text-slate-500">
-                              {new Date(row.created_at).toLocaleDateString()}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    </div>
-                  </div>
-                )}
-
-                {apiCausesUnavailable && (
-                  <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
-                    <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                          <TableHead>API</TableHead>
-                          <TableHead>Developer ID</TableHead>
-                          <TableHead>Mode</TableHead>
-                          <TableHead>Cause</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Created</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <TableRow>
-                          <TableCell
-                            colSpan={6}
-                            className="py-8 text-center text-sm text-slate-500"
-                          >
-                            API causes will appear here once data access is
-                            available.
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
             <DonationTrends data={donationTrendData} />
           </TabsContent>
         </Tabs>

@@ -1,7 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { KycVerification, KycStatus } from "@/types/kyc-types";
 import { logAdminActivity } from "@/actions/database-actions";
@@ -31,15 +30,11 @@ export async function uploadKycDocument(
   },
 ): Promise<{ documentUrl: string; error: string | null }> {
   try {
-    const supabase = await createClient();
-
-    const { data: existingKyc } = await supabase
-      .from("kyc_verifications")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Check for existing KYC record using Prisma
+    const existingKyc = await prisma.kyc_verifications.findFirst({
+      where: { user_id: userId },
+      orderBy: { created_at: "desc" },
+    });
 
     if (existingKyc) {
       if (existingKyc.status === "approved") {
@@ -47,8 +42,6 @@ export async function uploadKycDocument(
       }
 
       const fileExt = file.name.split(".").pop();
-      const fileName = `${userId}/${Date.now()}.${fileExt}`;
-      const bucket = "kyc-documents";
 
       const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
       if (!allowedTypes.includes(file.type)) {
@@ -66,42 +59,29 @@ export async function uploadKycDocument(
         };
       }
 
-      const { data, error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, file, {
-          cacheControl: "3600",
-          upsert: false,
+      // Use S3 for storage upload
+      let fileName = "";
+      try {
+        const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
+        const s3Key = generateS3Key({
+          entityType: "kyc",
+          userId,
+          entityId: existingKyc.id,
+          mediaType: "documents",
+          filename: `${userId}_${Date.now()}.${fileExt}`,
         });
-
-      if (uploadError) {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        await uploadToS3(buffer, s3Key, file.type);
+        fileName = s3Key;
+      } catch (uploadError: any) {
         console.error("Error uploading document:", uploadError);
         return { documentUrl: "", error: uploadError.message };
       }
 
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(fileName);
-
-      if (!urlData?.publicUrl) {
-        return { documentUrl: "", error: "Failed to get public URL" };
-      }
-
-      // Use Admin client for the update to ensure it bypasses any restrictive RLS 
-      // that might prevent users from updating rejected KYC records.
-      const supabaseAdmin = createSupabaseAdmin(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-          },
-        },
-      );
-
-      const { error: updateError } = await supabaseAdmin
-        .from("kyc_verifications")
-        .update({
+      // Update existing KYC record using Prisma
+      await prisma.kyc_verifications.update({
+        where: { id: existingKyc.id },
+        data: {
           document_type: documentType,
           document_url: fileName,
           status: "pending",
@@ -114,24 +94,18 @@ export async function uploadKycDocument(
           state: personalData.state,
           postal: personalData.postal,
           country: personalData.country,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", existingKyc.id);
-
-      if (updateError) {
-        console.error("Error updating existing KYC:", updateError);
-        return { documentUrl: "", error: updateError.message };
-      }
+          updated_at: new Date(),
+        },
+      });
 
       revalidatePath("/dashboard/settings/kyc");
       revalidatePath(`/dashboard/admin/users/kyc/${userId}`);
 
       try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("id", userId)
-          .single();
+        const profile = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true },
+        });
 
         if (profile?.email) {
           await sendKycSubmittedEmail(profile.email, personalData.fullName);
@@ -151,11 +125,9 @@ export async function uploadKycDocument(
         console.error("Error sending KYC submission email:", emailError);
       }
 
-      return { documentUrl: urlData.publicUrl, error: null };
+      return { documentUrl: fileName, error: null };
     } else {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${userId}/${Date.now()}.${fileExt}`;
-      const bucket = "kyc-documents";
 
       const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
       if (!allowedTypes.includes(file.type)) {
@@ -173,29 +145,30 @@ export async function uploadKycDocument(
         };
       }
 
-      const { data, error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, file, {
-          cacheControl: "3600",
-          upsert: false,
+      const kycId = crypto.randomUUID();
+      // Use S3 for storage upload
+      let fileName = "";
+      try {
+        const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
+        const s3Key = generateS3Key({
+          entityType: "kyc",
+          userId,
+          entityId: kycId,
+          mediaType: "documents",
+          filename: `${userId}_${Date.now()}.${fileExt}`,
         });
-
-      if (uploadError) {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        await uploadToS3(buffer, s3Key, file.type);
+        fileName = s3Key;
+      } catch (uploadError: any) {
         console.error("Error uploading document:", uploadError);
         return { documentUrl: "", error: uploadError.message };
       }
-
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(fileName);
-
-      if (!urlData?.publicUrl) {
-        return { documentUrl: "", error: "Failed to get public URL" };
-      }
-
-      const { error: insertError } = await supabase
-        .from("kyc_verifications")
-        .insert({
+      
+      // Insert new KYC record using Prisma
+      await prisma.kyc_verifications.create({
+        data: {
+          id: kycId,
           user_id: userId,
           document_type: documentType,
           document_url: fileName,
@@ -209,21 +182,17 @@ export async function uploadKycDocument(
           state: personalData.state,
           postal: personalData.postal,
           country: personalData.country,
-        });
-
-      if (insertError) {
-        return { documentUrl: "", error: insertError.message };
-      }
+        },
+      });
 
       revalidatePath("/dashboard/settings/kyc");
       revalidatePath(`/dashboard/admin/users/kyc/${userId}`);
 
       try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("id", userId)
-          .single();
+        const profile = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true },
+        });
 
         if (profile?.email) {
           await sendKycSubmittedEmail(profile.email, personalData.fullName);
@@ -243,7 +212,7 @@ export async function uploadKycDocument(
         console.error("Error sending KYC submission email:", emailError);
       }
 
-      return { documentUrl: urlData.publicUrl, error: null };
+      return { documentUrl: fileName, error: null };
     }
   } catch (error) {
     console.error("Error in uploadKycDocument:", error);
@@ -255,29 +224,19 @@ export async function getVerificationStatus(
   userId: string,
 ): Promise<{ status: KycVerification | null; error: string | null }> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("kyc_verifications")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
+    const data = await prisma.kyc_verifications.findFirst({
+      where: { user_id: userId },
+      orderBy: { created_at: "desc" },
+    });
 
     if (data?.document_url) {
-      const { data: publicData } = supabase.storage
-        .from("kyc-documents")
-        .getPublicUrl(data.document_url);
-      if (publicData?.publicUrl) {
-        (data as any).document_url = publicData.publicUrl;
+      // Use S3 proxy for generating the URL
+      if (!data.document_url.startsWith("http")) {
+        (data as any).document_url = `/api/s3/image?key=${encodeURIComponent(data.document_url)}`;
       }
     }
 
-    return { status: data, error: null };
+    return { status: data as KycVerification | null, error: null };
   } catch (error) {
     console.error("Error getting verification status:", JSON.stringify(error));
     return {
@@ -304,38 +263,17 @@ export async function updateVerificationStatus(
     const isAuthorized = await isAdminOrManager(user.id);
     if (!isAuthorized) return { error: "Unauthorized" };
 
-    if (
-      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      !process.env.SUPABASE_SERVICE_ROLE_KEY
-    ) {
-      return { error: "Server configuration error: Missing Supabase keys" };
-    }
-
-    const supabaseAdmin = createSupabaseAdmin(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      },
-    );
-    const { error: updateError } = await supabaseAdmin
-      .from("kyc_verifications")
-      .update({
+    // Update KYC status using Prisma
+    await prisma.kyc_verifications.update({
+      where: { id: verificationId },
+      data: {
         status: status,
         verification_notes:
           notes ||
           (status === "approved" ? "Approved by admin" : "Rejected by admin"),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", verificationId);
-
-    if (updateError) {
-      console.error("[KYC] Error updating KYC status:", updateError);
-      return { error: updateError.message || JSON.stringify(updateError) };
-    }
+        updated_at: new Date(),
+      },
+    });
 
     if (user) {
       if (status === "approved") {
@@ -345,27 +283,18 @@ export async function updateVerificationStatus(
       }
     }
 
-    const { data: verification, error: fetchError } = await supabaseAdmin
-      .from("kyc_verifications")
-      .select("user_id, full_name")
-      .eq("id", verificationId)
-      .single();
-
-    if (fetchError) {
-      console.error(
-        "[KYC] Error fetching verification record after update:",
-        fetchError,
-      );
-      return { error: fetchError.message || JSON.stringify(fetchError) };
-    }
+    // Fetch the verification record to get user_id and full_name
+    const verification = await prisma.kyc_verifications.findUnique({
+      where: { id: verificationId },
+      select: { user_id: true, full_name: true },
+    });
 
     if (verification) {
       try {
-        const { data: profile } = await supabaseAdmin
-          .from("profiles")
-          .select("email")
-          .eq("id", verification.user_id)
-          .single();
+        const profile = await prisma.user.findUnique({
+          where: { id: verification.user_id },
+          select: { email: true },
+        });
 
         if (profile?.email) {
           if (status === "approved") {
@@ -386,36 +315,17 @@ export async function updateVerificationStatus(
         console.error("Error sending KYC status email:", emailError);
       }
 
+      // Update is_verified on the user profile
       if (status === "approved") {
-        const { error: profileError } = await supabaseAdmin
-          .from("profiles")
-          .update({ is_verified: true })
-          .eq("id", verification.user_id);
-
-        if (profileError) {
-          console.error(
-            "[KYC] Error updating user profile to verified:",
-            profileError,
-          );
-          return {
-            error: profileError.message || JSON.stringify(profileError),
-          };
-        }
+        await prisma.user.update({
+          where: { id: verification.user_id },
+          data: { isVerified: true },
+        });
       } else if (status === "rejected") {
-        const { error: profileError } = await supabaseAdmin
-          .from("profiles")
-          .update({ is_verified: false })
-          .eq("id", verification.user_id);
-
-        if (profileError) {
-          console.error(
-            "[KYC] Error updating user profile to unverified:",
-            profileError,
-          );
-          return {
-            error: profileError.message || JSON.stringify(profileError),
-          };
-        }
+        await prisma.user.update({
+          where: { id: verification.user_id },
+          data: { isVerified: false },
+        });
       }
     } else {
       console.error(
@@ -452,29 +362,21 @@ export async function sendKycReminderToUnverifiedUsers(): Promise<{
 }> {
   try {
     const user = await getCurrentUser();
-    if (!user) return { sent: 0, failed: 0, skipped: 0, error: "Not authenticated" };
+    if (!user)
+      return { sent: 0, failed: 0, skipped: 0, error: "Not authenticated" };
 
     const authorized = await isAdminOrManager(user.id);
-    if (!authorized) return { sent: 0, failed: 0, skipped: 0, error: "Unauthorized" };
+    if (!authorized)
+      return { sent: 0, failed: 0, skipped: 0, error: "Unauthorized" };
 
-    const supabaseAdmin = createSupabaseAdmin(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } },
-    );
-
-    // Fetch all non-verified users who have a valid email address
-    const { data: unverifiedProfiles, error: profilesError } =
-      await supabaseAdmin
-        .from("profiles")
-        .select("id, email, full_name")
-        .eq("is_verified", false)
-        .not("email", "is", null);
-
-    if (profilesError) {
-      console.error("[KYC Reminder] Error fetching unverified profiles:", profilesError);
-      return { sent: 0, failed: 0, skipped: 0, error: profilesError.message };
-    }
+    // Fetch all non-verified users who have a valid email address using Prisma
+    const unverifiedProfiles = await prisma.user.findMany({
+      where: {
+        isVerified: false,
+        email: { not: null },
+      },
+      select: { id: true, email: true, fullName: true },
+    });
 
     if (!unverifiedProfiles || unverifiedProfiles.length === 0) {
       return { sent: 0, failed: 0, skipped: 0, error: null };
@@ -482,14 +384,14 @@ export async function sendKycReminderToUnverifiedUsers(): Promise<{
 
     // Fetch user IDs that already have a pending or approved KYC submission
     // so we don't spam users who are already in the process
-    const { data: activeKyc } = await supabaseAdmin
-      .from("kyc_verifications")
-      .select("user_id")
-      .in("status", ["pending", "approved"]);
+    const activeKyc = await prisma.kyc_verifications.findMany({
+      where: {
+        status: { in: ["pending", "approved"] },
+      },
+      select: { user_id: true },
+    });
 
-    const activeUserIds = new Set(
-      (activeKyc ?? []).map((k: { user_id: string }) => k.user_id),
-    );
+    const activeUserIds = new Set(activeKyc.map((k) => k.user_id));
 
     const eligibleUsers = unverifiedProfiles.filter(
       (p) => p.email && !activeUserIds.has(p.id),
@@ -506,12 +408,14 @@ export async function sendKycReminderToUnverifiedUsers(): Promise<{
       eligibleUsers.map((profile) =>
         sendKycReminderEmail(
           profile.email as string,
-          profile.full_name || "Refreegerian",
+          profile.fullName || "Refreegerian",
         ),
       ),
     );
 
-    const sent = results.filter((r) => r.status === "fulfilled" && (r.value as any)?.success !== false).length;
+    const sent = results.filter(
+      (r) => r.status === "fulfilled" && (r.value as any)?.success !== false,
+    ).length;
     const failed = results.length - sent;
 
     console.log(

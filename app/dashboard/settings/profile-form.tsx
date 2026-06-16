@@ -28,6 +28,7 @@ import type { ProfileFormData } from "@/types";
 import { useProfile } from "@/hooks/use-profile";
 import Link from "next/link";
 import { compressImage } from "@/utils/image-compression";
+import { getMediaUrl } from "@/lib/s3/media";
 
 type AccountType =
   | "individual"
@@ -234,7 +235,7 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
                 onClick={handlePhotoClick}
               >
                 <AvatarImage
-                  src={profile?.profile_photo || ""}
+                  src={getMediaUrl(profile?.profile_photo) || ""}
                   alt={profile?.full_name || user?.email || ""}
                 />
                 <AvatarFallback className="text-lg">

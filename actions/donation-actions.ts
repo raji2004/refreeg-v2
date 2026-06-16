@@ -1,19 +1,24 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { Donation, DonationWithCause, DonationFormData } from "@/types";
 import { recordEvent } from "@/actions/event-reward-actions";
 import { sendDonationReceivedEmail } from "@/services/mail";
 
+const mapPrismaToDonation = (d: any): Donation => ({
+  ...d,
+  amount: Number(d.amount),
+  tip_amount: d.tip_amount ? Number(d.tip_amount) : 0,
+  created_at: d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt,
+});
+
 export async function createDonation(
   causeId: string,
   userId: string | null,
   donationData: DonationFormData,
-  tipAmount: number = 0
+  tipAmount: number = 0,
 ): Promise<Donation> {
-  const supabase = await createClient();
-
   const donationAmount =
     typeof donationData.amount === "string"
       ? Number.parseFloat(donationData.amount)
@@ -22,26 +27,25 @@ export async function createDonation(
   const finalTipAmount =
     tipAmount > 0 ? tipAmount : donationData.tip_amount || 0;
 
-  const { data, error } = await supabase
-    .from("donations")
-    .insert({
-      cause_id: causeId,
-      ...(userId ? { user_id: userId } : {}),
-      amount: donationAmount,
-      tip_amount: finalTipAmount,
-      name:
-        String(donationData.isAnonymous).toLocaleLowerCase() === "true"
-          ? "Anonymous"
-          : donationData.name,
-      email: donationData.email,
-      message: donationData.message || null,
-      is_anonymous: donationData.isAnonymous,
-      status: "completed",
-    })
-    .select()
-    .single();
-
-  if (error) {
+  let data;
+  try {
+    data = await prisma.donation.create({
+      data: {
+        causeId: causeId,
+        ...(userId ? { userId: userId } : {}),
+        amount: donationAmount,
+        tip_amount: finalTipAmount,
+        name:
+          String(donationData.isAnonymous).toLocaleLowerCase() === "true"
+            ? "Anonymous"
+            : donationData.name,
+        email: donationData.email,
+        message: donationData.message || null,
+        is_anonymous: donationData.isAnonymous,
+        status: "completed",
+      },
+    });
+  } catch (error) {
     console.error("Error creating donation:", error);
     throw error;
   }
@@ -65,15 +69,29 @@ export async function createDonation(
     }
   }
 
+  // Emit SSE event
+  try {
+    const { eventBus } = await import("@/lib/event-bus");
+    eventBus.emit("donation", {
+      type: "donation",
+      data: mapPrismaToDonation(data),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error("Error emitting fiat donation SSE:", e);
+  }
+
   // Auto-fulfill any pending pledge from the same donor for this cause
   if (donationData.email) {
     try {
-      await supabase
-        .from("pledges")
-        .update({ status: "fulfilled" })
-        .eq("cause_id", causeId)
-        .eq("email", donationData.email)
-        .eq("status", "pending");
+      await prisma.pledges.updateMany({
+        where: {
+          cause_id: causeId,
+          email: donationData.email,
+          status: "pending",
+        },
+        data: { status: "fulfilled" },
+      });
     } catch (pledgeError) {
       console.error("Error fulfilling pledge:", pledgeError);
       // Non-fatal — don't break the donation flow
@@ -82,13 +100,12 @@ export async function createDonation(
 
   // Milestone notifications for followers (50% and 100%)
   try {
-    const { data: cause, error: causeError } = await supabase
-      .from("causes")
-      .select("title, raised, goal")
-      .eq("id", causeId)
-      .single();
+    const cause = await prisma.cause.findUnique({
+      where: { id: causeId },
+      select: { title: true, raised: true, goal: true },
+    });
 
-    if (cause && !causeError) {
+    if (cause) {
       const raisedAfter = Number(cause.raised);
       const raisedBefore = raisedAfter - donationAmount;
       const goal = Number(cause.goal);
@@ -106,13 +123,13 @@ export async function createDonation(
 
         if (milestoneReached) {
           // Fetch followers
-          const { data: followers } = await supabase
-            .from("campaign_follows")
-            .select("email")
-            .eq("cause_id", causeId);
+          const followers = await prisma.campaign_follows.findMany({
+            where: { cause_id: causeId },
+            select: { email: true },
+          });
 
           if (followers && followers.length > 0) {
-            const followerEmails = followers.map((f) => f.email);
+            const followerEmails = followers.map((f: any) => f.email);
             const appUrl =
               process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
 
@@ -130,7 +147,7 @@ export async function createDonation(
                 },
               }),
             }).catch((err) =>
-              console.error("Error calling follower-update API:", err)
+              console.error("Error calling follower-update API:", err),
             );
           }
         }
@@ -142,19 +159,26 @@ export async function createDonation(
 
   // Notify the campaign owner about the new donation
   try {
-    const { data: causeWithOwner } = await supabase
-      .from("causes")
-      .select("title, raised, goal, user_id, profiles(full_name, email)")
-      .eq("id", causeId)
-      .single();
+    const causeWithOwner = await prisma.cause.findUnique({
+      where: { id: causeId },
+      select: {
+        title: true,
+        raised: true,
+        goal: true,
+        userId: true,
+        user: {
+          select: { fullName: true, email: true },
+        },
+      },
+    });
 
     if (causeWithOwner) {
-      const ownerProfile = causeWithOwner.profiles as any;
-      const ownerEmail = ownerProfile?.email;
-      const ownerName = ownerProfile?.full_name || "Campaign Owner";
+      const ownerEmail = causeWithOwner.user?.email;
+      const ownerName = causeWithOwner.user?.fullName || "Campaign Owner";
 
       if (ownerEmail) {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+        const appUrl =
+          process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
         const donorName =
           String(donationData.isAnonymous).toLowerCase() === "true"
             ? "An anonymous donor"
@@ -169,11 +193,16 @@ export async function createDonation(
           causeUrl: `${appUrl}/causes/${causeId}`,
           amountRaised: Number(causeWithOwner.raised),
           goalAmount: Number(causeWithOwner.goal),
-        }).catch((err) => console.error("Error sending donation received email:", err));
+        }).catch((err) =>
+          console.error("Error sending donation received email:", err),
+        );
       }
     }
   } catch (ownerEmailError) {
-    console.error("Error fetching cause owner for donation email:", ownerEmailError);
+    console.error(
+      "Error fetching cause owner for donation email:",
+      ownerEmailError,
+    );
   }
 
   revalidatePath(`/causes/${causeId}`);
@@ -183,67 +212,57 @@ export async function createDonation(
     revalidatePath("/dashboard/donations");
   }
 
-  return data as Donation;
+  return mapPrismaToDonation(data);
 }
 
-
 export async function listDonationsForCause(
-  causeId: string
+  causeId: string,
 ): Promise<Donation[]> {
-  const supabase = await createClient();
+  try {
+    const data = await prisma.donation.findMany({
+      where: { causeId: causeId },
+      orderBy: { createdAt: "desc" },
+    });
 
-  const { data, error } = await supabase
-    .from("donations")
-    .select("*")
-    .eq("cause_id", causeId)
-    .order("created_at", { ascending: false });
-
-  if (error) {
+    return data.map(mapPrismaToDonation);
+  } catch (error) {
     console.error("Error listing donations:", error);
     throw error;
   }
-
-  return data as Donation[];
 }
 
 export async function listUserDonations(
   userId: string,
-  timeframe: "all" | "recent" = "all"
+  timeframe: "all" | "recent" = "all",
 ): Promise<DonationWithCause[]> {
-  const supabase = await createClient();
+  try {
+    let whereClause: any = { userId: userId };
 
-  let query = supabase
-    .from("donations")
-    .select(
-      `
-      *,
-      causes:cause_id (
-        title,
-        category
-      )
-    `
-    )
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    if (timeframe === "recent") {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      whereClause.createdAt = { gte: thirtyDaysAgo };
+    }
 
-  if (timeframe === "recent") {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    query = query.gte("created_at", thirtyDaysAgo.toISOString());
-  }
+    const data = await prisma.donation.findMany({
+      where: whereClause,
+      include: {
+        cause: {
+          select: { title: true, category: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-  const { data, error } = await query;
-
-  if (error) {
+    return data.map((item: any) => ({
+      ...mapPrismaToDonation(item),
+      cause: {
+        title: item.cause?.title || "Unknown Cause",
+        category: item.cause?.category || "Unknown",
+      },
+    }));
+  } catch (error) {
     console.error("Error listing user donations:", error);
     throw error;
   }
-
-  return data.map((item) => ({
-    ...item,
-    cause: {
-      title: item.causes?.title || "Unknown Cause",
-      category: item.causes?.category || "Unknown",
-    },
-  })) as DonationWithCause[];
 }

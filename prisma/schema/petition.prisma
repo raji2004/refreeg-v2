@@ -1,0 +1,114 @@
+model petitions {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String   @db.Uuid
+  title            String
+  description      String   @default("")
+  category         String
+  goal             Int
+  raised           Int      @default(0)
+  status           String   @default("pending")
+  rejection_reason String?
+  image            String?
+  multimedia       String[] @default([])
+  shared           Int      @default(0)
+  days_active      Int?
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @db.Timestamptz(6)
+  video_links      String[] @default([])
+
+  @@index([category], map: "idx_petitions_category")
+  @@index([created_at(sort: Desc)], map: "idx_petitions_created_at")
+  @@index([status], map: "idx_petitions_status")
+  @@index([user_id], map: "idx_petitions_user_id")
+  @@index([video_links], map: "idx_petitions_video_links", type: Gin)
+
+  user              User                @relation(fields: [user_id], references: [id])
+  petition_sections petition_sections[]
+  petition_comments petition_comments[]
+  signatures        signatures[]
+}
+
+model petition_comments {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  petition_id String   @db.Uuid
+  user_id     String   @db.Uuid
+  content     String
+  parent_id   String?  @db.Uuid
+  is_edited   Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at(sort: Desc)], map: "idx_petition_comments_created")
+  @@index([parent_id], map: "idx_petition_comments_parent")
+  @@index([petition_id], map: "idx_petition_comments_petition")
+
+  user     User      @relation(fields: [user_id], references: [id])
+  petition petitions @relation(fields: [petition_id], references: [id])
+}
+
+model petition_edit_sections {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  petition_edit_id String   @db.Uuid
+  heading          String
+  description      String
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  petition_edit petition_edits @relation(fields: [petition_edit_id], references: [id])
+}
+
+model petition_edits {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  original_petition_id String   @db.Uuid
+  user_id              String   @db.Uuid
+  title                String
+  description          String   @default("")
+  category             String
+  goal                 Int
+  image                String?
+  multimedia           String[] @default([])
+  video_links          String[] @default([])
+  days_active          Int?
+  status               String   @default("pending")
+  rejection_reason     String?
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at(sort: Desc)], map: "idx_petition_edits_created_at")
+  @@index([original_petition_id], map: "idx_petition_edits_original_id")
+  @@index([status], map: "idx_petition_edits_status")
+  @@index([user_id], map: "idx_petition_edits_user_id")
+
+  user                   User                     @relation(fields: [user_id], references: [id])
+  petition_edit_sections petition_edit_sections[]
+}
+
+model petition_sections {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  petition_id String   @db.Uuid
+  heading     String
+  description String
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([petition_id], map: "idx_petition_sections_petition_id")
+
+  petition petitions @relation(fields: [petition_id], references: [id])
+}
+
+model signatures {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  petition_id  String   @db.Uuid
+  user_id      String?  @db.Uuid
+  amount       Decimal  @db.Decimal
+  name         String
+  email        String
+  message      String?
+  is_anonymous Boolean  @default(false)
+  status       String   @default("completed")
+  receipt_url  String?
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  petition     petitions @relation(fields: [petition_id], references: [id])
+
+  @@index([created_at(sort: Desc)], map: "idx_signatures_created_at")
+  @@index([petition_id], map: "idx_signatures_petition_id")
+  @@index([user_id], map: "idx_signatures_user_id")
+}

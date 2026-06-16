@@ -1,25 +1,88 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { recordEvent, updateUserStreaks } from "@/actions/event-reward-actions";
 import { cache } from "react";
-import { getCachedUser } from "@/lib/supabase/cached-user";
+import { auth } from "@/lib/auth/auth";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import {
+  sendLoginNotificationEmail,
+  sendPasswordResetEmail,
+  sendWelcomeEmailToUser,
+} from "@/services/mail";
+import { subscribeToConvertKit } from "@/services/convertkit";
+import crypto from "crypto";
 
 /**
  * Get the current user
  * Cached to prevent multiple fetch calls during a single request/render.
  */
 export const getCurrentUser = cache(async () => {
-  const supabase = await createClient();
+  const session = await auth();
 
-  const { user, error } = await getCachedUser();
-
-  if (error) {
+  if (!session?.user?.id) {
     return null;
   }
 
-  return user;
+  return prisma.user.findUnique({
+    where: { id: session.user.id },
+  });
 });
+
+export async function signUpAction(
+  email: string,
+  password: string,
+  fullName: string,
+  accountType?: "individual" | "organization" | null,
+) {
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return {
+        success: false,
+        error: "A user with that email already exists.",
+      };
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create new profile record
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        fullName,
+        accountType,
+      },
+    });
+
+    // Handle post-signup routines asynchronously
+    try {
+      const firstName = fullName.split(" ")[0];
+      await subscribeToConvertKit({
+        email,
+        first_name: firstName,
+        fields: {
+          account_type: accountType || "not_selected",
+          signup_date: new Date().toISOString(),
+        },
+      });
+
+      const profileSetupUrl = `${process.env.NEXTAUTH_URL}/dashboard/settings`;
+      await sendWelcomeEmailToUser(email, fullName, profileSetupUrl);
+    } catch (e) {
+      console.error("Post-signup external actions failed:", e);
+    }
+
+    // You can handle initial wallets/rewards here using prisma later.
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error creating user from session:", error);
+    return { success: false, error: "Database error" };
+  }
+}
+
 
 /**
  * Track user login and update streaks
@@ -49,15 +112,11 @@ export async function initializeUserWallet(
   userId: string,
   signupBonus: number = 0,
 ) {
-  const supabase = await createClient();
-
   try {
-    // Check if wallet already exists
-    const { data: existingWallet, error: fetchError } = await supabase
-      .from("user_wallets")
-      .select("id")
-      .eq("user_id", userId)
-      .single();
+    const existingWallet = await prisma.userWallet.findUnique({
+      where: { userId },
+      select: { id: true }
+    });
 
     if (existingWallet) {
       // Wallet already exists, don't initialize again
@@ -65,37 +124,24 @@ export async function initializeUserWallet(
     }
 
     // Create wallet (signup bonus handled separately)
-    const { data, error } = await supabase
-      .from("user_wallets")
-      .insert({
-        user_id: userId,
+    const newWallet = await prisma.userWallet.create({
+      data: {
+        userId,
         balance: signupBonus,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error initializing user wallet:", error);
-      throw error;
-    }
+      }
+    });
 
     // Initialize user streaks
-    await supabase
-      .from("user_streaks")
-      .insert({
-        user_id: userId,
-        weekly_streak: 0,
-        is_monthly_active: false,
-        last_active_date: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    await prisma.userStreak.create({
+      data: {
+        userId,
+        weeklyStreak: 0,
+        isMonthlyActive: false,
+        lastActiveDate: new Date(),
+      }
+    });
 
-    return data;
+    return newWallet;
   } catch (error) {
     console.error("Error in initializeUserWallet:", error);
     // Don't throw - wallet initialization shouldn't break signup
@@ -106,75 +152,106 @@ export async function initializeUserWallet(
  * Record a one-time signup reward transaction
  */
 export async function recordSignupReward(userId: string, amount: number = 1) {
-  const supabase = await createClient();
-
   try {
-    const { data: existingReward, error: existingError } = await supabase
-      .from("reward_transactions")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("transaction_type", "signup")
-      .limit(1)
-      .single();
+    const existingReward = await prisma.rewardTransaction.findFirst({
+      where: { userId, transactionType: "signup" },
+      select: { id: true }
+    });
 
     if (existingReward) {
       return existingReward;
     }
 
-    if (existingError && existingError.code !== "PGRST116") {
-      console.error("Error checking signup reward:", existingError);
-      throw existingError;
-    }
-
-    const { data, error } = await supabase
-      .from("reward_transactions")
-      .insert({
-        user_id: userId,
+    const newReward = await prisma.rewardTransaction.create({
+      data: {
+        userId,
         amount,
-        transaction_type: "signup",
+        transactionType: "signup",
         status: "completed",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error recording signup reward:", error);
-      throw error;
-    }
+      }
+    });
 
     // Update user's wallet balance
-    const { data: walletData, error: walletError } = await supabase
-      .from("user_wallets")
-      .select("balance")
-      .eq("user_id", userId)
-      .single();
+    const wallet = await prisma.userWallet.findUnique({
+      where: { userId },
+      select: { balance: true }
+    });
 
-    if (walletError && walletError.code !== "PGRST116") {
-      console.error("Error fetching wallet for signup reward:", walletError);
-      throw walletError;
-    }
-
-    const currentBalance = walletData?.balance || 0;
+    const currentBalance = Number(wallet?.balance || 0);
     const newBalance = currentBalance + amount;
 
-    const { error: updateError } = await supabase.from("user_wallets").upsert(
-      {
-        user_id: userId,
-        balance: newBalance,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
-    );
+    await prisma.userWallet.upsert({
+      where: { userId },
+      update: { balance: newBalance },
+      create: { userId, balance: newBalance }
+    });
 
-    if (updateError) {
-      console.error("Error updating wallet for signup reward:", updateError);
-      throw updateError;
-    }
-
-    return data;
+    return newReward;
   } catch (error) {
     console.error("Error in recordSignupReward:", error);
+  }
+}
+
+export async function requestPasswordResetAction(email: string) {
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    
+    if (!user) {
+      return { success: false, error: "No account found with this email address." };
+    }
+
+    // Generate a secure random token
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 3600000); // 1 hour from now
+
+    // Store token in DB
+    await prisma.passwordResetToken.upsert({
+      where: { email },
+      update: { token, expires },
+      create: { email, token, expires },
+    });
+
+    // Use AUTH_URL from env, default to localhost if not set
+    const baseUrl = process.env.AUTH_URL?.replace("/api/auth", "") || "http://localhost:3000";
+    const resetUrl = `${baseUrl}/auth/update-password?token=${token}`;
+
+    await sendPasswordResetEmail({
+      email,
+      resetUrl,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Password reset request error:", error);
+    return { success: false, error: "Failed to send reset link" };
+  }
+}
+
+export async function resetPasswordAction(token: string, password: string) {
+  try {
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+    });
+
+    if (!resetToken || resetToken.expires < new Date()) {
+      return { success: false, error: "Invalid or expired token" };
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { email: resetToken.email },
+        data: { password: hashedPassword },
+      }),
+      prisma.passwordResetToken.delete({
+        where: { id: resetToken.id },
+      }),
+    ]);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Password reset error:", error);
+    return { success: false, error: "Failed to reset password" };
   }
 }

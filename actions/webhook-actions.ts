@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "./auth-actions";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
@@ -9,14 +9,11 @@ export async function getWebhooks() {
   const user = await getCurrentUser();
   if (!user) throw new Error("Unauthorized");
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("api_webhooks")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+  const data = await prisma.api_webhooks.findMany({
+    where: { user_id: user.id },
+    orderBy: { created_at: "desc" },
+  });
 
-  if (error) throw error;
   return data;
 }
 
@@ -24,25 +21,19 @@ export async function createWebhook(url: string, events: string[]) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Unauthorized");
 
-  const supabase = await createClient();
-  
   // Generate secret
   const secret = `wh_sec_${crypto.randomBytes(24).toString("hex")}`;
 
-  const { data, error } = await supabase
-    .from("api_webhooks")
-    .insert({
+  const data = await prisma.api_webhooks.create({
+    data: {
       user_id: user.id,
       url,
       events,
       secret,
-      is_active: true
-    })
-    .select()
-    .single();
+      is_active: true,
+    },
+  });
 
-  if (error) throw error;
-  
   revalidatePath("/dashboard/developer/webhooks");
   return data;
 }
@@ -51,15 +42,10 @@ export async function deleteWebhook(id: string) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Unauthorized");
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("api_webhooks")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
+  await prisma.api_webhooks.deleteMany({
+    where: { id, user_id: user.id },
+  });
 
-  if (error) throw error;
-  
   revalidatePath("/dashboard/developer/webhooks");
 }
 
@@ -67,23 +53,24 @@ export async function getWebhookLogs(webhookId?: string, limit = 50) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Unauthorized");
 
-  const supabase = await createClient();
-  let query = supabase
-    .from("api_webhook_logs")
-    .select(`
-      *,
-      api_webhooks!inner(url, user_id)
-    `)
-    .eq("api_webhooks.user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const where: any = {
+    webhook: { user_id: user.id },
+  };
 
   if (webhookId) {
-    query = query.eq("webhook_id", webhookId);
+    where.webhook_id = webhookId;
   }
 
-  const { data, error } = await query;
+  const data = await prisma.api_webhook_logs.findMany({
+    where,
+    orderBy: { created_at: "desc" },
+    take: limit,
+    include: {
+      webhook: {
+        select: { url: true, user_id: true },
+      },
+    },
+  });
 
-  if (error) throw error;
   return data;
 }

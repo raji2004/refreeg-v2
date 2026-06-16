@@ -37,7 +37,7 @@ export default function KycRejectionDialog({ kycId }: KycRejectionDialogProps) {
       const { error } = await updateVerificationStatus(
         kycId,
         "rejected",
-        reason.trim()
+        reason.trim(),
       );
       if (error) {
         console.error("Error rejecting KYC:", error);

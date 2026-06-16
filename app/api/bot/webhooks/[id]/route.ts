@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, rateLimit, handlePreflight } from "@/utils/api-bot/api-auth";
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { logApiRequest } from "@/utils/api-bot/request-logger";
 import { 
@@ -32,12 +32,21 @@ export async function DELETE(
     return auth.errorResponse;
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("api_webhooks")
-    .delete()
-    .eq("id", params.id)
-    .eq("user_id", auth.userId!); // Ensure ownership
+  let error;
+  try {
+    const existing = await prisma.api_webhooks.findFirst({
+      where: { id: params.id, user_id: auth.userId! }
+    });
+    if (existing) {
+      await prisma.api_webhooks.delete({
+        where: { id: params.id }
+      });
+    } else {
+      error = true;
+    }
+  } catch (err) {
+    error = err;
+  }
 
   if (error) {
     const response = errorResponse("Failed to delete webhook", ApiErrorCode.DATABASE_ERROR, 500);
@@ -71,16 +80,25 @@ export async function PATCH(
     const body = await req.json();
     const validated = UpdateWebhookSchema.parse(body);
 
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("api_webhooks")
-      .update(validated)
-      .eq("id", params.id)
-      .eq("user_id", auth.userId!)
-      .select()
-      .single();
+    let data;
+    let error: any;
+    try {
+      const existing = await prisma.api_webhooks.findFirst({
+        where: { id: params.id, user_id: auth.userId! }
+      });
+      if (existing) {
+        data = await prisma.api_webhooks.update({
+          where: { id: params.id },
+          data: validated
+        });
+      } else {
+        error = { code: "PGRST116" }; // Simulate not found
+      }
+    } catch (err) {
+      error = err;
+    }
 
-    if (error) {
+    if (error || !data) {
       if (error.code === "PGRST116") {
         const response = errorResponse("Webhook not found", ApiErrorCode.NOT_FOUND, 404);
         await logApiRequest({ request: req, statusCode: response.status, apiKeyId: auth.apiKeyId, userId: auth.userId, mode: auth.mode, errorCode: ApiErrorCode.NOT_FOUND, startedAt });

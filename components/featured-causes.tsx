@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -11,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { listCauses } from "@/actions/cause-actions";
 import { DonateButton } from "@/components/donate-button";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import {
   GraduationCap,
   HeartPulse,
@@ -141,11 +143,14 @@ export async function FeaturedCauses() {
         return (
           <Link key={cause.id} href={`/causes/${cause.id}`} className="group">
             <Card className="overflow-hidden cursor-pointer transition hover:shadow-lg h-full flex flex-col">
-              <div className="aspect-video w-full overflow-hidden">
-                <img
-                  src={cause.image || "/placeholder.svg"}
+              <div className="aspect-video w-full overflow-hidden relative">
+                <Image
+                  src={getMediaUrl(cause.image) || "/placeholder.svg"}
                   alt={cause.title}
-                  className="object-cover w-full h-full"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover"
+                  unoptimized={isProxyMediaUrl(getMediaUrl(cause.image))}
                 />
               </div>
               <CardHeader className="flex flex-col flex-1 p-4">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Card,
@@ -41,10 +42,11 @@ export default function Web3WalletGuide() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <img
+                      <Image
                         src="/metamask.svg"
                         alt="MetaMask"
-                        className="w-6 h-6"
+                        width={24}
+                        height={24}
                       />
                       MetaMask
                     </CardTitle>

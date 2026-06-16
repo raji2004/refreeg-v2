@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MyDonationsList } from "@/components/my-donations-list";
 import { getCurrentUser } from "@/actions/auth-actions";

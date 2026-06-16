@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { prisma } from "@/lib/prisma";
 
 export async function logApiRequest({
   request,
@@ -19,22 +19,23 @@ export async function logApiRequest({
   startedAt?: number;
 }) {
   try {
-    const adminClient = createAdminClient();
     const ipAddress =
       request.headers.get("x-forwarded-for") ||
       request.headers.get("x-real-ip") ||
       "unknown";
 
-    await adminClient.from("api_request_logs").insert({
-      api_key_id: apiKeyId ?? null,
-      user_id: userId ?? null,
-      endpoint: request.nextUrl.pathname,
-      method: request.method,
-      mode: mode ?? null,
-      status_code: statusCode,
-      error_code: errorCode ?? null,
-      ip_address: ipAddress,
-      response_time_ms: startedAt ? Date.now() - startedAt : null,
+    await prisma.api_request_logs.create({
+      data: {
+        api_key_id: apiKeyId ?? null,
+        user_id: userId ?? null,
+        endpoint: request.nextUrl.pathname,
+        method: request.method,
+        mode: mode ?? null,
+        status_code: statusCode,
+        error_code: errorCode ?? null,
+        ip_address: ipAddress,
+        response_time_ms: startedAt ? Date.now() - startedAt : null,
+      }
     });
   } catch (error) {
     console.error("Failed to log API request", error);

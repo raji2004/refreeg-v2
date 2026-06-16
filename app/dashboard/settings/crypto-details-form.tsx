@@ -4,25 +4,21 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConnectSolanaWalletButton } from "@/components/crypto-details/ConnectSolanaWalletButton";
 import { DisconnectSolanaWalletButton } from "@/components/crypto-details/DisconnectSolanaWalletButton";
-import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuthContext } from "@/components/auth-provider";
+import { getSolanaWallet } from "@/actions/profile-actions";
 
 export default function SolanaWalletForm() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-
+  const { user } = useAuthContext();
 
   useEffect(() => {
     let isCancelled = false;
 
     const fetchWallet = async () => {
       try {
-        const supabase = createClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
         if (isCancelled) return;
 
         if (!user) {
@@ -31,20 +27,9 @@ export default function SolanaWalletForm() {
           return;
         }
 
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("solana_wallet")
-          .eq("id", user.id)
-          .single();
-
         if (isCancelled) return;
 
-        if (error) {
-          console.error("Error fetching profile:", error);
-          setWalletAddress(null);
-        } else {
-          setWalletAddress(profile?.solana_wallet || null);
-        }
+        setWalletAddress(await getSolanaWallet(user.id));
       } catch (error) {
         if (isCancelled) return;
         console.error("Error fetching wallet:", error);
@@ -66,37 +51,14 @@ export default function SolanaWalletForm() {
     return () => {
       isCancelled = true;
     };
-  }, [toast]);
+  }, [toast, user]);
 
   const handleWalletConnected = async (address: string) => {
-    try {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) throw new Error("User not authenticated");
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({ solana_wallet: address })
-        .eq("id", user.id);
-
-      if (error) throw error;
-
-      setWalletAddress(address);
-      toast({
-        title: "Success",
-        description: "Solana wallet connected successfully",
-      });
-    } catch (error) {
-      console.error("Error handling wallet connection:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to connect wallet",
-      });
-    }
+    setWalletAddress(address);
+    toast({
+      title: "Success",
+      description: "Solana wallet connected successfully",
+    });
   };
 
   const handleWalletDisconnected = async () => {

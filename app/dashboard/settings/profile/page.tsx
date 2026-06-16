@@ -75,7 +75,7 @@ export default function ProfileSettingsPage() {
         <ProfileForm
           profile={{
             full_name: profile.full_name,
-            email: profile.email,
+            email: profile.email ?? "",
             phone: profile.phone,
             profile_photo: profile.profile_photo,
             bio: profile.bio,
@@ -86,7 +86,10 @@ export default function ProfileSettingsPage() {
             instagram_url: profile.instagram_url,
             linkedin_url: profile.linkedin_url,
           }}
-          user={user}
+          user={{
+            id: user.id,
+            email: user.email ?? "",
+          }}
         />
       )}
     </SettingsShell>

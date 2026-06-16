@@ -1,10 +1,10 @@
 ================================================================================
   REFREEG v2 — FULL MIGRATION PLAN
-  Supabase + Vercel  →  Self-Hosted PostgreSQL (Prisma) + AWS / VPS
+  Supabase + Vercel  →  Prisma + Self-Hosted Stack (Dockerized PostgreSQL)
 ================================================================================
-  Document Version : 1.0
+  Document Version : 1.1
   Prepared For     : RefreeG Engineering Team
-  Date             : February 2026
+  Date             : April 2026
 ================================================================================
 
 
@@ -22,7 +22,7 @@ for migrating the RefreeG v2 platform from:
   └── Cron/Jobs : Supabase Edge Functions (Deno)
 
   TARGET STACK
-  ├── Database  : Self-hosted PostgreSQL 16 on a VPS / AWS RDS
+  ├── Database  : PostgreSQL 16 in Docker container (single DB approach)
   ├── ORM       : Prisma 5 (type-safe, schema-first)
   ├── Auth      : NextAuth.js v5 (Credentials + OAuth providers)
   ├── Storage   : AWS S3 (or self-hosted MinIO on VPS)
@@ -31,6 +31,7 @@ for migrating the RefreeG v2 platform from:
 
 Estimated total migration duration : 6–8 weeks (with a 2-person team)
 Estimated cost difference          : See Section 9
+DB decision update                 : Dockerized PostgreSQL only (no RDS/native host DB)
 
 
 ────────────────────────────────────────────────────────────────────────────────
@@ -123,7 +124,7 @@ SECTION 2 — CURRENT CODEBASE INVENTORY
 
 
 ────────────────────────────────────────────────────────────────────────────────
-SECTION 3 — INFRASTRUCTURE DECISION: AWS vs VPS
+SECTION 3 — INFRASTRUCTURE DECISION: APP HOSTING + DOCKERIZED DATABASE
 ────────────────────────────────────────────────────────────────────────────────
 
 3.1  COST COMPARISON (monthly, USD)
@@ -135,29 +136,28 @@ SECTION 3 — INFRASTRUCTURE DECISION: AWS vs VPS
     ─────────────────────────────────
     Total                       ~$45/mo
 
-  OPTION A — AWS (EC2 + RDS)
-    EC2 t3.small (app server)    $15/mo
-    RDS t3.micro PostgreSQL 16   $25/mo  (managed, automated backups)
-    S3 (storage, ~50 GB)         $1.15/mo
-    Data transfer                ~$5/mo
-    Route 53 DNS                 $0.50/mo
-    ─────────────────────────────────
-    Total                       ~$47/mo
+  OPTION A — AWS (EC2 + Dockerized PostgreSQL)
+    EC2 t3.small (app server + db container)  $15/mo
+    S3 (storage, ~50 GB)                        $1.15/mo
+    Data transfer                               ~$5/mo
+    Route 53 DNS                                $0.50/mo
+    ─────────────────────────────────────────────────
+    Total                                      ~$22/mo
 
   OPTION B — Hetzner VPS (all-in-one)
     CX21 VPS (2 vCPU, 4 GB RAM)  $5.83/mo
     OR CX31 (2 vCPU, 8 GB RAM)   $12.49/mo
-    PostgreSQL (on same VPS)      $0 (self-managed)
+    PostgreSQL Docker container    $0 (self-managed)
     Hetzner Object Storage        $5/mo (1 TB included)
     ─────────────────────────────────
     Total                       ~$18/mo (CX31 + storage)
 
   OPTION C — DigitalOcean Droplet
     4 GB RAM / 2 vCPU Droplet    $24/mo
-    Managed PostgreSQL (basic)   $15/mo
+    PostgreSQL Docker container    $0 (self-managed)
     Spaces Object Storage        $5/mo
     ─────────────────────────────────
-    Total                       ~$44/mo
+    Total                       ~$29/mo
 
   ┌─────────────────────────────────────────────────────────────────────┐
   │ RECOMMENDATION: Hetzner VPS (Option B)                             │
@@ -165,9 +165,9 @@ SECTION 3 — INFRASTRUCTURE DECISION: AWS vs VPS
   │ Cheapest by far at ~$18/mo. Hetzner has excellent uptime SLAs,     │
   │ EU-based data centers (GDPR-friendly), and simple management.      │
   │                                                                     │
-  │ For production-critical workloads, use AWS with RDS if your team   │
-  │ wants managed database backups, automatic failover, and the AWS    │
-  │ ecosystem. Budget ~$47/mo.                                         │
+  │ Current direction: keep database deployment simple and consistent   │
+  │ by running PostgreSQL only in Docker across all environments.       │
+  │ Avoid introducing RDS/native installs during this migration cycle.  │
   └─────────────────────────────────────────────────────────────────────┘
 
 3.2  RECOMMENDED SERVER SETUP (Hetzner CX31 or AWS EC2 t3.small)
@@ -177,7 +177,7 @@ SECTION 3 — INFRASTRUCTURE DECISION: AWS vs VPS
   Process manager : PM2 (cluster mode, auto-restart, log rotation)
   Web server      : Nginx (reverse proxy, SSL termination)
   SSL             : Let's Encrypt (Certbot, auto-renewal)
-  Database        : PostgreSQL 16 (self-managed on VPS) OR AWS RDS
+  Database        : PostgreSQL 16 in Docker container (Compose-managed)
   File storage    : Hetzner Object Storage OR AWS S3 (via AWS SDK)
   CI/CD           : GitHub Actions → SSH deploy to VPS
 
@@ -213,8 +213,8 @@ PHASE 0 — PREPARATION & ENVIRONMENT SETUP  [Week 1, Days 1–3]
   Tasks:
 
   [ ] 0.1  Provision server
-        → If Hetzner: Create CX31 Droplet, attach Volume for PostgreSQL data
-        → If AWS: Launch EC2 t3.small + RDS PostgreSQL 16
+        → If Hetzner: Create CX31 Droplet, attach Volume for PostgreSQL Docker data
+        → If AWS: Launch EC2 t3.small and run PostgreSQL via Docker
 
   [ ] 0.2  Install server software
         sudo apt update && apt upgrade -y
@@ -223,12 +223,24 @@ PHASE 0 — PREPARATION & ENVIRONMENT SETUP  [Week 1, Days 1–3]
         nvm install 22 && nvm use 22
         npm install -g pm2 pnpm
 
-  [ ] 0.3  Install and configure PostgreSQL 16 (if self-hosted)
-        sudo apt install -y postgresql-16 postgresql-contrib
-        sudo -u postgres createuser refreeg_user -P
-        sudo -u postgres createdb refreeg_db -O refreeg_user
-        # Enable pg_cron extension for scheduled jobs
-        sudo -u postgres psql -c "CREATE EXTENSION pg_cron;"
+  [ ] 0.3  Install Docker and run PostgreSQL 16 container
+        sudo apt install -y docker.io docker-compose-plugin
+        sudo usermod -aG docker $USER
+        # docker-compose.yml (db service only)
+        services:
+          db:
+            image: postgres:16
+            container_name: refreeg-postgres
+            restart: unless-stopped
+            environment:
+              POSTGRES_DB: refreeg_db
+              POSTGRES_USER: refreeg_user
+              POSTGRES_PASSWORD: change_me
+            ports:
+              - "5432:5432"
+            volumes:
+              - /var/lib/refreeg/postgres:/var/lib/postgresql/data
+        docker compose up -d db
 
   [ ] 0.4  Set up Nginx reverse proxy config
         # /etc/nginx/sites-available/refreeg
@@ -252,7 +264,7 @@ PHASE 0 — PREPARATION & ENVIRONMENT SETUP  [Week 1, Days 1–3]
           - SSH key stored as GitHub Secret
 
   [ ] 0.6  Create .env.production with all new variables
-        DATABASE_URL="postgresql://refreeg_user:password@localhost:5432/refreeg_db"
+        DATABASE_URL="postgresql://refreeg_user:password@127.0.0.1:5432/refreeg_db"
         NEXTAUTH_SECRET="<generate with: openssl rand -base64 32>"
         NEXTAUTH_URL="https://refreeg.com"
         AWS_S3_BUCKET="refreeg-uploads"
@@ -861,11 +873,12 @@ PHASE 6 — SERVER SETUP & DEPLOYMENT PIPELINE  [Week 5–6]
                     pnpm build
                     pm2 reload refreeg --update-env
 
-  [ ] 6.4  Set up automated database backups (if self-hosted PostgreSQL)
+  [ ] 6.4  Set up automated database backups (Docker PostgreSQL)
         # Daily backup script: /etc/cron.daily/backup-refreeg-db
         #!/bin/bash
         DATE=$(date +%Y%m%d_%H%M%S)
-        pg_dump -U refreeg_user refreeg_db | gzip > /backups/refreeg_$DATE.sql.gz
+        docker exec refreeg-postgres pg_dump -U refreeg_user refreeg_db \
+          | gzip > /backups/refreeg_$DATE.sql.gz
         # Upload to S3 for offsite storage
         aws s3 cp /backups/refreeg_$DATE.sql.gz s3://refreeg-backups/
         # Keep only last 30 days locally
@@ -915,8 +928,8 @@ PHASE 7 — DATA MIGRATION (Live Supabase → New DB)  [Week 6]
         - Strip any Supabase-specific columns
         - Run a transformation script: scripts/transform-export.ts
 
-  [ ] 7.3  Import into new PostgreSQL
-        psql -U refreeg_user -d refreeg_db < transformed_data.sql
+  [ ] 7.3  Import into new PostgreSQL (Docker container)
+        docker exec -i refreeg-postgres psql -U refreeg_user -d refreeg_db < transformed_data.sql
 
   [ ] 7.4  Verify data integrity
         - Row counts match for all tables
@@ -1009,7 +1022,7 @@ SECTION 7 — NEW ENV VARIABLES REQUIRED
 ────────────────────────────────────────────────────────────────────────────────
 
   # Database
-  DATABASE_URL="postgresql://refreeg_user:PASSWORD@HOST:5432/refreeg_db"
+  DATABASE_URL="postgresql://refreeg_user:PASSWORD@127.0.0.1:5432/refreeg_db"
 
   # NextAuth
   NEXTAUTH_SECRET="<32 char random string — openssl rand -base64 32>"
@@ -1063,12 +1076,12 @@ SECTION 8 — RISKS & MITIGATIONS
     Mitigation: Search for .channel() and .on("postgres_changes") calls.
     None found in current review, but verify before migration.
 
-  RISK 5: Self-managed database reliability (MEDIUM IMPACT)
-    Problem: Supabase provides automatic backups, PITR, failover. Self-
-    hosted PostgreSQL requires manual configuration of all of this.
-    Mitigation: Use AWS RDS instead of self-hosted PostgreSQL if budget
-    allows ($47/mo). RDS provides automated backups and Multi-AZ failover.
-    For Hetzner: implement the daily pg_dump + S3 backup script (Phase 6.4).
+  RISK 5: Docker PostgreSQL operational reliability (MEDIUM IMPACT)
+    Problem: Supabase provides automatic backups, PITR, failover. A Docker-
+    hosted PostgreSQL setup requires explicit backup/restore discipline.
+    Mitigation: Keep DB in a dedicated container with persistent volume,
+    implement daily pg_dump + S3 backup script (Phase 6.4), and document
+    monthly restore drills in staging.
 
   RISK 6: Codebase size (LOW IMPACT)
     Problem: 56 files touch Supabase. Missing one creates a runtime error.
@@ -1097,14 +1110,14 @@ SECTION 9 — COST SUMMARY
   Total              ~$18.50/mo  ($222/yr)
   SAVINGS            ~$26.50/mo  ($318/yr)
 
-  AFTER MIGRATION (AWS, enterprise option)
-  ──────────────────────────────────────────
+  AFTER MIGRATION (AWS with Docker DB)
+  ───────────────────────────────────────
   EC2 t3.small        $15.18
-  RDS t3.micro        $25.92
   S3 + transfer       ~$6
-  ─────────────────────────
-  Total               ~$47/mo  ($564/yr)
-  SAVINGS             ~$0/mo  (similar cost but with better managed services)
+  Route 53            ~$0.50
+  ───────────────────────────
+  Total               ~$21.68/mo  (~$260/yr)
+  SAVINGS             ~$23.32/mo  (~$280/yr)
 
 
 ────────────────────────────────────────────────────────────────────────────────

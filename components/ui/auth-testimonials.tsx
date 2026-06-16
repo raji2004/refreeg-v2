@@ -20,7 +20,7 @@ export function AuthTestimonials() {
       quote:
         "There’s something refreshing about RefreeG — it feels genuine. The design is clean, the experience smooth, and the mission inspiring.",
       name: "Fedjost Ayomide",
-      designation: "Fullstack Developer",
+      designation: "VP Engineering, RefreeG",
       src: "/auth/tyrone.jpg",
     },
 

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Icons } from "@/components/icons";
 import { calculateServiceFee } from "@/lib/utils";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { usePayment } from "@/hooks/use-payment";
 import {
   Carousel,
@@ -124,10 +125,11 @@ export default function QuickDonateForm({
                   <CarouselItem key={index}>
                     <div className="relative aspect-video w-full bg-slate-100">
                       <Image
-                        src={img}
+                        src={getMediaUrl(img)}
                         alt={`${causeTitle} image ${index + 1}`}
                         fill
                         className="object-cover"
+                        unoptimized={isProxyMediaUrl(getMediaUrl(img))}
                       />
                     </div>
                   </CarouselItem>

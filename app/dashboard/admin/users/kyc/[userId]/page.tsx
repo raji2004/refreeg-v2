@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import KycRejectionDialog from "./KycRejectionDialog";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 export default async function KycReviewPage({
   params,
@@ -79,11 +80,13 @@ export default async function KycReviewPage({
         console.error("Error approving KYC:", error);
         throw new Error(error);
       }
-      redirect(`/dashboard/admin/users?kyc_alert=approved`);
     } catch (error) {
+      if ((error as any).digest?.startsWith("NEXT_REDIRECT")) throw error;
       console.error("Error in approveAction:", error);
       throw error;
     }
+
+    redirect(`/dashboard/admin/users?kyc_alert=approved`);
   }
 
   return (
@@ -151,8 +154,8 @@ export default async function KycReviewPage({
                   kyc.status === "approved"
                     ? "default"
                     : kyc.status === "pending"
-                    ? "secondary"
-                    : "destructive"
+                      ? "secondary"
+                      : "destructive"
                 }
               >
                 {kyc.status.charAt(0).toUpperCase() + kyc.status.slice(1)}
@@ -285,17 +288,20 @@ export default async function KycReviewPage({
               kyc.document_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
                 <div className="border rounded-lg p-4 bg-gray-50 flex justify-center items-center">
                   <a
-                    href={kyc.document_url}
+                    href={getMediaUrl(kyc.document_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block"
                   >
                     <Image
-                      src={kyc.document_url}
+                      src={getMediaUrl(kyc.document_url)}
                       alt="KYC Document"
                       width={500}
                       height={300}
                       className="object-contain rounded shadow-sm hover:shadow-md transition-shadow max-h-64"
+                      unoptimized={isProxyMediaUrl(
+                        getMediaUrl(kyc.document_url),
+                      )}
                     />
                     <p className="text-sm text-blue-600 mt-2 text-center">
                       Click image to view full size
@@ -313,7 +319,7 @@ export default async function KycReviewPage({
                     </svg>
                   </span>
                   <a
-                    href={kyc.document_url}
+                    href={getMediaUrl(kyc.document_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 underline"

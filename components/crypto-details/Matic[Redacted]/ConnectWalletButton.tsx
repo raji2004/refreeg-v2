@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BrowserProvider } from "ethers";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
+import { updatePolygonWallet } from "@/actions/profile-actions";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuthContext } from "@/components/auth-provider";
 
@@ -18,7 +18,6 @@ export function ConnectWalletButton({
 }: ConnectWalletButtonProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
   const { toast } = useToast();
   const { user } = useAuthContext();
 
@@ -75,15 +74,10 @@ export function ConnectWalletButton({
         throw new Error("You must be logged in to connect a wallet");
       }
 
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          polygon_wallet: address,
-        })
-        .eq("id", user.id);
-
-      if (updateError) {
-        console.error("Supabase update error:", updateError);
+      try {
+        await updatePolygonWallet(user.id, address);
+      } catch (updateError) {
+        console.error("Update error:", updateError);
         throw new Error("Failed to save wallet address");
       }
 
@@ -104,7 +98,6 @@ export function ConnectWalletButton({
         title: "Error",
         description: errorMessage,
       });
-      throw new Error(errorMessage);
     } finally {
       setIsConnecting(false);
     }

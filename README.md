@@ -4,7 +4,8 @@
 [![React](https://img.shields.io/badge/React-19-blue)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4.17-38B2AC)](https://tailwindcss.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-latest-3ECF8E)](https://supabase.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-latest-2D3748)](https://prisma.io/)
+[![NextAuth](https://img.shields.io/badge/NextAuth-5-purple)](https://next-auth.js.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ## Empower Communities, Build a Better World
@@ -24,6 +25,7 @@ RefreeG is a blockchain-powered crowdfunding platform designed to empower commun
 - **User Dashboards**: Manage your donations, petitions, and profiles with personalized dashboards.
 - **Real-Time Tracking**: Monitor donation progress and fund allocation in real-time.
 - **KYC Integration**: Secure user verification for donors and recipients.
+- **AI Agent Assistance**: Smart AI agent to guide users, help with onboarding, and answer platform queries.
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices.
 - **Multi-Language Support**: Built with internationalization in mind.
 - **Community Engagement**: Share causes, leave comments, and build a network of changemakers.
@@ -43,10 +45,10 @@ RefreeG is a blockchain-powered crowdfunding platform designed to empower commun
 
 ### Backend & Database
 
-- **Backend-as-a-Service**: [Supabase](https://supabase.com/) - Open-source Firebase alternative
-- **Authentication**: Supabase Auth with email/password and social logins
-- **Database**: PostgreSQL via Supabase
-- **API**: Next.js API routes with Supabase client
+- **ORM & Database**: [Prisma](https://prisma.io/) with PostgreSQL (Self-hosted on AWS EC2)
+- **Authentication**: [NextAuth.js (Auth.js)](https://next-auth.js.org/) with Prisma Adapter (Credentials, OTP, Google OAuth)
+- **File Storage**: [AWS S3](https://aws.amazon.com/s3/) (Private Buckets with Pre-signed URLs)
+- **API**: Next.js Server Actions and API routes
 
 ### Payments & Blockchain
 
@@ -72,7 +74,8 @@ Before running this project, make sure you have the following installed:
 
 - [Node.js](https://nodejs.org/) (version 18 or higher)
 - [pnpm](https://pnpm.io/) (recommended) or npm
-- A Supabase account and project
+- A PostgreSQL Database (Local or AWS EC2)
+- AWS Account with S3 bucket and IAM permissions
 - Paystack account for fiat payments
 - MetaMask or compatible crypto wallet for crypto donations
 
@@ -97,9 +100,15 @@ Before running this project, make sure you have the following installed:
    Create a `.env.local` file in the root directory and add the following:
 
    ```env
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   DATABASE_URL="postgresql://user:password@localhost:5432/refreeg"
+   AUTH_SECRET="your_nextauth_secret"
+   GOOGLE_CLIENT_ID="your_google_id"
+   GOOGLE_CLIENT_SECRET="your_google_secret"
+   AWS_REGION="your_aws_region"
+   AWS_S3_BUCKET="your_s3_bucket_name"
+   # If not using EC2 IAM Role, also provide:
+   # AWS_ACCESS_KEY_ID="your_aws_access_key"
+   # AWS_SECRET_ACCESS_KEY="your_aws_secret_key"
    PAYSTACK_SECRET_KEY=your_paystack_secret_key
    NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=your_paystack_public_key
    ETHEREUM_RPC_URL=your_ethereum_rpc_url
@@ -109,16 +118,21 @@ Before running this project, make sure you have the following installed:
    NEXT_PUBLIC_SITE_URL=http://localhost:3000
    ```
 
-4. **Set up Supabase**:
+4. **Set up Database & ORM**:
 
-   - Create a new project on [Supabase](https://supabase.com/)
-   - Run the migrations in the `supabase/migrations/` directory
-   - Configure authentication providers if needed
+   - Create a local PostgreSQL database or connect to your AWS EC2 instance.
+   - Run Prisma migrations:
+     ```bash
+     npx prisma generate
+     npx prisma db push
+     ```
 
-5. **Run database migrations** (if using Supabase CLI):
-   ```bash
-   npx supabase db push
-   ```
+5. **Set up AWS S3**:
+
+   - Create a new private S3 bucket on AWS
+   - Ensure the bucket has Block Public Access turned ON
+   - If deploying to EC2, attach an IAM Role to the instance with `s3:GetObject` and `s3:PutObject` permissions
+   - Alternatively, add your AWS Access Keys to the `.env.local` file
 
 ## 🚀 Usage
 
@@ -154,14 +168,16 @@ refreeg-v2/
 │   ├── home/             # Homepage components
 │   └── ...
 ├── lib/                  # Utility functions and configurations
-│   ├── supabase/         # Supabase client and utilities
+│   ├── auth/             # NextAuth configuration and logic
+│   ├── prisma.ts         # Prisma client instance
+│   ├── s3/               # AWS S3 client and proxy utilities
 │   ├── utils.ts          # General utilities
 │   └── ...
+├── prisma/               # Prisma schema definitions and migrations
 ├── services/             # External service integrations
 │   ├── paystack.ts       # Paystack payment service
 │   ├── mail.ts           # Email service
 │   └── ...
-├── supabase/             # Database migrations and config
 ├── public/               # Static assets
 ├── styles/               # Global styles
 └── types/                # TypeScript type definitions
@@ -199,7 +215,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Special thanks to Supabase, Paystack, and the blockchain communities for their amazing tools
+- Special thanks to AWS, Paystack, and the blockchain communities for their amazing tools
 - Inspired by the need for transparent, impactful crowdfunding in Africa
 
 ---

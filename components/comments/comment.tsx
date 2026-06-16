@@ -9,6 +9,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { EditCommentForm } from "./edit-comment-form";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 interface CommentProps {
   comment: Comment;
@@ -39,7 +40,7 @@ export function CommentComponent({
         const response = await fetch(
           `/api/comments/replies/${comment.id}?entityType=${
             entityType || "cause"
-          }`
+          }`,
         );
         if (response.ok) {
           const fetchedReplies = await response.json();
@@ -81,7 +82,7 @@ export function CommentComponent({
       if (response.ok) {
         const updatedComment = await response.json();
         setReplies(
-          replies.map((r) => (r.id === updatedComment.id ? updatedComment : r))
+          replies.map((r) => (r.id === updatedComment.id ? updatedComment : r)),
         );
         setIsEditing(false);
       }
@@ -128,11 +129,14 @@ export function CommentComponent({
           >
             {comment.user.profile_photo ? (
               <Image
-                src={comment.user.profile_photo}
+                src={getMediaUrl(comment.user.profile_photo)}
                 alt={comment.user.full_name || "User"}
                 width={40}
                 height={40}
                 className="rounded-full"
+                unoptimized={isProxyMediaUrl(
+                  getMediaUrl(comment.user.profile_photo),
+                )}
               />
             ) : (
               <div
@@ -214,8 +218,8 @@ export function CommentComponent({
               {isLoadingReplies
                 ? "Loading..."
                 : repliesCount === 1
-                ? "1 reply"
-                : `${repliesCount} replies`}
+                  ? "1 reply"
+                  : `${repliesCount} replies`}
             </button>
 
             {currentUserId === comment.user_id && (

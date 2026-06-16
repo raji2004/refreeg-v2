@@ -1,9 +1,9 @@
 "use server";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth/auth";
+import { ensureDefaultAdmin, isAdminOrManager } from "./role-actions";
 
-import { createClient } from "@/lib/supabase/server";
-import { ensureDefaultAdmin } from "./role-actions";
-
-type Action =
+export type Action =
   | "approve-cause"
   | "reject-cause"
   | "approve-petition"
@@ -15,27 +15,23 @@ type Action =
   | "delete-user"
   | "approve-kyc"
   | "reject-kyc"
-  | "appoint-admin";
+  | "send-kyc-reminders"
+  | "appoint-admin"
+  | "takedown-api-campaign";
 
 export async function checkTableExists(tableName: string): Promise<boolean> {
-  const supabase = await createClient();
-
   try {
-    const { count } = await supabase
-      .from(tableName)
-      .select("*", { count: "exact", head: true })
-      .limit(1);
-
-    return true;
-  } catch (error: any) {
-    if (
-      error.message &&
-      error.message.includes("relation") &&
-      error.message.includes("does not exist")
-    ) {
-      return false;
-    }
-    throw error;
+    const result = await prisma.$queryRaw<{ exists: boolean }[]>`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = ${tableName}
+      );
+    `;
+    return result[0]?.exists ?? false;
+  } catch (error) {
+    console.error(`Error checking if table ${tableName} exists:`, error);
+    return false;
   }
 }
 
@@ -43,14 +39,7 @@ export async function checkDatabaseSetup(): Promise<{
   ready: boolean;
   missingTables: string[];
 }> {
-  const requiredTables = [
-    "profiles",
-    "causes",
-    "donations",
-    "roles",
-    "cause_multimedia",
-    "logs",
-  ];
+  const requiredTables = ["profiles", "causes", "donations", "roles", "logs"];
   const missingTables: string[] = [];
 
   for (const table of requiredTables) {
@@ -60,8 +49,12 @@ export async function checkDatabaseSetup(): Promise<{
     }
   }
 
-  if (missingTables.length === 0) {
-    await ensureDefaultAdmin();
+  if (missingTables.length === 0 && typeof window === "undefined") {
+    try {
+      await ensureDefaultAdmin();
+    } catch (error) {
+      console.error("Error ensuring default admin:", error);
+    }
   }
 
   return {
@@ -71,35 +64,150 @@ export async function checkDatabaseSetup(): Promise<{
 }
 
 export const logAdminActivity = async (action: Action, adminId: string) => {
-  const supabase = await createClient();
-
-  await supabase.from("logs").insert({
-    action,
-    admin_id: adminId,
-    created_at: new Date().toISOString(),
-  });
+  try {
+    await prisma.logs.create({
+      data: {
+        action,
+        admin_id: adminId,
+        created_at: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("Error logging admin activity:", error);
+    // Don't throw - logging should not break the main action
+  }
 };
 
-export async function listAdminLogs() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("logs")
-    .select("id, action, created_at, profiles:admin_id(email)")
-    .order("created_at", { ascending: false });
+/**
+ * Type for admin log entry (for the UI)
+ */
+export type AdminLogEntry = {
+  id: string;
+  action: string;
+  admin_id: string | null;
+  created_at: Date;
+  admin_email: string;
+  admin_name: string | null;
+};
 
-  if (error) {
-    console.error("Error fetching admin logs:", error);
-    throw error;
+export async function listAdminLogs(limit: number = 200) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
   }
 
-  return (data || []).map((log: any) => {
-    const profile = Array.isArray(log.profiles)
-      ? log.profiles[0]
-      : log.profiles;
-    return {
-      email: profile?.email || "Unknown User",
-      action: log.action || "Unknown Action",
-      created_at: log.created_at || new Date().toISOString(),
-    };
+  const hasPermission = await isAdminOrManager(session.user.id);
+  if (!hasPermission) {
+    throw new Error("Unauthorized: Admin or Manager role required");
+  }
+
+  const logs = await prisma.logs.findMany({
+    select: {
+      id: true,
+      action: true,
+      admin_id: true,
+      created_at: true,
+    },
+    orderBy: { created_at: "desc" },
+    take: limit,
   });
+
+  if (logs.length === 0) {
+    return [];
+  }
+
+  const adminIds = [
+    ...new Set(logs.map((log) => log.admin_id).filter(Boolean)),
+  ] as string[];
+
+  if (adminIds.length === 0) {
+    return logs.map((log) => ({
+      email: "Unknown User",
+      action: log.action,
+      created_at: log.created_at?.toISOString() || new Date().toISOString(),
+    }));
+  }
+
+  const admins = await prisma.user.findMany({
+    where: { id: { in: adminIds } },
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+    },
+  });
+
+  const adminMap = new Map(
+    admins.map((admin) => [
+      admin.id,
+      { email: admin.email || "Unknown User", name: admin.fullName },
+    ]),
+  );
+
+  return logs.map((log) => ({
+    email: log.admin_id
+      ? (adminMap.get(log.admin_id)?.email ?? "Unknown User")
+      : "System",
+    action: log.action,
+    created_at: log.created_at?.toISOString() || new Date().toISOString(),
+  }));
+}
+
+export async function getRecentAdminActions(limit: number = 10) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return [];
+  }
+
+  const hasPermission = await isAdminOrManager(session.user.id);
+  if (!hasPermission) {
+    return [];
+  }
+
+  const logs = await prisma.logs.findMany({
+    select: {
+      id: true,
+      action: true,
+      created_at: true,
+    },
+    orderBy: { created_at: "desc" },
+    take: limit,
+  });
+
+  return logs;
+}
+
+export async function getAdminActionStats(days: number = 30) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const hasPermission = await isAdminOrManager(session.user.id);
+  if (!hasPermission) {
+    throw new Error("Unauthorized: Admin or Manager role required");
+  }
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const stats = await prisma.logs.groupBy({
+    by: ["action"],
+    where: {
+      created_at: {
+        gte: startDate,
+      },
+    },
+    _count: {
+      id: true,
+    },
+  });
+
+  return stats.map((stat) => ({
+    action: stat.action,
+    count: stat._count.id,
+  }));
 }

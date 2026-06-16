@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { BrowserProvider, ethers } from "ethers";
 import { MetaMaskInpageProvider } from "@metamask/providers";
-import { createClient } from "@/lib/supabase/client";
+import { getRecipientPolygonWallet, createCryptoDonation } from "@/actions/crypto-actions";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
@@ -40,7 +40,6 @@ export default function MaticDonationButton({
   const [isLoadingAddress, setIsLoadingAddress] = useState<boolean>(true);
   const [inputMode, setInputMode] = useState<"matic" | "naira">("matic");
   const params = useParams();
-  const supabase = createClient();
   const { user } = useAuthContext();
 
   const formatNumberWithCommas = (value: string): string => {
@@ -95,28 +94,10 @@ export default function MaticDonationButton({
   useEffect(() => {
     const fetchRecipientAddress = async () => {
       try {
+        const address = await getRecipientPolygonWallet(causeId);
+        if (!address) throw new Error("Creator not found");
 
-        const { data: cause, error: causeError } = await supabase
-          .from("causes")
-          .select("user_id")
-          .eq("id", causeId)
-          .single();
-
-        if (causeError) throw causeError;
-        if (!cause) throw new Error("Cause not found");
-
-
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("polygon_wallet")
-          .eq("id", cause.user_id)
-          .single();
-
-        if (profileError) throw profileError;
-        if (!profile) throw new Error("Creator not found");
-
-
-        setRecipientAddress(profile.polygon_wallet || null);
+        setRecipientAddress(address);
       } catch (err) {
         console.error("Error fetching recipient address:", err);
         setError("Failed to load recipient wallet information");
@@ -127,90 +108,8 @@ export default function MaticDonationButton({
     };
 
     fetchRecipientAddress();
-  }, [causeId, supabase]);
+  }, [causeId]);
 
-  const logDonation = async (
-    causeId: string,
-    txHash: string,
-    amountInMatic: number,
-    amountInNaira: number,
-    donorWalletAddress: string,
-    recipientAddress: string
-  ) => {
-    try {
-
-
-
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
-
-      // 2. Log to crypto_donations
-
-      const { data, error: insertError } = await supabase
-        .from("crypto_donations")
-        .insert({
-          cause_id: causeId,
-          tx_hash: txHash,
-          amount_in_crypto: amountInMatic,
-          amount_in_naira: amountInNaira,
-          donor_wallet_address: donorWalletAddress,
-          recipient_address: recipientAddress,
-          user_id: user.id,
-          status: "completed",
-          network: "Polygon Amoy Testnet",
-          currency: "MATIC",
-        })
-        .select();
-
-      if (insertError) {
-        console.error("Insert failed:", {
-          error: insertError,
-          details: insertError.details,
-          hint: insertError.hint,
-          code: insertError.code,
-        });
-        throw insertError;
-      }
-
-
-
-      // 3. Update raised amount
-
-      const { data: causeData, error: selectError } = await supabase
-        .from("causes")
-        .select("raised")
-        .eq("id", causeId)
-        .single();
-
-      if (selectError) throw selectError;
-
-      const currentRaised = causeData?.raised || 0;
-      const newRaised = currentRaised + amountInNaira;
-
-      const { error: updateError } = await supabase
-        .from("causes")
-        .update({ raised: newRaised })
-        .eq("id", causeId);
-
-      if (updateError) {
-        console.error("Update failed:", {
-          currentRaised,
-          amountInNaira,
-          newRaised,
-          error: updateError,
-        });
-        throw updateError;
-      }
-
-
-      return data;
-    } catch (error) {
-      console.error("Complete donation logging error:", error);
-      throw error;
-    }
-  };
 
   const switchToPolygonAmoyTestnet = async () => {
     try {
@@ -352,14 +251,17 @@ export default function MaticDonationButton({
 
         try {
 
-          await logDonation(
-            causeId,
-            tx.hash,
-            maticAmount,
-            nairaAmount,
-            walletAddress,
-            recipientAddress
-          );
+          await createCryptoDonation({
+            cause_id: causeId,
+            tx_signature: tx.hash,
+            amount_in_crypto: maticAmount,
+            amount_in_naira: nairaAmount,
+            donor_wallet_address: walletAddress,
+            recipient_address: recipientAddress,
+            status: "completed",
+            network: "Polygon Amoy Testnet",
+            currency: "MATIC",
+          });
 
 
           onDonationSuccess?.(nairaAmount);
@@ -420,7 +322,6 @@ export default function MaticDonationButton({
     nairaEquivalent,
     recipientAddress,
     causeId,
-    supabase,
     toast,
     onDonationSuccess,
   ]);

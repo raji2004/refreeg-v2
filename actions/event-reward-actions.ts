@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { REWARD_AMOUNTS } from "@/lib/reward-constants";
 import type { RewardEvent } from "@/types";
@@ -9,20 +9,18 @@ import type { RewardEvent } from "@/types";
  * Record an event and calculate rewards
  */
 export async function recordEvent(event: RewardEvent) {
-  const supabase = await createClient();
-
   try {
     // Prevent multiple login rewards within a rolling 24-hour window
     if (event.type === "login") {
       try {
-        const { data: recentLogin, error: recentLoginError } = await supabase
-          .from("events")
-          .select("id, created_at")
-          .eq("user_id", event.userId)
-          .eq("event_type", "login")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
+        const recentLogin = await prisma.events.findFirst({
+          where: {
+            user_id: event.userId,
+            event_type: "login",
+          },
+          orderBy: { created_at: "desc" },
+          select: { id: true, created_at: true },
+        });
 
         if (recentLogin?.created_at) {
           const lastLogin = new Date(recentLogin.created_at).getTime();
@@ -34,32 +32,20 @@ export async function recordEvent(event: RewardEvent) {
             return recentLogin;
           }
         }
-
-        if (recentLoginError && recentLoginError.code !== "PGRST116") {
-          console.error("Error checking recent login events:", recentLoginError);
-          throw recentLoginError;
-        }
       } catch (err) {
         // If something goes wrong checking recent logins, log and continue to avoid breaking login flow
         console.error("Error while verifying daily login reward:", err);
       }
     }
+
     // Insert event into events table
-    const { data: eventData, error: eventError } = await supabase
-      .from("events")
-      .insert({
+    const eventData = await prisma.events.create({
+      data: {
         user_id: event.userId,
         event_type: event.type,
         metadata: event.metadata || {},
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (eventError) {
-      console.error("Error recording event:", eventError);
-      throw eventError;
-    }
+      },
+    });
 
     // Calculate rewards based on event type
     let rewardAmount = 0;
@@ -104,58 +90,32 @@ export async function addRewards(
   eventType: string,
   eventId: string
 ) {
-  const supabase = await createClient();
-
   try {
     // Insert reward transaction
-    const { data: rewardData, error: rewardError } = await supabase
-      .from("reward_transactions")
-      .insert({
-        user_id: userId,
+    const rewardData = await prisma.rewardTransaction.create({
+      data: {
+        userId,
         amount,
-        transaction_type: eventType,
+        transactionType: eventType,
         event_id: eventId,
         status: "completed",
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+      },
+    });
 
-    if (rewardError) {
-      console.error("Error adding rewards:", rewardError);
-      throw rewardError;
-    }
+    // Update user's wallet balance using upsert
+    const wallet = await prisma.userWallet.findUnique({
+      where: { userId },
+      select: { balance: true },
+    });
 
-    // Update user's wallet balance
-    const { data: walletData, error: walletError } = await supabase
-      .from("user_wallets")
-      .select("balance")
-      .eq("user_id", userId)
-      .single();
-
-    if (walletError && walletError.code !== "PGRST116") {
-      console.error("Error fetching wallet:", walletError);
-      throw walletError;
-    }
-
-    const currentBalance = walletData?.balance || 0;
+    const currentBalance = Number(wallet?.balance || 0);
     const newBalance = currentBalance + amount;
 
-    const { error: updateError } = await supabase
-      .from("user_wallets")
-      .upsert(
-        {
-          user_id: userId,
-          balance: newBalance,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
-
-    if (updateError) {
-      console.error("Error updating wallet balance:", updateError);
-      throw updateError;
-    }
+    await prisma.userWallet.upsert({
+      where: { userId },
+      update: { balance: newBalance },
+      create: { userId, balance: newBalance },
+    });
 
     // Revalidate relevant paths
     revalidatePath("/dashboard");
@@ -172,24 +132,23 @@ export async function addRewards(
  * Get user's wallet balance and recent transactions
  */
 export async function getUserWallet(userId: string) {
-  const supabase = await createClient();
-
   try {
-    const [walletData, transactionsData] = await Promise.all([
-      supabase.from("user_wallets").select("*").eq("user_id", userId).single(),
-      supabase
-        .from("reward_transactions")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(50),
+    const [wallet, transactions] = await Promise.all([
+      prisma.userWallet.findUnique({
+        where: { userId },
+      }),
+      prisma.rewardTransaction.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
     ]);
 
     return {
-      wallet: walletData.data,
-      transactions: transactionsData.data || [],
-      walletError: walletData.error,
-      transactionsError: transactionsData.error,
+      wallet,
+      transactions,
+      walletError: null,
+      transactionsError: null,
     };
   } catch (error) {
     console.error("Error fetching user wallet:", error);
@@ -201,30 +160,21 @@ export async function getUserWallet(userId: string) {
  * Update user streaks (weekly and monthly active)
  */
 export async function updateUserStreaks(userId: string) {
-  const supabase = await createClient();
-
   try {
     // Get current streak data
-    const { data: streakData, error: streakError } = await supabase
-      .from("user_streaks")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
-
-    if (streakError && streakError.code !== "PGRST116") {
-      console.error("Error fetching streak data:", streakError);
-      throw streakError;
-    }
+    const streakData = await prisma.userStreak.findUnique({
+      where: { userId },
+    });
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const lastActive = streakData?.last_active_date
-      ? new Date(streakData.last_active_date)
+    const lastActive = streakData?.lastActiveDate
+      ? new Date(streakData.lastActiveDate)
       : null;
     lastActive?.setHours(0, 0, 0, 0);
 
-    let weeklyStreak = streakData?.weekly_streak || 0;
-    let isMonthlyActive = streakData?.is_monthly_active || false;
+    let weeklyStreak = streakData?.weeklyStreak || 0;
+    let isMonthlyActive = streakData?.isMonthlyActive || false;
 
     // Check if this is a new day
     if (!lastActive || lastActive.getTime() !== today.getTime()) {
@@ -250,28 +200,26 @@ export async function updateUserStreaks(userId: string) {
     }
 
     // Update streak data
-    const { data: updatedStreak, error: updateError } = await supabase
-      .from("user_streaks")
-      .upsert({
-        user_id: userId,
-        weekly_streak: weeklyStreak,
-        is_monthly_active: isMonthlyActive,
-        last_active_date: today.toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error("Error updating streak:", updateError);
-      throw updateError;
-    }
+    const updatedStreak = await prisma.userStreak.upsert({
+      where: { userId },
+      update: {
+        weeklyStreak,
+        isMonthlyActive,
+        lastActiveDate: today,
+      },
+      create: {
+        userId,
+        weeklyStreak,
+        isMonthlyActive,
+        lastActiveDate: today,
+      },
+    });
 
     // Award rewards if milestones reached
     const hasWeeklyMilestone =
-      weeklyStreak > 0 && weeklyStreak % 7 === 0 && streakData?.weekly_streak !== weeklyStreak;
+      weeklyStreak > 0 && weeklyStreak % 7 === 0 && streakData?.weeklyStreak !== weeklyStreak;
     const hasMonthlyMilestone =
-      isMonthlyActive && !streakData?.is_monthly_active;
+      isMonthlyActive && !streakData?.isMonthlyActive;
 
     if (hasWeeklyMilestone) {
       await recordEvent({
@@ -279,6 +227,17 @@ export async function updateUserStreaks(userId: string) {
         userId,
         metadata: { streak: weeklyStreak },
       });
+      // Emit SSE event
+      try {
+        const { eventBus } = await import("@/lib/event-bus");
+        eventBus.emit("weekly_streak", {
+          type: "weekly_streak",
+          data: updatedStreak,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.error("Error emitting weekly_streak SSE:", e);
+      }
     }
 
     if (hasMonthlyMilestone) {
@@ -287,6 +246,17 @@ export async function updateUserStreaks(userId: string) {
         userId,
         metadata: { month: today.getMonth() + 1, year },
       });
+      // Emit SSE event
+      try {
+        const { eventBus } = await import("@/lib/event-bus");
+        eventBus.emit("monthly_active", {
+          type: "monthly_active",
+          data: updatedStreak,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.error("Error emitting monthly_active SSE:", e);
+      }
     }
 
     revalidatePath("/dashboard");
@@ -302,25 +272,16 @@ export async function updateUserStreaks(userId: string) {
  * Get user's streak and activity stats
  */
 export async function getUserStats(userId: string) {
-  const supabase = await createClient();
-
   try {
-    const { data, error } = await supabase
-      .from("user_streaks")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
-
-    if (error && error.code !== "PGRST116") {
-      console.error("Error fetching user stats:", error);
-      throw error;
-    }
+    const data = await prisma.userStreak.findUnique({
+      where: { userId },
+    });
 
     return data || {
-      user_id: userId,
-      weekly_streak: 0,
-      is_monthly_active: false,
-      last_active_date: null,
+      userId,
+      weeklyStreak: 0,
+      isMonthlyActive: false,
+      lastActiveDate: null,
     };
   } catch (error) {
     console.error("Error in getUserStats:", error);

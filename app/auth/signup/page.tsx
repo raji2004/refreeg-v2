@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Eye, EyeOff } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/hooks/use-auth";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ import { toast } from "@/components/ui/use-toast";
 import { AuthTestimonials } from "@/components/ui/auth-testimonials";
 
 export default function SignUpPage() {
-  const supabase = createClient();
+  const router = useRouter();
   const { signUp, signInWithGoogle } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -23,7 +23,7 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingType, setLoadingType] = useState<"manual" | "google" | null>(null);
   const [refV1FromUrl, setRefV1FromUrl] = useState<string | null>(null);
   const [utmSource, setUtmSource] = useState<string | null>(null);
   const [utmMedium, setUtmMedium] = useState<string | null>(null);
@@ -43,8 +43,21 @@ export default function SignUpPage() {
       if (source) setUtmSource(source);
       if (medium) setUtmMedium(medium);
       if (campaign) setUtmCampaign(campaign);
+
+      // Prefetch the OTP page to make routing faster
+      router.prefetch("/auth/verify-otp");
     }
-  }, []);
+  }, [router]);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoadingType("google");
+      await signInWithGoogle();
+    } catch (error) {
+      console.error("Google Sign In Error:", error);
+      setLoadingType(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +71,7 @@ export default function SignUpPage() {
       return;
     }
 
-    setIsLoading(true);
+    setLoadingType("manual");
 
     toast({
       title: "Creating your account...",
@@ -69,40 +82,32 @@ export default function SignUpPage() {
       const signUpEmail = email.trim();
       const normalizedEmail = signUpEmail.toLowerCase();
 
-      if (refV1FromUrl) {
-        await supabase.functions.invoke("process-referral-v1", {
-          body: {
-            action: "create",
-            referrer_id: refV1FromUrl,
-            referee_email: normalizedEmail,
-            utm_source: utmSource,
-            utm_medium: utmMedium,
-            utm_campaign: utmCampaign,
-          },
-        });
-      }
+      // Initiate pending registration
+      const response = await fetch("/api/auth/register-pending", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email: normalizedEmail, 
+          password,
+          referralCode: refV1FromUrl
+        }),
+      });
 
-      const result = await signUp(signUpEmail, password, "User", null);
+      const result = await response.json();
 
-      if (!result?.data?.user) {
-        return;
-      }
-
-      if (refV1FromUrl) {
-        await supabase.functions.invoke("process-referral-v1", {
-          body: {
-            action: "complete",
-            referrer_id: refV1FromUrl,
-            referee_email: normalizedEmail,
-            referee_id: result.data.user.id,
-          },
-        });
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to initiate registration");
       }
 
       toast({
-        title: "Account created!",
-        description: "Please verify your email to continue.",
+        title: "Check your email!",
+        description: "We've sent a 6-digit code to verify your email.",
       });
+
+      // Redirect to the OTP verification page
+      router.push(
+        `/auth/verify-otp?email=${encodeURIComponent(normalizedEmail)}`,
+      );
     } catch (error: any) {
       toast({
         title: "Error",
@@ -110,7 +115,7 @@ export default function SignUpPage() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setLoadingType(null);
     }
   };
 
@@ -200,32 +205,40 @@ export default function SignUpPage() {
 
             <Button
               type="submit"
-              disabled={isLoading}
-              className="group/btn relative h-10 w-full rounded-md font-medium text-white"
+              disabled={loadingType !== null}
+              className="group/btn relative h-10 w-full rounded-md font-medium text-white flex items-center justify-center gap-2"
             >
-              Sign Up
+              {loadingType === "manual" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Sign Up"
+              )}
               <BottomGradient />
             </Button>
 
             <div className="my-2 h-[1px] w-full bg-gradient-to-r from-transparent via-neutral-300 to-transparent" />
 
-            {/*
             <button
               type="button"
-              onClick={signInWithGoogle}
-              disabled={isLoading}
-              className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-gray-50 shadow-input"
+              onClick={handleGoogleSignIn}
+              disabled={loadingType !== null}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-gray-50 shadow-input disabled:opacity-50"
             >
-              <Image
-                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                width={18}
-                height={18}
-                alt="Google"
-              />
-              <span className="text-sm text-neutral-700">Google</span>
+              {loadingType === "google" ? (
+                <Loader2 className="h-4 w-4 animate-spin text-neutral-700" />
+              ) : (
+                <>
+                  <Image
+                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                    width={18}
+                    height={18}
+                    alt="Google"
+                  />
+                  <span className="text-sm text-neutral-700">Google</span>
+                </>
+              )}
               <BottomGradient />
             </button>
-            */}
 
             <div className="mt-6 text-center text-sm text-neutral-600">
               Already have an account?{" "}

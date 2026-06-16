@@ -1,15 +1,13 @@
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/lib/auth/auth";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const session = await auth();
+    const user = session?.user;
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
+    if (!user?.id) {
       return NextResponse.json(
         { error: "User not authenticated" },
         { status: 401 }
@@ -40,48 +38,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: insertData, error: insertError } = await supabase
-      .from("crypto_donations")
-      .insert([
-        {
+    const amountInCrypto = Number(amount_in_sol);
+    const amountInNaira = Number(amount_in_naira);
+
+    if (Number.isNaN(amountInCrypto) || Number.isNaN(amountInNaira)) {
+      return NextResponse.json(
+        { error: "Invalid donation amounts" },
+        { status: 400 }
+      );
+    }
+
+    const insertData = await prisma.$transaction(async (tx) => {
+      const donation = await tx.crypto_donations.create({
+        data: {
           cause_id,
           tx_signature,
-          amount_in_sol,
-          amount_in_naira,
-          wallet_address,
+          amount_in_crypto: amountInCrypto,
+          amount_in_naira: amountInNaira,
+          donor_wallet_address: wallet_address,
           recipient_address,
           user_id: user.id,
-          payment_method: "SOL",
           status: "completed",
           network: "Solana Testnet",
           currency: "SOL",
-          wallet_type: "solana",
         },
-      ])
-      .select()
-      .single();
+      });
 
-    if (insertError) {
-      return NextResponse.json(
-        { error: "Failed to log donation", details: insertError },
-        { status: 500 }
-      );
-    }
+      await tx.cause.update({
+        where: { id: cause_id },
+        data: {
+          raised: {
+            increment: amountInNaira,
+          },
+        },
+      });
 
-    const { data: updateData, error: updateError } = await supabase.rpc(
-      "increment_cause_raised",
-      {
-        cause_id,
-        amount: amount_in_naira,
-      }
-    );
-
-    if (updateError) {
-      return NextResponse.json(
-        { error: "Failed to update cause amount", details: updateError },
-        { status: 500 }
-      );
-    }
+      return donation;
+    });
 
     return NextResponse.json({
       success: true,
@@ -89,6 +82,7 @@ export async function POST(request: NextRequest) {
       message: "Donation logged and cause updated successfully",
     });
   } catch (error) {
+    console.error("Crypto donation error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

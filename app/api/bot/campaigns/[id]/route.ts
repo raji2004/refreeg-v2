@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, rateLimit, handlePreflight } from "@/utils/api-bot/api-auth";
 import { UpdateCampaignSchema } from "@/utils/api-bot/schemas";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/types/database-types";
+import { prisma } from "@/lib/prisma";
 import { logApiRequest } from "@/utils/api-bot/request-logger";
 import { resolveBankDetails } from "@/utils/api-bot/bank-resolver";
 import { 
@@ -11,10 +10,7 @@ import {
   ApiErrorCode 
 } from "@/utils/api-bot/response-utils";
 
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const startedAt = Date.now();
@@ -30,15 +26,20 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     return authRes.errorResponse;
   }
 
-  const { data: campaign, error } = await supabaseAdmin
-    .from("api_campaigns")
-    .select("*")
-    .eq("id", params.id)
-    .eq("developer_id", authRes.userId)
-    .eq("mode", authRes.mode)
-    .single();
+  let campaign;
+  try {
+    campaign = await prisma.api_campaigns.findFirst({
+      where: {
+        id: params.id,
+        developer_id: authRes.userId!,
+        mode: authRes.mode!
+      }
+    });
+  } catch (error) {
+    console.error("Failed to fetch campaign", error);
+  }
 
-  if (error || !campaign) {
+  if (!campaign) {
     const response = errorResponse("Campaign not found or access denied", ApiErrorCode.NOT_FOUND, 404);
 
     await logApiRequest({ request, statusCode: response.status, apiKeyId: authRes.apiKeyId, userId: authRes.userId, mode: authRes.mode, errorCode: ApiErrorCode.NOT_FOUND, startedAt });
@@ -111,16 +112,26 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       delete updateData.bank_id;
     }
 
-    // Update in DB
-    const { data: campaign, error } = await supabaseAdmin.from("api_campaigns")
-      .update(updateData)
-      .eq("id", params.id)
-      .eq("developer_id", authRes.userId)
-      .eq("mode", authRes.mode)
-      .select()
-      .single();
+    let campaign;
+    try {
+      const existing = await prisma.api_campaigns.findFirst({
+        where: { id: params.id, developer_id: authRes.userId!, mode: authRes.mode! }
+      });
+      
+      if (existing) {
+        if (updateData.deadline && typeof updateData.deadline === 'string') {
+          updateData.deadline = new Date(updateData.deadline);
+        }
+        campaign = await prisma.api_campaigns.update({
+          where: { id: params.id },
+          data: updateData
+        });
+      }
+    } catch (e) {
+      console.error("Failed to update campaign", e);
+    }
 
-    if (error || !campaign) {
+    if (!campaign) {
       const response = errorResponse("Campaign not found or access denied", ApiErrorCode.NOT_FOUND, 404);
 
       await logApiRequest({ request, statusCode: response.status, apiKeyId: authRes.apiKeyId, userId: authRes.userId, mode: authRes.mode, errorCode: ApiErrorCode.NOT_FOUND, startedAt });
@@ -153,16 +164,23 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     return authRes.errorResponse;
   }
 
-  // We do not physically delete campaigns, just set status = 'cancelled'
-  const { data: campaign, error } = await supabaseAdmin.from("api_campaigns")
-    .update({ status: "cancelled" })
-    .eq("id", params.id)
-    .eq("developer_id", authRes.userId)
-    .eq("mode", authRes.mode)
-    .select()
-    .single();
+  let campaign;
+  try {
+    const existing = await prisma.api_campaigns.findFirst({
+      where: { id: params.id, developer_id: authRes.userId!, mode: authRes.mode! }
+    });
+    
+    if (existing) {
+      campaign = await prisma.api_campaigns.update({
+        where: { id: params.id },
+        data: { status: "cancelled" }
+      });
+    }
+  } catch (e) {
+    console.error("Failed to cancel campaign", e);
+  }
 
-  if (error || !campaign) {
+  if (!campaign) {
     const response = errorResponse("Campaign not found or access denied", ApiErrorCode.NOT_FOUND, 404);
 
     await logApiRequest({ request, statusCode: response.status, apiKeyId: authRes.apiKeyId, userId: authRes.userId, mode: authRes.mode, errorCode: ApiErrorCode.NOT_FOUND, startedAt });

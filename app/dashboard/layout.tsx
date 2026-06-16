@@ -1,7 +1,5 @@
-import type React from "react";
+import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
-import { getCachedUser } from "@/lib/supabase/cached-user";
-import { hasCompletedOnboarding } from "@/actions/profile-actions";
 import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
 
 export default async function DashboardLayout({
@@ -9,21 +7,16 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [authResult, completedOnboarding] = await Promise.all([
-    getCachedUser(),
-    (async () => {
-      const { user } = await getCachedUser();
-      return user ? hasCompletedOnboarding(user.id) : true; // default true if not yet authenticated
-    })()
-  ]);
+  const session = await auth();
 
-  const { user, error: authError } = authResult;
-
-  if (!user || authError) {
+  if (!session?.user) {
     redirect("/auth/signin");
   }
 
-  if (!completedOnboarding) {
+  // Use the flag from the JWT session to avoid redundant DB hits
+  const completedOnboarding = (session.user as any).onboardingCompleted;
+
+  if (completedOnboarding === false) {
     redirect("/onboarding");
   }
 

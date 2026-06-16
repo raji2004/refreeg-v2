@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 
 export default function FeatureCard({ img, text }: { img: string; text: string }) {
@@ -26,10 +27,12 @@ export default function FeatureCard({ img, text }: { img: string; text: string }
         transition={{ duration: 0.25 }}
         className="flex h-36 items-center justify-center"
       >
-        <img
+        <Image
           src={img}
           alt={text}
-          className="h-28 w-28 object-contain transition-transform duration-300 group-hover:scale-105"
+          width={112}
+          height={112}
+          className="object-contain transition-transform duration-300 group-hover:scale-105"
         />
       </motion.div>
 

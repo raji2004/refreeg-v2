@@ -29,7 +29,7 @@ export function ExportCSVButton() {
       link.setAttribute("href", url);
       link.setAttribute(
         "download",
-        `active-users-${new Date().toISOString().split("T")[0]}.csv`
+        `active-users-${new Date().toISOString().split("T")[0]}.csv`,
       );
       link.style.visibility = "hidden";
       document.body.appendChild(link);

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, rateLimit, handlePreflight } from "@/utils/api-bot/api-auth";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/types/database-types";
+import { prisma } from "@/lib/prisma";
 import { logApiRequest } from "@/utils/api-bot/request-logger";
 import { 
   successResponse, 
@@ -9,10 +8,7 @@ import {
   ApiErrorCode 
 } from "@/utils/api-bot/response-utils";
 
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   const startedAt = Date.now();
@@ -28,15 +24,23 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return authRes.errorResponse;
   }
 
-  const { data: campaign, error } = await supabaseAdmin.from("api_campaigns")
-    .update({ status: "paused" })
-    .eq("id", params.id)
-    .eq("developer_id", authRes.userId)
-    .eq("mode", authRes.mode)
-    .select()
-    .single();
+  let campaign;
+  try {
+    const existing = await prisma.api_campaigns.findFirst({
+      where: { id: params.id, developer_id: authRes.userId!, mode: authRes.mode! }
+    });
+    
+    if (existing) {
+      campaign = await prisma.api_campaigns.update({
+        where: { id: params.id },
+        data: { status: "paused" }
+      });
+    }
+  } catch (error) {
+    console.error("Failed to pause campaign", error);
+  }
 
-  if (error || !campaign) {
+  if (!campaign) {
     const response = errorResponse("Campaign not found or access denied", ApiErrorCode.NOT_FOUND, 404);
 
     await logApiRequest({ request, statusCode: response.status, apiKeyId: authRes.apiKeyId, userId: authRes.userId, mode: authRes.mode, errorCode: ApiErrorCode.NOT_FOUND, startedAt });

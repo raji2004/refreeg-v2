@@ -1,14 +1,11 @@
+// actions/api-monitoring-actions.ts
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserRole } from "@/actions/role-actions";
-import { logAdminActivity } from "@/actions/database-actions";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth/auth";
+import { getUserRole } from "@/lib/auth/admin-auth";
 import { formatCurrency } from "@/lib/utils";
-import { getCachedUser } from "@/lib/supabase/cached-user";
-
-type AdminRole = "admin" | "manager";
 
 export interface ApiMonitoringSummary {
   activeKeys: number;
@@ -35,8 +32,8 @@ export interface AdminApiCampaignRow {
   developerName: string;
   developerEmail: string;
   apiKeyName: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   reportsCount: number;
 }
 
@@ -53,7 +50,7 @@ export interface AdminApiDonationRow {
   donorName: string;
   donorEmail: string;
   status: string;
-  createdAt: string;
+  createdAt: Date;
   paystackReference: string;
 }
 
@@ -69,8 +66,8 @@ export interface CampaignReportRow {
   reportMessage: string;
   reportStatus: string;
   apiKeyName: string | null;
-  createdAt: string;
-  resolvedAt: string | null;
+  createdAt: Date;
+  resolvedAt: Date | null;
   resolutionNotes: string | null;
 }
 
@@ -84,104 +81,85 @@ export interface ApiUsageAnalytics {
     endpoint: string;
     statusCode: number;
     errorCode: string | null;
-    createdAt: string;
+    createdAt: Date;
     apiKeyPrefix: string | null;
   }>;
 }
 
 async function requireAdminAccess(): Promise<{
   userId: string;
-  role: AdminRole;
+  role: "admin" | "manager";
 }> {
-  const supabase = await createClient();
-  const { user } = await getCachedUser();
+  const session = await auth();
 
-  if (!user) {
+  if (!session?.user?.id) {
     throw new Error("Unauthorized");
   }
 
-  const role = await getUserRole(user.id);
+  const role = await getUserRole(session.user.id);
+
   if (role !== "admin" && role !== "manager") {
     throw new Error("Access denied");
   }
 
-  return { userId: user.id, role };
-}
-
-function mapProfiles<
-  T extends { developer_id?: string | null; user_id?: string | null },
->(
-  rows: T[],
-  profiles: Array<{
-    id: string;
-    full_name: string | null;
-    email?: string | null;
-  }>,
-) {
-  const profileMap = new Map(
-    profiles.map((profile) => [
-      profile.id,
-      {
-        name: profile.full_name ?? "Unknown developer",
-        email: profile.email ?? "Unknown email",
-      },
-    ]),
-  );
-
-  return rows.map((row) => {
-    const profile = profileMap.get(row.developer_id ?? row.user_id ?? "") ?? {
-      name: "Unknown developer",
-      email: "Unknown email",
-    };
-
-    return {
-      ...row,
-      developer_name: profile.name,
-      developer_email: profile.email,
-    };
-  });
+  return { userId: session.user.id, role: role as "admin" | "manager" };
 }
 
 export async function getApiMonitoringSummary(): Promise<ApiMonitoringSummary> {
   await requireAdminAccess();
-  const adminClient = createAdminClient();
 
-  const [keysRes, campaignsRes, reportsRes, donationsRes, requestLogsRes] =
-    await Promise.all([
-      adminClient
-        .from("api_keys")
-        .select("id, revoked_at, last_used_at", { count: "exact" }),
-      adminClient
-        .from("api_campaigns")
-        .select("id, status", { count: "exact" }),
-      adminClient
-        .from("api_campaign_reports")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending"),
-      adminClient.from("api_donations").select("amount, status"),
-      adminClient.from("api_request_logs").select("status_code"),
-    ]);
+  // Get all API keys
+  const allKeys = await prisma.api_keys.findMany({
+    select: {
+      id: true,
+      revoked_at: true,
+      last_used_at: true,
+    },
+  });
 
-  const activeKeys =
-    keysRes.data?.filter((key) => !key.revoked_at && !!key.last_used_at)
-      .length ?? 0;
-  const totalKeys = keysRes.count ?? keysRes.data?.length ?? 0;
-  const totalCampaigns = campaignsRes.count ?? campaignsRes.data?.length ?? 0;
-  const activeCampaigns =
-    campaignsRes.data?.filter((campaign) => campaign.status === "active")
-      .length ?? 0;
-  const pendingReports = reportsRes.count ?? 0;
-  const successfulDonations =
-    donationsRes.data?.filter((donation) => donation.status === "success") ??
-    [];
+  const activeKeys = allKeys.filter(
+    (key) => !key.revoked_at && !!key.last_used_at,
+  ).length;
+  const totalKeys = allKeys.length;
+
+  // Get all API campaigns
+  const allCampaigns = await prisma.api_campaigns.findMany({
+    select: {
+      id: true,
+      status: true,
+    },
+  });
+
+  const totalCampaigns = allCampaigns.length;
+  const activeCampaigns = allCampaigns.filter(
+    (campaign) => campaign.status === "active",
+  ).length;
+
+  // Get pending reports
+  const pendingReports = await prisma.api_campaign_reports.count({
+    where: { status: "pending" },
+  });
+
+  // Get donations
+  const successfulDonations = await prisma.api_donations.findMany({
+    where: { status: "success" },
+    select: { amount: true },
+  });
+
   const donationVolume = successfulDonations.reduce(
-    (sum, donation) => sum + Number(donation.amount ?? 0),
+    (sum, donation) => sum + Number(donation.amount),
     0,
   );
-  const totalRequestVolume = requestLogsRes.data?.length ?? 0;
-  const totalErrors =
-    requestLogsRes.data?.filter((log) => Number(log.status_code) >= 400)
-      .length ?? 0;
+
+  // Get request logs for error rate
+  const requestLogs = await prisma.api_request_logs.findMany({
+    select: { status_code: true },
+  });
+
+  const totalRequestVolume = requestLogs.length;
+  const totalErrors = requestLogs.filter(
+    (log) => Number(log.status_code) >= 400,
+  ).length;
   const requestErrorRate =
     totalRequestVolume > 0
       ? Number(((totalErrors / totalRequestVolume) * 100).toFixed(1))
@@ -202,162 +180,168 @@ export async function getApiMonitoringSummary(): Promise<ApiMonitoringSummary> {
 
 export async function listAdminApiCampaigns(): Promise<AdminApiCampaignRow[]> {
   await requireAdminAccess();
-  const adminClient = createAdminClient();
 
-  const { data: campaigns, error } = await adminClient
-    .from("api_campaigns")
-    .select(
-      "id, title, status, mode, payout_mode, currency, goal_amount, raised_amount, developer_id, api_key_id, created_at, updated_at",
-    )
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new Error(`Failed to fetch API campaigns: ${error.message}`);
-  }
-
-  const developerIds = [
-    ...new Set((campaigns ?? []).map((campaign) => campaign.developer_id)),
-  ];
-  const apiKeyIds = [
-    ...new Set(
-      (campaigns ?? []).map((campaign) => campaign.api_key_id).filter(Boolean),
-    ),
-  ] as string[];
-
-  const [{ data: profiles }, { data: apiKeys }, { data: reports }] =
-    await Promise.all([
-      developerIds.length
-        ? adminClient
-            .from("profiles")
-            .select("id, full_name, email")
-            .in("id", developerIds)
-        : Promise.resolve({
-            data: [] as Array<{
-              id: string;
-              full_name: string | null;
-              email?: string | null;
-            }>,
-          }),
-      apiKeyIds.length
-        ? adminClient.from("api_keys").select("id, name").in("id", apiKeyIds)
-        : Promise.resolve({ data: [] as Array<{ id: string; name: string }> }),
-      campaigns?.length
-        ? adminClient
-            .from("api_campaign_reports")
-            .select("api_campaign_id, status")
-            .in(
-              "api_campaign_id",
-              campaigns.map((campaign) => campaign.id),
-            )
-        : Promise.resolve({
-            data: [] as Array<{ api_campaign_id: string; status: string }>,
-          }),
-    ]);
-
-  const keyMap = new Map((apiKeys ?? []).map((key) => [key.id, key.name]));
-  const reportCountMap = new Map<string, number>();
-  (reports ?? []).forEach((report) => {
-    reportCountMap.set(
-      report.api_campaign_id,
-      (reportCountMap.get(report.api_campaign_id) ?? 0) + 1,
-    );
+  // Get all campaigns
+  const campaigns = await prisma.api_campaigns.findMany({
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      mode: true,
+      payout_mode: true,
+      currency: true,
+      goal_amount: true,
+      raised_amount: true,
+      developer_id: true,
+      api_key_id: true,
+      created_at: true,
+      updated_at: true,
+    },
+    orderBy: { created_at: "desc" },
   });
 
-  const campaignsWithProfiles = mapProfiles(campaigns ?? [], profiles ?? []);
+  if (campaigns.length === 0) return [];
 
-  return campaignsWithProfiles.map((campaign) => ({
-    id: campaign.id,
-    title: campaign.title,
-    status: campaign.status,
-    mode: campaign.mode,
-    payoutMode: campaign.payout_mode,
-    currency: campaign.currency,
-    goalAmount: Number(campaign.goal_amount ?? 0),
-    raisedAmount: Number(campaign.raised_amount ?? 0),
-    developerId: campaign.developer_id,
-    developerName: campaign.developer_name,
-    developerEmail: campaign.developer_email,
-    apiKeyName: campaign.api_key_id
-      ? (keyMap.get(campaign.api_key_id) ?? null)
-      : null,
-    createdAt: campaign.created_at,
-    updatedAt: campaign.updated_at,
-    reportsCount: reportCountMap.get(campaign.id) ?? 0,
-  }));
-}
+  // Get unique developer IDs
+  const developerIds = [...new Set(campaigns.map((c) => c.developer_id))];
 
-export async function listAdminApiDonations(): Promise<AdminApiDonationRow[]> {
-  await requireAdminAccess();
-  const adminClient = createAdminClient();
+  // Get profiles for developers
+  const developers = await prisma.user.findMany({
+    where: { id: { in: developerIds } },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+    },
+  });
 
-  const { data: donations, error } = await adminClient
-    .from("api_donations")
-    .select(
-      "id, api_campaign_id, amount, tip_amount, donor_name, donor_email, status, created_at, paystack_reference",
-    )
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new Error(`Failed to fetch API donations: ${error.message}`);
-  }
-
-  const campaignIds = [
-    ...new Set((donations ?? []).map((donation) => donation.api_campaign_id)),
-  ];
-  const { data: campaigns } = campaignIds.length
-    ? await adminClient
-        .from("api_campaigns")
-        .select("id, title, developer_id")
-        .in("id", campaignIds)
-    : {
-        data: [] as Array<{ id: string; title: string; developer_id: string }>,
-      };
-
-  const developerIds = [
-    ...new Set((campaigns ?? []).map((campaign) => campaign.developer_id)),
-  ];
-  const { data: profiles } = developerIds.length
-    ? await adminClient
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", developerIds)
-    : {
-        data: [] as Array<{
-          id: string;
-          full_name: string | null;
-          email?: string | null;
-        }>,
-      };
-
-  const campaignMap = new Map(
-    (campaigns ?? []).map((campaign) => [campaign.id, campaign]),
-  );
-  const profileMap = new Map(
-    (profiles ?? []).map((profile) => [
-      profile.id,
+  const developerMap = new Map(
+    developers.map((dev) => [
+      dev.id,
       {
-        name: profile.full_name ?? "Unknown developer",
-        email: profile.email ?? "Unknown email",
+        name: dev.fullName ?? "Unknown developer",
+        email: dev.email ?? "Unknown email",
       },
     ]),
   );
 
-  return (donations ?? []).map((donation) => {
+  // Get API key names
+  const apiKeyIds = [
+    ...new Set(campaigns.map((c) => c.api_key_id).filter(Boolean)),
+  ] as string[];
+  const apiKeys = await prisma.api_keys.findMany({
+    where: { id: { in: apiKeyIds } },
+    select: { id: true, name: true },
+  });
+
+  const apiKeyMap = new Map(apiKeys.map((key) => [key.id, key.name]));
+
+  // Get report counts per campaign
+  const reportCounts = await prisma.api_campaign_reports.groupBy({
+    by: ["api_campaign_id"],
+    _count: { id: true },
+  });
+
+  const reportCountMap = new Map(
+    reportCounts.map((rc) => [rc.api_campaign_id, rc._count.id]),
+  );
+
+  return campaigns.map((campaign) => {
+    const developer = developerMap.get(campaign.developer_id);
+    return {
+      id: campaign.id,
+      title: campaign.title,
+      status: campaign.status,
+      mode: campaign.mode,
+      payoutMode: campaign.payout_mode,
+      currency: campaign.currency,
+      goalAmount: Number(campaign.goal_amount),
+      raisedAmount: Number(campaign.raised_amount),
+      developerId: campaign.developer_id,
+      developerName: developer?.name ?? "Unknown developer",
+      developerEmail: developer?.email ?? "Unknown email",
+      apiKeyName: campaign.api_key_id
+        ? (apiKeyMap.get(campaign.api_key_id) ?? null)
+        : null,
+      createdAt: campaign.created_at,
+      updatedAt: campaign.updated_at,
+      reportsCount: reportCountMap.get(campaign.id) ?? 0,
+    };
+  });
+}
+
+export async function listAdminApiDonations(): Promise<AdminApiDonationRow[]> {
+  await requireAdminAccess();
+
+  // Get all donations
+  const donations = await prisma.api_donations.findMany({
+    select: {
+      id: true,
+      api_campaign_id: true,
+      amount: true,
+      tip_amount: true,
+      donor_name: true,
+      donor_email: true,
+      status: true,
+      created_at: true,
+      paystack_reference: true,
+    },
+    orderBy: { created_at: "desc" },
+  });
+
+  if (donations.length === 0) return [];
+
+  // Get campaign details
+  const campaignIds = [...new Set(donations.map((d) => d.api_campaign_id))];
+  const campaigns = await prisma.api_campaigns.findMany({
+    where: { id: { in: campaignIds } },
+    select: {
+      id: true,
+      title: true,
+      developer_id: true,
+    },
+  });
+
+  const campaignMap = new Map(campaigns.map((c) => [c.id, c]));
+
+  // Get developer details
+  const developerIds = [...new Set(campaigns.map((c) => c.developer_id))];
+  const developers = await prisma.user.findMany({
+    where: { id: { in: developerIds } },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+    },
+  });
+
+  const developerMap = new Map(
+    developers.map((dev) => [
+      dev.id,
+      {
+        name: dev.fullName ?? "Unknown developer",
+        email: dev.email ?? "Unknown email",
+      },
+    ]),
+  );
+
+  return donations.map((donation) => {
     const campaign = campaignMap.get(donation.api_campaign_id);
-    const profile = campaign
-      ? profileMap.get(campaign.developer_id)
+    const developer = campaign
+      ? developerMap.get(campaign.developer_id)
       : undefined;
+    const amount = Number(donation.amount);
 
     return {
       id: donation.id,
       campaignId: donation.api_campaign_id,
       campaignTitle: campaign?.title ?? "Unknown campaign",
       developerId: campaign?.developer_id ?? "",
-      developerName: profile?.name ?? "Unknown developer",
-      developerEmail: profile?.email ?? "Unknown email",
-      amount: Number(donation.amount ?? 0),
-      tipAmount: Number(donation.tip_amount ?? 0),
-      feeRevenue: Number(donation.amount ?? 0) * 0.02,
+      developerName: developer?.name ?? "Unknown developer",
+      developerEmail: developer?.email ?? "Unknown email",
+      amount: amount,
+      tipAmount: Number(donation.tip_amount),
+      feeRevenue: amount * 0.02,
       donorName: donation.donor_name,
       donorEmail: donation.donor_email,
       status: donation.status,
@@ -369,129 +353,139 @@ export async function listAdminApiDonations(): Promise<AdminApiDonationRow[]> {
 
 export async function listCampaignReports(): Promise<CampaignReportRow[]> {
   await requireAdminAccess();
-  const adminClient = createAdminClient();
 
-  const { data: reports, error } = await adminClient
-    .from("api_campaign_reports")
-    .select(
-      "id, api_campaign_id, developer_id, api_key_id, reason, message, status, created_at, resolved_at, resolution_notes",
-    )
-    .order("created_at", { ascending: false });
+  // Get all reports
+  const reports = await prisma.api_campaign_reports.findMany({
+    select: {
+      id: true,
+      api_campaign_id: true,
+      developer_id: true,
+      api_key_id: true,
+      reason: true,
+      message: true,
+      status: true,
+      created_at: true,
+      resolved_at: true,
+      resolution_notes: true,
+    },
+    orderBy: { created_at: "desc" },
+  });
 
-  if (error) {
-    throw new Error(`Failed to fetch campaign reports: ${error.message}`);
-  }
+  if (reports.length === 0) return [];
 
-  const campaignIds = [
-    ...new Set((reports ?? []).map((report) => report.api_campaign_id)),
-  ];
-  const developerIds = [
-    ...new Set((reports ?? []).map((report) => report.developer_id)),
-  ];
-  const apiKeyIds = [
-    ...new Set(
-      (reports ?? []).map((report) => report.api_key_id).filter(Boolean),
-    ),
-  ] as string[];
+  // Get campaign details
+  const campaignIds = [...new Set(reports.map((r) => r.api_campaign_id))];
+  const campaigns = await prisma.api_campaigns.findMany({
+    where: { id: { in: campaignIds } },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+    },
+  });
 
-  const [{ data: campaigns }, { data: profiles }, { data: apiKeys }] =
-    await Promise.all([
-      campaignIds.length
-        ? adminClient
-            .from("api_campaigns")
-            .select("id, title, status")
-            .in("id", campaignIds)
-        : Promise.resolve({
-            data: [] as Array<{ id: string; title: string; status: string }>,
-          }),
-      developerIds.length
-        ? adminClient
-            .from("profiles")
-            .select("id, full_name, email")
-            .in("id", developerIds)
-        : Promise.resolve({
-            data: [] as Array<{
-              id: string;
-              full_name: string | null;
-              email?: string | null;
-            }>,
-          }),
-      apiKeyIds.length
-        ? adminClient.from("api_keys").select("id, name").in("id", apiKeyIds)
-        : Promise.resolve({ data: [] as Array<{ id: string; name: string }> }),
-    ]);
+  const campaignMap = new Map(campaigns.map((c) => [c.id, c]));
 
-  const campaignMap = new Map(
-    (campaigns ?? []).map((campaign) => [campaign.id, campaign]),
-  );
-  const profileMap = new Map(
-    (profiles ?? []).map((profile) => [
-      profile.id,
+  // Get developer details
+  const developerIds = [...new Set(reports.map((r) => r.developer_id))];
+  const developers = await prisma.user.findMany({
+    where: { id: { in: developerIds } },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+    },
+  });
+
+  const developerMap = new Map(
+    developers.map((dev) => [
+      dev.id,
       {
-        name: profile.full_name ?? "Unknown developer",
-        email: profile.email ?? "Unknown email",
+        name: dev.fullName ?? "Unknown developer",
+        email: dev.email ?? "Unknown email",
       },
     ]),
   );
-  const apiKeyMap = new Map(
-    (apiKeys ?? []).map((apiKey) => [apiKey.id, apiKey.name]),
-  );
 
-  return (reports ?? []).map((report) => ({
-    id: report.id,
-    campaignId: report.api_campaign_id,
-    campaignTitle:
-      campaignMap.get(report.api_campaign_id)?.title ?? "Unknown campaign",
-    campaignStatus:
-      campaignMap.get(report.api_campaign_id)?.status ?? "unknown",
-    developerId: report.developer_id,
-    developerName:
-      profileMap.get(report.developer_id)?.name ?? "Unknown developer",
-    developerEmail:
-      profileMap.get(report.developer_id)?.email ?? "Unknown email",
-    reportReason: report.reason,
-    reportMessage: report.message,
-    reportStatus: report.status,
-    apiKeyName: report.api_key_id
-      ? (apiKeyMap.get(report.api_key_id) ?? null)
-      : null,
-    createdAt: report.created_at,
-    resolvedAt: report.resolved_at,
-    resolutionNotes: report.resolution_notes,
-  }));
+  // Get API key names
+  const apiKeyIds = [
+    ...new Set(reports.map((r) => r.api_key_id).filter(Boolean)),
+  ] as string[];
+  const apiKeys = await prisma.api_keys.findMany({
+    where: { id: { in: apiKeyIds } },
+    select: { id: true, name: true },
+  });
+
+  const apiKeyMap = new Map(apiKeys.map((key) => [key.id, key.name]));
+
+  return reports.map((report) => {
+    const campaign = campaignMap.get(report.api_campaign_id);
+    const developer = developerMap.get(report.developer_id);
+
+    return {
+      id: report.id,
+      campaignId: report.api_campaign_id,
+      campaignTitle: campaign?.title ?? "Unknown campaign",
+      campaignStatus: campaign?.status ?? "unknown",
+      developerId: report.developer_id,
+      developerName: developer?.name ?? "Unknown developer",
+      developerEmail: developer?.email ?? "Unknown email",
+      reportReason: report.reason,
+      reportMessage: report.message,
+      reportStatus: report.status,
+      apiKeyName: report.api_key_id
+        ? (apiKeyMap.get(report.api_key_id) ?? null)
+        : null,
+      createdAt: report.created_at,
+      resolvedAt: report.resolved_at,
+      resolutionNotes: report.resolution_notes,
+    };
+  });
 }
 
 export async function getApiUsageAnalytics(): Promise<ApiUsageAnalytics> {
   await requireAdminAccess();
-  const adminClient = createAdminClient();
 
-  const { data: logs, error } = await adminClient
-    .from("api_request_logs")
-    .select("id, endpoint, status_code, error_code, created_at, api_key_id")
-    .order("created_at", { ascending: false })
-    .limit(1000);
+  // Get recent request logs
+  const logs = await prisma.api_request_logs.findMany({
+    select: {
+      id: true,
+      endpoint: true,
+      status_code: true,
+      error_code: true,
+      created_at: true,
+      api_key_id: true,
+    },
+    orderBy: { created_at: "desc" },
+    take: 1000,
+  });
 
-  if (error) {
-    throw new Error(`Failed to fetch API request logs: ${error.message}`);
+  if (logs.length === 0) {
+    return {
+      requestVolume: 0,
+      activeKeys: 0,
+      errorRate: 0,
+      topEndpoints: [],
+      recentErrors: [],
+    };
   }
 
+  // Get API key prefixes
   const apiKeyIds = [
-    ...new Set((logs ?? []).map((log) => log.api_key_id).filter(Boolean)),
+    ...new Set(logs.map((log) => log.api_key_id).filter(Boolean)),
   ] as string[];
-  const { data: apiKeys } = apiKeyIds.length
-    ? await adminClient
-        .from("api_keys")
-        .select("id, key_prefix")
-        .in("id", apiKeyIds)
-    : { data: [] as Array<{ id: string; key_prefix: string }> };
+  const apiKeys = await prisma.api_keys.findMany({
+    where: { id: { in: apiKeyIds } },
+    select: { id: true, key_prefix: true },
+  });
 
-  const keyMap = new Map(
-    (apiKeys ?? []).map((apiKey) => [apiKey.id, apiKey.key_prefix]),
-  );
+  const keyMap = new Map(apiKeys.map((key) => [key.id, key.key_prefix]));
+
+  // Calculate endpoint statistics
   const endpointCounts = new Map<string, { count: number; errors: number }>();
   let errors = 0;
 
-  (logs ?? []).forEach((log) => {
+  logs.forEach((log) => {
     const endpoint = log.endpoint || "unknown";
     const entry = endpointCounts.get(endpoint) ?? { count: 0, errors: 0 };
     entry.count += 1;
@@ -505,7 +499,7 @@ export async function getApiUsageAnalytics(): Promise<ApiUsageAnalytics> {
   });
 
   const topEndpoints = [...endpointCounts.entries()]
-    .sort((left, right) => right[1].count - left[1].count)
+    .sort((a, b) => b[1].count - a[1].count)
     .slice(0, 10)
     .map(([endpoint, stats]) => ({
       endpoint,
@@ -516,35 +510,36 @@ export async function getApiUsageAnalytics(): Promise<ApiUsageAnalytics> {
           : 0,
     }));
 
+  const activeKeys = new Set(logs.map((log) => log.api_key_id).filter(Boolean))
+    .size;
+  const errorRate =
+    logs.length > 0 ? Number(((errors / logs.length) * 100).toFixed(1)) : 0;
+
+  const recentErrors = logs
+    .filter((log) => Number(log.status_code) >= 400)
+    .slice(0, 20)
+    .map((log) => ({
+      id: log.id,
+      endpoint: log.endpoint,
+      statusCode: Number(log.status_code),
+      errorCode: log.error_code,
+      createdAt: log.created_at,
+      apiKeyPrefix: log.api_key_id
+        ? (keyMap.get(log.api_key_id) ?? null)
+        : null,
+    }));
+
   return {
-    requestVolume: logs?.length ?? 0,
-    activeKeys: new Set(
-      (logs ?? []).map((log) => log.api_key_id).filter(Boolean),
-    ).size,
-    errorRate:
-      (logs?.length ?? 0) > 0
-        ? Number(((errors / (logs?.length ?? 0)) * 100).toFixed(1))
-        : 0,
+    requestVolume: logs.length,
+    activeKeys,
+    errorRate,
     topEndpoints,
-    recentErrors: (logs ?? [])
-      .filter((log) => Number(log.status_code) >= 400)
-      .slice(0, 20)
-      .map((log) => ({
-        id: log.id,
-        endpoint: log.endpoint,
-        statusCode: Number(log.status_code),
-        errorCode: log.error_code,
-        createdAt: log.created_at,
-        apiKeyPrefix: log.api_key_id
-          ? (keyMap.get(log.api_key_id) ?? null)
-          : null,
-      })),
+    recentErrors,
   };
 }
 
 export async function takeDownApiCampaign(formData: FormData) {
   const { userId } = await requireAdminAccess();
-  const adminClient = createAdminClient();
 
   const campaignId = String(formData.get("campaignId") ?? "");
   const reportId = String(formData.get("reportId") ?? "");
@@ -556,31 +551,32 @@ export async function takeDownApiCampaign(formData: FormData) {
     throw new Error("Campaign ID is required");
   }
 
-  const { error: campaignError } = await adminClient
-    .from("api_campaigns")
-    .update({ status: "cancelled" })
-    .eq("id", campaignId);
+  // Update campaign status to cancelled
+  await prisma.api_campaigns.update({
+    where: { id: campaignId },
+    data: { status: "cancelled" },
+  });
 
-  if (campaignError) {
-    throw new Error(`Failed to take down campaign: ${campaignError.message}`);
-  }
-
+  // Update report status if report ID provided
   if (reportId) {
-    const { error: reportError } = await adminClient
-      .from("api_campaign_reports")
-      .update({
+    await prisma.api_campaign_reports.update({
+      where: { id: reportId },
+      data: {
         status: "resolved",
-        resolved_at: new Date().toISOString(),
+        resolved_at: new Date(),
         resolution_notes: notes,
-      })
-      .eq("id", reportId);
-
-    if (reportError) {
-      throw new Error(`Failed to update report: ${reportError.message}`);
-    }
+      },
+    });
   }
 
-  await logAdminActivity("reject-cause", userId);
+  // Log the admin action
+  await prisma.logs.create({
+    data: {
+      action: "take-down-api-campaign",
+      admin_id: userId,
+      created_at: new Date(),
+    },
+  });
 
   revalidatePath("/dashboard/admin/api-monitoring");
   revalidatePath("/dashboard/admin/api-monitoring/campaigns");

@@ -38,7 +38,9 @@ export default function BankSettingsPage() {
 
   return (
     <SettingsShell>
-      {profile && user && <BankDetailsForm profile={profile} user={user} />}
+      {profile && user && (
+        <BankDetailsForm profile={profile} user={{ id: user.id! }} />
+      )}
     </SettingsShell>
   );
 }

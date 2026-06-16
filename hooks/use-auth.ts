@@ -3,65 +3,51 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
-import {
-  sendLoginNotificationEmail,
-  sendWelcomeEmailToUser,
-} from "@/services/mail";
-import { subscribeToConvertKit } from "@/services/convertkit";
-
+import { signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/react";
 import { useAuthContext } from "@/components/auth-provider";
+import { signUpAction, requestPasswordResetAction, resetPasswordAction } from "@/actions/auth-actions";
 
-/**
- * Derive a human-readable device label from the browser's User-Agent.
- * Kept client-side because the UA is only available in the browser context.
- */
-function getDeviceLabel(): string {
-  if (typeof window === "undefined") return "Unknown Device";
-  const ua = window.navigator.userAgent;
-  if (/android/i.test(ua)) return "Android";
-  if (/iPad|iPhone|iPod/.test(ua)) return "iOS";
-  if (/Windows NT/.test(ua)) return "Windows";
-  if (/Macintosh/.test(ua)) return "Mac";
-  if (/Linux/.test(ua)) return "Linux";
-  return "Other";
+function normalizeRedirectPath(target?: string | null): string | null {
+  if (!target) return null;
+  if (!target.startsWith("/")) return null;
+  // Prevent protocol-relative redirects (e.g. //evil.com)
+  if (target.startsWith("//")) return null;
+  return target;
 }
 
 export function useAuth() {
-  const { user, isLoading, supabase } = useAuthContext();
+  const { user, isLoading, isAuthenticated } = useAuthContext();
   const router = useRouter();
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (
+    email: string,
+    password: string,
+    redirectTo?: string | null,
+  ) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const res = await nextAuthSignIn("credentials", {
+        redirect: false,
         email,
         password,
       });
 
-      if (error) {
+      if (res?.error) {
         toast({
           title: "Error signing in",
-          description: error.message,
+          description: "Invalid email or password.",
           variant: "destructive",
         });
         return;
       }
-
-      // Fire-and-forget login notification email.
-      // IP is resolved server-side via x-forwarded-for (no more api.ipify.org).
-      // Device label comes from the browser's User-Agent.
-      sendLoginNotificationEmail({
-        loginTime: new Date().toLocaleString(),
-        device: getDeviceLabel(),
-      }).catch((e) => console.error("Login notification email error:", e));
 
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
 
-      // Navigate to dashboard — the dashboard layout handles the
-      // onboarding redirect if the user hasn't completed it yet.
-      router.push("/dashboard");
+      const safeRedirect = normalizeRedirectPath(redirectTo) || "/dashboard";
+      router.refresh();
+      router.push(safeRedirect);
     } catch (error: any) {
       toast({
         title: "Error signing in",
@@ -78,74 +64,24 @@ export function useAuth() {
     accountType?: "individual" | "organization" | null,
   ) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            account_type: accountType,
-          },
-        },
-      });
-
-      if (error) {
+      // Execute the server action to create the profile in Prisma
+      const res = await signUpAction(email, password, fullName, accountType);
+      
+      if (!res.success) {
         toast({
           title: "Error signing up",
-          description: error.message,
+          description: res.error || "Failed to create account",
           variant: "destructive",
         });
         return;
       }
 
-      // Initialize wallet (bonus handled separately)
-      if (data?.user?.id) {
-        try {
-          const { initializeUserWallet } = await import("@/actions/auth-actions");
-          await initializeUserWallet(data.user.id, 0);
-        } catch (walletError) {
-          console.error("Error initializing user wallet:", walletError);
-          // Don't fail signup if wallet initialization fails
-        }
-      }
-
-      // Track first login for daily reward
-      if (data?.user?.id) {
-        try {
-          const { trackLogin, recordSignupReward } = await import("@/actions/auth-actions");
-          await trackLogin(data.user.id);
-          await recordSignupReward(data.user.id, 1);
-          toast({
-            title: "Rewards credited",
-            description: "Signup bonus (1 EIZA) and daily login bonus (0.5 EIZA) have been added.",
-          });
-        } catch (loginError) {
-          console.error("Error tracking signup login:", loginError);
-          // Don't fail signup if login tracking fails
-        }
-      }
-
-      try {
-        const profileSetupUrl = `${window.location.origin}/dashboard/settings`;
-        await sendWelcomeEmailToUser(email, fullName, profileSetupUrl);
-      } catch (emailError) {
-        console.error("Error sending welcome email:", emailError);
-      }
-
-      try {
-        const firstName = fullName.split(" ")[0];
-
-        await subscribeToConvertKit({
-          email,
-          first_name: firstName,
-          fields: {
-            account_type: accountType || "not_selected",
-            signup_date: new Date().toISOString(),
-          },
-        });
-      } catch (convertkitError) {
-        console.error("Error subscribing to ConvertKit:", convertkitError);
-      }
+      // Automatically sign the user in via NextAuth credentials provider
+      await nextAuthSignIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
 
       toast({
         title: "Account created successfully",
@@ -153,9 +89,9 @@ export function useAuth() {
           "Welcome! Let's set up your profile. Check your email for a welcome message.",
       });
 
+      router.refresh();
       router.push("/onboarding");
-
-      return { data, error };
+      return { success: true };
     } catch (error: any) {
       toast({
         title: "Error signing up",
@@ -165,23 +101,16 @@ export function useAuth() {
     }
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (redirectTo?: string | null) => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+      const safeRedirect = normalizeRedirectPath(redirectTo);
+      const callbackUrl = safeRedirect
+        ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(safeRedirect)}`
+        : `${window.location.origin}/auth/callback`;
 
-      if (error) {
-        toast({
-          title: "Error signing in with Google",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
+      await nextAuthSignIn("google", {
+        callbackUrl,
+      });
     } catch (error: any) {
       toast({
         title: "Error signing in with Google",
@@ -193,13 +122,10 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        throw error;
-      }
-
-      router.replace("/");
+      await nextAuthSignOut({ redirect: false });
+      // Force a hard navigation to clear the Next.js Router Cache
+      // and ensure the JWT cookie removal is fully processed
+      window.location.href = "/";
     } catch (error: any) {
       console.error("Error signing out:", error);
       toast({
@@ -214,43 +140,50 @@ export function useAuth() {
 
   const resetPassword = async (email: string) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
-      });
-
-      if (error) {
+      const res = await requestPasswordResetAction(email);
+      if (!res.success) {
         toast({
-          title: "Error sending reset email",
-          description: error.message,
+          title: "Error",
+          description: res.error || "Failed to send reset link",
           variant: "destructive",
         });
-        throw error;
+        return false;
       }
-
       return true;
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: error.message,
         variant: "destructive",
       });
-      throw error;
+      return false;
     }
   };
 
-  const updatePassword = async (newPassword: string) => {
+  const updatePassword = async (password: string, token: string) => {
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (error) {
-        throw error;
+      const res = await resetPasswordAction(token, password);
+      if (!res.success) {
+        toast({
+          title: "Error",
+          description: res.error || "Failed to reset password",
+          variant: "destructive",
+        });
+        return false;
       }
-
+      toast({
+        title: "Success",
+        description: "Your password has been reset successfully.",
+      });
+      router.push("/auth/signin");
       return true;
     } catch (error: any) {
-      throw error;
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      return false;
     }
   };
 

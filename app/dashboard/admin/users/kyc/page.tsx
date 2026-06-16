@@ -1,163 +1,195 @@
-"use client";
-import { useEffect, useState } from "react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
   CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
-  getVerificationStatus,
-  updateVerificationStatus,
-} from "@/actions/kyc-actions";
-import { getProfile } from "@/actions/profile-actions";
-import NavigationLoader from "@/components/NavigationLoader";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Shield, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
+import { format } from "date-fns";
+import { auth } from "@/lib/auth/auth";
+import { redirect } from "next/navigation";
+import { getUserRole } from "@/actions/role-actions";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 
-export default function KycReviewPage() {
-  const router = useRouter();
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const userId = params?.userId as string;
-  const [kyc, setKyc] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const kycAlert = searchParams.get("kyc_alert");
+export default async function KycListPage() {
+  const session = await auth();
+  const userId = session?.user?.id;
 
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      setError(null);
-      try {
-        const { status, error: kycError } = await getVerificationStatus(userId);
-        if (kycError) throw new Error(kycError);
-        setKyc(status);
-        const profileData = await getProfile(userId);
-        setProfile(profileData);
-      } catch (err: any) {
-        setError(err.message || "Failed to load data");
-      } finally {
-        setLoading(false);
-      }
-    }
-    if (userId) fetchData();
-  }, [userId]);
-
-  const handleAction = async (status: "approved" | "rejected") => {
-    if (!kyc) return;
-    setActionLoading(true);
-    setActionError(null);
-    try {
-      const { error } = await updateVerificationStatus(kyc.id, status);
-      if (error) throw new Error(error);
-      router.push(`/dashboard/admin/users?kyc_alert=${status}`);
-    } catch (err: any) {
-      setActionError(err.message || "Failed to update status");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  if (loading) {
-    return <NavigationLoader />;
+  if (!userId) {
+    redirect("/auth/signin");
   }
-  if (error) {
+
+  const userRole = await getUserRole(userId);
+
+  if (!userRole || (userRole !== "admin" && userRole !== "manager")) {
     return (
-      <Alert variant="destructive">
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
-  }
-  if (!kyc || !profile) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>No KYC Submission</AlertTitle>
-        <AlertDescription>This user has not submitted KYC.</AlertDescription>
-      </Alert>
-    );
-  }
-
-  return (
-    <div className="max-w-xl mx-auto mt-8">
-      {kycAlert && (
-        <Alert variant="default" className="mb-4">
-          <AlertTitle>
-            KYC {kycAlert === "approved" ? "Approved" : "Rejected"}
-          </AlertTitle>
-          <AlertDescription>
-            KYC has been {kycAlert === "approved" ? "approved" : "rejected"}{" "}
-            successfully.
-          </AlertDescription>
-        </Alert>
-      )}
       <Card>
         <CardHeader>
-          <CardTitle>KYC Review</CardTitle>
+          <CardTitle>Access Denied</CardTitle>
           <CardDescription>
-            Review and approve/reject this user's KYC submission.
+            You do not have permission to access this page.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h3 className="font-semibold">User Details</h3>
-            <div>Name: {profile.full_name || "-"}</div>
-            <div>Email: {profile.email || "-"}</div>
-          </div>
-          <div>
-            <h3 className="font-semibold">KYC Submission</h3>
-            <div>Full Name: {profile.full_name || "-"}</div>
-            <div>Date of Birth: {profile.date_of_birth || "-"}</div>
-            <div>Phone: {profile.phone || "-"}</div>
-            <div>Address: {profile.address || "-"}</div>
-            <div>Document Type: {kyc.document_type || "-"}</div>
-            <div>Status: {kyc.status}</div>
-            <div>Notes: {kyc.verification_notes || "-"}</div>
-            <div className="mt-2">
-              <span className="font-semibold">Document:</span>
-              <br />
-              {kyc.document_url ? (
-                <a
-                  href={kyc.document_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <img
-                    src={kyc.document_url}
-                    alt="KYC Document"
-                    className="max-w-xs max-h-48 border rounded"
-                  />
-                </a>
-              ) : (
-                <span>No document uploaded</span>
-              )}
+      </Card>
+    );
+  }
+
+  const submissions = await prisma.kyc_verifications.findMany({
+    orderBy: { created_at: "desc" },
+  });
+
+  const userIds = [...new Set(submissions.map((s) => s.user_id))];
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, fullName: true, email: true },
+  });
+  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+
+  const pending = submissions.filter((s) => s.status === "pending").length;
+  const approved = submissions.filter((s) => s.status === "approved").length;
+  const rejected = submissions.filter((s) => s.status === "rejected").length;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">KYC Reviews</h1>
+        <p className="text-muted-foreground">
+          Review and manage user identity verification submissions.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6 flex items-center gap-3">
+            <Clock className="h-8 w-8 text-yellow-500" />
+            <div>
+              <p className="text-2xl font-bold">{pending}</p>
+              <p className="text-sm text-muted-foreground">Pending</p>
             </div>
-          </div>
-          {actionError && (
-            <Alert variant="destructive">
-              <AlertDescription>{actionError}</AlertDescription>
-            </Alert>
-          )}
-          <div className="flex gap-4 mt-4">
-            <Button
-              disabled={actionLoading || kyc.status === "approved"}
-              onClick={() => handleAction("approved")}
-            >
-              ✅ Approve
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={actionLoading || kyc.status === "rejected"}
-              onClick={() => handleAction("rejected")}
-            >
-              ❌ Reject
-            </Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6 flex items-center gap-3">
+            <CheckCircle className="h-8 w-8 text-green-500" />
+            <div>
+              <p className="text-2xl font-bold">{approved}</p>
+              <p className="text-sm text-muted-foreground">Approved</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6 flex items-center gap-3">
+            <XCircle className="h-8 w-8 text-red-500" />
+            <div>
+              <p className="text-2xl font-bold">{rejected}</p>
+              <p className="text-sm text-muted-foreground">Rejected</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            All Submissions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Document Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead>Last Updated</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {submissions.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      No KYC submissions found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  submissions.map((sub) => {
+                    const user = userMap[sub.user_id];
+                    return (
+                      <TableRow key={sub.id}>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {sub.full_name || user?.fullName || "—"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {user?.email || "—"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{sub.document_type || "—"}</TableCell>
+                        <TableCell>
+                          {sub.status === "approved" ? (
+                            <Badge className="bg-green-500 hover:bg-green-600">
+                              <CheckCircle className="mr-1 h-3 w-3" />
+                              Approved
+                            </Badge>
+                          ) : sub.status === "pending" ? (
+                            <Badge variant="secondary">
+                              <Clock className="mr-1 h-3 w-3" />
+                              Pending
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <XCircle className="mr-1 h-3 w-3" />
+                              Rejected
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {sub.created_at
+                            ? format(new Date(sub.created_at), "MMM d, yyyy")
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {sub.updated_at
+                            ? format(new Date(sub.updated_at), "MMM d, yyyy")
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button asChild variant="outline" size="sm">
+                            <Link
+                              href={`/dashboard/admin/users/kyc/${sub.user_id}`}
+                            >
+                              <Eye className="mr-1 h-3 w-3" />
+                              Review
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>

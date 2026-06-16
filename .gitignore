@@ -32,4 +32,8 @@ next-env.d.ts
 #docs
 /.trae
 
+#.agent
 /.agent
+
+
+/lib/generated/prisma

@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
-import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 export interface EventPayload {
-  type: "comment" | "share" | "donation" | "login" | "weekly_streak" | "monthly_active";
+  type: "comment" | "share" | "donation" | "weekly_streak" | "monthly_active";
   data: Record<string, any>;
   timestamp: string;
 }
@@ -17,199 +15,77 @@ interface ListenerOptions {
   onComment?: EventCallback;
   onShare?: EventCallback;
   onDonation?: EventCallback;
-  onLogin?: EventCallback;
   onWeeklyStreak?: EventCallback;
   onMonthlyActive?: EventCallback;
 }
 
 export function useEventListeners(options: ListenerOptions) {
-  const subscriptionsRef = useRef<Array<{ unsubscribe: () => void }>>([]);
-  const supabaseRef = useRef(createClient());
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const setupListeners = useCallback(() => {
-    const supabase = supabaseRef.current;
-
-    // Listen for comments
-    if (options.onComment) {
-      const commentSubscription = supabase
-        .channel("comments_channel")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "comments",
-            ...(options.userId && { filter: `user_id=eq.${options.userId}` }),
-          },
-          (payload: RealtimePostgresChangesPayload<any>) => {
-            options.onComment?.({
-              type: "comment",
-              data: payload.new,
-              timestamp: new Date().toISOString(),
-            });
-          }
-        )
-        .subscribe();
-
-      subscriptionsRef.current.push({
-        unsubscribe: () => {
-          supabase.removeChannel(commentSubscription);
-        },
-      });
+    // Prevent multiple connections
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
     }
 
-    // Listen for shares
-    if (options.onShare) {
-      const shareSubscription = supabase
-        .channel("shares_channel")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "cause_shares",
-            ...(options.userId && { filter: `user_id=eq.${options.userId}` }),
-          },
-          (payload: RealtimePostgresChangesPayload<any>) => {
-            options.onShare?.({
-              type: "share",
-              data: payload.new,
-              timestamp: new Date().toISOString(),
-            });
-          }
-        )
-        .subscribe();
-
-      subscriptionsRef.current.push({
-        unsubscribe: () => {
-          supabase.removeChannel(shareSubscription);
-        },
-      });
+    const url = new URL("/api/events", window.location.origin);
+    if (options.userId) {
+      url.searchParams.append("userId", options.userId);
     }
 
-    // Listen for donations
-    if (options.onDonation) {
-      const donationSubscription = supabase
-        .channel("donations_channel")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "donations",
-            ...(options.userId && { filter: `user_id=eq.${options.userId}` }),
-          },
-          (payload: RealtimePostgresChangesPayload<any>) => {
-            options.onDonation?.({
-              type: "donation",
-              data: payload.new,
-              timestamp: new Date().toISOString(),
-            });
-          }
-        )
-        .subscribe();
+    const eventSource = new EventSource(url.toString());
+    eventSourceRef.current = eventSource;
 
-      subscriptionsRef.current.push({
-        unsubscribe: () => {
-          supabase.removeChannel(donationSubscription);
-        },
-      });
-    }
+    eventSource.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        
+        // Ignore ping events
+        if (payload.type === 'ping') return;
 
-    // Listen for login events via auth session changes
-    if (options.onLogin) {
-      const authSubscription = supabase.auth.onAuthStateChange(
-        (event, session) => {
-          if (event === "SIGNED_IN" && session?.user) {
-            options.onLogin?.({
-              type: "login",
-              data: {
-                user_id: session.user.id,
-                email: session.user.email,
-                provider: session.user.app_metadata?.provider,
-              },
-              timestamp: new Date().toISOString(),
-            });
-          }
+        switch (payload.type) {
+          case "comment":
+            options.onComment?.(payload);
+            break;
+          case "share":
+            options.onShare?.(payload);
+            break;
+          case "donation":
+            options.onDonation?.(payload);
+            break;
+          case "weekly_streak":
+            options.onWeeklyStreak?.(payload);
+            break;
+          case "monthly_active":
+            options.onMonthlyActive?.(payload);
+            break;
         }
-      );
+      } catch (error) {
+        console.error("Error parsing SSE data:", error);
+      }
+    };
 
-      subscriptionsRef.current.push({
-        unsubscribe: () => {
-          authSubscription?.data?.subscription?.unsubscribe();
-        },
-      });
-    }
-
-    // Listen for weekly streak updates
-    if (options.onWeeklyStreak) {
-      const streakSubscription = supabase
-        .channel("weekly_streak_channel")
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "user_streaks",
-            ...(options.userId && { filter: `user_id=eq.${options.userId}` }),
-          },
-          (payload: RealtimePostgresChangesPayload<any>) => {
-            if (payload.new.weekly_streak) {
-              options.onWeeklyStreak?.({
-                type: "weekly_streak",
-                data: payload.new,
-                timestamp: new Date().toISOString(),
-              });
-            }
-          }
-        )
-        .subscribe();
-
-      subscriptionsRef.current.push({
-        unsubscribe: () => {
-          supabase.removeChannel(streakSubscription);
-        },
-      });
-    }
-
-    // Listen for monthly active updates
-    if (options.onMonthlyActive) {
-      const monthlySubscription = supabase
-        .channel("monthly_active_channel")
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "user_streaks",
-            ...(options.userId && { filter: `user_id=eq.${options.userId}` }),
-          },
-          (payload: RealtimePostgresChangesPayload<any>) => {
-            if (payload.new.is_monthly_active) {
-              options.onMonthlyActive?.({
-                type: "monthly_active",
-                data: payload.new,
-                timestamp: new Date().toISOString(),
-              });
-            }
-          }
-        )
-        .subscribe();
-
-      subscriptionsRef.current.push({
-        unsubscribe: () => {
-          supabase.removeChannel(monthlySubscription);
-        },
-      });
-    }
-  }, [options]);
+    eventSource.onerror = (error) => {
+      console.error("SSE Connection Error:", error);
+      // EventSource auto-reconnects, but we can log it here
+    };
+  }, [
+    options.userId,
+    options.onComment,
+    options.onShare,
+    options.onDonation,
+    options.onWeeklyStreak,
+    options.onMonthlyActive,
+  ]);
 
   useEffect(() => {
     setupListeners();
 
     return () => {
-      subscriptionsRef.current.forEach((sub) => sub.unsubscribe());
-      subscriptionsRef.current = [];
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
     };
   }, [setupListeners]);
 }

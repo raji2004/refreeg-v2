@@ -69,9 +69,11 @@ const MobileSlider = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={imageControls[index % HERO_IMAGES.length]}
         >
-          <img
+          <Image
             src={src}
             alt={`Hero image ${index + 1}`}
+            width={200}
+            height={150}
             className="object-cover rounded-xl shadow-lg w-full h-full"
           />
         </motion.div>
@@ -122,9 +124,11 @@ const DesktopSlider = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={imageControls[index % HERO_IMAGES.length]}
         >
-          <img
+          <Image
             src={src}
             alt={`Hero image ${index + 1}`}
+            width={325}
+            height={200}
             className="object-cover rounded-xl shadow-lg w-full h-full"
           />
         </motion.div>

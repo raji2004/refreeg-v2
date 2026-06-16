@@ -1,0 +1,143 @@
+model User {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phone                 String?
+  accountNumber         String?   @map("account_number")
+  bankName              String?   @map("bank_name")
+  accountName           String?   @map("account_name")
+  profilePhoto          String?   @map("profile_photo")
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  isBlocked             Boolean?  @map("is_blocked")
+  subAccountCode        String?   @map("sub_account_code")
+  bio                   String?
+  solana_wallet         String?
+  twitter_url           String?
+  facebook_url          String?
+  instagram_url         String?
+  linkedin_url          String?
+  crypto_wallets        Json?
+  accountType           String?   @map("account_type")
+  isVerified            Boolean?  @default(false) @map("is_verified")
+  gender                String?
+  website               String?
+  referralCode          String?   @unique @map("referral_code")
+  firstName             String?   @map("first_name")
+  lastName              String?   @map("last_name")
+  username              String?   @unique
+  location              String?
+  email                 String?   @unique
+  onboarding_completed  Boolean?  @default(false)
+  fullName              String?   @map("full_name")
+  total_points          Int?      @default(0)
+  current_tier          String?   @default("Tier 1")
+  Total_Engagements     Int?      @map("Total Engagements")
+  eiza_balance          Decimal?  @db.Decimal
+  total_eiza_earned     Decimal?  @db.Decimal
+  upvotes_received      Int?
+  content_quality_score Decimal?  @db.Decimal
+  spam_flags            Int?      @db.SmallInt
+  login_streak          Int?      @db.SmallInt
+  last_login_date       DateTime? @db.Date
+  weekly_streak_count   Int?      @default(0) @db.SmallInt
+  monthly_streak_count  Int?      @default(0) @db.SmallInt
+  emailVerified         DateTime? @map("email_verified")
+  password              String?
+  lastLoginUserAgent    String?   @map("last_login_user_agent")
+  accounts              Account[]
+  sessions              Session[]
+  roles                 Role[] 
+  causes                Cause[]
+  donations             Donation[]
+  campaign_follows      campaign_follows[]
+  cause_edits           cause_edits[]
+  cause_shares          cause_shares[]
+  comments              comments[]
+  crypto_donations      crypto_donations[]
+  petition_comments     petition_comments[]
+  petitions             petitions[]
+  petition_edits        petition_edits[]
+
+  @@index([isBlocked], map: "idx_profiles_is_blocked")
+  @@map("profiles")
+}
+
+model Account {
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String  @map("user_id") @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id") @db.Uuid
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model PasswordResetToken {
+  id      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email   String   @unique
+  token   String   @unique
+  expires DateTime
+
+  @@map("password_reset_tokens")
+}
+
+model PendingRegistration {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String    @unique
+  password       String
+  fullName       String
+  otpCode        String
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  referralCode   String?   @map("referral_code")
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  lastOtpSentAt  DateTime? @map("last_otp_sent_at") @db.Timestamptz(6)
+
+  @@map("pending_registrations")
+}
+
+model Role {
+  id         String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  user_id    String    @db.Uuid
+  role       String
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id], map: "idx_roles_user_id")
+  @@map("roles")
+}
+
+enum gender {
+  male
+  female
+  undefined
+}

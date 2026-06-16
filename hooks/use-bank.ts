@@ -27,21 +27,17 @@ export function useBank({ initialData, userId }: UseBankProps) {
     sub_account_code: initialData?.sub_account_code || "",
   });
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [verificationFailed, setVerificationFailed] = useState(false);
   const lastInitialDataRef = useRef<string>("");
+  const isMountedRef = useRef(true);
 
+  // Memoize the initial data sync to avoid loops
   useEffect(() => {
-    const currentKey = JSON.stringify({
-      account_number: initialData?.account_number,
-      bank_name: initialData?.bank_name,
-      account_name: initialData?.account_name,
-      sub_account_code: initialData?.sub_account_code,
-    });
+    if (!initialData) return;
 
-    if (
-      initialData &&
-      !hasUserInteracted &&
-      currentKey !== lastInitialDataRef.current
-    ) {
+    const currentKey = `${initialData.account_number}-${initialData.bank_name}-${initialData.account_name}`;
+    
+    if (!hasUserInteracted && currentKey !== lastInitialDataRef.current) {
       setFormData({
         accountNumber: initialData.account_number || "",
         bankName: initialData.bank_name || "",
@@ -53,6 +49,7 @@ export function useBank({ initialData, userId }: UseBankProps) {
   }, [initialData, hasUserInteracted]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     const fetchBanks = async () => {
       setIsLoadingBanks(true);
       try {
@@ -63,13 +60,17 @@ export function useBank({ initialData, userId }: UseBankProps) {
           throw new Error(result.error || "Failed to fetch banks");
         }
 
-        const banksList = result.data;
+        const banksList = result.data || [];
+        if (!Array.isArray(banksList)) {
+          throw new Error("Invalid bank list format received");
+        }
 
         const uniqueBanks = banksList.reduce(
           (
             acc: { name: string; code: string }[],
             bank: { name: string; code: string },
           ) => {
+            if (!bank || !bank.code || !bank.name) return acc;
             const key = `${bank.code}-${bank.name}`;
             if (!acc.some((b) => `${b.code}-${b.name}` === key)) {
               acc.push(bank);
@@ -78,20 +79,21 @@ export function useBank({ initialData, userId }: UseBankProps) {
           },
           [],
         );
-        setBanks(uniqueBanks);
+
+        if (isMountedRef.current) {
+          setBanks(uniqueBanks);
+        }
       } catch (error) {
         console.error("Error fetching banks:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch banks list",
-          variant: "destructive",
-        });
       } finally {
-        setIsLoadingBanks(false);
+        if (isMountedRef.current) {
+          setIsLoadingBanks(false);
+        }
       }
     };
 
     fetchBanks();
+    return () => { isMountedRef.current = false; };
   }, []);
 
   const verifyAccount = useCallback(
@@ -123,6 +125,7 @@ export function useBank({ initialData, userId }: UseBankProps) {
         });
       } catch (error: any) {
         console.error("Error verifying account:", error);
+        setVerificationFailed(true);
         toast({
           title: "Verification failed",
           description:
@@ -131,10 +134,12 @@ export function useBank({ initialData, userId }: UseBankProps) {
           variant: "destructive",
         });
       } finally {
-        setIsVerifying(false);
+        if (isMountedRef.current) {
+          setIsVerifying(false);
+        }
       }
     },
-    [],
+    []
   );
 
   useEffect(() => {
@@ -142,7 +147,7 @@ export function useBank({ initialData, userId }: UseBankProps) {
 
     if (formData.accountNumber && formData.bankName && banks.length > 0) {
       const bank = banks.find((b) => b.name === formData.bankName);
-      if (bank && formData.accountNumber.length >= 10) {
+      if (bank && formData.accountNumber.length >= 10 && !isVerifying && !formData.accountName) {
         setIsVerifying(true);
         verifyAccount(formData.accountNumber, bank.code);
       }
@@ -153,15 +158,24 @@ export function useBank({ initialData, userId }: UseBankProps) {
     banks,
     verifyAccount,
     hasUserInteracted,
+    formData.accountName,
+    isVerifying
   ]);
 
   const handleBankChange = (value: string, field: string) => {
     setHasUserInteracted(true);
-    const updatedFormData = {
-      ...formData,
-      [field]: value,
-    };
-    setFormData(updatedFormData);
+    setFormData((prev) => {
+      const newData = {
+        ...prev,
+        [field]: value,
+      };
+      // Clear account name and verification status when account number or bank changes
+      if (field === "accountNumber" || field === "bankName") {
+        newData.accountName = "";
+        setVerificationFailed(false);
+      }
+      return newData;
+    });
   };
 
   const handleBankSubmit = async (e: React.FormEvent) => {
@@ -203,12 +217,7 @@ export function useBank({ initialData, userId }: UseBankProps) {
       queryClient.setQueryData(["profile", userId], updatedProfile);
 
       setHasUserInteracted(false);
-      lastInitialDataRef.current = JSON.stringify({
-        account_number: updatedProfile.account_number,
-        bank_name: updatedProfile.bank_name,
-        account_name: updatedProfile.account_name,
-        sub_account_code: updatedProfile.sub_account_code,
-      });
+      lastInitialDataRef.current = `${updatedProfile.account_number}-${updatedProfile.bank_name}-${updatedProfile.account_name}`;
 
       toast({
         title: "Success",
@@ -231,7 +240,8 @@ export function useBank({ initialData, userId }: UseBankProps) {
     isVerifying,
     banks,
     isLoadingBanks,
-    isVerified: !!formData.accountName,
+    isVerified: !!formData.accountName && !isVerifying,
+    verificationFailed,
     formData,
     handleBankChange,
     handleBankSubmit,

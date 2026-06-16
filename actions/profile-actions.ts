@@ -1,36 +1,69 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
 import type {
   Profile,
   ProfileFormData,
   BankDetailsFormData,
   OnboardingProfileData,
 } from "@/types";
+import { KycStatus, KycVerification } from "@/types/kyc-types";
+
+// Helper function to map Prisma Profile to the expected Profile type
+function mapPrismaToProfile(p: any): Profile {
+  return {
+    id: p.id,
+    email: p.email,
+    full_name: p.fullName,
+    first_name: p.firstName,
+    last_name: p.lastName,
+    username: p.username,
+    phone: p.phone,
+    location: p.location,
+    account_number: p.accountNumber,
+    bank_name: p.bankName,
+    account_name: p.accountName,
+    sub_account_code: p.subAccountCode,
+    profile_photo: p.profilePhoto,
+    is_blocked: p.isBlocked ?? false,
+    created_at: p.createdAt.toISOString(),
+    updated_at: p.updatedAt?.toISOString() || new Date().toISOString(),
+    account_type: p.accountType as any,
+    is_verified: p.isVerified ?? false,
+    gender: p.gender,
+    bio: p.bio,
+    solana_wallet: p.solana_wallet,
+    twitter_url: p.twitter_url,
+    facebook_url: p.facebook_url,
+    instagram_url: p.instagram_url,
+    linkedin_url: p.linkedin_url,
+  } as Profile;
+}
 
 export async function getProfile(userId: string): Promise<Profile | null> {
-  const supabase = await createClient();
+  try {
+    const profile = await prisma.user.findUnique({
+      where: { id: userId },
+    });
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
+    if (!profile) return null;
 
-  if (error) {
-    if (error.code === "PGRST116") {
-      return null;
-    }
+    return mapPrismaToProfile(profile);
+  } catch (error) {
     console.error("Error fetching profile:", error);
     throw error;
   }
-
-  return data as Profile;
 }
 
 export async function hasBankDetails(userId: string): Promise<boolean> {
   const profile = await getProfile(userId);
+  console.log("hasBankDetails check for user:", userId);
+  console.log("Profile data found:", {
+    exists: !!profile,
+    account_number: profile?.account_number,
+    bank_name: profile?.bank_name,
+  });
   return !!(profile && profile.account_number && profile.bank_name);
 }
 
@@ -38,151 +71,121 @@ export async function updateProfile(
   userId: string,
   profileData: ProfileFormData,
 ): Promise<Profile> {
-  const supabase = await createClient();
+  try {
+    const data = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: profileData.name,
+        email: profileData.email,
+        username: profileData.username,
+        phone: profileData.phone,
+        bio: profileData.bio,
+        accountType: profileData.account_type,
+        profilePhoto: profileData.profile_photo,
+        twitter_url: profileData.twitter_url || null,
+        facebook_url: profileData.facebook_url || null,
+        instagram_url: profileData.instagram_url || null,
+        linkedin_url: profileData.linkedin_url || null,
+      },
+    });
 
-  const updateData = {
-    id: userId,
-    full_name: profileData.name,
-    email: profileData.email,
-    username: profileData.username,
-    phone: profileData.phone,
-    bio: profileData.bio,
-    account_type: profileData.account_type,
-    profile_photo: profileData.profile_photo,
-    twitter_url: profileData.twitter_url || null,
-    facebook_url: profileData.facebook_url || null,
-    instagram_url: profileData.instagram_url || null,
-    linkedin_url: profileData.linkedin_url || null,
-    updated_at: new Date().toISOString(),
-  };
+    revalidatePath("/dashboard/settings");
+    revalidatePath(`/profile/${userId}`);
+    revalidatePath("/");
 
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .upsert(updateData)
-    .select()
-    .single();
-
-  if (error) {
+    return mapPrismaToProfile(data);
+  } catch (error) {
     console.error("Error updating profile:", error);
     throw error;
   }
-
-  revalidatePath("/dashboard/settings");
-  revalidatePath(`/profile/${userId}`);
-  revalidatePath("/");
-
-  return data as Profile;
 }
 
 export async function updateProfilePhoto(
   userId: string,
   photoFile: File,
 ): Promise<string> {
-  const supabase = await createClient();
+  const ext = photoFile.name.split('.').pop() || 'jpg';
+  const uniqueId = Math.random().toString(36).substring(2, 15);
+  try {
+    const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
+    const s3Key = generateS3Key({
+      entityType: "profiles",
+      userId,
+      entityId: userId,
+      mediaType: "images",
+      filename: `${uniqueId}.${ext}`,
+    });
+    const buffer = Buffer.from(await photoFile.arrayBuffer());
+    await uploadToS3(buffer, s3Key, photoFile.type);
 
-  const fileName = `${userId}-${Date.now()}-${photoFile.name}`;
-  const { data: uploadData, error: uploadError } = await supabase.storage
-    .from("profile-photos")
-    .upload(fileName, photoFile, {
-      cacheControl: "3600",
-      upsert: true,
+    await prisma.user.update({
+      where: { id: userId },
+      data: { profilePhoto: s3Key },
     });
 
-  if (uploadError) {
-    console.error("Error uploading profile photo:", uploadError);
-    throw uploadError;
-  }
-
-  const { data: urlData } = supabase.storage
-    .from("profile-photos")
-    .getPublicUrl(fileName);
-
-  const publicUrl = urlData.publicUrl;
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .upsert({
-      id: userId,
-      profile_photo: publicUrl,
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error updating profile with photo URL:", error);
+    revalidatePath("/dashboard/settings");
+    revalidatePath("/");
+    return s3Key;
+  } catch (error: any) {
+    console.error("Error updating profile photo:", error);
     throw error;
   }
-
-  revalidatePath("/dashboard/settings");
-  revalidatePath("/");
-  return publicUrl;
 }
 
 export async function updateBankDetails(
   userId: string,
   bankData: BankDetailsFormData,
 ): Promise<Profile> {
-  const supabase = await createClient();
+  try {
+    const data = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        accountNumber: bankData.accountNumber,
+        bankName: bankData.bankName,
+        accountName: bankData.accountName,
+        subAccountCode: bankData.sub_account_code,
+      },
+    });
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .upsert({
-      id: userId,
-      account_number: bankData.accountNumber,
-      bank_name: bankData.bankName,
-      account_name: bankData.accountName,
-      sub_account_code: bankData.sub_account_code,
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
-
-  if (error) {
+    revalidatePath("/dashboard/settings");
+    return mapPrismaToProfile(data);
+  } catch (error) {
     console.error("Error updating bank details:", error);
     throw error;
   }
-
-  revalidatePath("/dashboard/settings");
-  return data as Profile;
 }
 
 export async function createOnboardingProfile(
   userId: string,
   profileData: OnboardingProfileData,
   oauthAvatarUrl?: string | null,
-): Promise<Profile> {
-  const supabase = await createClient();
+): Promise<any> {
+  const existingProfile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { profilePhoto: true },
+  });
 
-  const { data: existingProfile } = await supabase
-    .from("profiles")
-    .select("profile_photo")
-    .eq("id", userId)
-    .maybeSingle();
-
-  let profilePhotoUrl: string | null = existingProfile?.profile_photo ?? null;
+  let profilePhotoUrl: string | null = existingProfile?.profilePhoto ?? null;
 
   if (profileData.profilePhoto) {
-    const fileName = `${userId}-${Date.now()}-${profileData.profilePhoto.name}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("profile-photos")
-      .upload(fileName, profileData.profilePhoto, {
-        cacheControl: "3600",
-        upsert: true,
+    const ext = profileData.profilePhoto.name.split('.').pop() || 'jpg';
+    const uniqueId = Math.random().toString(36).substring(2, 15);
+    try {
+      const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
+      const s3Key = generateS3Key({
+        entityType: "profiles",
+        userId,
+        entityId: userId,
+        mediaType: "images",
+        filename: `${uniqueId}.${ext}`,
       });
-
-    if (uploadError) {
+      const buffer = Buffer.from(await profileData.profilePhoto.arrayBuffer());
+      await uploadToS3(buffer, s3Key, profileData.profilePhoto.type);
+      profilePhotoUrl = s3Key;
+    } catch (uploadError) {
       console.error("Error uploading profile photo:", uploadError);
       throw new Error("Failed to upload profile photo");
     }
-
-    const { data: urlData } = supabase.storage
-      .from("profile-photos")
-      .getPublicUrl(fileName);
-
-    profilePhotoUrl = urlData.publicUrl;
   } else if (!profilePhotoUrl && oauthAvatarUrl) {
     profilePhotoUrl = oauthAvatarUrl;
   }
@@ -192,65 +195,61 @@ export async function createOnboardingProfile(
   }`.trim();
 
   const updateData: any = {
-    id: userId,
-    updated_at: new Date().toISOString(),
     onboarding_completed: true,
   };
 
   if (profileData.email) updateData.email = profileData.email;
   if (profileData.phone) updateData.phone = profileData.phone;
-  if (fullName) updateData.full_name = fullName;
-  if (profilePhotoUrl) updateData.profile_photo = profilePhotoUrl;
+  if (fullName) updateData.fullName = fullName;
+  if (profilePhotoUrl) updateData.profilePhoto = profilePhotoUrl;
+
+  if (profileData.firstName) updateData.firstName = profileData.firstName;
+  if (profileData.lastName) updateData.lastName = profileData.lastName;
+  if (profileData.username) updateData.username = profileData.username;
+  if (profileData.location) updateData.location = profileData.location;
+  if (profileData.accountType) updateData.accountType = profileData.accountType;
+  if (profileData.gender) updateData.gender = profileData.gender;
 
   try {
-    if (profileData.firstName) updateData.first_name = profileData.firstName;
-    if (profileData.lastName) updateData.last_name = profileData.lastName;
-    if (profileData.username) updateData.username = profileData.username;
-    if (profileData.location) updateData.location = profileData.location;
-    if (profileData.accountType)
-      updateData.account_type = profileData.accountType;
-    if (profileData.gender) updateData.gender = profileData.gender;
-  } catch (e) {
-    console.warn("Some fields may not exist in database schema:", e);
-  }
+    const data = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .upsert(updateData, { onConflict: "id" })
-    .select()
-    .single();
-
-  if (error) {
+    revalidatePath("/dashboard");
+    revalidatePath("/");
+    return data;
+  } catch (error: any) {
     console.error("Error creating/updating profile:", error);
     throw new Error(`Failed to create profile: ${error.message}`);
   }
-
-  revalidatePath("/dashboard");
-  revalidatePath("/");
-  return data as Profile;
 }
 
 export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
   try {
-    const supabase = await createClient();
+    const profile = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        fullName: true,
+        phone: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        location: true,
+        createdAt: true,
+      },
+    });
 
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select(
-        "full_name, phone, email, first_name, last_name, username, location, created_at",
-      )
-      .eq("id", userId)
-      .single();
-
-    if (error || !profile) {
+    if (!profile) {
       return false;
     }
 
-    const hasBasicProfile = !!(profile.full_name && profile.email);
+    const hasBasicProfile = !!(profile.fullName && profile.email);
 
     const hasOnboardingFields = !!(
-      profile.first_name &&
-      profile.last_name &&
+      profile.firstName &&
+      profile.lastName &&
       profile.username &&
       profile.location &&
       profile.phone
@@ -259,7 +258,7 @@ export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
     if (hasBasicProfile && !hasOnboardingFields) {
       // Check if the user is very old (created before onboarding fields were added)
       // For new users created by the trigger, this should be false
-      const createdAt = new Date(profile.created_at);
+      const createdAt = new Date(profile.createdAt);
       const onboardingcutoff = new Date("2024-12-21"); // Date when onboarding was added
 
       if (createdAt < onboardingcutoff) {
@@ -278,21 +277,26 @@ export async function getCurrentOnboardingStep(
   userId: string,
 ): Promise<number> {
   try {
-    const supabase = await createClient();
+    const profile = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        accountType: true,
+        gender: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        location: true,
+        phone: true,
+        email: true,
+        profilePhoto: true,
+      },
+    });
 
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select(
-        "account_type, gender, first_name, last_name, username, location, phone, email, profile_photo",
-      )
-      .eq("id", userId)
-      .single();
-
-    if (error || !profile) {
+    if (!profile) {
       return 1;
     }
 
-    if (!profile.account_type) {
+    if (!profile.accountType) {
       return 1;
     }
 
@@ -301,8 +305,8 @@ export async function getCurrentOnboardingStep(
     }
 
     const hasProfileData = !!(
-      profile.first_name &&
-      profile.last_name &&
+      profile.firstName &&
+      profile.lastName &&
       profile.username &&
       profile.location &&
       profile.phone &&
@@ -334,17 +338,22 @@ export async function getOnboardingData(userId: string): Promise<{
   };
 }> {
   try {
-    const supabase = await createClient();
+    const profile = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        accountType: true,
+        gender: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        location: true,
+        phone: true,
+        email: true,
+        profilePhoto: true,
+      },
+    });
 
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select(
-        "account_type, gender, first_name, last_name, username, location, phone, email, profile_photo",
-      )
-      .eq("id", userId)
-      .single();
-
-    if (error || !profile) {
+    if (!profile) {
       return {
         accountType: "",
         gender: "",
@@ -360,16 +369,16 @@ export async function getOnboardingData(userId: string): Promise<{
     }
 
     return {
-      accountType: profile.account_type || "",
+      accountType: profile.accountType || "",
       gender: profile.gender || "",
       profile: {
-        firstName: profile.first_name || "",
-        lastName: profile.last_name || "",
+        firstName: profile.firstName || "",
+        lastName: profile.lastName || "",
         username: profile.username || "",
         location: profile.location || "",
         phone: profile.phone || "",
         email: profile.email || "",
-        profilePhoto: profile.profile_photo || undefined,
+        profilePhoto: profile.profilePhoto || undefined,
       },
     };
   } catch (error) {
@@ -394,18 +403,12 @@ export async function saveStep1Progress(
   accountType: string,
 ): Promise<void> {
   try {
-    const supabase = await createClient();
-
-    const { error } = await supabase.from("profiles").upsert({
-      id: userId,
-      account_type: accountType,
-      updated_at: new Date().toISOString(),
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        accountType: accountType,
+      },
     });
-
-    if (error) {
-      console.error("Error saving step 1 progress:", error);
-      throw error;
-    }
 
     revalidatePath("/onboarding");
   } catch (error) {
@@ -419,18 +422,12 @@ export async function saveStep2Progress(
   gender: string,
 ): Promise<void> {
   try {
-    const supabase = await createClient();
-
-    const { error } = await supabase.from("profiles").upsert({
-      id: userId,
-      gender: gender,
-      updated_at: new Date().toISOString(),
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        gender: gender,
+      },
     });
-
-    if (error) {
-      console.error("Error saving step 2 progress:", error);
-      throw error;
-    }
 
     revalidatePath("/onboarding");
   } catch (error) {
@@ -439,30 +436,41 @@ export async function saveStep2Progress(
   }
 }
 
+export async function checkUsernameAvailability(
+  username: string,
+): Promise<boolean> {
+  try {
+    const profile = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+    return !profile; // Return true if profile does not exist (username is available)
+  } catch (error) {
+    console.error("Error checking username availability:", error);
+    return false; // Safely return false if an error occurs
+  }
+}
+
 export async function isProfileComplete(
   userId: string,
 ): Promise<{ isComplete: boolean; missingFields: string[] }> {
   try {
-    const supabase = await createClient();
+    const profile = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { fullName: true, profilePhoto: true },
+    });
 
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("full_name, profile_photo")
-      .eq("id", userId)
-      .single();
-
-    if (error) {
-      console.error("Error fetching profile for completion check:", error);
+    if (!profile) {
       return { isComplete: false, missingFields: ["profile"] };
     }
 
     const missingFields: string[] = [];
 
-    if (!profile?.full_name || profile.full_name.trim() === "") {
+    if (!profile.fullName || profile.fullName.trim() === "") {
       missingFields.push("full name");
     }
 
-    if (!profile?.profile_photo) {
+    if (!profile.profilePhoto) {
       missingFields.push("profile picture");
     }
 
@@ -476,67 +484,140 @@ export async function isProfileComplete(
   }
 }
 
-export async function hasKycVerification(userId: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("kyc_verifications")
-    .select("*")
-    .eq("user_id", userId)
-    .single();
+export async function hasKycVerification(userId: string): Promise<KycVerification | null> {
+  try {
+    const data = await prisma.kyc_verifications.findFirst({
+      where: { user_id: userId }
+    });
 
-  if (error && error.code !== "PGRST116") throw error;
-  if (!data) return null;
+    if (!data) return null;
 
-  if (data.document_url) {
-    const { data: urlData } = supabase.storage
-      .from("kyc-documents")
-      .getPublicUrl(data.document_url);
-    if (urlData?.publicUrl) {
-      (data as any).document_url = urlData.publicUrl;
+    if (data.document_url && !data.document_url.startsWith('http')) {
+      (data as any).document_url = `/api/s3/image?key=${data.document_url}`;
     }
-  }
 
-  return data;
+    return data as unknown as KycVerification;
+  } catch (error) {
+    console.error("Error in hasKycVerification:", error);
+    return null;
+  }
 }
 
 export async function updateKycStatus(
   verificationId: string,
-  status: "approved" | "rejected",
+  status: KycStatus,
   notes?: string,
 ) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("kyc_verifications")
-    .update({
-      status,
-      verification_notes: notes ?? null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", verificationId)
-    .select()
-    .single();
+  try {
+    const data = await prisma.kyc_verifications.update({
+      where: { id: verificationId },
+      data: {
+        status,
+        verification_notes: notes ?? null,
+        updated_at: new Date(),
+      },
+    });
 
-  if (error) throw error;
-  return data;
+    return data;
+  } catch (error) {
+    console.error("Error in updateKycStatus:", error);
+    throw error;
+  }
+}
+
+export async function getSolanaWallet(userId: string): Promise<string | null> {
+  try {
+    const profile = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { solana_wallet: true },
+    });
+
+    return profile?.solana_wallet ?? null;
+  } catch (error) {
+    console.error("Error fetching Solana wallet:", error);
+    return null;
+  }
+}
+
+export async function updateSolanaWallet(
+  userId: string,
+  walletAddress: string | null,
+): Promise<string | null> {
+  try {
+    const profile = await prisma.user.update({
+      where: { id: userId },
+      data: { solana_wallet: walletAddress },
+      select: { solana_wallet: true },
+    });
+
+    revalidatePath("/dashboard/settings");
+    return profile.solana_wallet ?? null;
+  } catch (error) {
+    console.error("Error updating Solana wallet:", error);
+    throw error;
+  }
+}
+
+export async function getPolygonWallet(userId: string): Promise<string | null> {
+  try {
+    const profile = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { crypto_wallets: true },
+    });
+
+    const wallets = profile?.crypto_wallets as { ethereum?: string } | null;
+    return wallets?.ethereum ?? null;
+  } catch (error) {
+    console.error("Error fetching Polygon wallet:", error);
+    return null;
+  }
+}
+
+export async function updatePolygonWallet(
+  userId: string,
+  walletAddress: string | null,
+): Promise<string | null> {
+  try {
+    // We need to fetch existing crypto_wallets to preserve other keys if they exist
+    const profile = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { crypto_wallets: true },
+    });
+    
+    const currentWallets = profile?.crypto_wallets as Record<string, any> || {};
+    
+    if (walletAddress === null) {
+      delete currentWallets.ethereum;
+    } else {
+      currentWallets.ethereum = walletAddress;
+    }
+
+    const updatedProfile = await prisma.user.update({
+      where: { id: userId },
+      data: { crypto_wallets: currentWallets },
+      select: { crypto_wallets: true },
+    });
+
+    revalidatePath("/dashboard/settings");
+    const updatedWallets = updatedProfile.crypto_wallets as { ethereum?: string } | null;
+    return updatedWallets?.ethereum ?? null;
+  } catch (error) {
+    console.error("Error updating Polygon wallet:", error);
+    throw error;
+  }
 }
 
 export async function getProfileByUsername(
   username: string,
 ): Promise<Profile | null> {
-  const supabase = await createClient();
   try {
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("username", username)
-      .maybeSingle();
+    const profile = await prisma.user.findUnique({
+      where: { username },
+    });
 
-    if (error) {
-      console.error("Error fetching profile by username:", error);
-      return null;
-    }
+    if (!profile) return null;
 
-    return profile;
+    return mapPrismaToProfile(profile);
   } catch (error) {
     console.error("Error in getProfileByUsername:", error);
     return null;

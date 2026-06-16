@@ -1,6 +1,7 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/lib/auth/auth";
+import { prisma } from "@/lib/prisma";
 type CreatePledgeInput = {
   causeId: string;
   amount: number;
@@ -27,8 +28,6 @@ function isReminderDateTodayOrFuture(isoDate: string): boolean {
 }
 
 export async function createPledge(input: CreatePledgeInput) {
-  const supabase = await createClient();
-
   if (!isReminderDateTodayOrFuture(input.reminderDate)) {
     return {
       data: null,
@@ -36,39 +35,31 @@ export async function createPledge(input: CreatePledgeInput) {
     };
   }
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
+  const session = await auth();
+  const user = session?.user;
 
-  if (authError) {
-    return { data: null, error: authError.message };
+  try {
+    const data = await prisma.pledges.create({
+      data: {
+        cause_id: input.causeId,
+        user_id: user?.id ?? null,
+        amount: input.amount,
+        reminder_date: input.reminderDate,
+        name: input.name,
+        email: input.email,
+        note: input.note ?? null,
+        currency: "NGN",
+        status: "pending",
+        token: user?.id ? null : crypto.randomUUID(),
+        paystack_payment_status: "awaiting_authorization",
+      },
+    });
+
+    return { data, error: null };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : "Failed to create pledge",
+    };
   }
-
-  const { data, error } = await supabase
-    .from("pledges")
-    .insert({
-      cause_id: input.causeId,
-      user_id: user?.id ?? null,
-      amount: input.amount,
-      reminder_date: input.reminderDate,
-      name: input.name,
-      email: input.email,
-      note: input.note ?? null,
-      currency: "NGN",
-      status: "pending",
-      token: user?.id ? null : crypto.randomUUID(), // Generate token for guests
-      paystack_payment_status: "awaiting_authorization",
-    })
-    .select()
-    .single();
-
-  if (error) {
-    return { data: null, error: error.message };
-  }
-
-  // Confirmation email is sent after Paystack saves the card (see webhook → processPledgeAuthorizationSuccess).
-
-  return { data, error: null };
 }
-

@@ -31,7 +31,7 @@ interface SignatureFormProps {
     id?: string;
   };
   subaccount?: string;
-  status: "pending" | "rejected" | "approved";
+  status: "pending" | "rejected" | "approved" | "expired";
   petitionData?: {
     title?: string;
     creatorId?: string;
@@ -66,7 +66,7 @@ export function SignatureForm({
   // Note: Signatures can continue even after the petition goal is reached
   // The form is only disabled if the user has already signed, or if the petition status is pending or rejected
   const isFormDisabled =
-    hasSigned || status === "pending" || status === "rejected";
+    hasSigned || status === "pending" || status === "rejected" || status === "expired";
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,

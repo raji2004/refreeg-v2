@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/types/database-types";
+import { prisma } from "@/lib/prisma";
 import { validateApiKey, rateLimit, handlePreflight } from "@/utils/api-bot/api-auth";
 import { ReportCampaignSchema } from "@/utils/api-bot/schemas";
 import { dispatchWebhook } from "@/utils/api-bot/webhook-utils";
@@ -10,10 +9,7 @@ import {
   ApiErrorCode 
 } from "@/utils/api-bot/response-utils";
 
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+
 
 export async function GET(
   request: NextRequest,
@@ -27,22 +23,31 @@ export async function GET(
     if (authRes?.errorResponse) return authRes.errorResponse;
     const developerId = authRes.userId;
 
-    const { data: campaign, error: campaignError } = await supabaseAdmin
-      .from("api_campaigns")
-      .select("id")
-      .eq("id", params.id)
-      .eq("developer_id", developerId)
-      .single();
+    let campaign;
+    let campaignError;
+    try {
+      campaign = await prisma.api_campaigns.findFirst({
+        where: { id: params.id, developer_id: developerId! },
+        select: { id: true }
+      });
+    } catch (err) {
+      campaignError = err;
+    }
 
     if (campaignError || !campaign) {
       return errorResponse("Campaign not found or unauthorized to view its reports", ApiErrorCode.NOT_FOUND, 404);
     }
 
-    const { data: reports, error: reportsError } = await supabaseAdmin
-      .from("api_campaign_reports")
-      .select("*")
-      .eq("api_campaign_id", params.id)
-      .order("created_at", { ascending: false });
+    let reports: any[] = [];
+    let reportsError;
+    try {
+      reports = await prisma.api_campaign_reports.findMany({
+        where: { api_campaign_id: params.id },
+        orderBy: { created_at: "desc" }
+      });
+    } catch (err) {
+      reportsError = err;
+    }
 
     if (reportsError) {
       console.error("Error fetching reports:", reportsError);
@@ -67,11 +72,16 @@ export async function POST(
     const authRes = await validateApiKey(request);
     if (authRes?.errorResponse) return authRes.errorResponse;
 
-    const { data: campaign, error: campaignError } = await supabaseAdmin
-      .from("api_campaigns")
-      .select("id, developer_id")
-      .eq("id", params.id)
-      .single();
+    let campaign;
+    let campaignError;
+    try {
+      campaign = await prisma.api_campaigns.findFirst({
+        where: { id: params.id },
+        select: { id: true, developer_id: true }
+      });
+    } catch (err) {
+      campaignError = err;
+    }
 
     if (campaignError || !campaign) {
       return errorResponse("Campaign not found", ApiErrorCode.NOT_FOUND, 404);
@@ -86,18 +96,22 @@ export async function POST(
 
     const { reason, message } = result.data;
 
-    const { data: report, error: insertError } = await supabaseAdmin
-      .from("api_campaign_reports")
-      .insert({
-        api_campaign_id: campaign.id,
-        developer_id: campaign.developer_id,
-        api_key_id: authRes.apiKeyId,
-        reason,
-        message,
-        status: "pending",
-      })
-      .select()
-      .single();
+    let report;
+    let insertError;
+    try {
+      report = await prisma.api_campaign_reports.create({
+        data: {
+          api_campaign_id: campaign.id,
+          developer_id: campaign.developer_id,
+          api_key_id: authRes.apiKeyId,
+          reason,
+          message: message || "",
+          status: "pending",
+        }
+      });
+    } catch (err) {
+      insertError = err;
+    }
 
     if (insertError || !report) {
       console.error("Error inserting report:", insertError);

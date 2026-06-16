@@ -39,7 +39,11 @@ export interface Profile {
   facebook_url?: string | null;
   instagram_url?: string | null;
   linkedin_url?: string | null;
-  crypto_wallets?: string;
+  crypto_wallets?: {
+    ethereum?: string;
+    solana?: string;
+    [key: string]: any;
+  } | null;
 }
 
 export interface OnboardingProfileData {

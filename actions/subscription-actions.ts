@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 export interface CreateSubscriptionData {
@@ -14,12 +14,9 @@ export interface CreateSubscriptionData {
 }
 
 export async function createSubscription(data: CreateSubscriptionData) {
-  const supabase = await createClient();
-
-  const { data: subscription, error } = await supabase
-    .from("subscriptions")
-    .insert([
-      {
+  try {
+    const subscription = await prisma.subscriptions.create({
+      data: {
         user_id: data.user_id || null,
         cause_id: data.cause_id,
         paystack_subscription_code: data.paystack_subscription_code,
@@ -28,34 +25,29 @@ export async function createSubscription(data: CreateSubscriptionData) {
         interval: data.interval,
         status: data.status || "active",
       },
-    ])
-    .select()
-    .single();
+    });
 
-  if (error) {
+    revalidatePath("/dashboard/subscriptions");
+    return subscription;
+  } catch (error) {
     console.error("Error creating subscription:", error);
     throw new Error("Failed to create subscription record");
   }
-
-  revalidatePath("/dashboard/subscriptions");
-  return subscription;
 }
 
 export async function updateSubscriptionStatus(
   subscriptionCode: string,
   status: string
 ) {
-  const supabase = await createClient();
+  try {
+    await prisma.subscriptions.updateMany({
+      where: { paystack_subscription_code: subscriptionCode },
+      data: { status },
+    });
 
-  const { error } = await supabase
-    .from("subscriptions")
-    .update({ status })
-    .eq("paystack_subscription_code", subscriptionCode);
-
-  if (error) {
+    revalidatePath("/dashboard/subscriptions");
+  } catch (error) {
     console.error("Error updating subscription status:", error);
     throw new Error("Failed to update subscription status");
   }
-
-  revalidatePath("/dashboard/subscriptions");
 }

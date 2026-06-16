@@ -24,12 +24,12 @@ const categories: Category[] = [
 ];
 
 const categoryImages: Record<string, string> = {
-  education: "/cause-filter-5.png",
-  health: "/cause-filter-6.png",
-  community: "/cause-filter-4.png",
-  disaster: "/cause-filter-3.png",
-  creative: "/cause-filter-2.png",
-  business: "/cause-filter-1.png",
+  education: "/Cause-filter-5.png",
+  health: "/Cause-filter-6.png",
+  community: "/Cause-filter-4.png",
+  disaster: "/Cause-filter-3.png",
+  creative: "/Cause-filter-2.png",
+  business: "/Cause-filter-1.png",
   all: "/logo.png",
 };
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { Comment } from "@/types/common-types";
+import { auth } from "@/lib/auth/auth";
+import { prisma } from "@/lib/prisma";
 
 export async function DELETE(
   request: Request,
@@ -11,30 +11,24 @@ export async function DELETE(
     const { searchParams } = new URL(request.url);
     const entityType = searchParams.get("entityType");
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const session = await auth();
 
-    if (authError || !user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const isPetition = entityType === "petition";
-    const table = isPetition ? "petition_comments" : "comments";
+    const userId = session.user.id;
 
-    const { data: comment, error: fetchError } = await supabase
-      .from(table)
-      .select("user_id")
-      .eq("id", commentId)
-      .single();
+    const comment = isPetition
+      ? await prisma.petition_comments.findUnique({ where: { id: commentId }, select: { user_id: true } })
+      : await prisma.comments.findUnique({ where: { id: commentId }, select: { user_id: true } });
 
-    if (fetchError || !comment) {
+    if (!comment) {
       return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
-    if (comment.user_id !== user.id) {
+    if (comment.user_id !== userId) {
       return NextResponse.json(
         { error: "Unauthorized to delete this comment" },
         { status: 403 }
@@ -44,10 +38,12 @@ export async function DELETE(
     // Explicit child deletion was removed here since it only goes one level deep.
     // Ensure ON DELETE CASCADE is set up on your Database tables!
     // -> ALTER TABLE comments ADD CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES comments (id) ON DELETE CASCADE;
-    
-    const { error } = await supabase.from(table).delete().eq("id", commentId);
 
-    if (error) throw error;
+    if (isPetition) {
+      await prisma.petition_comments.delete({ where: { id: commentId } });
+    } else {
+      await prisma.comments.delete({ where: { id: commentId } });
+    }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
@@ -68,13 +64,9 @@ export async function PUT(
     const { searchParams } = new URL(request.url);
     const entityType = searchParams.get("entityType");
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const session = await auth();
 
-    if (authError || !user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -88,39 +80,50 @@ export async function PUT(
     }
 
     const isPetition = entityType === "petition";
-    const table = isPetition ? "petition_comments" : "comments";
+    const userId = session.user.id;
 
-    const { data: comment, error: fetchError } = await supabase
-      .from(table)
-      .select("user_id")
-      .eq("id", commentId)
-      .single();
+    const comment = isPetition
+      ? await prisma.petition_comments.findUnique({ where: { id: commentId }, select: { user_id: true } })
+      : await prisma.comments.findUnique({ where: { id: commentId }, select: { user_id: true } });
 
-    if (fetchError || !comment) {
+    if (!comment) {
       return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
-    if (comment.user_id !== user.id) {
+    if (comment.user_id !== userId) {
       return NextResponse.json(
         { error: "Unauthorized to edit this comment" },
         { status: 403 }
       );
     }
 
-    const { data: updatedComment, error } = await supabase
-      .from(table)
-      .update({
-        content: content.trim(),
-        is_edited: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", commentId)
-      .select(`*, user:profiles(id, full_name, profile_photo, username)`)
-      .single();
-
-    if (error) throw error;
-
-    return NextResponse.json(updatedComment);
+    if (isPetition) {
+      const updatedComment = await prisma.petition_comments.update({
+        where: { id: commentId },
+        data: { content: content.trim(), is_edited: true },
+      });
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, fullName: true, profilePhoto: true, username: true },
+      });
+      return NextResponse.json({
+        ...updatedComment,
+        user: user ? { id: user.id, full_name: user.fullName, profile_photo: user.profilePhoto, username: user.username } : null,
+      });
+    } else {
+      const updatedComment = await prisma.comments.update({
+        where: { id: commentId },
+        data: { content: content.trim(), is_edited: true, updated_at: new Date() },
+        include: {
+          user: { select: { id: true, fullName: true, profilePhoto: true, username: true } },
+        },
+      });
+      const { user, ...rest } = updatedComment;
+      return NextResponse.json({
+        ...rest,
+        user: user ? { id: user.id, full_name: user.fullName, profile_photo: user.profilePhoto, username: user.username } : null,
+      });
+    }
   } catch (error) {
     console.error("Error updating comment:", error);
     return NextResponse.json(

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 // Component for empty states
 export function EmptyState({
@@ -48,7 +49,7 @@ export function EmptyState({
 export function CauseCard({ cause }: { cause: any }) {
   const progressPercentage = Math.min(
     Math.round((cause.raised / cause.goal) * 100),
-    100
+    100,
   );
 
   return (
@@ -56,10 +57,11 @@ export function CauseCard({ cause }: { cause: any }) {
       <Link href={`/causes/${cause.id}`}>
         <div className="aspect-video relative bg-gray-100">
           <Image
-            src={cause.image || "/placeholder-cause.jpg"}
+            src={getMediaUrl(cause.image) || "/placeholder-cause.jpg"}
             alt={cause.title}
             fill
             className="object-cover"
+            unoptimized={isProxyMediaUrl(getMediaUrl(cause.image))}
           />
         </div>
         <div className="p-4 space-y-3">
@@ -133,10 +135,11 @@ export function PetitionCard({ petition }: { petition: any }) {
       <Link href={`/petitions/${petition.id}`}>
         <div className="aspect-video relative bg-gray-100">
           <Image
-            src={petition.image || "/placeholder-petition.jpg"}
+            src={getMediaUrl(petition.image) || "/placeholder-petition.jpg"}
             alt={petition.title}
             fill
             className="object-cover"
+            unoptimized={isProxyMediaUrl(getMediaUrl(petition.image))}
           />
         </div>
         <div className="p-4 space-y-3">

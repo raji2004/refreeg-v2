@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 import { getBaseURL } from "@/lib/utils";
 
 function generateShortCode(): string {
@@ -16,32 +16,30 @@ function generateShortCode(): string {
 export async function createShortUrl(
   entityId: string,
   entityType: "cause" | "petition",
-  originalUrl: string
+  originalUrl: string,
 ): Promise<string> {
-  const supabase = await createClient();
   const baseUrl = getBaseURL();
 
-  const { data: existing } = await supabase
-    .from("short_urls")
-    .select("short_code")
-    .eq("entity_id", entityId)
-    .eq("entity_type", entityType)
-    .single();
+  // Check if a short URL already exists for this entity
+  const existing = await prisma.short_urls.findFirst({
+    where: { entity_id: entityId, entity_type: entityType },
+    select: { short_code: true },
+  });
 
   if (existing) {
     return `${baseUrl}/s/${existing.short_code}`;
   }
 
+  // Generate a unique short code
   let shortCode = generateShortCode();
   let attempts = 0;
   const maxAttempts = 10;
 
   while (attempts < maxAttempts) {
-    const { data: collision } = await supabase
-      .from("short_urls")
-      .select("short_code")
-      .eq("short_code", shortCode)
-      .single();
+    const collision = await prisma.short_urls.findUnique({
+      where: { short_code: shortCode },
+      select: { short_code: true },
+    });
 
     if (!collision) {
       break;
@@ -55,65 +53,56 @@ export async function createShortUrl(
     throw new Error("Failed to generate unique short code");
   }
 
-  const { error } = await supabase.from("short_urls").insert({
-    short_code: shortCode,
-    entity_id: entityId,
-    entity_type: entityType,
-    original_url: originalUrl,
-    clicks: 0,
+  await prisma.short_urls.create({
+    data: {
+      short_code: shortCode,
+      entity_id: entityId,
+      entity_type: entityType,
+      original_url: originalUrl,
+      clicks: 0,
+    },
   });
-
-  if (error) {
-    console.error("Error creating short URL:", error);
-    throw error;
-  }
 
   return `${baseUrl}/s/${shortCode}`;
 }
 
 export async function getOriginalUrl(
-  shortCode: string
+  shortCode: string,
 ): Promise<string | null> {
-  const supabase = await createClient();
+  const data = await prisma.short_urls.findUnique({
+    where: { short_code: shortCode },
+  });
 
-  const { data, error } = await supabase
-    .from("short_urls")
-    .select("*")
-    .eq("short_code", shortCode)
-    .single();
-
-  if (error || !data) {
+  if (!data) {
     return null;
   }
 
-  await supabase
-    .from("short_urls")
-    .update({ clicks: data.clicks + 1 })
-    .eq("short_code", shortCode);
+  // Atomic increment — no race condition
+  await prisma.short_urls.update({
+    where: { short_code: shortCode },
+    data: { clicks: { increment: 1 } },
+  });
 
   return data.original_url;
 }
 
 export async function getShortUrlAnalytics(
   entityId: string,
-  entityType: "cause" | "petition"
+  entityType: "cause" | "petition",
 ): Promise<{ clicks: number; shortUrl: string } | null> {
-  const supabase = await createClient();
   const baseUrl = getBaseURL();
 
-  const { data, error } = await supabase
-    .from("short_urls")
-    .select("short_code, clicks")
-    .eq("entity_id", entityId)
-    .eq("entity_type", entityType)
-    .single();
+  const data = await prisma.short_urls.findFirst({
+    where: { entity_id: entityId, entity_type: entityType },
+    select: { short_code: true, clicks: true },
+  });
 
-  if (error || !data) {
+  if (!data) {
     return null;
   }
 
   return {
-    clicks: data.clicks,
+    clicks: data.clicks || 0,
     shortUrl: `${baseUrl}/s/${data.short_code}`,
   };
 }

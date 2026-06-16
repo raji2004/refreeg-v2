@@ -8,7 +8,7 @@ import {
   SystemProgram,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
-import { createClient } from "@/lib/supabase/client";
+import { getRecipientSolanaWallet, createCryptoDonation } from "@/actions/crypto-actions";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/actions/auth-actions";
@@ -68,7 +68,6 @@ export default function SolDonationButton({
   const solInputRef = useRef<HTMLInputElement>(null);
 
   const params = useParams();
-  const supabase = createClient();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -204,23 +203,10 @@ export default function SolDonationButton({
   useEffect(() => {
     const fetchRecipientAddress = async () => {
       try {
-        const { data: causeData, error: causeError } = await supabase
-          .from("causes")
-          .select("user_id")
-          .eq("id", causeId)
-          .single();
+        const address = await getRecipientSolanaWallet(causeId);
+        if (!address) throw new Error("Creator not found");
 
-        if (causeError || !causeData) throw new Error("Cause not found");
-
-        const { data: userData, error: userError } = await supabase
-          .from("profiles")
-          .select("solana_wallet")
-          .eq("id", causeData.user_id)
-          .single();
-
-        if (userError || !userData) throw new Error("Creator not found");
-
-        setRecipientAddress(userData.solana_wallet || null);
+        setRecipientAddress(address);
       } catch (err) {
         console.error("Error fetching recipient address:", err);
         setError("Failed to load recipient wallet information");
@@ -231,56 +217,9 @@ export default function SolDonationButton({
     };
 
     fetchRecipientAddress();
-  }, [causeId, supabase]);
+  }, [causeId]);
 
-  const logTransaction = async (
-    causeId: string,
-    txSignature: string,
-    amountInSol: number,
-    amountInNaira: number,
-    walletAddress: string,
-    recipientAddress: string,
-  ) => {
-    try {
-      const user = await getCurrentUser();
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
 
-      const insertResult = await supabase.from("crypto_donations").insert([
-        {
-          cause_id: causeId,
-          tx_signature: txSignature,
-          amount_in_sol: amountInSol,
-          amount_in_naira: amountInNaira,
-          wallet_address: walletAddress,
-          recipient_address: recipientAddress,
-          user_id: user.id,
-          payment_method: "SOL",
-          status: "completed",
-          network: "Solana Mainnet",
-          currency: "SOL",
-          wallet_type: "solana",
-        },
-      ]);
-
-      if (insertResult.error) {
-        throw insertResult.error;
-      }
-
-      const updateResult = await supabase.rpc("increment_cause_raised", {
-        cause_id: causeId,
-        amount: amountInNaira,
-      });
-
-      if (updateResult.error) {
-        throw updateResult.error;
-      }
-    } catch (error) {
-      console.error("Error logging transaction:", error);
-      throw error;
-    }
-  };
 
   const checkWalletConnection = async () => {
     if (!window.solana?.isPhantom) {
@@ -391,29 +330,18 @@ export default function SolDonationButton({
       const nairaAmount = parseFloat(removeCommas(nairaInput));
       const solAmount = parseFloat(donationAmount);
 
-      // Use server-side API endpoint instead of direct Supabase calls
       try {
-        const response = await fetch("/api/crypto-donations", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            cause_id: causeId,
-            tx_signature: signature,
-            amount_in_sol: solAmount,
-            amount_in_naira: nairaAmount,
-            wallet_address: senderAddress,
-            recipient_address: recipientAddress,
-          }),
+        await createCryptoDonation({
+          cause_id: causeId,
+          tx_signature: signature,
+          amount_in_crypto: solAmount,
+          amount_in_naira: nairaAmount,
+          donor_wallet_address: senderAddress,
+          recipient_address: recipientAddress,
+          status: "completed",
+          network: "Solana Mainnet",
+          currency: "SOL",
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`API call failed: ${errorData.error}`);
-        }
-
-        const result = await response.json();
 
         // Call success callback to update parent component
         onDonationSuccess?.(nairaAmount);

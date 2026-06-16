@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import {
   Upload,
   MailIcon,
@@ -18,7 +19,7 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationSelector } from "@/components/location-selector";
-import { createClient } from "@/lib/supabase/client";
+import { checkUsernameAvailability } from "@/actions/profile-actions";
 import { toast } from "@/components/ui/use-toast";
 import {
   Tooltip,
@@ -56,7 +57,7 @@ export default function Step3({
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(
     onboardingData.profile?.profilePhoto ||
       user?.user_metadata?.avatar_url ||
-      null
+      null,
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isConsentChecked, setIsConsentChecked] = useState(false);
@@ -64,8 +65,6 @@ export default function Step3({
     boolean | null
   >(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-  const supabase = createClient();
-
   // Load saved data on mount and extract OAuth data
   useEffect(() => {
     const savedData =
@@ -73,18 +72,10 @@ export default function Step3({
         ? onboardingData.profile
         : {};
 
-    // Extract OAuth data with better fallbacks
-    const oauthFirstName =
-      user?.user_metadata?.given_name ||
-      user?.user_metadata?.first_name ||
-      user?.user_metadata?.name?.split(" ")[0] ||
-      "";
-    const oauthLastName =
-      user?.user_metadata?.family_name ||
-      user?.user_metadata?.last_name ||
-      user?.user_metadata?.name?.split(" ").slice(1).join(" ") ||
-      "";
-    const oauthPhone = user?.user_metadata?.phone || "";
+    // Extract OAuth data from NextAuth session
+    const oauthFirstName = user?.name?.split(" ")[0] || "";
+    const oauthLastName = user?.name?.split(" ").slice(1).join(" ") || "";
+    const oauthPhone = user?.phone || ""; // NextAuth might not have phone unless we add it
 
     setFormData((prev) => ({
       ...prev,
@@ -96,10 +87,8 @@ export default function Step3({
       email: savedData.email || user?.email || prev.email,
     }));
 
-    // Set profile photo URL if available from database
-    if (savedData.profilePhoto) {
-      setProfilePhotoUrl(savedData.profilePhoto);
-    }
+    // Set profile photo URL prioritizing saved data, then NextAuth image
+    setProfilePhotoUrl(savedData.profilePhoto || user?.image || null);
 
     // Load consent data
     setIsConsentChecked(onboardingData.consent || false);
@@ -115,19 +104,19 @@ export default function Step3({
 
       setIsCheckingUsername(true);
       try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("username", formData.username)
-          .neq("id", user.id)
-          .single();
+        const isAvailable = await checkUsernameAvailability(formData.username);
 
-        if (error && error.code === "PGRST116") {
+        // If the username equals their current username (if they already had one), it's available for them
+        // (NextAuth user objects in onboarding might not have a username assigned yet, but just in case)
+        if (isAvailable) {
           setIsUsernameAvailable(true); // Username is available
           setErrors((prev) => ({ ...prev, username: "" }));
-        } else if (data) {
+        } else {
           setIsUsernameAvailable(false); // Username is taken
-          setErrors((prev) => ({ ...prev, username: "Username is already taken" }));
+          setErrors((prev) => ({
+            ...prev,
+            username: "Username is already taken",
+          }));
         }
       } catch (error) {
         console.error("Error checking username:", error);
@@ -138,7 +127,7 @@ export default function Step3({
 
     const timeoutId = setTimeout(checkUsername, 500);
     return () => clearTimeout(timeoutId);
-  }, [formData.username, supabase]);
+  }, [formData.username]);
 
   const handleChange = (field: string, value: string) => {
     const newFormData = { ...formData, [field]: value };
@@ -293,11 +282,14 @@ export default function Step3({
                   >
                     {profilePhotoUrl ? (
                       <Image
-                        src={profilePhotoUrl}
+                        src={getMediaUrl(profilePhotoUrl)}
                         alt="Profile preview"
                         width={80}
                         height={80}
                         className="w-full h-full object-cover rounded-full"
+                        unoptimized={isProxyMediaUrl(
+                          getMediaUrl(profilePhotoUrl),
+                        )}
                       />
                     ) : (
                       <Upload className="w-8 h-8 text-gray-400" />

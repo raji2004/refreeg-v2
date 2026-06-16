@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import { getPetition } from "@/actions/petition-actions";
 import dynamic from "next/dynamic";
@@ -8,8 +8,6 @@ const EditPetitionForm = dynamic(() => import("./edit-petition-form"), {
   loading: () => <Skeleton className="h-[600px] w-full" />,
 });
 
-import { getCachedUser } from "@/lib/supabase/cached-user";
-
 export default async function EditPetitionPage({
   params,
 }: {
@@ -17,12 +15,12 @@ export default async function EditPetitionPage({
 }) {
   const myParams = await params;
   
-  const [ { user, error: authError }, petition ] = await Promise.all([
-    getCachedUser(),
+  const [ session, petition ] = await Promise.all([
+    auth(),
     getPetition(myParams.id)
   ]);
 
-  if (!user || authError) {
+  if (!session?.user) {
     redirect("/auth/signin");
   }
 
@@ -30,7 +28,7 @@ export default async function EditPetitionPage({
     redirect("/dashboard/petitions");
   }
 
-  if (petition.user_id !== user.id) {
+  if (petition.user_id !== session.user.id) {
     redirect("/dashboard/petitions");
   }
 

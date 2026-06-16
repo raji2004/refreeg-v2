@@ -1,7 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { getDays, getMonths, getYears } from "@/app/utils/dobUtils";
+import { getDays, getMonths, getYears } from "@/utils/dobUtils";
 
 export const inputBoxClass =
   "w-[530px] h-20 px-2.5 pt-[6px] text-neutral-700 text-sm font-normal font-montserrat rounded-[10px] outline outline-1 outline-neutral-200 resize-none";

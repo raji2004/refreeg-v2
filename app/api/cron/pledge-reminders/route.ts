@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { prisma } from "@/lib/prisma";
 import { assertCronAuthorized } from "@/lib/cron-auth";
 
 /**
@@ -7,22 +7,40 @@ import { assertCronAuthorized } from "@/lib/cron-auth";
  * card-authorized (legacy / reminder-only). Authorized pledges are charged via
  * POST /api/cron/pledge-charges.
  *
- * Also sends follower “campaign expiring in ~2 days” emails (same as former Edge Function).
+ * Also sends follower “campaign expiring in ~2 days” emails.
  */
 async function runPledgeReminders() {
-  const admin = createAdminClient();
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  const { data: pledges, error } = await admin
-    .from("pledges")
-    .select("*, causes(title, id)")
-    .eq("reminder_date", today)
-    .eq("status", "pending")
-    .neq("paystack_payment_status", "authorized");
+  // Prisma queries for pledges
+  const pledges = await prisma.pledges.findMany({
+    where: {
+      reminder_date: {
+        equals: today,
+      },
+      status: "pending",
+      paystack_payment_status: {
+        not: "authorized",
+      },
+    },
+  });
 
-  if (error) {
-    throw new Error(error.message);
+  // Manually fetch related causes since there is no Prisma relation defined on pledges
+  const causeIds = [...new Set(pledges.map((p) => p.cause_id))];
+  const causesMap = new Map<string, { title: string; id: string }>();
+  if (causeIds.length > 0) {
+    const causes = await prisma.cause.findMany({
+      where: { id: { in: causeIds } },
+      select: { id: true, title: true },
+    });
+    causes.forEach((c) => causesMap.set(c.id, c));
   }
+
+  const pledgesWithCauses = pledges.map((pledge) => ({
+    ...pledge,
+    causes: causesMap.get(pledge.cause_id) || { title: "Unknown Cause", id: pledge.cause_id },
+  }));
 
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
@@ -32,7 +50,7 @@ async function runPledgeReminders() {
   let sent = 0;
   let failed = 0;
 
-  for (const pledge of pledges ?? []) {
+  for (const pledge of pledgesWithCauses) {
     try {
       const res = await fetch(`${appUrl}/api/mail/pledge-reminder`, {
         method: "POST",
@@ -54,32 +72,40 @@ async function runPledgeReminders() {
     }
   }
 
-  const { data: expiringCampaigns, error: expiryError } = await admin
-    .from("causes")
-    .select("id, title, raised, goal, created_at, days_active")
-    .eq("status", "verified");
+  // Handle expiring campaigns
+  const expiringCampaigns = await prisma.cause.findMany({
+    where: { status: "verified" },
+    select: {
+      id: true,
+      title: true,
+      raised: true,
+      goal: true,
+      createdAt: true,
+      daysActive: true,
+    },
+  });
 
-  if (!expiryError && expiringCampaigns) {
+  if (expiringCampaigns.length > 0) {
     for (const cause of expiringCampaigns) {
-      if (!cause.days_active || !cause.created_at) continue;
+      if (!cause.daysActive || !cause.createdAt) continue;
 
-      const createdAt = new Date(cause.created_at);
+      const createdAt = new Date(cause.createdAt);
       const expiryDate = new Date(createdAt);
-      expiryDate.setDate(createdAt.getDate() + cause.days_active);
+      expiryDate.setDate(createdAt.getDate() + cause.daysActive);
 
       const diffTime = expiryDate.getTime() - new Date().getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
       if (diffDays === 2) {
-        const { data: followers } = await admin
-          .from("campaign_follows")
-          .select("email")
-          .eq("cause_id", cause.id);
+        const followers = await prisma.campaign_follows.findMany({
+          where: { cause_id: cause.id },
+          select: { email: true },
+        });
 
         if (followers && followers.length > 0) {
           const followerEmails = followers.map((f) => f.email);
-          const amountRaised = Number(cause.raised);
-          const goalAmount = Number(cause.goal);
+          const amountRaised = Number(cause.raised || 0);
+          const goalAmount = Number(cause.goal || 0);
           const percent =
             goalAmount > 0
               ? Math.round((amountRaised / goalAmount) * 100)
@@ -106,8 +132,8 @@ async function runPledgeReminders() {
   }
 
   return {
-    today,
-    pledgeReminders: { total: pledges?.length ?? 0, sent, failed },
+    today: today.toISOString().split("T")[0],
+    pledgeReminders: { total: pledges.length, sent, failed },
   };
 }
 

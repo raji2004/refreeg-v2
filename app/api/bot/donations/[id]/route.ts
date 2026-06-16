@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, rateLimit, handlePreflight } from "@/utils/api-bot/api-auth";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/types/database-types";
+import { prisma } from "@/lib/prisma";
 import { logApiRequest } from "@/utils/api-bot/request-logger";
 import { 
   successResponse, 
@@ -9,10 +8,7 @@ import {
   ApiErrorCode 
 } from "@/utils/api-bot/response-utils";
 
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+
 
 export async function GET(
   req: NextRequest,
@@ -34,17 +30,15 @@ export async function GET(
       return auth.errorResponse;
     }
 
-    // Fetch donation and join with campaign to verify ownership
-    const { data: donation, error } = await supabaseAdmin
-      .from("api_donations")
-      .select(`
-        *,
-        api_campaigns:api_campaign_id (
-          developer_id
-        )
-      `)
-      .eq("id", donationId)
-      .single();
+    let donation;
+    let error;
+    try {
+      donation = await prisma.api_donations.findFirst({
+        where: { id: donationId }
+      });
+    } catch (err) {
+      error = err;
+    }
 
     if (error || !donation) {
       const response = errorResponse("Donation not found", ApiErrorCode.NOT_FOUND, 404);
@@ -53,8 +47,17 @@ export async function GET(
     }
 
     // Verify developer ownership
-    // @ts-ignore - Supabase join structure
-    if (donation.api_campaigns.developer_id !== auth.userId) {
+    let campaign;
+    try {
+      campaign = await prisma.api_campaigns.findFirst({
+        where: { id: donation.api_campaign_id },
+        select: { developer_id: true }
+      });
+    } catch (err) {
+      console.error(err);
+    }
+
+    if (!campaign || campaign.developer_id !== auth.userId) {
       const response = errorResponse("Unauthorized access to donation", ApiErrorCode.FORBIDDEN, 403);
       await logApiRequest({ request: req, statusCode: response.status, apiKeyId: auth.apiKeyId, userId: auth.userId, mode: auth.mode, errorCode: ApiErrorCode.FORBIDDEN, startedAt });
       return response;

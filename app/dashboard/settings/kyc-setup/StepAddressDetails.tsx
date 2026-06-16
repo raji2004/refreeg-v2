@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getCountries, ALL_COUNTRIES } from "@/app/utils/countryUtils";
+import { getCountries, ALL_COUNTRIES } from "@/utils/countryUtils";
 
 export default function StepAddressDetails({
   formData,

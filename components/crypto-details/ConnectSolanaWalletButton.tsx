@@ -3,9 +3,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuthContext } from "@/components/auth-provider";
+import { updateSolanaWallet } from "@/actions/profile-actions";
 
 interface ConnectSolanaWalletButtonProps {
   onConnected?: (address: string) => void;
@@ -51,23 +51,11 @@ export function ConnectSolanaWalletButton({
       const response = await window.solana.connect();
       const publicKey = response.publicKey.toString();
 
-      const supabase = createClient();
-
       if (!user) {
         throw new Error("You must be logged in to connect a wallet");
       }
 
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          solana_wallet: publicKey,
-        })
-        .eq("id", user.id);
-
-      if (updateError) {
-        console.error("Supabase update error:", updateError);
-        throw new Error("Failed to save wallet address");
-      }
+      await updateSolanaWallet(user.id, publicKey);
 
       // Call the callback BEFORE showing toast or resetting state
       if (onConnected) {

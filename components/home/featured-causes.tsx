@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -14,6 +15,7 @@ import { listCauses } from "@/actions/cause-actions";
 import AnimatedCard from "./components/AnimatedCard";
 import AnimatedHeader from "@/components/home/components/AnimatedHeader";
 import { ArrowRight } from "lucide-react";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 import {
   Carousel,
@@ -24,7 +26,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
-import { calculateDaysLeft, isCauseExpired } from "@/utils/cause-utils";
+import { calculateDaysLeft, isCauseExpired } from "@/utils/cause/cause-utils";
 
 export async function FeaturedCauses() {
   const allCauses = await listCauses({ limit: 12, status: "approved" });
@@ -96,11 +98,16 @@ export async function FeaturedCauses() {
                 >
                   <AnimatedCard>
                     <Card className="overflow-hidden cursor-pointer transition hover:shadow-2xl shadow-lg h-[420px] flex flex-col border border-gray-300">
-                      <div className="aspect-video w-full overflow-hidden">
-                        <img
-                          src={cause.image || "/placeholder.svg"}
+                      <div className="aspect-video w-full overflow-hidden relative">
+                        <Image
+                          src={getMediaUrl(cause.image) || "/placeholder.svg"}
                           alt={cause.title}
-                          className="object-cover w-full h-full"
+                          fill
+                          sizes="(max-width: 768px) 88vw, (max-width: 1200px) 44vw, 33vw"
+                          className="object-cover"
+                          unoptimized={isProxyMediaUrl(
+                            getMediaUrl(cause.image),
+                          )}
                         />
                       </div>
 

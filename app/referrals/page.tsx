@@ -16,8 +16,8 @@ import {
   lineGrow,
 } from "./animations";
 
-import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { getReferralDashboardData } from "@/actions/referral-actions";
 
 /* -------------------------------------------------------------------------- */
 /*                                    Types                                   */
@@ -93,7 +93,6 @@ const CopyToast: React.FC<{ visible: boolean }> = ({ visible }) => (
 
 export default function ReferralPage() {
   const { user } = useAuth();
-  const supabase = createClient();
 
   const [referralLink, setReferralLink] = useState("");
   const [copied, setCopied] = useState(false);
@@ -116,129 +115,46 @@ export default function ReferralPage() {
 
   useEffect(() => {
     const loadData = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser();
+        const data = await getReferralDashboardData();
 
-        const currentUser = user || authUser;
-        if (!currentUser?.id) {
+        if (!data) {
           setLoading(false);
           return;
         }
 
-        // 1) Get referral code from profiles, fallback to user id
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("referral_code")
-          .eq("id", currentUser.id)
-          .single();
-
-        const code = profile?.referral_code || currentUser.id;
-
         const baseUrl =
-          process.env.NEXT_PUBLIC_SITE_URL ||
-          (typeof window !== "undefined" ? window.location.origin : "");
+          typeof window !== "undefined" ? window.location.origin : "";
+        const resolvedReferralLink = data.referralLink.startsWith("http")
+          ? data.referralLink
+          : `${baseUrl}${data.referralLink}`;
 
-        setReferralLink(`${baseUrl}/auth/signup?ref_v1=${code}`);
-
-        // 2) Load referral rows v1
-        const { data: rows, error } = await supabase
-          .from("referrals_v1")
-          .select(
-            `
-              id_v1,
-              referrer_id_v1,
-              referee_email_v1,
-              registered_v1,
-              reward_v1,
-              created_at_v1,
-              referee_id_v1
-            `,
-          )
-          .eq("referrer_id_v1", currentUser.id)
-          .order("created_at_v1", { ascending: false });
-
-        if (error) {
-          console.error("REFERRAL V1 QUERY ERROR:", error);
-        }
-
-        const baseRows: ReferralRow[] = (rows || []).map((r: any) => ({
-          id: r.id_v1,
-          referrer_id: r.referrer_id_v1,
-          referee_id: r.referee_id_v1,
-          registered: r.registered_v1,
-          referee_email: r.referee_email_v1,
-          created_at: r.created_at_v1,
-          reward: r.reward_v1,
-        }));
-
-        // 3) Fetch profile names manually when referee_id exists
-        let enrichedRows: ReferralRow[] = baseRows;
-        const refereeIds = baseRows
-          .map((row) => row.referee_id)
-          .filter((id): id is string => !!id);
-
-        if (refereeIds.length > 0) {
-          const { data: profilesData } = await supabase
-            .from("profiles")
-            .select("id, first_name, email")
-            .in("id", refereeIds);
-
-          const profileMap: Record<
-            string,
-            {
-              first_name: string | null;
-              email: string | null;
-              avatar_url: string | null;
-            }
-          > = {};
-
-          (profilesData || []).forEach((p) => {
-            profileMap[p.id] = {
-              first_name: p.first_name ?? null,
-              email: p.email ?? null,
-              avatar_url: null,
-            };
-          });
-
-          enrichedRows = baseRows.map((row) => ({
-            ...row,
-            profiles: row.referee_id
-              ? profileMap[row.referee_id] || null
-              : null,
-          }));
-        }
-
-        setReferrals(enrichedRows);
-
-        // 4) Compute stats
-        const totalSignUps = enrichedRows.filter((r) => r.registered).length;
-        const totalPoints = totalSignUps * 5;
-
-        setInvites(enrichedRows.length);
-        setSignUps(totalSignUps);
-        setPoints(totalPoints);
-
-        // Tier Logic
-        let currentTier = "Tier 1";
-        if (totalPoints >= 505) {
-          currentTier = "Tier 3";
-        } else if (totalPoints >= 205) {
-          currentTier = "Tier 2";
-        }
-
-        setTier(currentTier);
+        setReferralLink(resolvedReferralLink);
+        setReferrals(data.referrals as ReferralRow[]);
+        setInvites(data.invites);
+        setSignUps(data.signUps);
+        setPoints(data.points);
+        setTier(data.tier);
+        setDebug({
+          userId: user.id,
+          userEmail: user.email,
+          rowCount: data.referrals.length,
+        });
       } catch (err) {
-        console.error("Unexpected error loading referrals v1:", err);
+        console.error("Unexpected error loading referrals:", err);
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-  }, [user?.id]);
+  }, [user]);
 
   /* ------------------------------------------------------------------------ */
   /*                               Event Handlers                             */

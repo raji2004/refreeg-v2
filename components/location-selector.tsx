@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import React from "react";
-import { ALL_COUNTRIES, getCountries } from "@/app/utils/countryUtils";
+import { ALL_COUNTRIES, getCountries } from "@/utils/countryUtils";
 
 interface LocationSelectorProps {
   selected: string;
@@ -51,13 +51,13 @@ export function LocationSelector({
   const fetchStates = (countryName: string | null): Promise<string[]> => {
     if (!countryName) return Promise.resolve([]);
     return fetchLocations(
-      `/api/states?countryName=${encodeURIComponent(countryName)}`
+      `/api/states?countryName=${encodeURIComponent(countryName)}`,
     );
   };
   const fetchCities = (stateName: string | null): Promise<string[]> => {
     if (!stateName) return Promise.resolve([]);
     return fetchLocations(
-      `/api/cities?stateName=${encodeURIComponent(stateName)}`
+      `/api/cities?stateName=${encodeURIComponent(stateName)}`,
     );
   };
 
@@ -152,7 +152,8 @@ export function LocationSelector({
             className={cn(
               "w-full justify-between text-base font-normal text-gray-700  bg-white hover:bg-[#003366] border-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0",
               !selected && "text-gray-500",
-              (isLoading || isError) && "cursor-not-allowed opacity-50 z-[1019]"
+              (isLoading || isError) &&
+                "cursor-not-allowed opacity-50 z-[1019]",
             )}
           >
             {isLoading ? (
@@ -182,7 +183,7 @@ export function LocationSelector({
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        selected === option ? "opacity-100" : "opacity-0"
+                        selected === option ? "opacity-100" : "opacity-0",
                       )}
                     />
                     {option}

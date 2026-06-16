@@ -1,10 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const stateName = searchParams.get("stateName");
+    const stateName = searchParams.get("stateName")?.trim();
 
     if (!stateName) {
       return NextResponse.json(
@@ -13,20 +13,30 @@ export async function GET(request: Request) {
       );
     }
 
-    const supabase = await createClient();
+    // 1. Fetch the state and its cities in a single query
+    const state = await prisma.state.findFirst({
+      where: {
+        name: { equals: stateName, mode: "insensitive" },
+      },
+      select: {
+        cities: {
+          select: { name: true },
+          orderBy: { name: "asc" },
+        },
+      },
+    });
 
-    const { data: cities, error } = await supabase
-      .from("cities")
-      .select("name")
-      .eq("state_name", stateName)
-      .order("name");
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!state) {
+      return NextResponse.json(
+        { error: "State not found" },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json(cities.map((city) => city.name));
+    return NextResponse.json(state.cities.map((c) => c.name));
   } catch (error) {
+    console.error("Cities API error:", error);
+
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

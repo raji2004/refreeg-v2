@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,16 +13,24 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Icons } from "@/components/icons";
 import { useBank } from "@/hooks/use-bank";
 import { sendBankAccountAddedEmail } from "@/services/mail";
 import { useToast } from "@/components/ui/use-toast";
+import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 interface BankDetailsFormProps {
   profile: {
@@ -37,10 +46,14 @@ interface BankDetailsFormProps {
 
 export function BankDetailsForm({ profile, user }: BankDetailsFormProps) {
   const { toast } = useToast();
+  const [open, setOpen] = React.useState(false);
+  
   const {
     isSubmitting,
+    isVerifying,
     banks,
     isLoadingBanks,
+    verificationFailed,
     formData,
     handleBankChange,
     handleBankSubmit,
@@ -92,44 +105,95 @@ export function BankDetailsForm({ profile, user }: BankDetailsFormProps) {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 flex flex-col">
             <Label htmlFor="bankName">Bank Name</Label>
-            <Select
-              value={formData.bankName}
-              onValueChange={(value) => handleBankChange(value, "bankName")}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select your bank" />
-              </SelectTrigger>
-              <SelectContent>
-                {isLoadingBanks ? (
-                  <SelectItem value="loading" disabled>
-                    Loading banks...
-                  </SelectItem>
-                ) : (
-                  banks.map((bank) => (
-                    <SelectItem
-                      key={`${bank.code}-${bank.name}`}
-                      value={bank.name}
-                    >
-                      {bank.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={open}
+                  className="w-full justify-between"
+                  disabled={isLoadingBanks}
+                >
+                  {isLoadingBanks ? (
+                    "Loading banks..."
+                  ) : formData.bankName ? (
+                    formData.bankName
+                  ) : (
+                    "Select your bank"
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <Command>
+                  <CommandInput placeholder="Search bank..." />
+                  <CommandList>
+                    <CommandEmpty>No bank found.</CommandEmpty>
+                    <CommandGroup>
+                      {banks.map((bank) => (
+                        <CommandItem
+                          key={`${bank.code}-${bank.name}`}
+                          value={bank.name}
+                          onSelect={(currentValue) => {
+                            handleBankChange(
+                              currentValue === formData.bankName ? "" : currentValue,
+                              "bankName"
+                            );
+                            setOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              formData.bankName === bank.name
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                          {bank.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="accountName">Account Name</Label>
-            <Input
-              id="accountName"
-              name="accountName"
-              placeholder="Name on your bank account"
-              value={formData.accountName}
-              onChange={(e) => handleBankChange(e.target.value, "accountName")}
-              required
-            />
+            <div className="relative">
+              <Input
+                id="accountName"
+                name="accountName"
+                placeholder={
+                  isVerifying
+                    ? "Validating account..."
+                    : verificationFailed
+                      ? "Verification failed. Enter name manually"
+                      : "Name on your bank account"
+                }
+                value={isVerifying ? "" : formData.accountName}
+                onChange={(e) => handleBankChange(e.target.value, "accountName")}
+                readOnly={isVerifying || (!!formData.accountName && !verificationFailed)}
+                className={cn(
+                  isVerifying && "bg-muted/50 text-muted-foreground italic"
+                )}
+                required
+              />
+              {isVerifying && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Icons.spinner className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
+            {verificationFailed && (
+              <p className="text-xs text-destructive">
+                We couldn't verify this account. Please enter the name exactly as it appears on your bank statement.
+              </p>
+            )}
           </div>
 
           <div className="rounded-md bg-blue-50 p-4 dark:bg-blue-900/20">

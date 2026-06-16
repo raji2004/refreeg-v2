@@ -32,10 +32,19 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const getActionBadgeColor = (action: string) => {
-  if (action.includes("approve") || action.includes("unblock") || action.includes("appoint")) {
+  if (
+    action.includes("approve") ||
+    action.includes("unblock") ||
+    action.includes("appoint")
+  ) {
     return "default"; // or "success" if available, but default is usually black/primary
   }
-  if (action.includes("reject") || action.includes("block") || action.includes("remove") || action.includes("delete")) {
+  if (
+    action.includes("reject") ||
+    action.includes("block") ||
+    action.includes("remove") ||
+    action.includes("delete")
+  ) {
     return "destructive";
   }
   return "secondary";

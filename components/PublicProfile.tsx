@@ -21,6 +21,7 @@ import { HandHeart, ShieldAlert, FilePenLine } from "lucide-react";
 import { Instagram, Facebook, Linkedin } from "lucide-react";
 import { FaXTwitter } from "react-icons/fa6";
 import { motion } from "framer-motion";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 type ProfileProps = {
   profile: any;
@@ -66,18 +67,15 @@ export default function PublicProfile({
   // Computed impact metrics
   const totalRaisedAcrossCauses = causes.reduce(
     (sum, c) => sum + (c.raised || 0),
-    0
+    0,
   );
-  const totalDonated = donations.reduce(
-    (sum, d) => sum + (d.amount || 0),
-    0
-  );
+  const totalDonated = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
   const totalSignaturesGathered = petitions.reduce(
     (sum, p) => sum + (p.signatures || p.signature_count || 0),
-    0
+    0,
   );
   const activeCauses = causes.filter(
-    (c) => !c.ended && (c.raised || 0) < (c.goal || 1)
+    (c) => !c.ended && (c.raised || 0) < (c.goal || 1),
   ).length;
 
   const isVerified = profile.is_verified || false;
@@ -87,7 +85,8 @@ export default function PublicProfile({
   };
 
   const defaultProfileImage = "/default-avatar.jpg";
-  const profileImage = profile.profile_photo || defaultProfileImage;
+  const profileImage =
+    getMediaUrl(profile.profile_photo) || defaultProfileImage;
   const displayName = profile.full_name || "Anonymous";
   const username = profile.username || "";
   const firstName = displayName.split(" ")[0] || "this user";
@@ -135,7 +134,8 @@ export default function PublicProfile({
     <div className="w-full min-h-screen bg-gray-50">
       {/* Brand banner */}
       <div className="w-full h-36 md:h-48 bg-gradient-to-r from-[#003366] via-[#004d99] to-[#1A7499] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10"
+        <div
+          className="absolute inset-0 opacity-10"
           style={{
             backgroundImage:
               "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)",
@@ -154,10 +154,13 @@ export default function PublicProfile({
           </Button>
         </div>
         {/* RefreeG brand tag */}
-        <Link href="https://t.me/+d67UCIer8c01ODhk" className="absolute top-4 right-4 md:right-8 flex items-center gap-1.5 text-white/60 text-xs font-semibold tracking-widest uppercase">
+        <Link
+          href="https://t.me/+d67UCIer8c01ODhk"
+          className="absolute top-4 right-4 md:right-8 flex items-center gap-1.5 text-white/60 text-xs font-semibold tracking-widest uppercase"
+        >
           <Users className="h-3.5 w-3.5" />
           <span>RefreeG Community</span>
-        </Link >
+        </Link>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 pb-16">
@@ -173,6 +176,7 @@ export default function PublicProfile({
                   fill
                   className="object-cover"
                   priority
+                  unoptimized={isProxyMediaUrl(profileImage)}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.onerror = null;
@@ -224,35 +228,49 @@ export default function PublicProfile({
             {/* CTA for non-owners */}
             {!isOwner && (
               <div className="flex gap-2 flex-wrap shrink-0 mt-2 md:mt-0">
-                
                 <Link href={`/causes?userId=${userId}&action=pledge`}>
-                  <Button size="sm" className="bg-[#003366] text-white text-xs font-semibold px-4">
+                  <Button
+                    size="sm"
+                    className="bg-[#003366] text-white text-xs font-semibold px-4"
+                  >
                     <HandHeart className="h-4 w-4 mr-1" />
                     Pledge
                   </Button>
                 </Link>
 
                 <Link href={`/causes?userId=${userId}&action=donate`}>
-                  <Button variant="outline" size="sm" className="text-gray-500 border-gray-300 gap-x-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-gray-500 border-gray-300 gap-x-1"
+                  >
                     <HandCoins className="h-4 w-4" />
                     Donate
                   </Button>
                 </Link>
 
-                <Link href={`/petitions?userId=${userId}`}  className="hidden">
-                  <Button variant="outline" size="sm" className="text-gray-500 border-gray-300 gap-x-1">
+                <Link href={`/petitions?userId=${userId}`} className="hidden">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-gray-500 border-gray-300 gap-x-1"
+                  >
                     <FilePenLine className="h-4 w-4" />
                     Sign Petition
                   </Button>
                 </Link>
 
                 <Link href="/subscribe">
-                  <Button variant="outline" size="sm" className="text-gray-500 border-gray-300 gap-x-1" disabled>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-gray-500 border-gray-300 gap-x-1"
+                    disabled
+                  >
                     <FilePenLine className="h-4 w-4" />
                     Subscribe
                   </Button>
                 </Link>
-
               </div>
             )}
           </div>
@@ -273,7 +291,6 @@ export default function PublicProfile({
                 }}
                 className="flex items-center gap-2 md:gap-3"
               >
-
                 {profile.instagram_url && (
                   <motion.a
                     href={profile.instagram_url}
@@ -337,7 +354,6 @@ export default function PublicProfile({
                     <Linkedin className="h-4 w-4 md:h-5 md:w-5 text-gray-600 group-hover:text-blue-700 transition-colors" />
                   </motion.a>
                 )}
-
               </motion.div>
             </div>
           )}

@@ -36,6 +36,38 @@ export interface Database {
           revoked_at?: string | null;
         };
       };
+      api_bank_accounts: {
+        Row: {
+          id: string;
+          developer_id: string;
+          bank_account_number: string;
+          bank_code: string;
+          bank_account_name: string;
+          sub_account_code: string | null;
+          created_at: string;
+          mode: string;
+        };
+        Insert: {
+          id?: string;
+          developer_id: string;
+          bank_account_number: string;
+          bank_code: string;
+          bank_account_name: string;
+          sub_account_code?: string | null;
+          created_at?: string;
+          mode?: string;
+        };
+        Update: {
+          id?: string;
+          developer_id?: string;
+          bank_account_number?: string;
+          bank_code?: string;
+          bank_account_name?: string;
+          sub_account_code?: string | null;
+          created_at?: string;
+          mode?: string;
+        };
+      };
       api_campaigns: {
         Row: {
           id: string;
@@ -106,6 +138,11 @@ export interface Database {
           account_number: string | null;
           bank_name: string | null;
           account_name: string | null;
+          crypto_wallets: {
+            ethereum?: string;
+            solana?: string;
+            [key: string]: any;
+          } | null;
           created_at: string;
           updated_at: string;
         };
@@ -116,6 +153,11 @@ export interface Database {
           account_number?: string | null;
           bank_name?: string | null;
           account_name?: string | null;
+          crypto_wallets?: {
+            ethereum?: string;
+            solana?: string;
+            [key: string]: any;
+          } | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -126,6 +168,11 @@ export interface Database {
           account_number?: string | null;
           bank_name?: string | null;
           account_name?: string | null;
+          crypto_wallets?: {
+            ethereum?: string;
+            solana?: string;
+            [key: string]: any;
+          } | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -612,6 +659,18 @@ export interface Database {
           updated_at?: string;
         };
       };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }

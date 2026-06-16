@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, rateLimit, handlePreflight } from "@/utils/api-bot/api-auth";
 import { InitiateDonationSchema } from "@/utils/api-bot/schemas";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/types/database-types";
+import { prisma } from "@/lib/prisma";
 import Paystack from "@/services/paystack";
 import { TransactionData } from "@/types";
 import { logApiRequest } from "@/utils/api-bot/request-logger";
@@ -13,10 +12,7 @@ import {
 } from "@/utils/api-bot/response-utils";
 import crypto from "crypto";
 
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+
 
 export async function POST(req: NextRequest) {
   const startedAt = Date.now();
@@ -42,11 +38,16 @@ export async function POST(req: NextRequest) {
     }
     const data = parsed.data;
 
-    const { data: campaign, error: campaignError } = await supabaseAdmin
-      .from("api_campaigns")
-      .select("id, sub_account_code, status, developer_id, mode, raised_amount")
-      .eq("id", data.campaign_id)
-      .single();
+    let campaign;
+    let campaignError;
+    try {
+      campaign = await prisma.api_campaigns.findFirst({
+        where: { id: data.campaign_id },
+        select: { id: true, sub_account_code: true, status: true, developer_id: true, mode: true, raised_amount: true }
+      });
+    } catch (err) {
+      campaignError = err;
+    }
 
     if (campaignError || !campaign) {
       const response = errorResponse("Campaign not found", ApiErrorCode.NOT_FOUND, 404);
@@ -80,36 +81,43 @@ export async function POST(req: NextRequest) {
     if (auth.mode === "test") {
       const testReference = `test_ref_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
 
-      // Record test donation directly
-      const { data: testDonation, error: testDonErr } = await supabaseAdmin
-        .from("api_donations")
-        .insert({
-          api_campaign_id: data.campaign_id,
-          amount: data.amount,
-          tip_amount: data.tip_amount || 0,
-          donor_name: data.name,
-          donor_email: data.email,
-          message: data.message || "",
-          is_anonymous: data.is_anonymous || false,
-          status: "success",
-          paystack_reference: testReference,
-          mode: "test",
-        })
-        .select()
-        .single();
+      let testDonation;
+      let testDonErr;
+      try {
+        testDonation = await prisma.api_donations.create({
+          data: {
+            api_campaign_id: data.campaign_id,
+            amount: data.amount,
+            tip_amount: data.tip_amount || 0,
+            donor_name: data.name,
+            donor_email: data.email,
+            message: data.message || "",
+            is_anonymous: data.is_anonymous || false,
+            status: "success",
+            paystack_reference: testReference,
+            mode: "test",
+          }
+        });
+      } catch (err) {
+        testDonErr = err;
+      }
 
-      if (testDonErr) {
+      if (testDonErr || !testDonation) {
         const response = errorResponse("Failed to create test donation", ApiErrorCode.INTERNAL_ERROR, 500);
         await logApiRequest({ request: req, statusCode: response.status, apiKeyId: auth.apiKeyId, userId: auth.userId, mode: auth.mode, errorCode: ApiErrorCode.INTERNAL_ERROR, startedAt });
         return response;
       }
 
       // Update campaign raised_amount
-      const newRaised = Number(campaign.raised_amount || 0) + data.amount;
-      await supabaseAdmin
-        .from("api_campaigns")
-        .update({ raised_amount: newRaised })
-        .eq("id", data.campaign_id);
+      try {
+        const newRaised = Number(campaign.raised_amount || 0) + data.amount;
+        await prisma.api_campaigns.update({
+          where: { id: data.campaign_id },
+          data: { raised_amount: newRaised }
+        });
+      } catch (err) {
+        console.error("Failed to update campaign total", err);
+      }
 
       // Dispatch webhook for test donation
       const { dispatchWebhook } = await import("@/utils/api-bot/webhook-utils");

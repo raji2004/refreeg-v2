@@ -27,6 +27,7 @@ import type { Cause } from "@/types";
 import dynamic from "next/dynamic";
 import { Progress } from "@/components/ui/progress";
 import { getBaseURL, calculateServiceFee } from "@/lib/utils";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -327,10 +328,23 @@ function TrustPanel({
   cause: CauseDetail;
 }) {
   const proofMedia = useMemo(() => {
-    if (cause.multimedia && cause.multimedia.length > 0)
-      return cause.multimedia;
-    if (cause.image) return [cause.image];
-    return [];
+    const allMedia =
+      cause.multimedia && cause.multimedia.length > 0
+        ? cause.multimedia
+        : cause.image
+          ? [cause.image]
+          : [];
+
+    // Filter out videos and only show images in the proof thumbnails
+    return allMedia
+      .filter((url) => {
+        const isVideo =
+          url.match(/\.(mp4|mov|webm)$/i) ||
+          url.match(/(youtube\.com|youtu\.be|tiktok\.com|drive\.google\.com)/i);
+        return !isVideo;
+      })
+      .reverse() // Show latest first
+      .slice(0, 3);
   }, [cause.image, cause.multimedia]);
 
   const tiles = trustTiles(cause);
@@ -393,11 +407,12 @@ function TrustPanel({
                 className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
               >
                 <Image
-                  src={item}
+                  src={getMediaUrl(item)}
                   alt="Proof"
                   fill
                   className="h-full w-full object-cover"
                   loading="lazy"
+                  unoptimized={isProxyMediaUrl(getMediaUrl(item))}
                 />
               </div>
             ))}
@@ -1380,11 +1395,14 @@ export default function CampaignQualityLab({
                 >
                   {cause.user.profile_photo && (
                     <Image
-                      src={cause.user.profile_photo}
+                      src={getMediaUrl(cause.user.profile_photo)}
                       alt={cause.user.name}
                       width={20}
                       height={20}
                       className="rounded-full object-cover"
+                      unoptimized={isProxyMediaUrl(
+                        getMediaUrl(cause.user.profile_photo),
+                      )}
                     />
                   )}
                   <span className="font-medium text-slate-800">

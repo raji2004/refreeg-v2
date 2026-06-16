@@ -1,5 +1,5 @@
 import { createDonation } from "@/actions/donation-actions";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { prisma } from "@/lib/prisma";
 import Paystack from "@/services/paystack";
 import { sendPledgeConfirmationEmail } from "@/services/mail";
 import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/pledge-constants";
@@ -36,14 +36,12 @@ export async function processPledgeAuthorizationSuccess(reference: string) {
     return { ok: false as const, reason: "no_auth_code" };
   }
 
-  const admin = createAdminClient();
   const pledgeId = String(meta.pledge_id);
 
-  const { data: existing } = await admin
-    .from("pledges")
-    .select("id, first_transaction_reference")
-    .eq("id", pledgeId)
-    .maybeSingle();
+  const existing = await prisma.pledges.findUnique({
+    where: { id: pledgeId },
+    select: { id: true, first_transaction_reference: true },
+  });
 
   if (!existing) {
     return { ok: false as const, reason: "pledge_not_found" };
@@ -55,9 +53,9 @@ export async function processPledgeAuthorizationSuccess(reference: string) {
   const authEmail =
     full.customer?.email || String(meta.email || "");
 
-  await admin
-    .from("pledges")
-    .update({
+  await prisma.pledges.update({
+    where: { id: pledgeId },
+    data: {
       paystack_authorization_code: auth.authorization_code,
       authorization_email: authEmail,
       first_transaction_reference: reference,
@@ -65,15 +63,14 @@ export async function processPledgeAuthorizationSuccess(reference: string) {
       ...(auth.reusable === false
         ? { last_charge_error: "Card marked non-reusable; charge on date may fail." }
         : {}),
-    })
-    .eq("id", pledgeId);
+    },
+  });
 
   const causeId = String(meta.cause_id);
-  const { data: cause } = await admin
-    .from("causes")
-    .select("title")
-    .eq("id", causeId)
-    .maybeSingle();
+  const cause = await prisma.cause.findUnique({
+    where: { id: causeId },
+    select: { title: true },
+  });
 
   const futureAmount = Number(meta.future_pledge_amount ?? meta.amount);
   const baseUrl =
@@ -112,12 +109,10 @@ export async function processPledgeScheduledChargeSuccess(reference: string) {
     return { ok: false as const, reason: "missing_ids" };
   }
 
-  const admin = createAdminClient();
-  const { data: pledge } = await admin
-    .from("pledges")
-    .select("id, status, user_id, paystack_payment_status")
-    .eq("id", pledgeId)
-    .maybeSingle();
+  const pledge = await prisma.pledges.findUnique({
+    where: { id: pledgeId },
+    select: { id: true, status: true, user_id: true, paystack_payment_status: true },
+  });
 
   if (!pledge) {
     return { ok: false as const, reason: "pledge_not_found" };
@@ -141,134 +136,132 @@ export async function processPledgeScheduledChargeSuccess(reference: string) {
     0,
   );
 
-  await admin
-    .from("pledges")
-    .update({
+  await prisma.pledges.update({
+    where: { id: pledgeId },
+    data: {
       status: "fulfilled",
       paystack_payment_status: "charged",
       scheduled_charge_reference: reference,
       last_charge_error: null,
-    })
-    .eq("id", pledgeId);
+    },
+  });
 
   return { ok: true as const, reason: "donation_created" };
 }
 
 export async function chargeDuePledgesForToday() {
-  const admin = createAdminClient();
   const today = new Date().toISOString().split("T")[0];
+  const todayDate = new Date(`${today}T00:00:00.000Z`);
 
-  const { data: pledges, error } = await admin
-    .from("pledges")
-    .select(
-      `
-      id,
-      cause_id,
-      user_id,
-      amount,
-      name,
-      email,
-      note,
-      reminder_date,
-      paystack_authorization_code,
-      authorization_email,
-      paystack_payment_status,
-      status,
-      scheduled_charge_reference
-    `,
-    )
-    .eq("reminder_date", today)
-    .eq("status", "pending")
-    .eq("paystack_payment_status", "authorized");
+  try {
+    const pledges = await prisma.pledges.findMany({
+      where: {
+        reminder_date: todayDate,
+        status: "pending",
+        paystack_payment_status: "authorized",
+      },
+      select: {
+        id: true,
+        cause_id: true,
+        user_id: true,
+        amount: true,
+        name: true,
+        email: true,
+        note: true,
+        reminder_date: true,
+        paystack_authorization_code: true,
+        authorization_email: true,
+        paystack_payment_status: true,
+        status: true,
+        scheduled_charge_reference: true,
+      },
+    });
 
-  if (error) {
-    throw new Error(error.message);
+    const results: { pledgeId: string; ok: boolean; error?: string }[] = [];
+
+    for (const pledge of pledges) {
+      if (!pledge.paystack_authorization_code || !pledge.authorization_email) {
+        results.push({
+          pledgeId: pledge.id,
+          ok: false,
+          error: "missing_authorization",
+        });
+        continue;
+      }
+
+      const causeRow = await prisma.cause.findUnique({
+        where: { id: pledge.cause_id },
+        select: { userId: true },
+      });
+
+      if (!causeRow?.userId) {
+        results.push({
+          pledgeId: pledge.id,
+          ok: false,
+          error: "cause_missing",
+        });
+        continue;
+      }
+
+      const profile = await prisma.user.findUnique({
+        where: { id: causeRow.userId },
+        select: { subAccountCode: true },
+      });
+
+      const subaccount = profile?.subAccountCode?.trim() || undefined;
+      const pledgeAmount = Number(pledge.amount);
+      const serviceFee = calculateServiceFee(pledgeAmount);
+      // Deterministic per pledge + day so retries do not double-charge (Paystack rejects duplicate reference).
+      const reference = `pledgech_${pledge.id.replace(/-/g, "")}_${today.replace(/-/g, "")}`;
+
+      try {
+        await Paystack.chargeAuthorization({
+          authorizationCode: pledge.paystack_authorization_code,
+          email: pledge.authorization_email,
+          amountNgn: pledgeAmount,
+          serviceFeeNgn: serviceFee,
+          reference,
+          causeId: pledge.cause_id,
+          subaccount,
+          metadata: {
+            pledge_flow: "scheduled_charge",
+            pledge_id: pledge.id,
+            cause_id: pledge.cause_id,
+            amount: pledgeAmount,
+            customer_name: pledge.name,
+            email: pledge.email,
+            message: pledge.note || "",
+            is_anonymous: false,
+            tip_amount: 0,
+            ...(pledge.user_id ? { user_id: pledge.user_id } : {}),
+          },
+        });
+
+        await prisma.pledges.update({
+          where: { id: pledge.id },
+          data: {
+            charge_attempted_at: new Date(),
+          },
+        });
+
+        results.push({ pledgeId: pledge.id, ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        await prisma.pledges.update({
+          where: { id: pledge.id },
+          data: {
+            last_charge_error: msg.slice(0, 500),
+            charge_attempted_at: new Date(),
+            paystack_payment_status: "charge_failed",
+          },
+        });
+
+        results.push({ pledgeId: pledge.id, ok: false, error: msg });
+      }
+    }
+
+    return { today, processed: results.length, results };
+  } catch (error: any) {
+    throw new Error(error.message || String(error));
   }
-
-  const results: { pledgeId: string; ok: boolean; error?: string }[] = [];
-
-  for (const pledge of pledges ?? []) {
-    if (!pledge.paystack_authorization_code || !pledge.authorization_email) {
-      results.push({
-        pledgeId: pledge.id,
-        ok: false,
-        error: "missing_authorization",
-      });
-      continue;
-    }
-
-    const { data: causeRow } = await admin
-      .from("causes")
-      .select("user_id")
-      .eq("id", pledge.cause_id)
-      .maybeSingle();
-
-    if (!causeRow?.user_id) {
-      results.push({
-        pledgeId: pledge.id,
-        ok: false,
-        error: "cause_missing",
-      });
-      continue;
-    }
-
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("sub_account_code")
-      .eq("id", causeRow.user_id)
-      .maybeSingle();
-
-    const subaccount = profile?.sub_account_code?.trim() || undefined;
-    const pledgeAmount = Number(pledge.amount);
-    const serviceFee = calculateServiceFee(pledgeAmount);
-    // Deterministic per pledge + day so retries do not double-charge (Paystack rejects duplicate reference).
-    const reference = `pledgech_${pledge.id.replace(/-/g, "")}_${today.replace(/-/g, "")}`;
-
-    try {
-      await Paystack.chargeAuthorization({
-        authorizationCode: pledge.paystack_authorization_code,
-        email: pledge.authorization_email,
-        amountNgn: pledgeAmount,
-        serviceFeeNgn: serviceFee,
-        reference,
-        causeId: pledge.cause_id,
-        subaccount,
-        metadata: {
-          pledge_flow: "scheduled_charge",
-          pledge_id: pledge.id,
-          cause_id: pledge.cause_id,
-          amount: pledgeAmount,
-          customer_name: pledge.name,
-          email: pledge.email,
-          message: pledge.note || "",
-          is_anonymous: false,
-          tip_amount: 0,
-          ...(pledge.user_id ? { user_id: pledge.user_id } : {}),
-        },
-      });
-
-      await admin
-        .from("pledges")
-        .update({
-          charge_attempted_at: new Date().toISOString(),
-        })
-        .eq("id", pledge.id);
-
-      results.push({ pledgeId: pledge.id, ok: true });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      await admin
-        .from("pledges")
-        .update({
-          last_charge_error: msg.slice(0, 500),
-          charge_attempted_at: new Date().toISOString(),
-          paystack_payment_status: "charge_failed",
-        })
-        .eq("id", pledge.id);
-
-      results.push({ pledgeId: pledge.id, ok: false, error: msg });
-    }
-  }
-
-  return { today, processed: results.length, results };
 }

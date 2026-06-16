@@ -1,7 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type {
   Cause,
@@ -21,78 +20,90 @@ import { cache } from "react";
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const mapPrismaToCause = (prismaCause: any): Cause => {
+  return {
+    ...prismaCause,
+    user_id: prismaCause.userId,
+    // Convert Prisma Decimal to number for the frontend
+    goal: prismaCause.goal ? Number(prismaCause.goal) : 0,
+    raised: prismaCause.raised ? Number(prismaCause.raised) : 0,
+    shared: prismaCause.shared ? Number(prismaCause.shared) : 0,
+    // Ensure dates are strings to match the interface
+    created_at: prismaCause.createdAt instanceof Date ? prismaCause.createdAt.toISOString() : prismaCause.createdAt,
+    updated_at: prismaCause.updatedAt instanceof Date ? prismaCause.updatedAt.toISOString() : prismaCause.updatedAt,
+    start_date: prismaCause.start_date instanceof Date ? prismaCause.start_date.toISOString() : prismaCause.start_date,
+    end_date: prismaCause.end_date instanceof Date ? prismaCause.end_date.toISOString() : prismaCause.end_date,
+    rejection_reason: prismaCause.rejectionReason,
+    days_active: prismaCause.daysActive,
+    video_links: prismaCause.videoLinks,
+  } as unknown as Cause;
+};
+
 /**
  * Get a cause by ID
  */
 export async function getCause(causeId: string): Promise<CauseWithUser | null> {
   if (!UUID_REGEX.test(causeId)) return null;
-  const supabase = await createClient();
   const user = await getCurrentUser();
-  const { data, error } = await supabase
-    .from("causes")
-    .select(
-      `
-      *,
-      profiles!inner (
-        full_name,
-        email,
-        username,
-        sub_account_code,
-        profile_photo
-      ),
-      cause_sections (
-        id,
-        heading,
-        description
-      )
-    `,
-    )
-    .eq("id", causeId)
-    .order("id", { foreignTable: "cause_sections", ascending: true })
-    .single();
+
+  const data = await prisma.cause.findUnique({
+    where: { id: causeId },
+    include: {
+      user: {
+        select: {
+          fullName: true,
+          email: true,
+          username: true,
+          subAccountCode: true,
+          profilePhoto: true,
+        },
+      },
+      sections: {
+        select: {
+          id: true,
+          heading: true,
+          description: true,
+        },
+        orderBy: { id: "asc" },
+      },
+    },
+  });
+
+  if (!data) return null;
 
   const isAdmin = user?.id ? await isAdminOrManager(user.id) : false;
 
   if (
-    (data?.status === "pending" || data?.status === "rejected") &&
-    user?.id !== data?.user_id &&
+    (data.status === "pending" || data.status === "rejected") &&
+    user?.id !== data.userId &&
     !isAdmin
   ) {
     redirect("/");
     return null;
   }
-  if (error) {
-    if (error.code === "PGRST116") {
-      return null;
-    }
-    console.error("Error fetching cause:", error);
-    throw error;
-  }
 
   // Check if current user is following this cause
   let isFollowing = false;
   if (user?.id) {
-    const { data: followData } = await supabase
-      .from("campaign_follows")
-      .select("id")
-      .eq("cause_id", causeId)
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const followData = await prisma.campaign_follows.findFirst({
+      where: { cause_id: causeId, user_id: user.id },
+      select: { id: true },
+    });
     isFollowing = !!followData;
   }
 
   const cause = {
-    ...data,
+    ...mapPrismaToCause(data),
     user: {
-      name: data.profiles?.full_name || "Anonymous",
-      email: data.profiles?.email || "",
-      username: data.profiles?.username || null,
-      sub_account_code: data.profiles?.sub_account_code || "",
-      profile_photo: data.profiles?.profile_photo || null,
+      name: data.user?.fullName || "Anonymous",
+      email: data.user?.email || "",
+      username: data.user?.username || null,
+      sub_account_code: data.user?.subAccountCode || "",
+      profile_photo: data.user?.profilePhoto || null,
     },
-    sections: data.cause_sections || [],
+    sections: data.sections || [],
     multimedia: data.multimedia || [],
-    video_links: data.video_links || [],
+    video_links: data.videoLinks || [],
     trust_score: data.trust_score || {
       impact: "B+",
       readability: "A",
@@ -105,45 +116,40 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
     isFollowing,
   } as unknown as CauseWithUser;
 
-  delete (cause as any).profiles;
-  delete (cause as any).cause_sections;
-
   return cause;
 }
 
 /**
- * Upload an image to Supabase storage
+ * Upload a file to S3 storage
  */
-async function uploadImageToSupabase(
+async function uploadFileToS3(
   file: File,
   userId: string,
+  causeId: string,
   type: "cover" | "additional",
 ): Promise<string> {
-  const supabase = await createClient();
-
-  const sanitizedOriginalName = file.name.replace(/[^\w\s.-]/g, "_");
-  const fileName = `${userId}-${Date.now()}-${type}-${sanitizedOriginalName}`;
-
-  const bucket = file.type.startsWith("video/")
-    ? "cause-videos"
-    : "profile-photos";
-
-  const { data: uploadData, error: uploadError } = await supabase.storage
-    .from(bucket)
-    .upload(fileName, file, {
-      cacheControl: "3600",
-      upsert: true,
+  const ext = file.name.split('.').pop() || 'file';
+  const uniqueId = Math.random().toString(36).substring(2, 15);
+  const isVideo = file.type.startsWith("video/");
+  
+  try {
+    const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
+    
+    const s3Key = generateS3Key({
+      entityType: "causes",
+      userId,
+      entityId: causeId,
+      mediaType: isVideo ? "videos" : "images",
+      filename: `${uniqueId}_${type}.${ext}`,
     });
 
-  if (uploadError) {
-    console.error("Error uploading image:", uploadError);
-    throw uploadError;
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await uploadToS3(buffer, s3Key, file.type);
+    return s3Key;
+  } catch (error: any) {
+    console.error("Error uploading file to S3:", error);
+    throw error;
   }
-
-  const { data: urlData } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(fileName);
-  return urlData.publicUrl;
 }
 
 /**
@@ -153,13 +159,13 @@ export async function createCause(
   userId: string,
   causeData: CauseFormData,
 ): Promise<Cause> {
-  const supabase = await createClient();
-
+  const causeId = crypto.randomUUID();
   let coverImageUrl = null;
   if (causeData.coverImage) {
-    coverImageUrl = await uploadImageToSupabase(
+    coverImageUrl = await uploadFileToS3(
       causeData.coverImage,
       userId,
+      causeId,
       "cover",
     );
   }
@@ -194,7 +200,7 @@ export async function createCause(
       multimediaUrls = await Promise.all(
         causeData.multimedia.map(async (file) => {
           if (typeof file === "string") return file;
-          return await uploadImageToSupabase(file, userId, "additional");
+          return await uploadFileToS3(file, userId, causeId, "additional");
         }),
       );
     } catch (error) {
@@ -203,76 +209,73 @@ export async function createCause(
     }
   }
 
-  const { data: cause, error: causeError } = await supabase
-    .from("causes")
-    .insert({
-      user_id: userId,
-      title: causeData.title,
-      category: causeData.category,
-      goal:
-        typeof causeData.goal === "string"
-          ? Number.parseFloat(causeData.goal)
-          : causeData.goal,
-      status: "pending",
-      image: coverImageUrl,
-      days_active: daysActive,
-      start_date: causeData.startDate ? (causeData.startDate instanceof Date ? causeData.startDate.toISOString() : causeData.startDate) : null,
-      end_date: causeData.endDate ? (causeData.endDate instanceof Date ? causeData.endDate.toISOString() : causeData.endDate) : null,
-      multimedia: multimediaUrls,
-      video_links: causeData.video_links || [],
-      summary: causeData.summary || null,
-      location: causeData.location || null,
-    })
-    .select()
-    .single();
-  if (causeError) {
+  try {
+    const cause = await prisma.$transaction(async (tx: any) => {
+      const newCause = await tx.cause.create({
+        data: {
+          id: causeId,
+          userId: userId,
+          title: causeData.title,
+          category: causeData.category,
+          goal:
+            typeof causeData.goal === "string"
+              ? Number.parseFloat(causeData.goal)
+              : causeData.goal,
+          status: "pending",
+          image: coverImageUrl,
+          daysActive: daysActive,
+          start_date: causeData.startDate
+            ? new Date(causeData.startDate)
+            : null,
+          end_date: causeData.endDate ? new Date(causeData.endDate) : null,
+          multimedia: multimediaUrls,
+          videoLinks: causeData.video_links || [],
+          summary: causeData.summary || null,
+          location: causeData.location || null,
+        },
+      });
+
+      if (causeData.sections && causeData.sections.length > 0) {
+        await tx.cause_sections.createMany({
+          data: causeData.sections.map((section: any) => ({
+            cause_id: newCause.id,
+            heading: section.heading,
+            description: section.description,
+          })),
+        });
+      }
+
+      return newCause;
+    });
+
+    try {
+      const profile = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { fullName: true, email: true },
+      });
+
+      if (profile?.email) {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+        const reviewUrl = `${baseUrl}/dashboard/admin/causes?tab=pending`;
+
+        sendCauseSubmissionAdminNotification(
+          profile.fullName || "User",
+          profile.email,
+          causeData.title,
+          reviewUrl,
+        ).catch((err) => console.error("Background notification error:", err));
+      }
+    } catch (error) {
+      console.error("Error sending cause admin notification:", error);
+    }
+
+    revalidatePath("/dashboard/causes");
+    return mapPrismaToCause(cause);
+  } catch (causeError) {
     console.error("Error creating cause:", causeError);
     throw causeError;
   }
-
-  if (causeData.sections && causeData.sections.length > 0) {
-    const sections = causeData.sections.map((section) => ({
-      cause_id: cause.id,
-      heading: section.heading,
-      description: section.description,
-    }));
-
-    const { error: sectionsError } = await supabase
-      .from("cause_sections")
-      .insert(sections);
-
-    if (sectionsError) {
-      console.error("Error creating sections:", sectionsError);
-      throw sectionsError;
-    }
-  }
-
-  try {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", userId)
-      .single();
-
-    if (profile?.email) {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
-      const reviewUrl = `${baseUrl}/dashboard/admin/causes?tab=pending`;
-
-      // Send notification in background - do not await
-      sendCauseSubmissionAdminNotification(
-        profile.full_name || "User",
-        profile.email,
-        causeData.title,
-        reviewUrl,
-      ).catch((err) => console.error("Background notification error:", err));
-    }
-  } catch (error) {
-    console.error("Error sending cause admin notification:", error);
-  }
-
-  revalidatePath("/dashboard/causes");
-  return cause as Cause;
 }
 
 /**
@@ -283,16 +286,11 @@ export async function updateCause(
   userId: string,
   causeData: Partial<CauseFormData>,
 ): Promise<any> {
-  const supabase = await createClient();
-
   // Check for existing pending edit for this cause
-  const { data: existingEdit, error: checkError } = await supabase
-    .from("cause_edits")
-    .select("id")
-    .eq("original_cause_id", causeId)
-    .eq("status", "pending")
-    .limit(1)
-    .maybeSingle();
+  const existingEdit = await prisma.cause_edits.findFirst({
+    where: { original_cause_id: causeId, status: "pending" },
+    select: { id: true },
+  });
 
   if (existingEdit) {
     throw new Error(
@@ -301,7 +299,7 @@ export async function updateCause(
   }
 
   let coverImageUrl = causeData.coverImage
-    ? await uploadImageToSupabase(causeData.coverImage, userId, "cover")
+    ? await uploadFileToS3(causeData.coverImage as File, userId, causeId, "cover")
     : causeData.image || null;
 
   let daysActive = null;
@@ -334,7 +332,7 @@ export async function updateCause(
       multimediaUrls = await Promise.all(
         causeData.multimedia.map(async (item) => {
           if (typeof item === "string") return item; // Keep existing URL
-          return await uploadImageToSupabase(item, userId, "additional");
+          return await uploadFileToS3(item as File, userId, causeId, "additional");
         }),
       );
     } catch (error) {
@@ -343,167 +341,166 @@ export async function updateCause(
     }
   }
 
-  const editData: any = {
-    original_cause_id: causeId,
-    user_id: userId,
-    title: causeData.title,
-    category: causeData.category,
-    goal:
-      typeof causeData.goal === "string"
-        ? Number.parseFloat(causeData.goal)
-        : causeData.goal,
-    image: coverImageUrl,
-    days_active: daysActive,
-    start_date: causeData.startDate ? (causeData.startDate instanceof Date ? causeData.startDate.toISOString() : causeData.startDate) : null,
-    end_date: causeData.endDate ? (causeData.endDate instanceof Date ? causeData.endDate.toISOString() : causeData.endDate) : null,
-    multimedia: multimediaUrls.length > 0 ? multimediaUrls : [],
-    video_links: causeData.video_links || [],
-    summary: causeData.summary || null,
-    location: causeData.location || null,
-    status: "pending",
-  };
+  try {
+    const editData = await prisma.$transaction(async (tx: any) => {
+      const edit = await tx.cause_edits.create({
+        data: {
+          original_cause_id: causeId,
+          user_id: userId,
+          title: causeData.title || "",
+          category: causeData.category || "",
+          goal:
+            typeof causeData.goal === "string"
+              ? Number.parseFloat(causeData.goal)
+              : causeData.goal || 0,
+          image: coverImageUrl,
+          days_active: daysActive,
+          start_date: causeData.startDate
+            ? new Date(causeData.startDate)
+            : null,
+          end_date: causeData.endDate ? new Date(causeData.endDate) : null,
+          multimedia: multimediaUrls.length > 0 ? multimediaUrls : [],
+          video_links: causeData.video_links || [],
+          summary: causeData.summary || null,
+          location: causeData.location || null,
+          status: "pending",
+        },
+      });
 
-  const { data, error } = await supabase
-    .from("cause_edits")
-    .insert(editData)
-    .select()
-    .single();
+      if (causeData.sections && causeData.sections.length > 0) {
+        await tx.cause_edit_sections.createMany({
+          data: causeData.sections.map((section: any) => ({
+            cause_edit_id: edit.id,
+            heading: section.heading,
+            description: section.description,
+          })),
+        });
+      }
 
-  if (error) {
+      return edit;
+    });
+
+    try {
+      const profile = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { fullName: true, email: true },
+      });
+
+      if (profile?.email) {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+        const reviewUrl = `${baseUrl}/dashboard/admin/causes`;
+
+        sendCauseSubmissionAdminNotification(
+          profile.fullName || "User",
+          profile.email,
+          causeData.title || "Cause Edit",
+          reviewUrl,
+        ).catch((err) => console.error("Background notification error:", err));
+      }
+    } catch (error) {
+      console.error("Error sending cause edit admin notification:", error);
+    }
+
+    revalidatePath("/dashboard/causes");
+    return editData;
+  } catch (error) {
     console.error("Error saving cause edit:", error);
     throw error;
   }
-
-  if (causeData.sections && causeData.sections.length > 0) {
-    const sections = causeData.sections.map((section) => ({
-      cause_edit_id: data.id,
-      heading: section.heading,
-      description: section.description,
-    }));
-
-    const { error: sectionsError } = await supabase
-      .from("cause_edit_sections")
-      .insert(sections);
-
-    if (sectionsError) {
-      console.error("Error creating cause edit sections:", sectionsError);
-      throw sectionsError;
-    }
-  }
-
-  try {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", userId)
-      .single();
-
-    if (profile?.email) {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
-      const reviewUrl = `${baseUrl}/dashboard/admin/causes`;
-
-      // Send notification in background - do not await
-      sendCauseSubmissionAdminNotification(
-        profile.full_name || "User",
-        profile.email,
-        causeData.title || "Cause Edit",
-        reviewUrl,
-      ).catch((err) => console.error("Background notification error:", err));
-    }
-  } catch (error) {
-    console.error("Error sending cause edit admin notification:", error);
-  }
-
-  revalidatePath("/dashboard/causes");
-  return data;
 }
 
 /**
  * List causes with filtering options
  */
-/**
- * Get causes with filtering options.
- * Using React cache to deduplicate requests in the same render pass.
- */
 export const listCauses = cache(
   async (options: CauseFilterOptions = {}): Promise<Cause[]> => {
-    const supabase = await createClient();
-
-    let query = supabase
-      .from("causes")
-      .select("*,profiles(full_name,email,profile_photo)");
+    let whereClause: any = {};
 
     // Category filter
     if (options.category && options.category !== "all") {
-      query = query.eq("category", options.category);
+      whereClause.category = options.category;
     }
 
     // Status filter
     if (options.status) {
-      query = query.eq("status", options.status);
+      whereClause.status = options.status;
     } else {
       if (!options.userId) {
-        query = query.eq("status", "approved");
+        whereClause.status = "approved";
       }
     }
 
     // User filter
     if (options.userId) {
-      query = query.eq("user_id", options.userId);
+      whereClause.userId = options.userId;
     }
 
-    // Search filter (case-insensitive partial match on title)
+    // Search filter
     if (options.search && options.search.trim()) {
-      query = query.ilike("title", `%${options.search.trim()}%`);
+      whereClause.title = {
+        contains: options.search.trim(),
+        mode: "insensitive",
+      };
     }
 
     // Sorting
+    let orderByClause: any = { createdAt: "desc" };
     switch (options.sortBy) {
       case "latest":
-        query = query.order("created_at", { ascending: false });
+        orderByClause = { createdAt: "desc" };
         break;
       case "most-funded":
-        query = query.order("raised", { ascending: false });
+        orderByClause = { raised: "desc" };
         break;
       case "ending-soon":
-        query = query.order("end_date", { ascending: true, nullsFirst: false });
+        orderByClause = { end_date: "asc" };
         break;
       case "recommended":
       default:
-        query = query.order("created_at", { ascending: false });
+        orderByClause = { createdAt: "desc" };
         break;
     }
 
-    // Pagination — use .range() which handles both offset and limit
-    if (options.offset !== undefined && options.limit) {
-      query = query.range(options.offset, options.offset + options.limit - 1);
-    } else if (options.limit) {
-      query = query.limit(options.limit);
-    }
+    try {
+      const data = await prisma.cause.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: { fullName: true, email: true, profilePhoto: true },
+          },
+        },
+        orderBy: orderByClause,
+        skip: options.offset,
+        take: options.limit,
+      });
 
-    const { data, error } = await query;
+      const causes = data.map((d: any) => ({
+        ...mapPrismaToCause(d),
+        profiles: d.user
+          ? {
+              full_name: d.user.fullName,
+              email: d.user.email,
+              profile_photo: d.user.profilePhoto,
+            }
+          : undefined,
+      }));
 
-    if (error) {
+      const isOwnerScoped = !!options.userId;
+      const result = isOwnerScoped
+        ? causes
+        : causes.filter((c) => {
+            if (c.status === "expired") return false;
+            const now = new Date();
+            if (c.end_date && new Date(c.end_date) < now) return false;
+            return true;
+          });
+
+      return result;
+    } catch (error) {
       console.error("Error listing causes:", error);
       throw error;
     }
-
-    const causes = (data as Cause[]) || [];
-
-    // Client-side filtering check as a fallback if DB status isn't synced
-    // and excluding expired causes for non-owner views
-    const isOwnerScoped = !!options.userId;
-    const result = isOwnerScoped
-      ? causes
-      : causes.filter((c) => {
-          if (c.status === "expired") return false;
-          const now = new Date();
-          if (c.end_date && new Date(c.end_date) < now) return false;
-          return true;
-        });
-
-    return result;
   },
 );
 
@@ -513,48 +510,43 @@ export const listCauses = cache(
 export async function countCauses(
   options: CauseFilterOptions = {},
 ): Promise<number> {
-  const supabase = await createClient();
+  let whereClause: any = {};
 
-  let query = supabase
-    .from("causes")
-    .select("id", { count: "exact", head: true });
-
-  // Filter out expired causes by default unless requested by owner
   if (!options.userId) {
-    query = query.neq("status", "expired");
-    // Also filter by end_date if we want consistency with listCauses
-    query = query.or(`end_date.is.null,end_date.gt.${new Date().toISOString()}`);
-  }
-
-  if (options.category && options.category !== "all") {
-    query = query.eq("category", options.category);
-  }
-
-  if (options.status) {
-    query = query.eq("status", options.status);
+    whereClause.OR = [{ end_date: null }, { end_date: { gt: new Date() } }];
+    if (!options.status) {
+      whereClause.status = "approved";
+    } else {
+      whereClause.status = options.status;
+    }
   } else {
-    if (!options.userId) {
-      query = query.eq("status", "approved");
+    if (options.status) {
+      whereClause.status = options.status;
     }
   }
 
+  if (options.category && options.category !== "all") {
+    whereClause.category = options.category;
+  }
+
   if (options.userId) {
-    query = query.eq("user_id", options.userId);
+    whereClause.userId = options.userId;
   }
 
-  // Search filter (must match listCauses)
   if (options.search && options.search.trim()) {
-    query = query.ilike("title", `%${options.search.trim()}%`);
+    whereClause.title = {
+      contains: options.search.trim(),
+      mode: "insensitive",
+    };
   }
 
-  const { count, error } = await query;
-
-  if (error) {
+  try {
+    const count = await prisma.cause.count({ where: whereClause });
+    return count;
+  } catch (error) {
     console.error("Error counting causes:", error);
     throw error;
   }
-
-  return count || 0;
 }
 
 /**
@@ -571,160 +563,116 @@ export async function updateCauseStatus(
   const isAuthorized = await isAdminOrManager(user.id);
   if (!isAuthorized) throw new Error("Unauthorized");
 
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.SUPABASE_SERVICE_ROLE_KEY
-  ) {
-    throw new Error("Server configuration error: Missing Supabase keys");
-  }
-
-  const supabaseAdmin = createSupabaseAdmin(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    },
-  );
-
   if (status === "approved") {
-    const { data: edit, error: editError } = await supabaseAdmin
-      .from("cause_edits")
-      .select("*")
-      .eq("original_cause_id", causeId)
-      .eq("status", "pending")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-
-    if (editError && editError.code !== "PGRST116") {
-      console.error("Error fetching cause edit for approval:", editError);
-      throw editError;
-    }
+    const edit = await prisma.cause_edits.findFirst({
+      where: { original_cause_id: causeId, status: "pending" },
+      orderBy: { created_at: "desc" },
+    });
 
     if (edit) {
-      const updateData: any = {
-        title: edit.title,
-        category: edit.category,
-        goal: edit.goal,
-        image: edit.image,
-        days_active: edit.days_active,
-        start_date: edit.start_date || new Date().toISOString(),
-        end_date: edit.end_date,
-        multimedia: edit.multimedia,
-        video_links: edit.video_links,
-        summary: edit.summary,
-        location: edit.location,
-        status: "approved",
-        updated_at: new Date().toISOString(),
-      };
+      try {
+        const updated = await prisma.$transaction(async (tx: any) => {
+          const c = await tx.cause.update({
+            where: { id: causeId },
+            data: {
+              title: edit.title,
+              category: edit.category,
+              goal: edit.goal,
+              image: edit.image,
+              daysActive: edit.days_active,
+              start_date: edit.start_date || new Date(),
+              end_date: edit.end_date,
+              multimedia: edit.multimedia,
+              videoLinks: edit.video_links,
+              summary: edit.summary,
+              location: edit.location,
+              status: "approved",
+              updatedAt: new Date(),
+            },
+          });
 
-      const { data: updated, error: updateError } = await supabaseAdmin
-        .from("causes")
-        .update(updateData)
-        .eq("id", causeId)
-        .select()
-        .single();
+          const editSections = await tx.cause_edit_sections.findMany({
+            where: { cause_edit_id: edit.id },
+          });
 
-      if (updateError) {
+          if (editSections.length > 0) {
+            await tx.cause_sections.deleteMany({
+              where: { cause_id: causeId },
+            });
+            await tx.cause_sections.createMany({
+              data: editSections.map((s: any) => ({
+                cause_id: causeId,
+                heading: s.heading,
+                description: s.description,
+              })),
+            });
+          }
+
+          await tx.cause_edits.delete({ where: { id: edit.id } });
+          return c;
+        });
+
+        revalidatePath("/dashboard/admin/causes");
+        return updated as unknown as Cause;
+      } catch (updateError) {
         console.error("Error updating cause with approved edit:", updateError);
         throw updateError;
       }
-
-      const { data: editSections } = await supabaseAdmin
-        .from("cause_edit_sections")
-        .select("heading, description")
-        .eq("cause_edit_id", edit.id);
-
-      if (editSections && editSections.length > 0) {
-        await supabaseAdmin
-          .from("cause_sections")
-          .delete()
-          .eq("cause_id", causeId);
-
-        const newSections = editSections.map((section: any) => ({
-          cause_id: causeId,
-          heading: section.heading,
-          description: section.description,
-        }));
-
-        await supabaseAdmin.from("cause_sections").insert(newSections);
-      }
-
-      await supabaseAdmin.from("cause_edits").delete().eq("id", edit.id);
-
-      revalidatePath("/dashboard/admin/causes");
-      return updated as Cause;
     } else {
-      const { data: updated, error: updateError } = await supabaseAdmin
-        .from("causes")
-        .update({
-          status: "approved",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", causeId)
-        .select()
-        .single();
-
-      if (updateError) {
+      try {
+        const updated = await prisma.cause.update({
+          where: { id: causeId },
+          data: { status: "approved", updatedAt: new Date() },
+        });
+        revalidatePath("/dashboard/admin/causes");
+        return updated as unknown as Cause;
+      } catch (updateError) {
         console.error("Error approving cause:", updateError);
         throw updateError;
       }
-
-      revalidatePath("/dashboard/admin/causes");
-      return updated as Cause;
     }
   }
 
   if (status === "rejected") {
-    const { data: edit, error: editError } = await supabaseAdmin
-      .from("cause_edits")
-      .select("*")
-      .eq("original_cause_id", causeId)
-      .eq("status", "pending")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+    try {
+      const edit = await prisma.cause_edits.findFirst({
+        where: { original_cause_id: causeId, status: "pending" },
+        orderBy: { created_at: "desc" },
+      });
 
-    if (edit && !editError) {
-      await supabaseAdmin
-        .from("cause_edits")
-        .update({ status: "rejected", rejection_reason: rejectionReason })
-        .eq("id", edit.id);
-    }
+      if (edit) {
+        await prisma.cause_edits.update({
+          where: { id: edit.id },
+          data: { status: "rejected", rejection_reason: rejectionReason },
+        });
+      }
 
-    const { data, error } = await supabaseAdmin
-      .from("causes")
-      .update({
-        status: "rejected",
-        rejection_reason: rejectionReason,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", causeId)
-      .select()
-      .single();
+      const data = await prisma.cause.update({
+        where: { id: causeId },
+        data: {
+          status: "rejected",
+          rejectionReason: rejectionReason,
+          updatedAt: new Date(),
+        },
+      });
 
-    if (error) {
+      try {
+        await sendCauseRejectedEmailForUser(data.userId, {
+          causeName: data.title,
+          rejectionReason,
+          dashboardUrl:
+            "https://www.refreeg.com/dashboard/causes?status=rejected",
+        });
+      } catch (emailError) {
+        console.error("Error sending cause rejection email:", emailError);
+      }
+
+      revalidatePath("/dashboard/admin/causes");
+      return data as unknown as Cause;
+    } catch (error) {
       console.error("Error updating cause status:", error);
       throw error;
     }
-
-    // Notify the cause creator about the rejection
-    try {
-      await sendCauseRejectedEmailForUser(data.user_id, {
-        causeName: data.title,
-        rejectionReason,
-        dashboardUrl:
-          "https://www.refreeg.com/dashboard/causes?status=rejected",
-      });
-    } catch (emailError) {
-      console.error("Error sending cause rejection email:", emailError);
-    }
-
-    revalidatePath("/dashboard/admin/causes");
-    return data as Cause;
   }
 
   throw new Error(`Invalid status value: ${status}`);
@@ -734,88 +682,73 @@ export async function updateCauseStatus(
  * Get all pending cause edits for admin review
  */
 export async function getCauseEdits(): Promise<any[]> {
-  const supabase = await createClient();
+  try {
+    const data = await prisma.cause_edits.findMany({
+      where: { status: "pending" },
+      include: {
+        user: { select: { fullName: true, email: true, profilePhoto: true } },
+        sections: { select: { id: true, heading: true, description: true } },
+      },
+      orderBy: { created_at: "desc" },
+    });
 
-  const { data, error } = await supabase
-    .from("cause_edits")
-    .select(
-      `
-      *,
-      profiles!inner (
-        full_name,
-        email,
-        profile_photo
-      ),
-      cause_edit_sections (
-        id,
-        heading,
-        description
-      )
-    `,
-    )
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
-
-  if (error) {
+    return data.map((d: any) => ({
+      ...d,
+      profiles: d.user
+        ? {
+            full_name: d.user.fullName,
+            email: d.user.email,
+            profile_photo: d.user.profilePhoto,
+          }
+        : undefined,
+      cause_edit_sections: d.sections,
+    }));
+  } catch (error) {
     console.error("Error fetching cause edits:", error);
     throw error;
   }
-
-  return data || [];
 }
 
 /**
  * Get all causes for a specific user
  */
 export async function getUserCauses(userId: string): Promise<Cause[]> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("causes")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-
-  if (error) {
+  try {
+    const data = await prisma.cause.findMany({
+      where: { userId: userId },
+      orderBy: { createdAt: "desc" },
+    });
+    return data.map((d: any) => mapPrismaToCause(d));
+  } catch (error) {
     console.error("Error fetching user causes:", error);
     throw error;
   }
-
-  return data as Cause[];
 }
 
 export async function getUserCausesWithStatus(
   userId: string,
   status?: string,
 ): Promise<Cause[]> {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("causes")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-
-  if (status && status !== "all") {
-    query = query.eq("status", status);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
+  try {
+    let whereClause: any = { userId: userId };
+    if (status && status !== "all") {
+      whereClause.status = status;
+    }
+    const data = await prisma.cause.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+    });
+    return data.map((d: any) => mapPrismaToCause(d));
+  } catch (error) {
     console.error("Error fetching user causes with status:", error);
     throw error;
   }
-
-  return data as Cause[];
 }
 
 export async function deleteCause(causeId: string): Promise<void> {
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("causes").delete().eq("id", causeId);
-
-  if (error) {
+  try {
+    await prisma.cause.delete({ where: { id: causeId } });
+  } catch (error) {
     console.error("Error deleting cause:", error);
     throw error;
   }
@@ -832,31 +765,29 @@ export async function updateCauseTrustMetrics(
     verified_status?: string;
   },
 ): Promise<void> {
-  const supabase = await createClient();
   const user = await getCurrentUser();
-
   const isAdmin = user?.id ? await isAdminOrManager(user.id) : false;
 
   if (!isAdmin) {
     throw new Error("Unauthorized: Only admins can update trust metrics");
   }
 
-  const { error } = await supabase
-    .from("causes")
-    .update({
-      trust_score: metrics.trust_score,
-      verified_status: metrics.verified_status,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", causeId);
+  try {
+    await prisma.cause.update({
+      where: { id: causeId },
+      data: {
+        trust_score: metrics.trust_score || undefined,
+        verified_status: metrics.verified_status,
+        updatedAt: new Date(),
+      },
+    });
 
-  if (error) {
+    revalidatePath("/dashboard/admin/causes");
+    revalidatePath(`/causes/${causeId}`);
+  } catch (error) {
     console.error("Error updating trust metrics:", error);
     throw error;
   }
-
-  revalidatePath("/dashboard/admin/causes");
-  revalidatePath(`/causes/${causeId}`);
 }
 
 /**
@@ -866,47 +797,46 @@ export async function saveCauseShare(
   causeId: string,
   userId?: string,
 ): Promise<void> {
-  const supabase = await createClient();
+  try {
+    const updatedCause = await prisma.cause.update({
+      where: { id: causeId },
+      data: { shared: { increment: 1 } },
+    });
 
-  const { error: shareError, data: causeData } = await supabase
-    .from("causes")
-    .select("shared")
-    .eq("id", causeId)
-    .single();
-  if (shareError) {
-    console.error("Error saving cause share:", shareError);
-    throw shareError;
-  }
+    // Record event for reward tracking if userId provided
+    if (userId) {
+      try {
+        const { recordEvent } = await import("@/actions/event-reward-actions");
+        await recordEvent({
+          type: "share",
+          userId,
+          metadata: {
+            cause_id: causeId,
+          },
+        });
+      } catch (eventError) {
+        console.error("Error recording share event:", eventError);
+      }
 
-  const { data: mine, error: causeError } = await supabase
-    .from("causes")
-    .update({ shared: causeData.shared + 1 })
-    .eq("id", causeId)
-    .single();
-
-  if (causeError) {
-    console.error("Error saving cause share:", causeError);
-    throw causeError;
-  }
-
-  // Record event for reward tracking if userId provided
-  if (userId) {
-    try {
-      const { recordEvent } = await import("@/actions/event-reward-actions");
-      await recordEvent({
-        type: "share",
-        userId,
-        metadata: {
-          cause_id: causeId,
-        },
-      });
-    } catch (eventError) {
-      console.error("Error recording share event:", eventError);
-      // Don't throw - event tracking shouldn't break the main action
+      // Emit SSE event
+      try {
+        const { eventBus } = await import("@/lib/event-bus");
+        eventBus.emit("share", {
+          type: "share",
+          data: {
+            cause_id: causeId,
+            user_id: userId,
+          },
+          timestamp: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.error("Error emitting share SSE:", e);
+      }
     }
+  } catch (error) {
+    console.error("Error saving cause share:", error);
+    throw error;
   }
-
-  return mine;
 }
 
 /**
@@ -916,7 +846,6 @@ export async function shareCause(
   causeId: string,
   userId: string,
 ): Promise<void> {
-  // Record the share
   await saveCauseShare(causeId, userId);
 }
 
@@ -927,44 +856,39 @@ export async function shareCause(
 export async function followCampaign(
   causeId: string,
 ): Promise<{ data: null; error: string } | { data: any; error: null }> {
-  const supabase = await createClient();
   const user = await getCurrentUser();
 
   if (!user) {
     return { data: null, error: "unauthenticated" };
   }
 
-  // Get email from profile
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("email")
-    .eq("id", user.id)
-    .single();
+  const profile = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { email: true },
+  });
 
   if (!profile?.email) {
     return { data: null, error: "No email found for your account." };
   }
 
-  const { data, error } = await supabase
-    .from("campaign_follows")
-    .upsert(
-      {
+  try {
+    const data = await prisma.campaign_follows.upsert({
+      where: {
+        cause_id_email: {
+          cause_id: causeId,
+          email: profile.email,
+        },
+      },
+      update: {},
+      create: {
         cause_id: causeId,
         user_id: user.id,
         email: profile.email,
       },
-      { onConflict: "cause_id,email", ignoreDuplicates: true },
-    )
-    .select();
+    });
 
-  if (error && error.code !== "23505") {
-    // ignore unique constraint violation (already following)
-    return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (error: any) {
+    return { data: { already_following: true }, error: null };
   }
-
-  // data will be empty if ignoreDuplicates triggered
-  return {
-    data: data && data.length > 0 ? data[0] : { already_following: true },
-    error: null,
-  };
 }

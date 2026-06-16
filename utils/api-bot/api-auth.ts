@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { prisma } from "@/lib/prisma";
 import { hashApiKey } from "@/utils/api-bot/api-keys";
 import type { Database } from "@/types/database-types";
 import { 
@@ -39,20 +39,24 @@ export async function validateApiKey(request: NextRequest) {
 
   const keyHash = hashApiKey(token);
 
-  // Use service role for internal check
-  const supabaseAdmin = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  let apiKey;
+  try {
+    apiKey = await prisma.api_keys.findFirst({
+      where: {
+        key_hash: keyHash,
+        revoked_at: null,
+      },
+      select: {
+        id: true,
+        user_id: true,
+        mode: true,
+      },
+    });
+  } catch (error) {
+    console.error("Database error validating API key:", error);
+  }
 
-  const { data: apiKey, error } = await supabaseAdmin
-    .from("api_keys")
-    .select("id, user_id, mode")
-    .eq("key_hash", keyHash)
-    .is("revoked_at", null)
-    .single();
-
-  if (error || !apiKey) {
+  if (!apiKey) {
     return { 
       errorResponse: errorResponse(
         "Invalid or revoked API key", 
@@ -63,13 +67,11 @@ export async function validateApiKey(request: NextRequest) {
   }
 
   // Update last_used_at
-  supabaseAdmin
-    .from("api_keys")
-    .update({ last_used_at: new Date().toISOString() })
-    .eq("key_hash", keyHash)
-    .then(({ error }) => {
-      if (error) console.error("Failed to update last_used_at", error);
-    });
+  prisma.api_keys.update({
+    where: { id: apiKey.id },
+    data: { last_used_at: new Date() },
+  }).catch((error) => console.error("Failed to update last_used_at", error));
+
 
   return {
     apiKeyId: apiKey.id,

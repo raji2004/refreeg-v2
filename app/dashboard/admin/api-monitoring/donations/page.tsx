@@ -1,14 +1,35 @@
 import { format } from "date-fns";
 import { listAdminApiDonations } from "@/actions/api-monitoring-actions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
 
 export default async function ApiMonitoringDonationsPage() {
   const donations = await listAdminApiDonations();
-  const successful = donations.filter((donation) => donation.status === "success");
-  const totalAmount = successful.reduce((sum, donation) => sum + donation.amount, 0);
-  const totalFees = successful.reduce((sum, donation) => sum + donation.feeRevenue, 0);
+  const successful = donations.filter(
+    (donation) => donation.status === "success",
+  );
+  const totalAmount = successful.reduce(
+    (sum, donation) => sum + donation.amount,
+    0,
+  );
+  const totalFees = successful.reduce(
+    (sum, donation) => sum + donation.feeRevenue,
+    0,
+  );
 
   return (
     <div className="space-y-6">
@@ -51,7 +72,10 @@ export default async function ApiMonitoringDonationsPage() {
               <TableBody>
                 {donations.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="py-8 text-center text-muted-foreground"
+                    >
                       No API donations found.
                     </TableCell>
                   </TableRow>
@@ -62,19 +86,29 @@ export default async function ApiMonitoringDonationsPage() {
                       <TableCell>
                         <div className="flex flex-col">
                           <span>{donation.developerName}</span>
-                          <span className="text-xs text-muted-foreground">{donation.developerEmail}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {donation.developerEmail}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span>{donation.donorName}</span>
-                          <span className="text-xs text-muted-foreground">{donation.donorEmail}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {donation.donorEmail}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell>{formatCurrency(donation.amount)}</TableCell>
-                      <TableCell>{formatCurrency(donation.feeRevenue)}</TableCell>
-                      <TableCell className="capitalize">{donation.status}</TableCell>
-                      <TableCell>{format(new Date(donation.createdAt), "MMM d, yyyy")}</TableCell>
+                      <TableCell>
+                        {formatCurrency(donation.feeRevenue)}
+                      </TableCell>
+                      <TableCell className="capitalize">
+                        {donation.status}
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(donation.createdAt), "MMM d, yyyy")}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

@@ -1,12 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import CreatePetitionForm from "./create-petition-form";
 
 export default async function CreateCausePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth();
+  const user = session?.user;
 
   if (!user) {
     redirect("/auth/signin");

@@ -3,9 +3,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuthContext } from "@/components/auth-provider";
+import { updateSolanaWallet } from "@/actions/profile-actions";
 
 interface DisconnectSolanaWalletButtonProps {
   walletAddress: string;
@@ -24,23 +24,11 @@ export function DisconnectSolanaWalletButton({
     setIsDisconnecting(true);
 
     try {
-      const supabase = createClient();
-
       if (!user) {
         throw new Error("You must be logged in");
       }
 
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          solana_wallet: null,
-        })
-        .eq("id", user.id);
-
-      if (updateError) {
-        console.error("Supabase update error:", updateError);
-        throw new Error("Failed to disconnect wallet");
-      }
+      await updateSolanaWallet(user.id, null);
 
       // Disconnect from Phantom wallet
       if (window.solana?.isPhantom) {

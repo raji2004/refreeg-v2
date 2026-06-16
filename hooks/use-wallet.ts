@@ -1,12 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
 import { getProfile } from "@/actions/profile-actions";
 
 export function useWallet(userId: string | undefined) {
-  const supabase = createClient();
-
   const {
     data: hasWallet,
     isLoading,
@@ -16,7 +13,8 @@ export function useWallet(userId: string | undefined) {
     queryFn: async () => {
       if (!userId) return false;
       const profile = await getProfile(userId);
-      return !!profile?.crypto_wallets?.ethereum;
+      const wallets = profile?.crypto_wallets as { ethereum?: string } | null;
+      return !!wallets?.ethereum;
     },
     enabled: !!userId,
   });
@@ -24,6 +22,6 @@ export function useWallet(userId: string | undefined) {
   return {
     hasWallet: hasWallet ?? false,
     isLoading,
-    error: error as string | null,
+    error: error instanceof Error ? error.message : (error as string | null),
   };
 }

@@ -1,15 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import { hasBankDetails } from "@/actions/profile-actions";
 import { getCause } from "@/actions/cause-actions";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
+import { prisma } from "@/lib/prisma";
 
 const EditCauseForm = dynamic(() => import("./edit-cause-form"), {
   loading: () => <Skeleton className="h-[600px] w-full" />,
 });
-
-import { getCachedUser } from "@/lib/supabase/cached-user";
 
 export default async function EditCausePage({
   params,
@@ -18,27 +17,27 @@ export default async function EditCausePage({
 }) {
   const myParams = await params;
   
-  const supabase = await createClient();
-  
-  const [{ user, error: authError }, cause] = await Promise.all([
-    getCachedUser(),
+  const [session, cause] = await Promise.all([
+    auth(),
     getCause(myParams.id)
   ]);
 
-  if (!user || authError) {
+  if (!session?.user) {
     redirect("/auth/signin");
   }
 
+  const user = session.user;
+
   // Dependent fetch
-  const [hasBankInfo, { data: pendingEdit }] = await Promise.all([
-    hasBankDetails(user.id),
-    supabase
-      .from("cause_edits")
-      .select("status")
-      .eq("original_cause_id", myParams.id)
-      .eq("status", "pending")
-      .limit(1)
-      .maybeSingle()
+  const [hasBankInfo, pendingEdit] = await Promise.all([
+    hasBankDetails(user.id as string),
+    prisma.cause_edits.findFirst({
+      where: {
+        original_cause_id: myParams.id,
+        status: "pending"
+      },
+      select: { status: true }
+    })
   ]);
 
   if (pendingEdit) {

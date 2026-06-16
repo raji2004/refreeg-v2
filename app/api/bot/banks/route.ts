@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, rateLimit, handlePreflight } from "@/utils/api-bot/api-auth";
 import { CreateBankSchema } from "@/utils/api-bot/schemas";
 import Paystack from "@/services/paystack";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/types/database-types";
+import { prisma } from "@/lib/prisma";
 import { logApiRequest } from "@/utils/api-bot/request-logger";
 import { 
   successResponse, 
@@ -12,10 +11,7 @@ import {
   ApiErrorCode 
 } from "@/utils/api-bot/response-utils";
 
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+
 
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
@@ -49,16 +45,24 @@ export async function POST(request: NextRequest) {
       return errorResponse("Could not verify bank details with provider", ApiErrorCode.PAYMENT_SETUP_FAILED, 400);
     }
 
-    const { data: bankAccount, error } = await supabaseAdmin.from("api_bank_accounts").insert({
-      developer_id: authRes.userId,
-      bank_account_number: data.bank_account_number,
-      bank_code: data.bank_code,
-      bank_account_name: data.bank_account_name,
-      sub_account_code: subAccountCode,
-      mode: authRes.mode
-    }).select().single();
+    let bankAccount;
+    let error;
+    try {
+      bankAccount = await prisma.api_bank_accounts.create({
+        data: {
+          developer_id: authRes.userId!,
+          bank_account_number: data.bank_account_number,
+          bank_code: data.bank_code,
+          bank_account_name: data.bank_account_name,
+          sub_account_code: subAccountCode,
+          mode: authRes.mode!
+        }
+      });
+    } catch (err) {
+      error = err;
+    }
 
-    if (error) {
+    if (error || !bankAccount) {
       return errorResponse("Failed to save bank account", ApiErrorCode.INTERNAL_ERROR, 500);
     }
 
@@ -78,12 +82,19 @@ export async function GET(request: NextRequest) {
   const authRes = await validateApiKey(request);
   if (authRes.errorResponse) return authRes.errorResponse;
 
-  const { data: accounts, error } = await supabaseAdmin
-    .from("api_bank_accounts")
-    .select("*")
-    .eq("developer_id", authRes.userId)
-    .eq("mode", authRes.mode)
-    .order("created_at", { ascending: false });
+  let accounts: any[] = [];
+  let error;
+  try {
+    accounts = await prisma.api_bank_accounts.findMany({
+      where: {
+        developer_id: authRes.userId!,
+        mode: authRes.mode!
+      },
+      orderBy: { created_at: "desc" }
+    });
+  } catch (err) {
+    error = err;
+  }
 
   if (error) {
     return errorResponse("Failed to fetch bank accounts", ApiErrorCode.INTERNAL_ERROR, 500);

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import Numbers from "@/components/numbers";
 import Link from "next/link";
@@ -46,10 +47,12 @@ export default function Hero() {
         animate={{ opacity: 0.3, scale: 1 }}
         transition={{ duration: 2, ease: "easeOut" }}
       >
-        <img
+        <Image
           src="/map.svg"
           alt="Background map"
-          className="w-full h-full object-contain scale-100"
+          fill
+          className="object-contain"
+          priority
         />
       </motion.div>
 
@@ -88,10 +91,12 @@ export default function Hero() {
                   : { duration: 0.5 }
               }
             >
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
                 alt="Disaster relief volunteers"
-                className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                fill
+                sizes="(max-width: 640px) 96px, (max-width: 768px) 128px, (max-width: 1024px) 160px, 192px"
+                className="object-cover hover:scale-110 transition-transform duration-500"
               />
             </motion.div>
           </motion.div>
@@ -126,10 +131,12 @@ export default function Hero() {
                   : { duration: 0.5 }
               }
             >
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
                 alt="Community volunteers with boxes"
-                className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                fill
+                sizes="(max-width: 640px) 80px, (max-width: 768px) 112px, (max-width: 1024px) 144px, 176px"
+                className="object-cover hover:scale-110 transition-transform duration-500"
               />
             </motion.div>
           </motion.div>
@@ -164,10 +171,12 @@ export default function Hero() {
                   : { duration: 0.5 }
               }
             >
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
                 alt="Smiling volunteer in blue shirt"
-                className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                fill
+                sizes="(max-width: 640px) 80px, (max-width: 768px) 112px, (max-width: 1024px) 144px, 176px"
+                className="object-cover hover:scale-110 transition-transform duration-500"
               />
             </motion.div>
           </motion.div>
@@ -203,10 +212,12 @@ export default function Hero() {
                   : { duration: 0.5 }
               }
             >
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1593113598332-cd288d649433?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
                 alt="Volunteer distributing food"
-                className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                fill
+                sizes="(max-width: 640px) 64px, (max-width: 768px) 96px, (max-width: 1024px) 128px, 160px"
+                className="object-cover hover:scale-110 transition-transform duration-500"
               />
             </motion.div>
           </motion.div>
@@ -241,10 +252,12 @@ export default function Hero() {
                   : { duration: 0.5 }
               }
             >
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1616680214084-22670de1bc82?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 alt="Community volunteer with boxes"
-                className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                fill
+                sizes="(max-width: 640px) 64px, (max-width: 768px) 96px, (max-width: 1024px) 128px, 160px"
+                className="object-cover hover:scale-110 transition-transform duration-500"
               />
             </motion.div>
           </motion.div>

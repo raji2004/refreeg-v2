@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
@@ -45,7 +46,7 @@ export default function Step1({
         transition={{ duration: 0.4 }}
         className="mb-6"
       >
-        <img src="/onboarding1.png" alt="Illustration" className="h-32 w-32" />
+        <Image src="/onboarding1.png" alt="Illustration" width={128} height={128} />
       </motion.div>
 
       {/* Title */}

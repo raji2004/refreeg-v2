@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2Icon } from "lucide-react";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
-import { createClient } from "@/lib/supabase/client";
+import { updatePolygonWallet } from "@/actions/profile-actions";
+import { useAuthContext } from "@/components/auth-provider";
 import { useToast } from "@/components/ui/use-toast";
 
 interface DisconnectWalletButtonProps {
@@ -20,26 +21,17 @@ export function DisconnectWalletButton({
 }: DisconnectWalletButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const supabase = createClient();
+  const { user } = useAuthContext();
   const { toast } = useToast();
 
   const handleDisconnect = async () => {
     setIsLoading(true);
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
       if (!user) throw new Error("User not authenticated");
 
       // Clear the wallet by setting it to NULL
-      const { error } = await supabase
-        .from("profiles")
-        .update({ polygon_wallet: null })
-        .eq("id", user.id);
-
-      if (error) throw error;
+      await updatePolygonWallet(user.id, null);
 
       toast({
         title: "Success",

@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { validateApiKey, rateLimit } from "@/utils/api-bot/api-auth";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/types/database-types";
+import { prisma } from "@/lib/prisma";
 import { logApiRequest } from "@/utils/api-bot/request-logger";
 import {
   errorResponse,
@@ -9,10 +8,7 @@ import {
   ApiErrorCode,
 } from "@/utils/api-bot/response-utils";
 
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+
 
 export async function GET(
   request: NextRequest,
@@ -42,13 +38,20 @@ export async function GET(
   }
 
   // Verify campaign ownership
-  const { data: campaign, error: campaignError } = await supabaseAdmin
-    .from("api_campaigns")
-    .select("id")
-    .eq("id", params.id)
-    .eq("developer_id", authRes.userId)
-    .eq("mode", authRes.mode)
-    .single();
+  let campaign;
+  let campaignError;
+  try {
+    campaign = await prisma.api_campaigns.findFirst({
+      where: {
+        id: params.id,
+        developer_id: authRes.userId!,
+        mode: authRes.mode!
+      },
+      select: { id: true }
+    });
+  } catch (err) {
+    campaignError = err;
+  }
 
   if (campaignError || !campaign) {
     const response = errorResponse(
@@ -73,16 +76,23 @@ export async function GET(
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 100);
   const offset = parseInt(url.searchParams.get("offset") || "0");
 
-  const {
-    data: donations,
-    error,
-    count,
-  } = await supabaseAdmin
-    .from("api_donations")
-    .select("*", { count: "exact" })
-    .eq("api_campaign_id", params.id)
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
+  let donations: any[] = [];
+  let count = 0;
+  let error;
+  try {
+    const whereClause = { api_campaign_id: params.id };
+    [donations, count] = await Promise.all([
+      prisma.api_donations.findMany({
+        where: whereClause,
+        orderBy: { created_at: "desc" },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.api_donations.count({ where: whereClause })
+    ]);
+  } catch (err) {
+    error = err;
+  }
 
   if (error) {
     const response = errorResponse(

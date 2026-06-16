@@ -28,7 +28,7 @@ import { Icons } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
 import { getCause, updateCauseTrustMetrics } from "@/actions/cause-actions";
-import type { Cause, CauseSection, CauseStatus, CauseWithUser } from "@/types";
+import type { Cause, CauseStatus, CauseWithUser } from "@/types";
 import Image from "next/image";
 import { useQueryState } from "nuqs";
 import { format } from "date-fns";
@@ -63,6 +63,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 export default function ManageCauses() {
   const router = useRouter();
@@ -293,11 +294,18 @@ export default function ManageCauses() {
                         <div className="flex items-center gap-3">
                           {(item as any).profiles?.profile_photo ? (
                             <Image
-                              src={(item as any).profiles.profile_photo}
+                              src={getMediaUrl(
+                                (item as any).profiles.profile_photo,
+                              )}
                               alt={(item as any).profiles?.full_name || "User"}
                               width={32}
                               height={32}
                               className="rounded-full object-cover"
+                              unoptimized={isProxyMediaUrl(
+                                getMediaUrl(
+                                  (item as any).profiles.profile_photo,
+                                ),
+                              )}
                             />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
@@ -325,8 +333,8 @@ export default function ManageCauses() {
                                   : "destructive"
                           }
                         >
-                          {item.status.charAt(0).toUpperCase() +
-                            item.status.slice(1)}
+                          {(item.status ?? "").charAt(0).toUpperCase() +
+                            (item.status ?? "").slice(1)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -354,7 +362,7 @@ export default function ManageCauses() {
                                   onClick={() =>
                                     openRejectDialog(
                                       item.type === "edit"
-                                        ? item.original_cause_id
+                                        ? (item as any).original_cause_id
                                         : item.id,
                                       item.title,
                                     )
@@ -366,7 +374,7 @@ export default function ManageCauses() {
                                   onClick={() =>
                                     handleApprove(
                                       item.type === "edit"
-                                        ? item.original_cause_id
+                                        ? (item as any).original_cause_id
                                         : item.id,
                                     )
                                   }
@@ -653,11 +661,14 @@ export default function ManageCauses() {
                   <h3 className="font-medium">Cover Image</h3>
                   <div className="relative w-full h-64 rounded-lg overflow-hidden">
                     <Image
-                      src={detailDialog.cause.image}
+                      src={getMediaUrl(detailDialog.cause.image)}
                       alt={detailDialog.cause.title}
                       className="object-cover w-full h-full"
                       width={800}
                       height={400}
+                      unoptimized={isProxyMediaUrl(
+                        getMediaUrl(detailDialog.cause.image),
+                      )}
                     />
                   </div>
                 </div>

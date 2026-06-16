@@ -1,7 +1,20 @@
 import { format } from "date-fns";
 import { getApiUsageAnalytics } from "@/actions/api-monitoring-actions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default async function ApiMonitoringUsagePage() {
   const analytics = await getApiUsageAnalytics();
@@ -32,7 +45,9 @@ export default async function ApiMonitoringUsagePage() {
       <Card>
         <CardHeader>
           <CardTitle>Top endpoints</CardTitle>
-          <CardDescription>Most frequently used public API endpoints.</CardDescription>
+          <CardDescription>
+            Most frequently used public API endpoints.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
@@ -47,7 +62,10 @@ export default async function ApiMonitoringUsagePage() {
               <TableBody>
                 {analytics.topEndpoints.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="py-8 text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={3}
+                      className="py-8 text-center text-muted-foreground"
+                    >
                       No request logs yet.
                     </TableCell>
                   </TableRow>
@@ -69,7 +87,9 @@ export default async function ApiMonitoringUsagePage() {
       <Card>
         <CardHeader>
           <CardTitle>Recent API errors</CardTitle>
-          <CardDescription>Latest failing requests for investigation.</CardDescription>
+          <CardDescription>
+            Latest failing requests for investigation.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
@@ -86,7 +106,10 @@ export default async function ApiMonitoringUsagePage() {
               <TableBody>
                 {analytics.recentErrors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={5}
+                      className="py-8 text-center text-muted-foreground"
+                    >
                       No logged API errors.
                     </TableCell>
                   </TableRow>
@@ -97,7 +120,9 @@ export default async function ApiMonitoringUsagePage() {
                       <TableCell>{error.statusCode}</TableCell>
                       <TableCell>{error.errorCode ?? "unknown"}</TableCell>
                       <TableCell>{error.apiKeyPrefix ?? "anonymous"}</TableCell>
-                      <TableCell>{format(new Date(error.createdAt), "MMM d, yyyy HH:mm")}</TableCell>
+                      <TableCell>
+                        {format(new Date(error.createdAt), "MMM d, yyyy HH:mm")}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

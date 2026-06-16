@@ -1,0 +1,118 @@
+model UserWallet {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @unique @map("user_id") @db.Uuid
+  balance   Decimal?  @default(0) @db.Decimal
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([userId], map: "idx_user_wallets_user_id")
+  @@map("user_wallets")
+}
+
+model UserStreak {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String    @unique @map("user_id") @db.Uuid
+  weeklyStreak    Int?      @default(0) @map("weekly_streak")
+  isMonthlyActive Boolean?  @default(false) @map("is_monthly_active")
+  lastActiveDate  DateTime? @map("last_active_date") @db.Timestamptz(6)
+  createdAt       DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([userId], map: "idx_user_streaks_user_id")
+  @@map("user_streaks")
+}
+
+model RewardTransaction {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  amount          Decimal   @db.Decimal
+  transactionType String    @map("transaction_type")
+  event_id        String?   @db.Uuid
+  status          String?   @default("completed")
+  createdAt       DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([createdAt], map: "idx_reward_transactions_created_at")
+  @@index([userId], map: "idx_reward_transactions_user_id")
+  @@map("reward_transactions")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model eiza_transactions {
+  id                    BigInt   @default(autoincrement())
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
+  transaction_type      String?  @default("") @db.VarChar
+  amount                Decimal  @default(0) @db.Decimal
+  transaction_signature String?  @db.VarChar
+  metadata              Json?
+  user_id               String   @db.Uuid
+
+  @@id([id, user_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model kyc_verifications {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String    @db.Uuid
+  document_type      String
+  document_url       String
+  status             String
+  verification_notes String?
+  full_name          String?
+  dob                String?
+  phone              String?
+  address            String?
+  city               String?
+  state              String?
+  postal             String?
+  country            String?
+  created_at         DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([status])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model events {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  event_type String
+  metadata   Json?     @default("{}")
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at], map: "idx_events_created_at")
+  @@index([event_type], map: "idx_events_type")
+  @@index([user_id], map: "idx_events_user_id")
+}
+
+model Referral {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  referrerId   String    @map("referrer_id") @db.Uuid
+  refereeId    String?   @map("referee_id") @db.Uuid
+  refereeEmail String    @map("referee_email")
+  registered   Boolean?  @default(false)
+  reward       String?
+  createdAt    DateTime? @default(dbgenerated("timezone('utc'::text, now())")) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([referrerId, refereeEmail], map: "unique_referral_email_per_referrer")
+  @@map("referrals")
+}
+
+model referrals_v1 {
+  id_v1            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  referrer_id_v1   String?   @db.Uuid
+  referee_id_v1    String?   @db.Uuid
+  referee_email_v1 String
+  registered_v1    Boolean?  @default(false)
+  reward_v1        String?
+  utm_source_v1    String?
+  utm_medium_v1    String?
+  utm_campaign_v1  String?
+  ip_address_v1    String?
+  user_agent_v1    String?
+  created_at_v1    DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([referee_email_v1], map: "idx_referrals_v1_referee_email")
+  @@index([referrer_id_v1], map: "idx_referrals_v1_referrer")
+  @@index([utm_source_v1], map: "idx_referrals_v1_utm_source")
+}
