@@ -4,17 +4,19 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { recordEvent } from "@/actions/event-reward-actions";
 
-export async function getRecipientSolanaWallet(causeId: string): Promise<string | null> {
+export async function getRecipientSolanaWallet(
+  causeId: string,
+): Promise<string | null> {
   try {
     const cause = await prisma.cause.findUnique({
       where: { id: causeId },
       select: {
         user: {
-          select: { solana_wallet: true }
-        }
-      }
+          select: { solana_wallet: true },
+        },
+      },
     });
-    
+
     return cause?.user?.solana_wallet ?? null;
   } catch (error) {
     console.error("Error fetching recipient Solana wallet:", error);
@@ -22,15 +24,17 @@ export async function getRecipientSolanaWallet(causeId: string): Promise<string 
   }
 }
 
-export async function getRecipientPolygonWallet(causeId: string): Promise<string | null> {
+export async function getRecipientPolygonWallet(
+  causeId: string,
+): Promise<string | null> {
   try {
     const cause = await prisma.cause.findUnique({
       where: { id: causeId },
       select: {
         user: {
-          select: { crypto_wallets: true }
-        }
-      }
+          select: { crypto_wallets: true },
+        },
+      },
     });
 
     const wallets = cause?.user?.crypto_wallets as { ethereum?: string } | null;
@@ -61,24 +65,44 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
       // 1. Create the crypto donation record
       const donation = await tx.crypto_donations.create({
         data: {
-          cause_id: data.cause_id,
-          user_id: data.user_id || null,
+          // 1. Ensure cause_id is a valid, clean string
+          cause_id:
+            data.cause_id && typeof data.cause_id === "string"
+              ? data.cause_id.trim()
+              : data.cause_id,
+
+          // 2. Clear out empty string objects for user_id
+          user_id:
+            data.user_id &&
+            typeof data.user_id === "string" &&
+            data.user_id.trim() !== ""
+              ? data.user_id.trim()
+              : null,
+
           amount_in_naira: data.amount_in_naira,
           amount_in_crypto: data.amount_in_crypto,
           status: data.status,
-          tx_hash: data.tx_hash || null,
+
+          // 3. 🎯 SANITIZE TX_HASH: If it's empty/falsy, force it to null instead of ""
+          tx_hash:
+            data.tx_hash &&
+            typeof data.tx_hash === "string" &&
+            data.tx_hash.trim() !== ""
+              ? data.tx_hash.trim()
+              : null,
+
           tx_signature: data.tx_signature,
           donor_wallet_address: data.donor_wallet_address || null,
           recipient_address: data.recipient_address,
           network: data.network,
           currency: data.currency,
-        }
+        },
       });
 
       // 2. Increment the cause raised amount
       await tx.cause.update({
         where: { id: data.cause_id },
-        data: { raised: { increment: data.amount_in_naira } }
+        data: { raised: { increment: data.amount_in_naira } },
       });
 
       return donation;
@@ -96,7 +120,7 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
             donation_id: result.id,
             is_crypto: true,
             network: data.network,
-            currency: data.currency
+            currency: data.currency,
           },
         });
       } catch (eventError) {

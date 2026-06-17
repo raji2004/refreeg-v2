@@ -17,14 +17,17 @@ function mapUserToCommentUser(user: {
 
 export async function createComment(
   causeId: string,
-  userId: string,
+  userId: string | null,
   content: string,
   parentId?: string,
 ) {
+  // Normalize userId for DB: use null for guest/unauthenticated users
+  const dbUserId = userId && userId !== "" ? userId : null;
+
   const comment = await prisma.comments.create({
     data: {
       cause_id: causeId,
-      user_id: userId,
+      user_id: dbUserId,
       content,
       parent_id: parentId || null,
       is_edited: false,
@@ -36,20 +39,42 @@ export async function createComment(
     },
   });
 
-  // Record event for reward tracking
-  try {
-    await recordEvent({
-      type: "comment",
-      userId,
-      metadata: {
-        cause_id: causeId,
-        comment_id: comment.id,
-        has_parent: !!parentId,
-      },
-    });
-  } catch (eventError) {
-    console.error("Error recording comment event:", eventError);
-    // Don't throw - event tracking shouldn't break the main action
+  // Record event for reward tracking only for authenticated users
+  if (dbUserId) {
+    try {
+      // Rate-limit rewarding: prevent rapid repeated comment rewards.
+      // If the user has a recent 'comment' event within the last 60 seconds, skip recording a new reward event.
+      const recent = await prisma.events.findFirst({
+        where: { user_id: dbUserId, event_type: "comment" },
+        orderBy: { created_at: "desc" },
+        select: { id: true, created_at: true },
+      });
+
+      let shouldRecord = true;
+      if (recent?.created_at) {
+        const last = new Date(recent.created_at).getTime();
+        const now = Date.now();
+        const windowMs = 60 * 1000; // 60 seconds
+        if (now - last < windowMs) {
+          shouldRecord = false;
+        }
+      }
+
+      if (shouldRecord) {
+        await recordEvent({
+          type: "comment",
+          userId: dbUserId,
+          metadata: {
+            cause_id: causeId,
+            comment_id: comment.id,
+            has_parent: !!parentId,
+          },
+        });
+      }
+    } catch (eventError) {
+      console.error("Error recording comment event:", eventError);
+      // Don't throw - event tracking shouldn't break the main action
+    }
   }
 
   // Emit SSE event

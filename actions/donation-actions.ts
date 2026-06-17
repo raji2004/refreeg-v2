@@ -18,6 +18,7 @@ export async function createDonation(
   userId: string | null,
   donationData: DonationFormData,
   tipAmount: number = 0,
+  paystackReference?: string | null,
 ): Promise<Donation> {
   const donationAmount =
     typeof donationData.amount === "string"
@@ -29,10 +30,27 @@ export async function createDonation(
 
   let data;
   try {
+    // Idempotency: if a paystack reference is provided and we've already recorded
+    // a donation with that reference, skip creating a duplicate record.
+    if (paystackReference) {
+      const existing = await prisma.donation.findFirst({
+        where: { paystack_reference: paystackReference },
+        select: { id: true },
+      });
+
+      if (existing) {
+        // Fetch and return the existing donation
+        const existingDonation = await prisma.donation.findUnique({
+          where: { id: existing.id },
+        });
+        if (existingDonation) return mapPrismaToDonation(existingDonation);
+      }
+    }
     data = await prisma.donation.create({
       data: {
         causeId: causeId,
         ...(userId ? { userId: userId } : {}),
+        ...(paystackReference ? { paystack_reference: paystackReference } : {}),
         amount: donationAmount,
         tip_amount: finalTipAmount,
         name:

@@ -142,6 +142,8 @@ export async function POST(request: Request) {
             isAnonymous: Boolean(meta.is_anonymous),
             tip_amount: tipAmount,
           },
+          undefined,
+          reference,
         );
 
         return new NextResponse(
