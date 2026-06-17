@@ -71,8 +71,10 @@ function FeatureCard({
 }: FeatureCardProps) {
   return (
     <div
-      className={`feature-card w-1/3 px-4 text-left ${
-        hasBorder ? "border-r border-white/5" : ""
+      className={`feature-card w-full md:w-1/3 px-4 py-8 text-left ${
+        hasBorder
+          ? "border-b md:border-b-0 md:border-r border-white/10"
+          : ""
       }`}
     >
       <div className="feature-icon inline-flex rounded-full bg-[#CFF454] p-2 mb-6">
@@ -84,15 +86,17 @@ function FeatureCard({
         />
       </div>
 
-      <h3 className="mb-3 text-2xl font-semibold text-[#FFD8D8]">
+      <h3 className="mb-3 md:mb-2 lg:mb-3 text-xl lg:text-2xl font-semibold text-[#FFD8D8]">
         {title}
       </h3>
 
-      <p className="mb-3 text-sm text-white">{description}</p>
+      <p className="mb-4 md:mb-2 lg:mb-3  text-sm md:text-base text-white leading-relaxed">
+        {description}
+      </p>
 
       <Link
         href={link.href}
-        className="text-xs text-[#CFF454] underline underline-offset-4 transition-opacity hover:opacity-80"
+        className="text-xs md:text-sm text-[#CFF454] underline underline-offset-4 transition-opacity hover:opacity-80"
       >
         → {link.label}
       </Link>
@@ -107,7 +111,6 @@ export function MoneyTrail() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      /* ================= HERO TEXT ================= */
       gsap.fromTo(
         headingRef.current,
         { opacity: 0, y: 80 },
@@ -123,7 +126,6 @@ export function MoneyTrail() {
         }
       );
 
-      /* ================= CARDS STAGGER ================= */
       gsap.from(".feature-card", {
         opacity: 0,
         y: 60,
@@ -132,11 +134,10 @@ export function MoneyTrail() {
         ease: "power3.out",
         scrollTrigger: {
           trigger: cardsRef.current,
-          start: "top 75%",
+          start: "top 85%",
         },
       });
 
-      /* ================= ICON FLOAT ================= */
       gsap.to(".feature-icon", {
         y: 6,
         duration: 2,
@@ -146,57 +147,70 @@ export function MoneyTrail() {
         stagger: 0.15,
       });
 
-      /* ================= PARALLAX BACKGROUNDS ================= */
-      gsap.to(".money-trail-top-bg", {
-        yPercent: 10,
-        ease: "none",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: true,
-        },
-      });
+      if (window.innerWidth >= 768) {
+        gsap.to(".money-trail-top-bg", {
+          yPercent: 10,
+          ease: "none",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: true,
+          },
+        });
 
-      gsap.to(".money-trail-bottom-bg", {
-        yPercent: -10,
-        ease: "none",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: true,
-        },
-      });
+        gsap.to(".money-trail-bottom-bg", {
+          yPercent: -10,
+          ease: "none",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: true,
+          },
+        });
+      }
     }, sectionRef);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} className="w-full py-5">
+    <section
+      ref={sectionRef}
+      className="w-full py-10 md:py-5 bg-[#0A3CB5] md:bg-transparent overflow-hidden"
+    >
       <div className="flex flex-col">
         {/* Top Section */}
-        <div className="relative min-h-[600px] w-full">
+        <div className="relative min-h-[280px] sm:min-h-[350px] md:min-h-[600px] w-full">
           <Image
             src="/images/concave-down.svg"
             alt="Top money trail section"
             fill
             priority
-            className="money-trail-top-bg object-cover"
+            className="money-trail-top-bg object-cover hidden md:block"
           />
 
           <div className="absolute inset-0 z-10 flex items-center justify-center px-6">
-            <div className="max-w-5xl text-center mt-64">
+            <div className="max-w-5xl text-center mt-0 md:mt-64">
               <h2
                 ref={headingRef}
-                className="text-3xl md:text-5xl lg:text-5xl font-semibold text-white"
+                className="text-[32px] sm:text-[40px] md:text-5xl lg:text-5xl font-semibold text-white leading-[1.1]"
               >
-                Built for the people who ask{" "}
-                <span className="italic">
-                  "Where
-                  <br className="hidden md:block" />
-                  did my money actually go?"
+                <span className="md:hidden">
+                  Built for the people who ask
+                  <span className="italic block mt-2">
+                    "Where did my money actually go?"
+                  </span>
+                </span>
+
+                <span className="hidden md:inline">
+                  Built for the people who ask{" "}
+                  <span className="italic">
+                    "Where
+                    <br />
+                    did my money actually go?"
+                  </span>
                 </span>
               </h2>
             </div>
@@ -204,18 +218,35 @@ export function MoneyTrail() {
         </div>
 
         {/* Bottom Section */}
-        <div className="relative min-h-[600px] w-full">
+        <div className="relative md:min-h-[600px] w-full">
           <Image
             src="/images/concave-up.svg"
             alt="Bottom money trail section"
             fill
             priority
-            className="money-trail-bottom-bg object-cover"
+            className="money-trail-bottom-bg object-cover hidden md:block"
           />
 
           <div
             ref={cardsRef}
-            className="absolute inset-0 z-10 flex items-center justify-center max-w-6xl mx-auto px-6 -mt-72"
+            className="
+              relative
+              md:absolute
+              md:inset-0
+              z-10
+              flex
+              flex-col
+              md:flex-row
+              items-stretch
+              md:items-center
+              justify-center
+              max-w-6xl
+              mx-auto
+              px-6
+              py-10
+              md:py-0
+              md:-mt-72
+            "
           >
             {features.map((feature, index) => (
               <FeatureCard
