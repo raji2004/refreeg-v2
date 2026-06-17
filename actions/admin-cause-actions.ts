@@ -221,7 +221,13 @@ export async function updateCauseStatus(
           image = ${edit.image ? `'${edit.image.replace(/'/g, "''")}'` : "NULL"},
           days_active = ${edit.days_active ?? "NULL"},
           multimedia = '${JSON.stringify(edit.multimedia || []).replace(/'/g, "''")}'::jsonb,
-          video_links = '${JSON.stringify(edit.video_links || []).replace(/'/g, "''")}'::jsonb,
+    video_links = ${
+      edit.video_links?.length
+        ? `ARRAY[${edit.video_links
+            .map((v: string) => `'${v.replace(/'/g, "''")}'`)
+            .join(",")}]`
+        : "NULL"
+    },
           summary = ${edit.summary ? `'${edit.summary.replace(/'/g, "''")}'` : "NULL"},
           location = ${edit.location ? `'${edit.location.replace(/'/g, "''")}'` : "NULL"},
           status = 'approved',
