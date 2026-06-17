@@ -92,7 +92,10 @@ export function SignatureForm({
     }
 
     try {
-      const ok = await createUserSignature(petitionId, profile.id || "", {
+      const ok = await createUserSignature(
+        petitionId,
+        profile?.id && profile.id !== "" ? profile.id : null,
+        {
         amount: 1,
         email: formData.email,
         name: formData.name,
