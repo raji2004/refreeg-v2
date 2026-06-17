@@ -61,25 +61,39 @@ export async function createSignature(
 
   let data: any;
   try {
-    data = await prisma.signatures.create({
-      data: {
-        petition_id: petitionId,
-        ...(userId ? { user_id: userId } : {}),
-        amount:
-          signatureData?.amount === undefined || signatureData?.amount === null
-            ? 1
-            : typeof signatureData.amount === "string"
-              ? Number.parseFloat(signatureData.amount)
-              : signatureData.amount,
-        name:
-          String(signatureData.isAnonymous).toLocaleLowerCase() === "true"
-            ? "Anonymous"
-            : signatureData.name,
-        email: signatureData.email,
-        message: signatureData.message || null,
-        is_anonymous: signatureData.isAnonymous,
-        status: "completed",
-      },
+    data = await prisma.$transaction(async (tx) => {
+      const amount =
+        signatureData?.amount === undefined || signatureData?.amount === null
+          ? 1
+          : typeof signatureData.amount === "string"
+            ? Number.parseFloat(signatureData.amount)
+            : signatureData.amount;
+
+      const signature = await tx.signatures.create({
+        data: {
+          petition_id: petitionId,
+          ...(userId ? { user_id: userId } : {}),
+          amount: amount,
+          name:
+            String(signatureData.isAnonymous).toLocaleLowerCase() === "true"
+              ? "Anonymous"
+              : signatureData.name,
+          email: signatureData.email,
+          message: signatureData.message || null,
+          is_anonymous: signatureData.isAnonymous,
+          status: "completed",
+        },
+      });
+
+      // Increment the petition's signature count (stored in 'raised')
+      await tx.petitions.update({
+        where: { id: petitionId },
+        data: {
+          raised: { increment: Math.floor(Number(amount)) || 1 },
+        },
+      });
+
+      return signature;
     });
   } catch (error: any) {
     // Handle unique violation (user already signed) gracefully

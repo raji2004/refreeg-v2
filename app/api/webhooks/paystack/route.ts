@@ -26,6 +26,7 @@ interface PaystackWebhookData {
       email?: string;
       message?: string;
       is_anonymous?: boolean;
+      paystack_reference?: string;
       plan?: string;
       pledge_flow?: string;
       pledge_id?: string;

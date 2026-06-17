@@ -30,38 +30,33 @@ export async function createDonation(
 
   let data;
   try {
-    // Idempotency: if a paystack reference is provided and we've already recorded
-    // a donation with that reference, skip creating a duplicate record.
-    if (paystackReference) {
-      const existing = await prisma.donation.findFirst({
-        where: { paystack_reference: paystackReference },
-        select: { id: true },
+    data = await prisma.$transaction(async (tx) => {
+      const donation = await tx.donation.create({
+        data: {
+          causeId: causeId,
+          ...(userId ? { userId: userId } : {}),
+          amount: donationAmount,
+          tip_amount: finalTipAmount,
+          name:
+            String(donationData.isAnonymous).toLocaleLowerCase() === "true"
+              ? "Anonymous"
+              : donationData.name,
+          email: donationData.email,
+          message: donationData.message || null,
+          is_anonymous: donationData.isAnonymous,
+          status: "completed",
+        },
       });
 
-      if (existing) {
-        // Fetch and return the existing donation
-        const existingDonation = await prisma.donation.findUnique({
-          where: { id: existing.id },
-        });
-        if (existingDonation) return mapPrismaToDonation(existingDonation);
-      }
-    }
-    data = await prisma.donation.create({
-      data: {
-        causeId: causeId,
-        ...(userId ? { userId: userId } : {}),
-        ...(paystackReference ? { paystack_reference: paystackReference } : {}),
-        amount: donationAmount,
-        tip_amount: finalTipAmount,
-        name:
-          String(donationData.isAnonymous).toLocaleLowerCase() === "true"
-            ? "Anonymous"
-            : donationData.name,
-        email: donationData.email,
-        message: donationData.message || null,
-        is_anonymous: donationData.isAnonymous,
-        status: "completed",
-      },
+      // Update the cause's raised amount incremently
+      await tx.cause.update({
+        where: { id: causeId },
+        data: {
+          raised: { increment: donationAmount },
+        },
+      });
+
+      return donation;
     });
   } catch (error) {
     console.error("Error creating donation:", error);

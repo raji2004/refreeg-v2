@@ -429,6 +429,7 @@ export interface Database {
           receipt_url: string | null;
           created_at: string;
           tip_amount: number;
+          paystack_reference: string | null;
         };
         Insert: {
           id?: string;
@@ -443,6 +444,7 @@ export interface Database {
           receipt_url?: string | null;
           created_at?: string;
           tip_amount?: number;
+          paystack_reference?: string | null;
         };
         Update: {
           id?: string;
@@ -457,6 +459,7 @@ export interface Database {
           receipt_url?: string | null;
           created_at?: string;
           tip_amount?: number;
+          paystack_reference?: string | null;
         };
       };
       signatures: {
