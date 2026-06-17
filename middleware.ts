@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
+import { isAdminOrManager } from "@/actions/role-actions"; // ✅ Add this import
 
 /**
  * Public API route prefixes that do NOT require a user session.
@@ -32,9 +33,9 @@ const APP_ROUTE_PREFIXES = [
 
 const APP_HOST = "apps.refreeg.com";
 const WWW_HOST = "www.refreeg.com";
-const Test_HOST = "http://localhost:3000/"
+const Test_HOST = "http://localhost:3000/";
 
-export default auth((req) => {
+export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   const user = req.auth?.user;
   const hostHeader =
@@ -92,6 +93,13 @@ export default auth((req) => {
     const signInUrl = new URL("/auth/signin", req.url);
     signInUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(signInUrl);
+  }
+
+  if (pathname.startsWith("/dashboard/admin") && user) {
+    const isAuthorized = await isAdminOrManager(user.id);
+    if (!isAuthorized) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
   }
 
   // ── 3. Redirect authenticated users away from auth pages ──────────
