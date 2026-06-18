@@ -1,7 +1,7 @@
-// actions/admin-petition-actions.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth/auth";
 import { isAdminOrManager } from "./role-actions";
 import { revalidatePath } from "next/cache";
@@ -48,33 +48,50 @@ export async function listAdminPetitions(
     throw new Error("Unauthorized: Admin or Manager role required");
   }
 
-  let sqlQuery = `
-    SELECT 
-      p.id,
-      p.title,
-      p.category,
-      p.goal,
-      p.raised,
-      p.status,
-      p.rejection_reason,
-      p.image,
-      p.created_at,
-      p.updated_at,
-      p.user_id,
-      pr.full_name,
-      pr.email,
-      pr.profile_photo
-    FROM petitions p
-    LEFT JOIN profiles pr ON p.user_id = pr.id
-  `;
-
-  if (status) {
-    sqlQuery += ` WHERE p.status = '${status}'`;
-  }
-
-  sqlQuery += ` ORDER BY p.created_at DESC`;
-
-  const petitions = await prisma.$queryRawUnsafe<any[]>(sqlQuery);
+  const petitions = await prisma.$queryRaw<any[]>(
+    status
+      ? Prisma.sql`
+          SELECT 
+            p.id,
+            p.title,
+            p.category,
+            p.goal,
+            p.raised,
+            p.status,
+            p.rejection_reason,
+            p.image,
+            p.created_at,
+            p.updated_at,
+            p.user_id,
+            pr.full_name,
+            pr.email,
+            pr.profile_photo
+          FROM petitions p
+          LEFT JOIN profiles pr ON p.user_id = pr.id
+          WHERE p.status = ${status}
+          ORDER BY p.created_at DESC
+        `
+      : Prisma.sql`
+          SELECT 
+            p.id,
+            p.title,
+            p.category,
+            p.goal,
+            p.raised,
+            p.status,
+            p.rejection_reason,
+            p.image,
+            p.created_at,
+            p.updated_at,
+            p.user_id,
+            pr.full_name,
+            pr.email,
+            pr.profile_photo
+          FROM petitions p
+          LEFT JOIN profiles pr ON p.user_id = pr.id
+          ORDER BY p.created_at DESC
+        `,
+  );
 
   return petitions.map((petition) => ({
     id: petition.id,
@@ -97,7 +114,7 @@ export async function listAdminPetitions(
 }
 
 /**
- * Get pending petition edits for admin review
+ * Get pending petition edits
  */
 export async function getPetitionEdits() {
   const session = await auth();
@@ -111,8 +128,7 @@ export async function getPetitionEdits() {
     throw new Error("Unauthorized: Admin or Manager role required");
   }
 
-  // Get edits with user info
-  const edits = await prisma.$queryRawUnsafe<any[]>(`
+  const edits = await prisma.$queryRaw<any[]>(Prisma.sql`
     SELECT 
       pe.id,
       pe.original_petition_id,
@@ -138,13 +154,12 @@ export async function getPetitionEdits() {
     ORDER BY pe.created_at DESC
   `);
 
-  // Fetch sections separately for each edit
   const result = await Promise.all(
     edits.map(async (edit) => {
-      const sections = await prisma.$queryRawUnsafe<any[]>(`
+      const sections = await prisma.$queryRaw<any[]>(Prisma.sql`
         SELECT id, heading, description
         FROM petition_edit_sections
-        WHERE petition_edit_id = '${edit.id}'
+        WHERE petition_edit_id = ${edit.id}
       `);
 
       return {
@@ -177,7 +192,7 @@ export async function getPetitionEdits() {
 }
 
 /**
- * Update petition status (approve/reject)
+ * Update petition status
  */
 export async function updatePetitionStatus(
   petitionId: string,
@@ -195,112 +210,103 @@ export async function updatePetitionStatus(
     throw new Error("Unauthorized: Admin or Manager role required");
   }
 
-  if (status === "approved") {
-    // Check for pending edit
-    const pendingEdit = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT * FROM petition_edits 
-      WHERE original_petition_id = '${petitionId}' 
-      AND status = 'pending'
-      ORDER BY created_at DESC
-      LIMIT 1
-    `);
+  const pendingEdit = await prisma.$queryRaw<any[]>(Prisma.sql`
+    SELECT * FROM petition_edits 
+    WHERE original_petition_id = ${petitionId}
+    AND status = 'pending'
+    ORDER BY created_at DESC
+    LIMIT 1
+  `);
 
-    if (pendingEdit && pendingEdit.length > 0) {
+  if (status === "approved") {
+    if (pendingEdit.length > 0) {
       const edit = pendingEdit[0];
 
-      // Update the petition with edit data
-      await prisma.$executeRawUnsafe(`
+      await prisma.$executeRaw(Prisma.sql`
         UPDATE petitions 
         SET 
-          title = '${edit.title.replace(/'/g, "''")}',
-          description = ${edit.description ? `'${edit.description.replace(/'/g, "''")}'` : "''"},
-          category = '${edit.category.replace(/'/g, "''")}',
+          title = ${edit.title},
+          description = ${edit.description},
+          category = ${edit.category},
           goal = ${edit.goal},
-          image = ${edit.image ? `'${edit.image.replace(/'/g, "''")}'` : "NULL"},
-          days_active = ${edit.days_active ?? "NULL"},
-          multimedia = '${JSON.stringify(edit.multimedia || []).replace(/'/g, "''")}'::jsonb,
-          video_links = '${JSON.stringify(edit.video_links || []).replace(/'/g, "''")}'::jsonb,
+          image = ${edit.image},
+          days_active = ${edit.days_active},
+          multimedia = ${JSON.stringify(edit.multimedia || [])}::jsonb,
+          video_links = ${JSON.stringify(edit.video_links || [])}::jsonb,
           status = 'approved',
           updated_at = NOW()
-        WHERE id = '${petitionId}'
+        WHERE id = ${petitionId}
       `);
 
-      // Delete old sections
-      await prisma.$executeRawUnsafe(`
-        DELETE FROM petition_sections WHERE petition_id = '${petitionId}'
+      await prisma.$executeRaw(Prisma.sql`
+        DELETE FROM petition_sections WHERE petition_id = ${petitionId}
       `);
 
-      // Get edit sections
-      const editSections = await prisma.$queryRawUnsafe<any[]>(`
-        SELECT heading, description FROM petition_edit_sections 
-        WHERE petition_edit_id = '${edit.id}'
+      const sections = await prisma.$queryRaw<any[]>(Prisma.sql`
+        SELECT heading, description
+        FROM petition_edit_sections
+        WHERE petition_edit_id = ${edit.id}
       `);
 
-      // Insert new sections
-      for (const section of editSections) {
-        await prisma.$executeRawUnsafe(`
+      for (const section of sections) {
+        await prisma.$executeRaw(Prisma.sql`
           INSERT INTO petition_sections (petition_id, heading, description, created_at)
-          VALUES ('${petitionId}', '${section.heading.replace(/'/g, "''")}', '${section.description ? section.description.replace(/'/g, "''") : ""}', NOW())
+          VALUES (${petitionId}, ${section.heading}, ${section.description ?? ""}, NOW())
         `);
       }
 
-      // Delete the edit and its sections
-      await prisma.$executeRawUnsafe(`
-        DELETE FROM petition_edit_sections WHERE petition_edit_id = '${edit.id}'
+      await prisma.$executeRaw(Prisma.sql`
+        DELETE FROM petition_edit_sections WHERE petition_edit_id = ${edit.id}
       `);
-      await prisma.$executeRawUnsafe(`
-        DELETE FROM petition_edits WHERE id = '${edit.id}'
+
+      await prisma.$executeRaw(Prisma.sql`
+        DELETE FROM petition_edits WHERE id = ${edit.id}
       `);
     } else {
-      await prisma.$executeRawUnsafe(`
+      await prisma.$executeRaw(Prisma.sql`
         UPDATE petitions 
         SET status = 'approved', updated_at = NOW()
-        WHERE id = '${petitionId}'
+        WHERE id = ${petitionId}
       `);
     }
 
-    // Send approval email
-    const petition = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT user_id, title FROM petitions WHERE id = '${petitionId}'
+    const petition = await prisma.$queryRaw<any[]>(Prisma.sql`
+      SELECT user_id, title FROM petitions WHERE id = ${petitionId}
     `);
 
-    if (petition && petition.length > 0) {
+    if (petition.length > 0) {
       await sendPetitionApprovedEmailForUser(petition[0].user_id, {
         petitionName: petition[0].title,
       });
     }
-  } else if (status === "rejected") {
-    // Check for pending edit
-    const pendingEdit = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT * FROM petition_edits 
-      WHERE original_petition_id = '${petitionId}' 
-      AND status = 'pending'
-      ORDER BY created_at DESC
-      LIMIT 1
-    `);
+  }
 
-    if (pendingEdit && pendingEdit.length > 0) {
+  if (status === "rejected") {
+    if (pendingEdit.length > 0) {
       const edit = pendingEdit[0];
-      await prisma.$executeRawUnsafe(`
+
+      await prisma.$executeRaw(Prisma.sql`
         UPDATE petition_edits 
-        SET status = 'rejected', rejection_reason = ${rejectionReason ? `'${rejectionReason.replace(/'/g, "''")}'` : "NULL"}, updated_at = NOW()
-        WHERE id = '${edit.id}'
+        SET status = 'rejected',
+        rejection_reason = ${rejectionReason ?? null},
+        updated_at = NOW()
+        WHERE id = ${edit.id}
       `);
     }
 
-    // Get petition details for email
-    const petition = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT user_id, title FROM petitions WHERE id = '${petitionId}'
-    `);
-
-    await prisma.$executeRawUnsafe(`
+    await prisma.$executeRaw(Prisma.sql`
       UPDATE petitions 
-      SET status = 'rejected', rejection_reason = ${rejectionReason ? `'${rejectionReason.replace(/'/g, "''")}'` : "NULL"}, updated_at = NOW()
-      WHERE id = '${petitionId}'
+      SET status = 'rejected',
+      rejection_reason = ${rejectionReason ?? null},
+      updated_at = NOW()
+      WHERE id = ${petitionId}
     `);
 
-    // Send rejection email
-    if (petition && petition.length > 0) {
+    const petition = await prisma.$queryRaw<any[]>(Prisma.sql`
+      SELECT user_id, title FROM petitions WHERE id = ${petitionId}
+    `);
+
+    if (petition.length > 0) {
       await sendPetitionRejectedEmailForUser(petition[0].user_id, {
         petitionName: petition[0].title,
         rejectionReason: rejectionReason || "No reason provided",

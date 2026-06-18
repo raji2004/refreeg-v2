@@ -1,4 +1,3 @@
-// actions/admin-cause-actions.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -10,7 +9,6 @@ import { sendCauseRejectedEmailForUser } from "@/services/mail";
 
 export type CauseStatus = "pending" | "approved" | "rejected" | "expired";
 
-// Type for the return value
 type AdminCauseRow = {
   id: string;
   title: string;
@@ -47,7 +45,6 @@ export async function listAdminCauses(
     throw new Error("Unauthorized: Admin or Manager role required");
   }
 
-  // Build the query with optional WHERE clause
   let sqlQuery = `
     SELECT 
       c.id,
@@ -68,14 +65,51 @@ export async function listAdminCauses(
     LEFT JOIN profiles p ON c.user_id = p.id
   `;
 
-  if (status) {
-    sqlQuery += ` WHERE c.status = '${status}'`;
-  }
-
-  sqlQuery += ` ORDER BY c.created_at DESC`;
-
-  // Use raw query
-  const causes = await prisma.$queryRawUnsafe<any[]>(sqlQuery);
+  // ✅ FIXED (no string interpolation)
+  const causes = await prisma.$queryRaw<any[]>(
+  status
+    ? Prisma.sql`
+        SELECT 
+          c.id,
+          c.title,
+          c.category,
+          c.goal,
+          c.raised,
+          c.status,
+          c.rejection_reason as "rejectionReason",
+          c.image,
+          c.created_at as "created_at",
+          c.updated_at as "updated_at",
+          c.user_id,
+          p.full_name as "full_name",
+          p.email,
+          p.profile_photo as "profile_photo"
+        FROM causes c
+        LEFT JOIN profiles p ON c.user_id = p.id
+        WHERE c.status = ${status}
+        ORDER BY c.created_at DESC
+      `
+    : Prisma.sql`
+        SELECT 
+          c.id,
+          c.title,
+          c.category,
+          c.goal,
+          c.raised,
+          c.status,
+          c.rejection_reason as "rejectionReason",
+          c.image,
+          c.created_at as "created_at",
+          c.updated_at as "updated_at",
+          c.user_id,
+          p.full_name as "full_name",
+          p.email,
+          p.profile_photo as "profile_photo"
+        FROM causes c
+        LEFT JOIN profiles p ON c.user_id = p.id
+        ORDER BY c.created_at DESC
+      `
+);
 
   return causes.map((cause) => ({
     id: cause.id,
@@ -112,8 +146,8 @@ export async function getCauseEdits() {
     throw new Error("Unauthorized: Admin or Manager role required");
   }
 
-  // Get edits with user info
-  const edits = await prisma.$queryRawUnsafe<any[]>(`
+  // ✅ FIXED
+  const edits = await prisma.$queryRaw<any[]>(Prisma.sql`
     SELECT 
       ce.id,
       ce.original_cause_id,
@@ -140,13 +174,13 @@ export async function getCauseEdits() {
     ORDER BY ce.created_at DESC
   `);
 
-  // Fetch sections separately for each edit
   const result = await Promise.all(
     edits.map(async (edit) => {
-      const sections = await prisma.$queryRawUnsafe<any[]>(`
+      // ✅ FIXED
+      const sections = await prisma.$queryRaw<any[]>(Prisma.sql`
         SELECT id, heading, description
         FROM cause_edit_sections
-        WHERE cause_edit_id = '${edit.id}'
+        WHERE cause_edit_id = ${edit.id}
       `);
 
       return {
@@ -199,10 +233,10 @@ export async function updateCauseStatus(
   }
 
   if (status === "approved") {
-    // Check for pending edit
-    const pendingEdit = await prisma.$queryRawUnsafe<any[]>(`
+    // ✅ FIXED
+    const pendingEdit = await prisma.$queryRaw<any[]>(Prisma.sql`
       SELECT * FROM cause_edits 
-      WHERE original_cause_id = '${causeId}' 
+      WHERE original_cause_id = ${causeId}
       AND status = 'pending'
       ORDER BY created_at DESC
       LIMIT 1
@@ -211,68 +245,61 @@ export async function updateCauseStatus(
     if (pendingEdit && pendingEdit.length > 0) {
       const edit = pendingEdit[0];
 
-      // Update the cause with edit data
-      await prisma.$executeRawUnsafe(`
+      // ⚠️ Keeping your raw update style but made safe
+      await prisma.$executeRaw(Prisma.sql`
         UPDATE causes 
         SET 
-          title = '${edit.title.replace(/'/g, "''")}',
-          category = '${edit.category.replace(/'/g, "''")}',
+          title = ${edit.title},
+          category = ${edit.category},
           goal = ${edit.goal},
-          image = ${edit.image ? `'${edit.image.replace(/'/g, "''")}'` : "NULL"},
-          days_active = ${edit.days_active ?? "NULL"},
-          multimedia = '${JSON.stringify(edit.multimedia || []).replace(/'/g, "''")}'::jsonb,
-    video_links = ${
-      edit.video_links?.length
-        ? `ARRAY[${edit.video_links
-            .map((v: string) => `'${v.replace(/'/g, "''")}'`)
-            .join(",")}]`
-        : "NULL"
-    },
-          summary = ${edit.summary ? `'${edit.summary.replace(/'/g, "''")}'` : "NULL"},
-          location = ${edit.location ? `'${edit.location.replace(/'/g, "''")}'` : "NULL"},
+          image = ${edit.image},
+          days_active = ${edit.days_active},
+          multimedia = ${JSON.stringify(edit.multimedia || [])}::jsonb,
+          video_links = ${edit.video_links},
+          summary = ${edit.summary},
+          location = ${edit.location},
           status = 'approved',
           updated_at = NOW()
-        WHERE id = '${causeId}'
+        WHERE id = ${causeId}
       `);
 
-      // Delete old sections
-      await prisma.$executeRawUnsafe(`
-        DELETE FROM cause_sections WHERE cause_id = '${causeId}'
+      await prisma.$executeRaw(Prisma.sql`
+        DELETE FROM cause_sections WHERE cause_id = ${causeId}
       `);
 
-      // Get edit sections
-      const editSections = await prisma.$queryRawUnsafe<any[]>(`
-        SELECT heading, description FROM cause_edit_sections 
-        WHERE cause_edit_id = '${edit.id}'
+      const editSections = await prisma.$queryRaw<any[]>(Prisma.sql`
+        SELECT heading, description 
+        FROM cause_edit_sections 
+        WHERE cause_edit_id = ${edit.id}
       `);
 
-      // Insert new sections
       for (const section of editSections) {
-        await prisma.$executeRawUnsafe(`
+        await prisma.$executeRaw(Prisma.sql`
           INSERT INTO cause_sections (cause_id, heading, description, created_at)
-          VALUES ('${causeId}', '${section.heading.replace(/'/g, "''")}', '${section.description ? section.description.replace(/'/g, "''") : ""}', NOW())
+          VALUES (${causeId}, ${section.heading}, ${section.description ?? ""}, NOW())
         `);
       }
 
-      // Delete the edit and its sections
-      await prisma.$executeRawUnsafe(`
-        DELETE FROM cause_edit_sections WHERE cause_edit_id = '${edit.id}'
+      await prisma.$executeRaw(Prisma.sql`
+        DELETE FROM cause_edit_sections WHERE cause_edit_id = ${edit.id}
       `);
-      await prisma.$executeRawUnsafe(`
-        DELETE FROM cause_edits WHERE id = '${edit.id}'
+
+      await prisma.$executeRaw(Prisma.sql`
+        DELETE FROM cause_edits WHERE id = ${edit.id}
       `);
     } else {
-      await prisma.$executeRawUnsafe(`
+      await prisma.$executeRaw(Prisma.sql`
         UPDATE causes 
         SET status = 'approved', updated_at = NOW()
-        WHERE id = '${causeId}'
+        WHERE id = ${causeId}
       `);
     }
-  } else if (status === "rejected") {
-    // Check for pending edit
-    const pendingEdit = await prisma.$queryRawUnsafe<any[]>(`
+  }
+
+  if (status === "rejected") {
+    const pendingEdit = await prisma.$queryRaw<any[]>(Prisma.sql`
       SELECT * FROM cause_edits 
-      WHERE original_cause_id = '${causeId}' 
+      WHERE original_cause_id = ${causeId}
       AND status = 'pending'
       ORDER BY created_at DESC
       LIMIT 1
@@ -280,25 +307,28 @@ export async function updateCauseStatus(
 
     if (pendingEdit && pendingEdit.length > 0) {
       const edit = pendingEdit[0];
-      await prisma.$executeRawUnsafe(`
+
+      await prisma.$executeRaw(Prisma.sql`
         UPDATE cause_edits 
-        SET status = 'rejected', rejection_reason = ${rejectionReason ? `'${rejectionReason.replace(/'/g, "''")}'` : "NULL"}, updated_at = NOW()
-        WHERE id = '${edit.id}'
+        SET status = 'rejected',
+        rejection_reason = ${rejectionReason ?? null},
+        updated_at = NOW()
+        WHERE id = ${edit.id}
       `);
     }
 
-    // Get cause details for email
-    const cause = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT user_id, title FROM causes WHERE id = '${causeId}'
+    const cause = await prisma.$queryRaw<any[]>(Prisma.sql`
+      SELECT user_id, title FROM causes WHERE id = ${causeId}
     `);
 
-    await prisma.$executeRawUnsafe(`
+    await prisma.$executeRaw(Prisma.sql`
       UPDATE causes 
-      SET status = 'rejected', rejection_reason = ${rejectionReason ? `'${rejectionReason.replace(/'/g, "''")}'` : "NULL"}, updated_at = NOW()
-      WHERE id = '${causeId}'
+      SET status = 'rejected',
+      rejection_reason = ${rejectionReason ?? null},
+      updated_at = NOW()
+      WHERE id = ${causeId}
     `);
 
-    // Send rejection email
     if (cause && cause.length > 0) {
       try {
         await sendCauseRejectedEmailForUser(cause[0].user_id, {
@@ -307,8 +337,8 @@ export async function updateCauseStatus(
           dashboardUrl:
             "https://www.refreeg.com/dashboard/causes?status=rejected",
         });
-      } catch (emailError) {
-        console.error("Error sending cause rejection email:", emailError);
+      } catch (err) {
+        console.error("Email send failed:", err);
       }
     }
   }
