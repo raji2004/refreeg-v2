@@ -1,61 +1,61 @@
 model User {
-  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   phone                 String?
-  accountNumber         String?   @map("account_number")
-  bankName              String?   @map("bank_name")
-  accountName           String?   @map("account_name")
-  profilePhoto          String?   @map("profile_photo")
-  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  isBlocked             Boolean?  @map("is_blocked")
-  subAccountCode        String?   @map("sub_account_code")
+  accountNumber         String?             @map("account_number")
+  bankName              String?             @map("bank_name")
+  accountName           String?             @map("account_name")
+  profilePhoto          String?             @map("profile_photo")
+  createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime?           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  isBlocked             Boolean?            @map("is_blocked")
+  subAccountCode        String?             @map("sub_account_code")
   bio                   String?
   solana_wallet         String?
   twitter_url           String?
   facebook_url          String?
   instagram_url         String?
   linkedin_url          String?
-  crypto_wallets        Json?
-  accountType           String?   @map("account_type")
-  isVerified            Boolean?  @default(false) @map("is_verified")
+  accountType           String?             @map("account_type")
+  isVerified            Boolean?            @default(false) @map("is_verified")
   gender                String?
   website               String?
-  referralCode          String?   @unique @map("referral_code")
-  firstName             String?   @map("first_name")
-  lastName              String?   @map("last_name")
-  username              String?   @unique
+  referralCode          String?             @unique @map("referral_code")
+  firstName             String?             @map("first_name")
+  lastName              String?             @map("last_name")
+  username              String?             @unique
   location              String?
-  email                 String?   @unique
-  onboarding_completed  Boolean?  @default(false)
-  fullName              String?   @map("full_name")
-  total_points          Int?      @default(0)
-  current_tier          String?   @default("Tier 1")
-  Total_Engagements     Int?      @map("Total Engagements")
-  eiza_balance          Decimal?  @db.Decimal
-  total_eiza_earned     Decimal?  @db.Decimal
+  email                 String?             @unique
+  onboarding_completed  Boolean?            @default(false)
+  fullName              String?             @map("full_name")
+  total_points          Int?                @default(0)
+  current_tier          String?             @default("Tier 1")
+  Total_Engagements     Int?                @map("Total Engagements")
+  eiza_balance          Decimal?            @db.Decimal
+  total_eiza_earned     Decimal?            @db.Decimal
   upvotes_received      Int?
-  content_quality_score Decimal?  @db.Decimal
-  spam_flags            Int?      @db.SmallInt
-  login_streak          Int?      @db.SmallInt
-  last_login_date       DateTime? @db.Date
-  weekly_streak_count   Int?      @default(0) @db.SmallInt
-  monthly_streak_count  Int?      @default(0) @db.SmallInt
-  emailVerified         DateTime? @map("email_verified")
+  content_quality_score Decimal?            @db.Decimal
+  spam_flags            Int?                @db.SmallInt
+  login_streak          Int?                @db.SmallInt
+  last_login_date       DateTime?           @db.Date
+  weekly_streak_count   Int?                @default(0) @db.SmallInt
+  monthly_streak_count  Int?                @default(0) @db.SmallInt
+  emailVerified         DateTime?           @map("email_verified")
   password              String?
-  lastLoginUserAgent    String?   @map("last_login_user_agent")
+  lastLoginUserAgent    String?             @map("last_login_user_agent")
+  crypto_wallets        Json?
   accounts              Account[]
-  sessions              Session[]
-  roles                 Role[] 
-  causes                Cause[]
-  donations             Donation[]
   campaign_follows      campaign_follows[]
   cause_edits           cause_edits[]
   cause_shares          cause_shares[]
+  causes                Cause[]
   comments              comments[]
   crypto_donations      crypto_donations[]
+  donations             Donation[]
   petition_comments     petition_comments[]
-  petitions             petitions[]
   petition_edits        petition_edits[]
+  petitions             petitions[]
+  roles                 Role[]
+  sessions              Session[]
 
   @@index([isBlocked], map: "idx_profiles_is_blocked")
   @@map("profiles")
@@ -129,7 +129,6 @@ model Role {
   role       String
   created_at DateTime? @default(now()) @db.Timestamptz(6)
   updated_at DateTime? @default(now()) @db.Timestamptz(6)
-
   user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id], map: "idx_roles_user_id")
