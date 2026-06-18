@@ -201,6 +201,19 @@ export default async function PetitionDetailPage({
     },
   );
 
+  // Calculate days left from creation date + active duration
+  const daysLeft =
+    petition.days_active != null
+      ? Math.max(
+          0,
+          petition.days_active -
+            Math.floor(
+              (Date.now() - new Date(petition.created_at).getTime()) /
+                (1000 * 60 * 60 * 24),
+            ),
+        )
+      : null;
+
   // Calculate signature progress based on number of signatures amount
   // Calculate signature progress based on total donated amount
   const percentRaised = Math.min(
@@ -455,7 +468,9 @@ export default async function PetitionDetailPage({
                 </div>
                 <div className="flex justify-between py-1 border-t">
                   <span>Days Left</span>
-                  <span className="font-medium">{petition.days_active}</span>
+                  <span className="font-medium">
+                    {daysLeft != null ? daysLeft : "N/A"}
+                  </span>
                 </div>
               </div>
 
