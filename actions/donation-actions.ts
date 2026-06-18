@@ -63,6 +63,12 @@ export async function createDonation(
         status: "completed",
       },
     });
+
+    // Increment the cause raised amount
+    await prisma.cause.update({
+      where: { id: causeId },
+      data: { raised: { increment: donationAmount } },
+    });
   } catch (error) {
     console.error("Error creating donation:", error);
     throw error;
