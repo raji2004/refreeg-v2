@@ -36,7 +36,7 @@ export async function createSignature(
   userId: string | null,
   signatureData: SignatureFormData,
 ): Promise<Signature> {
-  // If user is logged in, check if they've already signed
+  // Check if user is logged in and has already signed
   if (userId) {
     const hasSigned = await checkUserSignature(petitionId, userId);
     if (hasSigned) {
@@ -44,67 +44,63 @@ export async function createSignature(
     }
   }
 
-  // Ensure a user (by name and email) signs only once
-  const existingCount = await prisma.signatures.count({
-    where: {
-      petition_id: petitionId,
-      email: signatureData.email,
-      name: signatureData.name,
-    },
-  });
-
-  if (existingCount > 0) {
-    throw new Error(
-      "A signature with this name and email has already been recorded for this petition.",
-    );
-  }
-
-  let data: any;
+  // Use a transaction to prevent race conditions
   try {
-    data = await prisma.signatures.create({
-      data: {
-        petition_id: petitionId,
-        ...(userId ? { user_id: userId } : {}),
-        amount:
-          signatureData?.amount === undefined || signatureData?.amount === null
-            ? 1
-            : typeof signatureData.amount === "string"
-              ? Number.parseFloat(signatureData.amount)
-              : signatureData.amount,
-        name:
-          String(signatureData.isAnonymous).toLocaleLowerCase() === "true"
-            ? "Anonymous"
-            : signatureData.name,
-        email: signatureData.email,
-        message: signatureData.message || null,
-        is_anonymous: signatureData.isAnonymous,
-        status: "completed",
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      // Double-check for existing signature with same email and name
+      const existing = await tx.signatures.findFirst({
+        where: {
+          petition_id: petitionId,
+          email: signatureData.email,
+          name: signatureData.isAnonymous ? "Anonymous" : signatureData.name,
+        },
+      });
+
+      if (existing) {
+        throw new Error(
+          "A signature with this name and email has already been recorded for this petition.",
+        );
+      }
+
+      // Create the signature
+      return await tx.signatures.create({
+        data: {
+          petition_id: petitionId,
+          ...(userId ? { user_id: userId } : {}),
+          amount: signatureData?.amount || 1,
+          name: signatureData.isAnonymous ? "Anonymous" : signatureData.name,
+          email: signatureData.email,
+          message: signatureData.message || null,
+          is_anonymous: signatureData.isAnonymous,
+          status: "completed",
+        },
+      });
     });
+
+    revalidatePath(`/petitions/${petitionId}`);
+    revalidatePath("/petitions");
+    revalidatePath("/");
+    if (userId) {
+      revalidatePath("/dashboard/signatures");
+    }
+
+    await checkAndSendPetitionGoalReachedEmail(petitionId);
+
+    return {
+      ...result,
+      amount: Number(result.amount),
+      created_at: result.created_at.toISOString(),
+    } as unknown as Signature;
   } catch (error: any) {
-    // Handle unique violation (user already signed) gracefully
     if (error?.code === "P2002") {
       throw new Error("You have already signed this petition");
     }
+    if (error?.message?.includes("already been recorded")) {
+      throw error;
+    }
     console.error("Error creating signature:", error);
-    throw error;
+    throw new Error("Unable to process signature. Please try again.");
   }
-
-  revalidatePath(`/petitions/${petitionId}`);
-  revalidatePath("/petitions");
-  revalidatePath("/");
-  if (userId) {
-    revalidatePath("/dashboard/signatures");
-  }
-
-  // Check if this signature caused the petition to reach its goal
-  await checkAndSendPetitionGoalReachedEmail(petitionId);
-
-  return {
-    ...data,
-    amount: Number(data.amount),
-    created_at: data.created_at.toISOString(),
-  } as unknown as Signature;
 }
 
 /**
@@ -141,9 +137,8 @@ async function checkAndSendPetitionGoalReachedEmail(petitionId: string) {
 
     if (creatorProfile?.email && creatorProfile?.fullName) {
       try {
-        const { sendPetitionGoalReachedEmail } = await import(
-          "@/services/mail"
-        );
+        const { sendPetitionGoalReachedEmail } =
+          await import("@/services/mail");
 
         const petitionUrl = `${
           process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"
