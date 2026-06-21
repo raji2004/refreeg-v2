@@ -111,6 +111,9 @@ model referrals_v1 {
   ip_address_v1    String?
   user_agent_v1    String?
   created_at_v1    DateTime? @default(now()) @db.Timestamptz(6)
+  kyc_verified_v1  Boolean?  @default(false)
+  rewarded_at_v1   DateTime? @db.Timestamp(6)
+  reward_status_v1 String?   @default("PENDING")
 
   @@index([referee_email_v1], map: "idx_referrals_v1_referee_email")
   @@index([referrer_id_v1], map: "idx_referrals_v1_referrer")

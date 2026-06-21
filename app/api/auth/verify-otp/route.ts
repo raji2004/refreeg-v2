@@ -96,25 +96,10 @@ export async function POST(req: Request) {
               referee_id_v1: profile.id,
               referee_email_v1: profile.email as string,
               registered_v1: true,
-              reward_v1: "5 points",
-            }
-          });
 
-          // 2. Grant the points to the referrer
-          await tx.user.update({
-            where: { id: referrer.id },
-            data: {
-              total_points: { increment: 5 }
-            }
-          });
-
-          // 3. Log the reward transaction
-          await tx.rewardTransaction.create({
-            data: {
-              userId: referrer.id,
-              amount: 5,
-              transactionType: "referral_bonus",
-              status: "completed"
+              reward_v1: null,
+              reward_status_v1: "PENDING",
+              kyc_verified_v1: false,
             }
           });
         }
