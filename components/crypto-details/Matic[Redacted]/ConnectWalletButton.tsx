@@ -98,7 +98,6 @@ export function ConnectWalletButton({
         title: "Error",
         description: errorMessage,
       });
-      throw new Error(errorMessage);
     } finally {
       setIsConnecting(false);
     }

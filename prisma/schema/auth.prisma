@@ -15,7 +15,6 @@ model User {
   facebook_url          String?
   instagram_url         String?
   linkedin_url          String?
-  crypto_wallets        Json?
   accountType           String?             @map("account_type")
   isVerified            Boolean?            @default(false) @map("is_verified")
   gender                String?
@@ -43,6 +42,10 @@ model User {
   emailVerified         DateTime?           @map("email_verified")
   password              String?
   lastLoginUserAgent    String?             @map("last_login_user_agent")
+<<<<<<< HEAD
+=======
+  crypto_wallets        Json?
+>>>>>>> fd7df585d3d01593a076904cc192c40b0903410d
   accounts              Account[]
   campaign_follows      campaign_follows[]
   cause_edits           cause_edits[]

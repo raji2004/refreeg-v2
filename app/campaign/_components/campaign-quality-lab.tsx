@@ -43,6 +43,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { BreetCryptoDonationModal } from "@/components/crypto-details/BreetCryptoDonationModal";
 
 const DonationForm = dynamic(
   () => import("@/components/donation-form").then((mod) => mod.DonationForm),
@@ -51,13 +52,14 @@ const DonationForm = dynamic(
   },
 );
 
-const SolanaDonationButtonWrapper = dynamic(
-  () => import("@/components/crypto-details/SolanaDonationButtonWrapper"),
-  {
-    loading: () => <Skeleton className="h-10 w-full rounded-full" />,
-    ssr: false,
-  },
-);
+// const SolanaDonationButtonWrapper = dynamic(
+//   () =>
+//     import("@/components/crypto-details/Solana[Redacted]/SolanaDonationButtonWrapper"),
+//   {
+//     loading: () => <Skeleton className="h-10 w-full rounded-full" />,
+//     ssr: false,
+//   },
+// );
 
 const ShareModal = dynamic(
   () => import("@/components/share-modal").then((mod) => mod.ShareModal),
@@ -966,7 +968,6 @@ function DonateCard({
       </div>
 
       <div className="mt-4 space-y-3">
-        {creatorHasWallet && <SolanaDonationButtonWrapper causeId={cause.id} />}
         <DonationForm
           causeId={cause.id}
           profile={profile}
@@ -977,6 +978,11 @@ function DonateCard({
           recurring={recurring}
           tip={tip}
           initialAmount={donation}
+        />
+
+        <BreetCryptoDonationModal
+          causeId={cause.id}
+          donorId={profile.id || null} // ◄ Change 'currentUserId' to 'profile.id' here!
         />
         {/* <Link
           href={`/causes/${cause.id}/pledge`}

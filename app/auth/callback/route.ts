@@ -2,8 +2,18 @@ import { auth } from "@/lib/auth/auth";
 import { type NextRequest, NextResponse } from "next/server";
 import { hasCompletedOnboarding } from "@/actions/profile-actions";
 
+function normalizeRedirectPath(target: string | null): string | null {
+  if (!target) return null;
+  if (!target.startsWith("/")) return null;
+  if (target.startsWith("//")) return null;
+  return target;
+}
+
 export async function GET(request: NextRequest) {
   const session = await auth();
+  const requestedRedirect = normalizeRedirectPath(
+    request.nextUrl.searchParams.get("redirect"),
+  );
 
   if (!session?.user?.id) {
     return NextResponse.redirect(new URL("/auth/signin", request.url));
@@ -17,5 +27,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/onboarding", request.url));
   }
 
-  return NextResponse.redirect(new URL("/dashboard", request.url));
+  return NextResponse.redirect(
+    new URL(requestedRedirect || "/dashboard", request.url),
+  );
 }

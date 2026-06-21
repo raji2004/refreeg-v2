@@ -156,20 +156,18 @@ export function DonationForm({
     };
 
     const sendReminder = async () => {
-      // Check if donation still isn't completed
       const currentAttempt = localStorage.getItem("donationAttempt");
-      if (currentAttempt && profile?.email) {
+
+      if (!currentAttempt || isLoading) return;
+
+      if (profile?.email) {
         try {
           const attemptData = JSON.parse(currentAttempt);
           await sendUnfinishedDonationEmail({
             causeName: attemptData.causeName || causeName,
-            continueUrl: `${window.location.origin}${
-              attemptData.causeUrl || causeUrl
-            }`,
+            continueUrl: `${window.location.origin}${attemptData.causeUrl || causeUrl}`,
           });
 
-
-          // Clear the attempt after sending reminder
           localStorage.removeItem("donationAttempt");
         } catch (error) {
           console.error("Failed to send unfinished donation email:", error);
@@ -234,7 +232,10 @@ export function DonationForm({
         tipAmount: tip,
         plan: plan,
         subaccounts: [
-          { subaccount: subaccount || "", share: Number(formData.amount) * 100 },
+          {
+            subaccount: subaccount || "",
+            share: Number(formData.amount) * 100,
+          },
         ],
         message: formData.message,
         isAnonymous: formData.isAnonymous,
@@ -275,9 +276,7 @@ export function DonationForm({
               required
             />
             {amountError ? (
-              <p className="text-xs font-medium text-rose-600">
-                {amountError}
-              </p>
+              <p className="text-xs font-medium text-rose-600">{amountError}</p>
             ) : (
               <p className="text-xs text-muted-foreground">
                 Minimum donation is ₦{MIN_DONATION_AMOUNT}.
@@ -363,7 +362,6 @@ export function DonationForm({
               </div>
             </div>
           )}
-
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           {/* REMOVE THIS TEST BUTTON IN PRODUCTION */}

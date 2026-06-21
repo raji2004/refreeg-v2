@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,9 @@ export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
+  const hasShownAuthNotice = useRef(false);
 
   useEffect(() => {
     // Prefetch common post-login routes
@@ -28,10 +31,20 @@ export default function SignInPage() {
     router.prefetch("/dashboard");
   }, [router]);
 
+  useEffect(() => {
+    if (redirectTo && !hasShownAuthNotice.current) {
+      toast({
+        title: "Sign in required",
+        description: "You need to log in first to continue.",
+      });
+      hasShownAuthNotice.current = true;
+    }
+  }, [redirectTo]);
+
   const handleGoogleSignIn = async () => {
     try {
       setLoadingType("google");
-      await signInWithGoogle();
+      await signInWithGoogle(redirectTo);
     } catch (error) {
       console.error("Google Sign In Error:", error);
       setLoadingType(null);
@@ -48,7 +61,7 @@ export default function SignInPage() {
     });
 
     try {
-      await signIn(email, password);
+      await signIn(email, password, redirectTo);
     } catch (error) {
     } finally {
       setLoadingType(null);
@@ -67,6 +80,12 @@ export default function SignInPage() {
               Sign in to your account
             </p>
           </div>
+
+          {redirectTo && (
+            <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              You need to log in first to continue.
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
@@ -161,7 +180,7 @@ export default function SignInPage() {
             <div className="mt-6 text-center text-sm text-neutral-600">
               Don&apos;t have an account?{" "}
               <Link
-                href="/auth/signup"
+                href={redirectTo ? `/auth/signup?redirect=${encodeURIComponent(redirectTo)}` : "/auth/signup"}
                 className="font-medium text-black hover:underline"
               >
                 Sign Up Now

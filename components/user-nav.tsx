@@ -202,7 +202,7 @@ export function UserNav() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/admin/kyc" className="cursor-pointer">
+                  <Link href="/dashboard/admin/users/kyc" className="cursor-pointer">
                     KYC Reviews
                   </Link>
                 </DropdownMenuItem>
