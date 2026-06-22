@@ -231,7 +231,7 @@ export async function getVerificationStatus(
 
     if (data?.document_url) {
       // Use S3 proxy for generating the URL
-      if (!data.document_url.startsWith("http")) {
+      if (!data.document_url.startsWith("http") && !data.document_url.startsWith("/api/s3/image")) {
         (data as any).document_url = `/api/s3/image?key=${encodeURIComponent(data.document_url)}`;
       }
     }
@@ -321,6 +321,52 @@ export async function updateVerificationStatus(
           where: { id: verification.user_id },
           data: { isVerified: true },
         });
+
+        const referral = await prisma.referrals_v1.findFirst({
+          where: {
+            referee_id_v1: verification.user_id,
+            reward_status_v1: "PENDING",
+          },
+        });
+
+        if (referral) {
+          await prisma.$transaction(async (tx) => {
+            // 🔒 STEP 1: Hard lock to prevent duplicate reward
+            const lockedReferral = await tx.referrals_v1.updateMany({
+              where: {
+                id_v1: referral.id_v1,
+                reward_status_v1: "PENDING", // ensures it can only run once
+              },
+              data: {
+                reward_status_v1: "ISSUED",
+                kyc_verified_v1: true,
+                rewarded_at_v1: new Date(),
+                reward_v1: "+5 pts",
+              },
+            });
+
+            // If nothing was updated, reward already processed → exit safely
+            if (lockedReferral.count === 0) return;
+
+            // 💰 STEP 2: Credit referrer
+            await tx.user.update({
+              where: { id: referral.referrer_id_v1! },
+              data: {
+                total_points: { increment: 5 },
+              },
+            });
+
+            // 🧾 STEP 3: Log transaction
+            await tx.rewardTransaction.create({
+              data: {
+                userId: referral.referrer_id_v1!,
+                amount: 5,
+                transactionType: "referral_bonus",
+                status: "completed",
+              },
+            });
+          });
+        }
       } else if (status === "rejected") {
         await prisma.user.update({
           where: { id: verification.user_id },

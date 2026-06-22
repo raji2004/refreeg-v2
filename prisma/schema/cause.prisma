@@ -1,5 +1,5 @@
 model Cause {
-  id               String             @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   userId           String             @map("user_id") @db.Uuid
   title            String
   description      String?
@@ -39,7 +39,7 @@ model Cause {
 }
 
 model Donation {
-  id                 String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  id                 String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   causeId            String    @map("cause_id") @db.Uuid
   userId             String?   @map("user_id") @db.Uuid
   amount             Decimal   @db.Decimal
@@ -135,7 +135,7 @@ model cause_shares {
 }
 
 model comments {
-  id         String   @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   cause_id   String   @db.Uuid
   user_id    String   @db.Uuid
   content    String
@@ -152,7 +152,7 @@ model comments {
 }
 
 model crypto_donations {
-  id                   String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   cause_id             String    @db.Uuid
   user_id              String?   @db.Uuid
   amount_in_naira      Decimal   @db.Decimal
