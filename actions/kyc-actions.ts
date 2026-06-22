@@ -231,7 +231,7 @@ export async function getVerificationStatus(
 
     if (data?.document_url) {
       // Use S3 proxy for generating the URL
-      if (!data.document_url.startsWith("http")) {
+      if (!data.document_url.startsWith("http") && !data.document_url.startsWith("/api/s3/image")) {
         (data as any).document_url = `/api/s3/image?key=${encodeURIComponent(data.document_url)}`;
       }
     }
