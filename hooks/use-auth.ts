@@ -25,9 +25,11 @@ export function useAuth() {
     redirectTo?: string | null,
   ) => {
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+
       const res = await nextAuthSignIn("credentials", {
         redirect: false,
-        email,
+        email: normalizedEmail,
         password,
       });
 
@@ -64,8 +66,15 @@ export function useAuth() {
     accountType?: "individual" | "organization" | null,
   ) => {
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+
       // Execute the server action to create the profile in Prisma
-      const res = await signUpAction(email, password, fullName, accountType);
+      const res = await signUpAction(
+        normalizedEmail,
+        password,
+        fullName,
+        accountType
+      );
       
       if (!res.success) {
         toast({
@@ -79,7 +88,7 @@ export function useAuth() {
       // Automatically sign the user in via NextAuth credentials provider
       await nextAuthSignIn("credentials", {
         redirect: false,
-        email,
+        email: normalizedEmail,
         password,
       });
 
