@@ -4,8 +4,25 @@ import type { Adapter, AdapterUser } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
+import type { UserRole } from "@/types/role-types";
 import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
+
+async function resolveUserRole(userId: string): Promise<UserRole> {
+  const role = await prisma.role.findFirst({
+    where: { user_id: userId },
+    select: { role: true },
+  });
+
+  return (role?.role as UserRole) || "user";
+}
+
+function parseUserRole(role: unknown): UserRole | undefined {
+  if (role === "admin" || role === "manager" || role === "user") {
+    return role;
+  }
+  return undefined;
+}
 
 /**
  * Derive a human-readable device label from the browser's User-Agent.
@@ -170,10 +187,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      if (user) {
-        token.id = user.id;
+      const userId = user?.id;
+      if (userId) {
+        token.id = userId;
         // Onboarding status from the database
         token.onboardingCompleted = (user as any).onboarding_completed;
+        token.role = await resolveUserRole(userId);
       }
       // Handle session updates from the client
       if (trigger === "update" && session?.onboardingCompleted !== undefined) {
@@ -185,6 +204,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token && session.user) {
         session.user.id = token.id as string;
         (session.user as any).onboardingCompleted = token.onboardingCompleted;
+        session.user.role = parseUserRole(token.role);
       }
       return session;
     },
