@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
-import { isAdminOrManager } from "@/actions/role-actions"; // ✅ Add this import
 
 /**
  * Public API route prefixes that do NOT require a user session.
@@ -95,9 +94,11 @@ export default auth(async (req) => {
     return NextResponse.redirect(signInUrl);
   }
 
+  // Admin authorization is enforced in each /dashboard/admin page (Node runtime).
+  // Middleware runs on Edge and cannot call Prisma.
   if (pathname.startsWith("/dashboard/admin") && user) {
-    const isAuthorized = await isAdminOrManager(user.id);
-    if (!isAuthorized) {
+    const role = (user as { role?: string }).role;
+    if (role === "user") {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
   }
