@@ -60,10 +60,28 @@ export default async function AdminUsersPage({
     redirect("/auth/signin");
   }
 
-  const [users, userRole] = await Promise.all([
-    listUsersWithRoles(),
-    getUserRole(userId),
-  ]);
+  let users: UserWithRole[] = [];
+  let userRole: string | null = null;
+
+  try {
+    [users, userRole] = await Promise.all([
+      listUsersWithRoles(),
+      getUserRole(userId),
+    ]);
+  } catch (err) {
+    // Log server-side error and render friendly message so we can see cause in server logs
+    console.error("AdminUsersPage data fetch error:", err);
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Unable to load users</CardTitle>
+          <CardDescription>
+            An error occurred while loading users. Check server logs for details.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   if (!userRole || (userRole !== "admin" && userRole !== "manager")) {
     return (
