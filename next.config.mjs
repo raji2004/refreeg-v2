@@ -78,6 +78,22 @@ const nextConfig = {
 
     return config;
   },
+
+  // Add CORS headers so requests from apps.refreeg.com (RSC prefetch, API calls) succeed
+  async headers() {
+    return [
+      {
+        // apply to all routes including static assets
+        source: '/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: 'https://apps.refreeg.com' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,PATCH,DELETE,OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'X-Requested-With, Content-Type, Accept, Authorization' },
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+        ],
+      },
+    ];
+  },
 };
 
 mergeConfig(nextConfig, userConfig);
