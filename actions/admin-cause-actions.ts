@@ -233,113 +233,112 @@ export async function updateCauseStatus(
   }
 
   if (status === "approved") {
-    // ✅ FIXED
-    const pendingEdit = await prisma.$queryRaw<any[]>(Prisma.sql`
-      SELECT * FROM cause_edits 
-      WHERE original_cause_id = ${causeId}
-      AND status = 'pending'
-      ORDER BY created_at DESC
-      LIMIT 1
-    `);
+    const pendingEdit = await prisma.cause_edits.findFirst({
+      where: {
+        original_cause_id: causeId,
+        status: "pending",
+      },
+      orderBy: { created_at: "desc" },
+    });
 
-    if (pendingEdit && pendingEdit.length > 0) {
-      const edit = pendingEdit[0];
+    if (pendingEdit) {
+      await prisma.$transaction(async (tx) => {
+        await tx.cause.update({
+          where: { id: causeId },
+          data: {
+            title: pendingEdit.title,
+            category: pendingEdit.category,
+            goal: pendingEdit.goal,
+            image: pendingEdit.image,
+            daysActive: pendingEdit.days_active,
+            multimedia: pendingEdit.multimedia,
+            videoLinks: pendingEdit.video_links,
+            summary: pendingEdit.summary,
+            location: pendingEdit.location,
+            status: "approved",
+            updatedAt: new Date(),
+          },
+        });
 
-      // ⚠️ Keeping your raw update style but made safe
-      await prisma.$executeRaw(Prisma.sql`
-        UPDATE causes 
-        SET 
-          title = ${edit.title},
-          category = ${edit.category},
-          goal = ${edit.goal},
-          image = ${edit.image},
-          days_active = ${edit.days_active},
-          multimedia = ${JSON.stringify(edit.multimedia || [])}::jsonb,
-          video_links = ${edit.video_links},
-          summary = ${edit.summary},
-          location = ${edit.location},
-          status = 'approved',
-          updated_at = NOW()
-        WHERE id = ${causeId}
-      `);
+        const editSections = await tx.cause_edit_sections.findMany({
+          where: { cause_edit_id: pendingEdit.id },
+        });
 
-      await prisma.$executeRaw(Prisma.sql`
-        DELETE FROM cause_sections WHERE cause_id = ${causeId}
-      `);
+        await tx.cause_sections.deleteMany({
+          where: { cause_id: causeId },
+        });
 
-      const editSections = await prisma.$queryRaw<any[]>(Prisma.sql`
-        SELECT heading, description 
-        FROM cause_edit_sections 
-        WHERE cause_edit_id = ${edit.id}
-      `);
+        if (editSections.length > 0) {
+          await tx.cause_sections.createMany({
+            data: editSections.map((section) => ({
+              cause_id: causeId,
+              heading: section.heading,
+              description: section.description ?? "",
+            })),
+          });
+        }
 
-      for (const section of editSections) {
-        await prisma.$executeRaw(Prisma.sql`
-          INSERT INTO cause_sections (cause_id, heading, description, created_at)
-          VALUES (${causeId}, ${section.heading}, ${section.description ?? ""}, NOW())
-        `);
-      }
+        await tx.cause_edit_sections.deleteMany({
+          where: { cause_edit_id: pendingEdit.id },
+        });
 
-      await prisma.$executeRaw(Prisma.sql`
-        DELETE FROM cause_edit_sections WHERE cause_edit_id = ${edit.id}
-      `);
-
-      await prisma.$executeRaw(Prisma.sql`
-        DELETE FROM cause_edits WHERE id = ${edit.id}
-      `);
+        await tx.cause_edits.delete({
+          where: { id: pendingEdit.id },
+        });
+      });
     } else {
-      await prisma.$executeRaw(Prisma.sql`
-        UPDATE causes 
-        SET status = 'approved', updated_at = NOW()
-        WHERE id = ${causeId}
-      `);
+      await prisma.cause.update({
+        where: { id: causeId },
+        data: {
+          status: "approved",
+          updatedAt: new Date(),
+        },
+      });
     }
   }
 
   if (status === "rejected") {
-    const pendingEdit = await prisma.$queryRaw<any[]>(Prisma.sql`
-      SELECT * FROM cause_edits 
-      WHERE original_cause_id = ${causeId}
-      AND status = 'pending'
-      ORDER BY created_at DESC
-      LIMIT 1
-    `);
+    const pendingEdit = await prisma.cause_edits.findFirst({
+      where: {
+        original_cause_id: causeId,
+        status: "pending",
+      },
+      orderBy: { created_at: "desc" },
+    });
 
-    if (pendingEdit && pendingEdit.length > 0) {
-      const edit = pendingEdit[0];
-
-      await prisma.$executeRaw(Prisma.sql`
-        UPDATE cause_edits 
-        SET status = 'rejected',
-        rejection_reason = ${rejectionReason ?? null},
-        updated_at = NOW()
-        WHERE id = ${edit.id}
-      `);
+    if (pendingEdit) {
+      await prisma.cause_edits.update({
+        where: { id: pendingEdit.id },
+        data: {
+          status: "rejected",
+          rejection_reason: rejectionReason ?? null,
+          updated_at: new Date(),
+        },
+      });
     }
 
-    const cause = await prisma.$queryRaw<any[]>(Prisma.sql`
-      SELECT user_id, title FROM causes WHERE id = ${causeId}
-    `);
+    const cause = await prisma.cause.update({
+      where: { id: causeId },
+      data: {
+        status: "rejected",
+        rejectionReason: rejectionReason ?? null,
+        updatedAt: new Date(),
+      },
+      select: {
+        userId: true,
+        title: true,
+      },
+    });
 
-    await prisma.$executeRaw(Prisma.sql`
-      UPDATE causes 
-      SET status = 'rejected',
-      rejection_reason = ${rejectionReason ?? null},
-      updated_at = NOW()
-      WHERE id = ${causeId}
-    `);
-
-    if (cause && cause.length > 0) {
-      try {
-        await sendCauseRejectedEmailForUser(cause[0].user_id, {
-          causeName: cause[0].title,
-          rejectionReason: rejectionReason || "No reason provided",
-          dashboardUrl:
-            "https://www.refreeg.com/dashboard/causes?status=rejected",
-        });
-      } catch (err) {
-        console.error("Email send failed:", err);
-      }
+    try {
+      await sendCauseRejectedEmailForUser(cause.userId, {
+        causeName: cause.title,
+        rejectionReason: rejectionReason || "No reason provided",
+        dashboardUrl:
+          "https://www.refreeg.com/dashboard/causes?status=rejected",
+      });
+    } catch (err) {
+      console.error("Email send failed:", err);
     }
   }
 
