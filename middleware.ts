@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth/auth";
  */
 const PUBLIC_API_PREFIXES = [
   "/api/auth", // NextAuth routes
+  "/api/health", // Monitoring health checks
   "/api/bot", // Developer API — authenticated via API keys
   "/api/webhooks", // Incoming webhooks (Paystack, etc.)
   "/api/payments", // Guest donation checkout + verification
