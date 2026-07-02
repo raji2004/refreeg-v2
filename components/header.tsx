@@ -280,7 +280,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 px-0 pt-0 sm:px-0 sm:pt-0">
+    <header className="sticky top-0 z-50 px-0 pt-0 sm:px-0 sm:pt-0 border-b">
       <div
         className={cn(
           "overflow-visible transition-[background-color,backdrop-filter,box-shadow,border-color] duration-200",
