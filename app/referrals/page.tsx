@@ -43,6 +43,7 @@ type ReferralRow = {
     email: string | null;
     avatar_url: string | null;
   } | null;
+  reward_status?: string | null;
 };
 
 type DebugInfo = {
@@ -455,7 +456,10 @@ export default function ReferralPage() {
                 const date = ref.created_at
                   ? new Date(ref.created_at).toLocaleDateString()
                   : "—";
-                const reward = registered ? "+5 pts" : "Pending";
+                const reward =
+                  ref.reward_status === "ISSUED"
+                    ? "+5 pts"
+                    : "Pending KYC";
 
                 return (
                   <div
@@ -482,9 +486,9 @@ export default function ReferralPage() {
                     <span className="text-xs md:text-sm">{date}</span>
                     <span
                       className={`text-xs font-semibold md:text-sm ${
-                        registered
-                          ? "text-green-700 [text-shadow:0_0_14px_rgba(34,197,94,0.7)]"
-                          : "text-gray-600 [text-shadow:0_0_14px_rgba(107,114,128,0.5)]"
+                        ref.reward_status === "ISSUED"
+                          ? "text-green-700"
+                          : "text-gray-600"
                       }`}
                     >
                       {reward}

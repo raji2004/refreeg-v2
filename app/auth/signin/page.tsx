@@ -61,7 +61,7 @@ export default function SignInPage() {
     });
 
     try {
-      await signIn(email, password, redirectTo);
+      await signIn(email.trim().toLowerCase(), password, redirectTo);
     } catch (error) {
     } finally {
       setLoadingType(null);

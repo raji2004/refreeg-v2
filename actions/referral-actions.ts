@@ -52,6 +52,7 @@ export async function getReferralDashboardData(): Promise<ReferralDashboardData 
         registered_v1: true,
         reward_v1: true,
         created_at_v1: true,
+        reward_status_v1: true,
       },
     }),
   ]);
@@ -91,10 +92,15 @@ export async function getReferralDashboardData(): Promise<ReferralDashboardData 
     created_at: row.created_at_v1?.toISOString() ?? null,
     reward: row.reward_v1,
     profiles: row.referee_id_v1 ? profileMap.get(row.referee_id_v1) ?? null : null,
+    reward_status: row.reward_status_v1,
   }));
 
+  const rewardedReferrals = referrals.filter(
+    (row) => row.reward_status === "ISSUED"
+  ).length;
+
   const signUps = referrals.filter((row) => row.registered).length;
-  const points = signUps * 5;
+  const points = rewardedReferrals * 5;
   const referralCode = profile?.referralCode || userId;
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL ||

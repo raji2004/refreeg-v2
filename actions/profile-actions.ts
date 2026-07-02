@@ -492,8 +492,8 @@ export async function hasKycVerification(userId: string): Promise<KycVerificatio
 
     if (!data) return null;
 
-    if (data.document_url && !data.document_url.startsWith('http')) {
-      (data as any).document_url = `/api/s3/image?key=${data.document_url}`;
+    if (data.document_url && !data.document_url.startsWith('http') && !data.document_url.startsWith('/api/s3/image')) {
+      (data as any).document_url = `/api/s3/image?key=${encodeURIComponent(data.document_url)}`;
     }
 
     return data as unknown as KycVerification;

@@ -1,5 +1,5 @@
 model Cause {
-  id               String             @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   userId           String             @map("user_id") @db.Uuid
   title            String
   description      String?
@@ -39,23 +39,7 @@ model Cause {
 }
 
 model Donation {
-<<<<<<< HEAD
-  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  causeId      String    @map("cause_id") @db.Uuid
-  userId       String?   @map("user_id") @db.Uuid
-  amount       Decimal   @db.Decimal
-  name         String?
-  email        String
-  message      String?
-  is_anonymous Boolean?  @default(false)
-  status       String?   @default("completed")
-  receipt_url  String?
-  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-  tip_amount   Decimal?  @default(0) @db.Decimal
-  cause        Cause     @relation(fields: [causeId], references: [id])
-  user         User?     @relation(fields: [userId], references: [id])
-=======
-  id                 String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  id                 String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   causeId            String    @map("cause_id") @db.Uuid
   userId             String?   @map("user_id") @db.Uuid
   amount             Decimal   @db.Decimal

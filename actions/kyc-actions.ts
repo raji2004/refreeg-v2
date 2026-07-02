@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { KycVerification, KycStatus } from "@/types/kyc-types";
 import { logAdminActivity } from "@/actions/database-actions";
@@ -231,7 +232,7 @@ export async function getVerificationStatus(
 
     if (data?.document_url) {
       // Use S3 proxy for generating the URL
-      if (!data.document_url.startsWith("http")) {
+      if (!data.document_url.startsWith("http") && !data.document_url.startsWith("/api/s3/image")) {
         (data as any).document_url = `/api/s3/image?key=${encodeURIComponent(data.document_url)}`;
       }
     }
@@ -249,6 +250,60 @@ export async function getVerificationStatus(
             : JSON.stringify(error) || "Failed to get status",
     };
   }
+}
+
+type PendingReferralRow = {
+  id_v1: string;
+  referrer_id_v1: string;
+};
+
+async function issueReferralRewardOnKycApproval(refereeUserId: string) {
+  const referrals = await prisma.$queryRaw<PendingReferralRow[]>(Prisma.sql`
+    SELECT id_v1, referrer_id_v1
+    FROM referrals_v1
+    WHERE referee_id_v1 = CAST(${refereeUserId} AS uuid)
+      AND reward_status_v1 = 'PENDING'
+    ORDER BY created_at_v1 DESC
+    LIMIT 1
+  `);
+
+  const referral = referrals[0];
+  if (!referral?.referrer_id_v1) {
+    return;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const lockedReferralCount = await tx.$executeRaw(Prisma.sql`
+      UPDATE referrals_v1
+      SET
+        reward_status_v1 = 'ISSUED',
+        kyc_verified_v1 = true,
+        rewarded_at_v1 = NOW(),
+        reward_v1 = '+5 pts'
+      WHERE id_v1 = CAST(${referral.id_v1} AS uuid)
+        AND reward_status_v1 = 'PENDING'
+    `);
+
+    if (lockedReferralCount === 0) {
+      return;
+    }
+
+    await tx.user.update({
+      where: { id: referral.referrer_id_v1 },
+      data: {
+        total_points: { increment: 5 },
+      },
+    });
+
+    await tx.rewardTransaction.create({
+      data: {
+        userId: referral.referrer_id_v1,
+        amount: 5,
+        transactionType: "referral_bonus",
+        status: "completed",
+      },
+    });
+  });
 }
 
 export async function updateVerificationStatus(
@@ -321,6 +376,15 @@ export async function updateVerificationStatus(
           where: { id: verification.user_id },
           data: { isVerified: true },
         });
+
+        try {
+          await issueReferralRewardOnKycApproval(verification.user_id);
+        } catch (referralError) {
+          console.error(
+            "[KYC] Referral reward failed after approval:",
+            referralError,
+          );
+        }
       } else if (status === "rejected") {
         await prisma.user.update({
           where: { id: verification.user_id },
