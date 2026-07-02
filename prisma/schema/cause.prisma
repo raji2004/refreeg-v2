@@ -54,7 +54,6 @@ model Donation {
   paystack_reference String?   @unique(map: "donations_unique") @db.VarChar
   cause              Cause     @relation(fields: [causeId], references: [id])
   user               User?     @relation(fields: [userId], references: [id])
->>>>>>> fd7df585d3d01593a076904cc192c40b0903410d
 
   @@index([causeId], map: "idx_donations_cause_id")
   @@index([userId], map: "idx_donations_user_id")
