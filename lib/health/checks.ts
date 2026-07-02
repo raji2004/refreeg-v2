@@ -20,9 +20,7 @@ async function runWithTimeout<T>(
       }),
     ]);
   } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
+    clearTimeout(timeoutId);
   }
 }
 
