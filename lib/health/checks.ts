@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import type { HealthCheckResponse, ServiceStatus } from "@/lib/health/types";
+import type {
+  DatabaseHealthCheckResponse,
+  HealthCheckResponse,
+  ServiceStatus,
+} from "@/lib/health/types";
 
 const CHECK_TIMEOUT_MS = 5_000;
 
@@ -24,13 +28,37 @@ async function runWithTimeout<T>(
   }
 }
 
+async function pingDatabase(): Promise<void> {
+  await runWithTimeout("database", () => prisma.$queryRaw`SELECT 1`);
+}
+
 async function checkDatabase(): Promise<ServiceStatus> {
   try {
-    await runWithTimeout("database", () => prisma.$queryRaw`SELECT 1`);
+    await pingDatabase();
     return "operational";
   } catch (error) {
     console.error("[health] database check failed");
     return "unavailable";
+  }
+}
+
+export async function runDatabaseHealthCheck(): Promise<DatabaseHealthCheckResponse> {
+  const startedAt = Date.now();
+
+  try {
+    await pingDatabase();
+    return {
+      status: "operational",
+      latencyMs: Date.now() - startedAt,
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error("[health] database check failed");
+    return {
+      status: "unavailable",
+      latencyMs: Date.now() - startedAt,
+      timestamp: new Date().toISOString(),
+    };
   }
 }
 

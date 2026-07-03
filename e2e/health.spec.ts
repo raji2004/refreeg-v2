@@ -13,4 +13,15 @@ test.describe("production sanity", () => {
     expect(body.services).toHaveProperty("payments");
     expect([200, 401, 503]).toContain(response.status());
   });
+
+  test("database health endpoint responds with JSON", async ({ request }) => {
+    const response = await request.get("/api/health/database");
+    const body = await response.json();
+
+    expect(body).toHaveProperty("status");
+    expect(body).toHaveProperty("latencyMs");
+    expect(body).toHaveProperty("timestamp");
+    expect(typeof body.latencyMs).toBe("number");
+    expect([200, 401, 503]).toContain(response.status());
+  });
 });

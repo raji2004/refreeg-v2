@@ -11,7 +11,7 @@ jest.mock("@/lib/prisma", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
-import { runHealthChecks } from "@/lib/health/checks";
+import { runDatabaseHealthCheck, runHealthChecks } from "@/lib/health/checks";
 
 const mockPrisma = prisma as unknown as {
   $queryRaw: jest.Mock;
@@ -124,6 +124,49 @@ describe("runHealthChecks", () => {
     const result = await resultPromise;
 
     expect(result.services.database).toBe("unavailable");
+    jest.useRealTimers();
+  });
+});
+
+describe("runDatabaseHealthCheck", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("returns operational with latency when SELECT 1 succeeds", async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ "?column?": 1 }]);
+
+    const result = await runDatabaseHealthCheck();
+
+    expect(result.status).toBe("operational");
+    expect(result.latencyMs).toBeGreaterThanOrEqual(0);
+    expect(result.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(mockPrisma.$queryRaw).toHaveBeenCalled();
+  });
+
+  it("returns unavailable with latency when SELECT 1 fails", async () => {
+    mockPrisma.$queryRaw.mockRejectedValue(new Error("db down"));
+
+    const result = await runDatabaseHealthCheck();
+
+    expect(result.status).toBe("unavailable");
+    expect(result.latencyMs).toBeGreaterThanOrEqual(0);
+    expect(result.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it("returns unavailable when the database check times out", async () => {
+    jest.useFakeTimers();
+
+    mockPrisma.$queryRaw.mockImplementation(
+      () => new Promise(() => undefined),
+    );
+
+    const resultPromise = runDatabaseHealthCheck();
+    await jest.advanceTimersByTimeAsync(5_001);
+    const result = await resultPromise;
+
+    expect(result.status).toBe("unavailable");
+    expect(result.latencyMs).toBeGreaterThanOrEqual(5_000);
     jest.useRealTimers();
   });
 });
