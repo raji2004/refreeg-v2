@@ -6,7 +6,14 @@
  * https://jestjs.io/docs/configuration
  */
 import type { Config } from "jest";
+import nextJest from "next/jest.js";
 
+const createJestConfig = nextJest({
+  // Provide the path to your Next.js app to load next.config.js and .env files in your test environment
+  dir: "./",
+});
+
+// Add any custom config to be passed to Jest
 const config: Config = {
   clearMocks: true,
   collectCoverage: true,
@@ -43,9 +50,7 @@ const config: Config = {
     "**/tests/**/*.test.[jt]s?(x)",
   ],
   testPathIgnorePatterns: ["/node_modules/", "/e2e/"],
-  transform: {
-    "^.+\\.(ts|tsx|js|jsx)$": "babel-jest",
-  },
 };
 
-export default config;
+// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
+export default createJestConfig(config);
