@@ -11,3 +11,9 @@ export type HealthCheckResponse = {
   };
   timestamp: string;
 };
+
+export type DatabaseHealthCheckResponse = {
+  status: HealthStatus;
+  latencyMs: number;
+  timestamp: string;
+};
