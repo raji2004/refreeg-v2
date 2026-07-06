@@ -85,7 +85,7 @@ export default function Accountability() {
         ref={subRef}
         className="text-[#0D0D0D] text-sm sm:text-base leading-relaxed m-0 mb-6 sm:mb-8 text-center md:text-left"
       >
-        Whether you give ten dollars or rally ten thousand people,
+        Whether you give ₦10 or rally ten thousand people,
         RefreeG turns intent into impact you can prove.
       </p>
 

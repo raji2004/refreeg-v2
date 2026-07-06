@@ -197,7 +197,7 @@ const leftContent: ProofFeatureContent = {
   headingStart: "Proof, not",
   headingAccent: "promises.",
   description:
-    "Stop wondering if your $50 turned into uniforms or overhead. With RefreeG you watch it become uniforms with a receipt to prove it.",
+    "Stop wondering if your ₦50 turned into uniforms or overhead. With RefreeG you watch it become uniforms with a receipt to prove it.",
   bullets: [
     { title: "Live tracking", body: "from donation to delivery." },
     { title: "Tax-ready receipts", body: "auto-generated for every contribution." },

@@ -7,6 +7,10 @@
  */
 import type { Config } from "jest";
 import nextJest from "next/jest.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 const createJestConfig = nextJest({
   // Provide the path to your Next.js app to load next.config.js and .env files in your test environment
@@ -50,6 +54,12 @@ const config: Config = {
     "**/tests/**/*.test.[jt]s?(x)",
   ],
   testPathIgnorePatterns: ["/node_modules/", "/e2e/"],
+  transform: {
+    "^.+\\.(ts|tsx|js|jsx)$": [
+      "babel-jest",
+      { configFile: path.resolve(rootDir, "babel.jest.config.js") },
+    ],
+  },
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
