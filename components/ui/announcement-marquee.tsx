@@ -21,7 +21,7 @@ const statusLabels: Record<AnnouncementStatus, string> = {
 };
 
 function formatAmount(amount: number, currency: string): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-NG", {
     style: "currency",
     currency,
     minimumFractionDigits: 2,

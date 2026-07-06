@@ -2,6 +2,7 @@
 
 import React from "react";
 import { SupportErrorCta } from "@/components/support-error-cta";
+import { reportClientError } from "@/lib/client-error-reporter";
 
 type Props = {
   children: React.ReactNode;
@@ -39,6 +40,7 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
 
   private handleWindowError = (event: ErrorEvent) => {
     const message = getErrorMessage(event.error || event.message);
+    reportClientError(event.error || event.message, { type: "window" });
     console.error(`[Window Error] ${message}`, {
       url: window.location.href,
       timestamp: new Date().toISOString(),
@@ -52,6 +54,7 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
 
   private handleUnhandledRejection = (event: PromiseRejectionEvent) => {
     const message = getErrorMessage(event.reason);
+    reportClientError(event.reason, { type: "unhandled-rejection" });
     console.error(`[Unhandled Rejection] ${message}`, {
       url: window.location.href,
       timestamp: new Date().toISOString(),
@@ -64,6 +67,10 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
   };
 
   componentDidCatch(error: unknown, errorInfo: React.ErrorInfo) {
+    reportClientError(error, {
+      type: "react",
+      componentStack: errorInfo.componentStack,
+    });
     console.error(`[React Error] ${getErrorMessage(error)}`, {
       url: window.location.href,
       timestamp: new Date().toISOString(),
