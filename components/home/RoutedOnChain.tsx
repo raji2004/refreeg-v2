@@ -81,7 +81,7 @@ export function RoutedOnChain() {
               ref={headlineRef}
               className="text-3xl md:text-5xl lg:text-7xl font-medium leading-tight"
             >
-              $48.2M routed <br /> on-chain. Zero <br />lost in translation.
+              ₦48.2M routed <br /> on-chain. Zero <br />lost in translation.
             </h2>
           </div>
         </div>

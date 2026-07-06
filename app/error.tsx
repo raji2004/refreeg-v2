@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SupportErrorCta } from "@/components/support-error-cta";
+import { reportClientError } from "@/lib/client-error-reporter";
 
 export default function Error({
   error,
@@ -14,6 +15,7 @@ export default function Error({
   const router = useRouter();
 
   useEffect(() => {
+    reportClientError(error, { type: "react" });
     console.error(error);
   }, [error]);
 
