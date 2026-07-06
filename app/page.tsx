@@ -32,8 +32,7 @@ export default async function Home({
   return (
     <div className="flex flex-col min-h-screen mt-12 md:mt-16 ">
       <Hero />
-
-      <div className="mx-8"></div>
+      <LiveCampaigns />
 
       <div className="mx-8">
         <RoutedOnChain />
@@ -44,8 +43,6 @@ export default async function Home({
       <MoneyTrail />
 
       <AnnouncementMarquee />
-
-      <LiveCampaigns />
 
       <div className="mx-8">
         <Accountability />
