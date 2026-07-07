@@ -20,7 +20,7 @@ import { Icons } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
 import { useDonation } from "@/hooks/use-donation";
 import { useProfile } from "@/hooks/use-profile";
-import { calculateServiceFee } from "@/lib/utils";
+import { calculateServiceFee, cn } from "@/lib/utils";
 import paystack from "@/services/paystack";
 import { usePayment } from "@/hooks/use-payment";
 import { sendUnfinishedDonationEmail } from "@/services/mail";
@@ -41,6 +41,12 @@ interface DonationFormProps {
   recurring?: "one_time" | "weekly" | "monthly";
   tip?: number;
   initialAmount?: number;
+  hideHeader?: boolean;
+  hideAmountField?: boolean;
+  hideCheckoutSummary?: boolean;
+  flush?: boolean;
+  beforeFields?: React.ReactNode;
+  afterFields?: React.ReactNode;
 }
 
 export function DonationForm({
@@ -53,6 +59,12 @@ export function DonationForm({
   recurring = "one_time",
   tip = 0,
   initialAmount = 0,
+  hideHeader = false,
+  hideAmountField = false,
+  hideCheckoutSummary = false,
+  flush = false,
+  beforeFields,
+  afterFields,
 }: DonationFormProps) {
   const { initializePayment, isLoading } = usePayment();
   const [formData, setFormData] = useState({
@@ -254,35 +266,47 @@ export function DonationForm({
   const totalAmount = donationAmount + serviceFee + tip;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Make a Donation</CardTitle>
-        <CardDescription>
-          Your contribution helps make a difference
-        </CardDescription>
-      </CardHeader>
+    <Card
+      className={cn(
+        flush && "rounded-none border-0 bg-transparent shadow-none",
+      )}
+    >
+      {!hideHeader && (
+        <CardHeader>
+          <CardTitle>Make a donation</CardTitle>
+          <CardDescription>
+            Your contribution helps make a difference
+          </CardDescription>
+        </CardHeader>
+      )}
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="amount">Donation Amount (₦)</Label>
-            <Input
-              id="amount"
-              name="amount"
-              type="number"
-              placeholder="Enter amount in Naira"
-              value={formData.amount}
-              onChange={handleChange}
-              min={MIN_DONATION_AMOUNT}
-              required
-            />
-            {amountError ? (
-              <p className="text-xs font-medium text-rose-600">{amountError}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Minimum donation is ₦{MIN_DONATION_AMOUNT}.
-              </p>
-            )}
-          </div>
+        <CardContent className={cn("space-y-4", flush && "p-0")}>
+          {beforeFields}
+
+          {!hideAmountField && (
+            <div className="space-y-2">
+              <Label htmlFor="amount">Donation amount</Label>
+              <Input
+                id="amount"
+                name="amount"
+                type="number"
+                placeholder="Enter amount in Naira"
+                value={formData.amount}
+                onChange={handleChange}
+                min={MIN_DONATION_AMOUNT}
+                required
+              />
+              {amountError ? (
+                <p className="text-xs font-medium text-rose-600">
+                  {amountError}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Minimum donation is ₦{MIN_DONATION_AMOUNT}.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="name">Your Name</Label>
@@ -334,36 +358,34 @@ export function DonationForm({
             <p className="text-sm font-medium text-rose-600">{submitError}</p>
           ) : null}
 
-          {donationAmount > 0 && (
+          {afterFields}
+
+          {!hideCheckoutSummary && donationAmount > 0 && (
             <div className="space-y-2 pt-4 border-t">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Donation Amount</span>
-                <span>₦{donationAmount.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Service Fee</span>
-                <span>₦{serviceFee.toLocaleString()}</span>
-              </div>
-              {tip > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Platform Tip</span>
-                  <span>₦{tip.toLocaleString()}</span>
-                </div>
-              )}
               {recurring !== "one_time" && (
                 <div className="flex justify-between text-sm font-medium text-blue-600">
                   <span className="text-muted-foreground">Schedule</span>
                   <span className="capitalize">{recurring}</span>
                 </div>
               )}
-              <div className="flex justify-between font-medium pt-2 border-t">
-                <span>Total Amount</span>
+              <div className="flex justify-between font-medium">
+                <span>Checkout total</span>
                 <span>₦{totalAmount.toLocaleString()}</span>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Includes ₦{donationAmount.toLocaleString()} donation
+                {serviceFee > 0
+                  ? `, ₦${serviceFee.toLocaleString()} service fee`
+                  : ""}
+                {tip > 0
+                  ? `, and ₦${tip.toLocaleString()} optional platform tip`
+                  : ""}
+                .
+              </p>
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex flex-col gap-4">
+        <CardFooter className={cn("flex flex-col gap-4", flush && "p-0 pt-4")}>
           {/* REMOVE THIS TEST BUTTON IN PRODUCTION */}
           {/* <Button 
             type="button" 
