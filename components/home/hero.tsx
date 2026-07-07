@@ -123,7 +123,7 @@ const Hero = () => {
             size="lg"
             className="w-full rounded-full border-border bg-background/70 px-8 backdrop-blur-md sm:w-auto"
           >
-            <Link href="/learn">Raise for one</Link>
+            <Link href="/dashboard/causes/create">Raise for one</Link>
           </Button>
         </div>
 
