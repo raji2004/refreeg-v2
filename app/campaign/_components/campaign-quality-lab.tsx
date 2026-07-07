@@ -775,197 +775,12 @@ function DonateCard({
       </div>
 
       <h3 className="mt-3 text-xl font-semibold text-slate-900 sm:text-2xl">
-        Make a contribution
+        Make a donation
       </h3>
       <p className="mt-2 text-sm text-slate-600">
         Rewards only apply to verified campaigns. Every milestone release is
         publicly audited.
       </p>
-
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        {donationPresets.map((amount) => (
-          <button
-            key={amount}
-            type="button"
-            onClick={() => setDonation(amount)}
-            className={`rounded-full border px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
-              donation === amount
-                ? "border-[#2563EB] bg-[#2563EB] text-white"
-                : "border-[#E5E7EB] bg-white text-[#64748B]"
-            }`}
-          >
-            ₦{amount.toLocaleString()}
-          </button>
-        ))}
-      </div>
-
-      <label className="mt-4 grid gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
-        <span className="text-xs uppercase tracking-[0.15em] text-slate-500">
-          Custom amount
-        </span>
-        <div className="flex items-stretch overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-          <span className="flex items-center justify-center bg-slate-900 px-3 text-sm font-semibold text-white">
-            ₦
-          </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={12}
-            value={donation ? donation.toString() : ""}
-            onChange={(event) => {
-              const next = event.target.value.replace(/\D/g, "");
-              const capped = next.slice(0, 12);
-              setDonation(capped ? Number(capped) : 0);
-            }}
-            className="w-full appearance-none bg-transparent px-3 py-2 text-right text-sm text-slate-900 outline-none"
-            placeholder="0"
-          />
-        </div>
-        <p className="text-xs text-slate-500">Enter any amount above ₦1.</p>
-      </label>
-
-      <div className="mt-4 grid gap-3">
-        <label className="grid gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-4 text-sm text-[#64748B]">
-          <span className="font-semibold text-slate-700">
-            Contribution schedule
-          </span>
-          <select
-            value={recurring}
-            onChange={(event) =>
-              setRecurring(
-                event.target.value as "one_time" | "weekly" | "monthly",
-              )
-            }
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-          >
-            <option value="one_time">One-time</option>
-            <option value="weekly">Every week</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </label>
-
-        <label className="grid gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-4 text-sm text-[#64748B]">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-slate-700">Platform tip</span>
-            <span className="text-sm font-semibold text-slate-800">
-              Support Refreeg ops
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {tipPresets.map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setTip(tip === value ? 0 : value)}
-                className={`rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
-                  tip === value
-                    ? "bg-[#0F172A] text-white shadow-[0_10px_18px_rgba(15,23,42,0.18)]"
-                    : "border border-[#E5E7EB] bg-white text-[#64748B]"
-                }`}
-              >
-                ₦{value.toLocaleString()}
-              </button>
-            ))}
-            <div className="col-span-2 sm:col-span-1">
-              <div className="flex items-stretch overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                <span className="flex items-center justify-center bg-slate-900 px-3 text-sm font-semibold text-white">
-                  ₦
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  value={tip}
-                  onChange={(event) => setTip(Number(event.target.value))}
-                  className="w-full bg-transparent px-3 py-2 text-right text-sm font-semibold text-slate-900 outline-none"
-                  placeholder="Custom"
-                />
-                {/* Hidden input to keep DonationForm logic intact */}
-                <input
-                  type="range"
-                  min={0}
-                  max={20}
-                  step={1}
-                  value={
-                    typeof tip === "number" && donation > 0
-                      ? Math.round((tip / donation) * 100)
-                      : 0
-                  }
-                  onChange={(e) => {
-                    const pct = Number(e.target.value);
-                    setTip(Math.round(donation * (pct / 100)));
-                  }}
-                  className="hidden"
-                />
-              </div>
-            </div>
-          </div>
-        </label>
-      </div>
-
-      <div className="mt-4 rounded-[14px] border border-[#E5E7EB] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
-        <p className="text-xs uppercase tracking-[0.15em] text-[#64748B]">
-          Impact estimate
-        </p>
-        <p className="mt-2 text-sm text-[#0F172A]">{impactText}</p>
-        {donation > 0 && (
-          <div className="mt-3 space-y-1 border-t border-slate-100 pt-3">
-            <div className="flex justify-between text-xs text-slate-500">
-              <span>Donation amount</span>
-              <span>₦{donation.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between text-xs text-slate-500">
-              <span>Service fee</span>
-              <span>₦{serviceFee.toLocaleString()}</span>
-            </div>
-            {tip > 0 && (
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>Platform tip</span>
-                <span>₦{tip.toLocaleString()}</span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="mt-4 space-y-2 text-sm text-[#64748B]">
-        <div className="flex items-center justify-between">
-          <span>Total raised today</span>
-          <span className="text-[#0F172A] font-medium">
-            ₦{raisedToday.toLocaleString()}
-          </span>
-        </div>
-        <div className="flex items-center justify-between border-t border-slate-100 pt-2">
-          <span className="font-semibold text-slate-700">Checkout total</span>
-          <span className="text-[#2563EB] font-bold">
-            ₦{totalWithTip.toLocaleString()}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-600">
-        <p className="text-[11px] uppercase tracking-[0.15em] font-semibold text-slate-700">
-          Recent donors
-        </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {donorsPreview.length > 0 ? (
-            donorsPreview.slice(0, 3).map((donor) => (
-              <span
-                key={donor.id}
-                className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs text-slate-700"
-              >
-                {donor.name}
-                <span className="text-emerald-600">
-                  ₦{donor.amount.toLocaleString()}
-                </span>
-              </span>
-            ))
-          ) : (
-            <span className="font-semibold text-slate-700">
-              Be the first to donate.
-            </span>
-          )}
-        </div>
-      </div>
 
       <div className="mt-4 space-y-3">
         <DonationForm
@@ -978,6 +793,203 @@ function DonateCard({
           recurring={recurring}
           tip={tip}
           initialAmount={donation}
+          hideHeader
+          hideAmountField
+          hideCheckoutSummary
+          flush
+          beforeFields={
+            <>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                {donationPresets.map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => setDonation(amount)}
+                    className={`rounded-full border px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
+                      donation === amount
+                        ? "border-[#2563EB] bg-[#2563EB] text-white"
+                        : "border-[#E5E7EB] bg-white text-[#64748B]"
+                    }`}
+                  >
+                    ₦{amount.toLocaleString()}
+                  </button>
+                ))}
+              </div>
+
+              <label className="grid gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
+                <span className="text-xs uppercase tracking-[0.15em] text-slate-500">
+                  Donation amount
+                </span>
+                <div className="flex items-stretch overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                  <span className="flex items-center justify-center bg-slate-900 px-3 text-sm font-semibold text-white">
+                    ₦
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={12}
+                    value={donation ? donation.toString() : ""}
+                    onChange={(event) => {
+                      const next = event.target.value.replace(/\D/g, "");
+                      const capped = next.slice(0, 12);
+                      setDonation(capped ? Number(capped) : 0);
+                    }}
+                    className="w-full appearance-none bg-transparent px-3 py-2 text-right text-sm text-slate-900 outline-none"
+                    placeholder="0"
+                  />
+                </div>
+                <p className="text-xs text-slate-500">
+                  This is the amount that goes toward the campaign.
+                </p>
+              </label>
+            </>
+          }
+          afterFields={
+            <div className="grid gap-3">
+              <label className="grid gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-4 text-sm text-[#64748B]">
+                <span className="font-semibold text-slate-700">
+                  Contribution schedule
+                </span>
+                <select
+                  value={recurring}
+                  onChange={(event) =>
+                    setRecurring(
+                      event.target.value as "one_time" | "weekly" | "monthly",
+                    )
+                  }
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                >
+                  <option value="one_time">One-time</option>
+                  <option value="weekly">Every week</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </label>
+
+              <label className="grid gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-4 text-sm text-[#64748B]">
+                <span className="text-base font-semibold text-slate-800">
+                  Optional platform tip
+                </span>
+                <p className="text-xs text-slate-500">
+                  Add a separate tip to support Refreeg operation.
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {tipPresets.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setTip(tip === value ? 0 : value)}
+                      className={`rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
+                        tip === value
+                          ? "bg-[#0F172A] text-white shadow-[0_10px_18px_rgba(15,23,42,0.18)]"
+                          : "border border-[#E5E7EB] bg-white text-[#64748B]"
+                      }`}
+                    >
+                      ₦{value.toLocaleString()}
+                    </button>
+                  ))}
+                  <div className="col-span-2 sm:col-span-1">
+                    <div className="flex items-stretch overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                      <span className="flex items-center justify-center bg-slate-900 px-3 text-sm font-semibold text-white">
+                        ₦
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={tip}
+                        onChange={(event) => setTip(Number(event.target.value))}
+                        className="w-full bg-transparent px-3 py-2 text-right text-sm font-semibold text-slate-900 outline-none"
+                        placeholder="Custom"
+                      />
+                      {/* Hidden input to keep DonationForm logic intact */}
+                      <input
+                        type="range"
+                        min={0}
+                        max={20}
+                        step={1}
+                        value={
+                          typeof tip === "number" && donation > 0
+                            ? Math.round((tip / donation) * 100)
+                            : 0
+                        }
+                        onChange={(e) => {
+                          const pct = Number(e.target.value);
+                          setTip(Math.round(donation * (pct / 100)));
+                        }}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </label>
+
+              <div className="rounded-[14px] border border-[#E5E7EB] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+                <p className="text-xs uppercase tracking-[0.15em] text-[#64748B]">
+                  Donation summary
+                </p>
+                <p className="mt-2 text-sm text-[#0F172A]">{impactText}</p>
+                {donation > 0 && (
+                  <div className="mt-3 space-y-1 border-t border-slate-100 pt-3">
+                    <div className="flex justify-between text-sm font-semibold text-slate-900">
+                      <span>Your donation</span>
+                      <span>₦{donation.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>Service fee</span>
+                      <span>₦{serviceFee.toLocaleString()}</span>
+                    </div>
+                    {tip > 0 && (
+                      <div className="flex justify-between text-xs text-slate-500">
+                        <span>Optional platform tip</span>
+                        <span>₦{tip.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2 text-sm text-[#64748B]">
+                <div className="flex items-center justify-between">
+                  <span>Total raised today</span>
+                  <span className="text-[#0F172A] font-medium">
+                    ₦{raisedToday.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                  <span className="font-semibold text-slate-700">
+                    Checkout total
+                  </span>
+                  <span className="text-[#2563EB] font-bold">
+                    ₦{totalWithTip.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-600">
+                <p className="text-[11px] uppercase tracking-[0.15em] font-semibold text-slate-700">
+                  Recent donors
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {donorsPreview.length > 0 ? (
+                    donorsPreview.slice(0, 3).map((donor) => (
+                      <span
+                        key={donor.id}
+                        className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs text-slate-700"
+                      >
+                        {donor.name}
+                        <span className="text-emerald-600">
+                          ₦{donor.amount.toLocaleString()}
+                        </span>
+                      </span>
+                    ))
+                  ) : (
+                    <span className="font-semibold text-slate-700">
+                      Be the first to donate.
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          }
         />
 
         <BreetCryptoDonationModal
