@@ -48,7 +48,7 @@ export default function Hero() {
         transition={{ duration: 2, ease: "easeOut" }}
       >
         <Image
-          src="/map.svg"
+          src="/map.jpg"
           alt="Background map"
           fill
           className="object-contain"

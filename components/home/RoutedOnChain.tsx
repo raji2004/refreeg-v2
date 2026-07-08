@@ -64,7 +64,7 @@ export function RoutedOnChain() {
       >
         {/* Background Image */}
         <Image
-          src="/routed-funds.svg"
+          src="/routed-funds.jpg"
           alt="Routed on chain illustration"
           fill
           priority
@@ -93,7 +93,7 @@ export function RoutedOnChain() {
 >
   <div className="w-full md:w-1/2 px-4">
     <Image
-      src="/trust-with-proof.svg"
+      src="/trust-with-proof.jpg"
       alt="For the people illustration"
       width={1200}
       height={1200}
