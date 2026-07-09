@@ -125,68 +125,105 @@ export function KycTab({ profile, user }: KycTabProps) {
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Main Status Card */}
-      <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden">
-        <div className="bg-slate-50/50 border-b border-slate-100 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-white rounded-xl shadow-sm border border-slate-100">
-              {getStatusIcon()}
+      {!kycData ? (
+        <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white to-slate-50/50 pointer-events-none" />
+          <CardContent className="p-8 md:p-12 text-center relative z-10 flex flex-col items-center">
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-6 shadow-sm border border-blue-100">
+              <Shield className="h-8 w-8 text-blue-600" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900 tracking-tight">Identity Verification</h3>
-              <p className="text-sm text-slate-500 mt-1">{getStatusMessage()}</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight mb-4">
+              Secure Your RefreeG Account
+            </h2>
+            <p className="text-slate-600 max-w-2xl mx-auto mb-10 text-base md:text-lg">
+              Identity verification keeps the RefreeG community safe and trusted. 
+              By verifying your identity, you unlock the ability to create petitions, launch donation campaigns, and access all premium platform features.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl mb-12 text-left">
+              <div className="p-5 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                <Shield className="h-6 w-6 text-blue-500 mb-3" />
+                <h4 className="font-semibold text-slate-900 mb-2">Platform Trust</h4>
+                <p className="text-sm text-slate-500 leading-relaxed">Show supporters you are a verified creator, increasing engagement and donations.</p>
+              </div>
+              <div className="p-5 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                <CheckCircle className="h-6 w-6 text-emerald-500 mb-3" />
+                <h4 className="font-semibold text-slate-900 mb-2">Unlock Features</h4>
+                <p className="text-sm text-slate-500 leading-relaxed">Gain full access to campaign creation, wallet withdrawals, and premium tools.</p>
+              </div>
+              <div className="p-5 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                <Clock className="h-6 w-6 text-amber-500 mb-3" />
+                <h4 className="font-semibold text-slate-900 mb-2">Fast Process</h4>
+                <p className="text-sm text-slate-500 leading-relaxed">Our automated system verifies your identity securely in just a few minutes.</p>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => router.push("/dashboard/settings/kyc-setup")}
+              className="bg-slate-900 hover:bg-slate-800 text-white transition-all duration-200 px-8 py-6 text-base rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5"
+            >
+              <Shield className="h-5 w-5 mr-3" />
+              Start RefreeG Verification
+            </Button>
+            <p className="text-xs text-slate-400 mt-4">
+              Your data is encrypted and securely processed.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden">
+          <div className="bg-slate-50/50 border-b border-slate-100 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white rounded-xl shadow-sm border border-slate-100">
+                {getStatusIcon()}
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 tracking-tight">Identity Verification</h3>
+                <p className="text-sm text-slate-500 mt-1">{getStatusMessage()}</p>
+              </div>
+            </div>
+            <div className="flex-shrink-0">
+              {getStatusBadge()}
             </div>
           </div>
-          <div className="flex-shrink-0">
-            {getStatusBadge()}
-          </div>
-        </div>
-        
-        <CardContent className="p-6">
-          {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            {!kycData && (
-              <Button
-                onClick={() => router.push("/dashboard/settings/kyc-setup")}
-                className="bg-slate-900 hover:bg-slate-800 text-white transition-colors duration-200 px-6"
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                Setup Verification
-              </Button>
+          
+          <CardContent className="p-6">
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
-            {kycData?.status === "rejected" && (
-              <Button
-                onClick={() => router.push("/dashboard/settings/kyc-setup")}
-                variant="destructive"
-                className="transition-colors duration-200 px-6"
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                Resubmit Application
-              </Button>
-            )}
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              {kycData?.status === "rejected" && (
+                <Button
+                  onClick={() => router.push("/dashboard/settings/kyc-setup")}
+                  variant="destructive"
+                  className="transition-colors duration-200 px-6"
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Resubmit Application
+                </Button>
+              )}
 
-            {kycData?.status === "pending" && (
-              <div className="flex items-center gap-2 text-amber-700 bg-amber-50/80 px-4 py-2.5 rounded-lg border border-amber-200/50">
-                <Clock className="h-5 w-5" />
-                <span className="text-sm font-medium">Your application is in the review queue</span>
-              </div>
-            )}
+              {kycData?.status === "pending" && (
+                <div className="flex items-center gap-2 text-amber-700 bg-amber-50/80 px-4 py-2.5 rounded-lg border border-amber-200/50">
+                  <Clock className="h-5 w-5" />
+                  <span className="text-sm font-medium">Your application is in the review queue</span>
+                </div>
+              )}
 
-            {kycData?.status === "approved" && (
-              <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50/80 px-4 py-2.5 rounded-lg border border-emerald-200/50">
-                <CheckCircle className="h-5 w-5" />
-                <span className="text-sm font-medium">All features unlocked</span>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              {kycData?.status === "approved" && (
+                <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50/80 px-4 py-2.5 rounded-lg border border-emerald-200/50">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="text-sm font-medium">All features unlocked</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Legacy KYC Details - Hidden for Didit users */}
       {kycData && kycData.document_type !== "didit" && (
