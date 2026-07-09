@@ -179,13 +179,13 @@ export default function MultimediaCarousel({
     } else {
       // Image
       return (
-        <div className="relative h-full w-full">
+        <div className="relative h-full w-full flex items-center justify-center bg-slate-950">
           <Image
             src={item.url}
             alt={`${title} - Image ${idx + 1}`}
             fill
             sizes="(max-width: 768px) 100vw, 80vw"
-            className="object-cover"
+            className="object-contain"
             unoptimized={isProxyMediaUrl(item.url)}
           />
         </div>
@@ -195,7 +195,7 @@ export default function MultimediaCarousel({
 
   return (
     <div className="rounded-[22px] border border-slate-200/80 bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3">
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[18px] bg-slate-100 sm:aspect-[16/10] lg:aspect-[16/9]">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[18px] bg-black sm:aspect-[16/10] lg:aspect-[16/9]">
         {slides.map((item, idx) => (
           <div
             key={idx}
