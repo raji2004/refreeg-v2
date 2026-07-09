@@ -23,6 +23,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1040.0
         version: 3.1041.0
+      '@didit-protocol/sdk-web':
+        specifier: ^0.2.1
+        version: 0.2.1
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.1.0)(react@19.1.0)
@@ -1267,6 +1270,10 @@ packages:
   '@csstools/css-tokenizer@3.0.4':
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
+
+  '@didit-protocol/sdk-web@0.2.1':
+    resolution: {integrity: sha512-dv5mrvgV6RJgXySWIcDFwp9AMD7Hz9AN/GbDIhmZMRHpSumiIb44XP9MhUaF7YgWbtscRJhkbDH0KgHzSO6hJg==}
+    engines: {node: '>=16.0.0'}
 
   '@emnapi/core@1.9.2':
     resolution: {integrity: sha512-UC+ZhH3XtczQYfOlu3lNEkdW/p4dsJ1r/bP7H8+rhao3TTTMO1ATq/4DdIi23XuGoFY+Cz0JmCbdVl0hz9jZcA==}
@@ -8366,6 +8373,8 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.4': {}
 
+  '@didit-protocol/sdk-web@0.2.1': {}
+
   '@emnapi/core@1.9.2':
     dependencies:
       '@emnapi/wasi-threads': 1.2.1
@@ -9162,7 +9171,7 @@ snapshots:
       prop-types: 15.8.1
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
-      react-is: 19.1.1
+      react-is: 19.2.7
       react-transition-group: 4.4.5(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
     optionalDependencies:
       '@emotion/react': 11.14.0(@types/react@19.1.0)(react@19.1.0)
@@ -9221,7 +9230,7 @@ snapshots:
       clsx: 2.1.1
       prop-types: 15.8.1
       react: 19.1.0
-      react-is: 19.1.1
+      react-is: 19.2.7
     optionalDependencies:
       '@types/react': 19.1.0
 
@@ -14670,7 +14679,7 @@ snapshots:
       '@webassemblyjs/wasm-parser': 1.14.1
       acorn: 8.16.0
       acorn-import-phases: 1.0.4(acorn@8.16.0)
-      browserslist: 4.26.3
+      browserslist: 4.28.4
       chrome-trace-event: 1.0.4
       enhanced-resolve: 5.18.3
       es-module-lexer: 1.7.0
