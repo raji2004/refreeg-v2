@@ -12,7 +12,7 @@ const Hero = () => {
     >
       {/* african map  */}
       <Image
-        src={"/map.svg"}
+        src={"/map.jpg"}
         alt="African Map"
         width={100}
         height={100}
