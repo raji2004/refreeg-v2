@@ -224,6 +224,7 @@ export async function sendKycSubmittedEmail(
   userEmail: string,
   userName: string,
 ) {
+  const currentYear = new Date().getFullYear();
   return sendMail({
     to: userEmail,
     subject: "KYC Verification Submitted - Refreeg",
@@ -233,6 +234,7 @@ export async function sendKycSubmittedEmail(
       organizationName: "Refreeg",
       reviewTimeframe: "3-5 business days",
       dashboardUrl: "https://www.refreeg.com/dashboard/settings?tab=kyc",
+      currentYear,
     },
   });
 }
@@ -241,6 +243,7 @@ export async function sendKycApprovedEmail(
   userEmail: string,
   userName: string,
 ) {
+  const currentYear = new Date().getFullYear();
   return sendMail({
     to: userEmail,
     subject: "KYC Verification Approved - Refreeg",
@@ -249,6 +252,7 @@ export async function sendKycApprovedEmail(
       userName,
       organizationName: "Refreeg",
       createCauseUrl: "https://www.refreeg.com/dashboard/settings?tab=kyc",
+      currentYear,
     },
   });
 }
@@ -258,6 +262,7 @@ export async function sendKycRejectedEmail(
   userName: string,
   rejectionReason: string,
 ) {
+  const currentYear = new Date().getFullYear();
   return sendMail({
     to: userEmail,
     subject: "KYC Verification Update - Refreeg",
@@ -267,6 +272,7 @@ export async function sendKycRejectedEmail(
       organizationName: "Refreeg",
       rejectionReason,
       kycResubmitLink: "https://www.refreeg.com/dashboard/settings?tab=kyc",
+      currentYear,
     },
   });
 }

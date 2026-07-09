@@ -35,30 +35,9 @@ export async function POST(request: Request) {
     const data = await response.json();
     const sessionId = data.session_id;
 
-    // Check if there is an existing pending record for this session
-    const existing = await prisma.kyc_verifications.findFirst({
-        where: { user_id: user.id, document_type: "didit", status: "pending" }
-    });
-
-    if (existing) {
-        await prisma.kyc_verifications.update({
-            where: { id: existing.id },
-            data: { document_url: sessionId }
-        });
-    } else {
-        // Create a pending KYC verification record to track the session and the user
-        await prisma.kyc_verifications.create({
-          data: {
-            user_id: user.id,
-            document_type: "didit",
-            document_url: sessionId, // store session_id here
-            status: "pending",
-            verification_notes: "Automated verification started via Didit",
-            full_name: user.fullName || "Didit User",
-          },
-        });
-    }
-
+    // Return the session URL immediately. We will create the KYC record in the webhook 
+    // when Didit confirms the session actually completed (approved/rejected).
+    // This prevents locking the user out if they just open and close the modal.
     return NextResponse.json({ session_id: sessionId, url: data.url || `https://verification.didit.me/v3/session/${sessionId}` });
   } catch (error) {
     console.error("Error creating Didit session:", error);

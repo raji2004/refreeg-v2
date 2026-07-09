@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { issueReferralRewardOnKycApproval } from "@/actions/kyc-actions";
+import {
+  sendKycSubmittedEmail,
+  sendKycApprovedEmail,
+  sendKycRejectedEmail,
+  sendKycSubmissionAdminNotification,
+} from "@/services/mail";
 
 export async function POST(request: Request) {
   try {
@@ -33,11 +39,32 @@ export async function POST(request: Request) {
       });
     }
 
+    let isNewRecord = false;
     if (!kyc) {
-      return NextResponse.json({ error: "KYC record not found" }, { status: 404 });
+      // If no record exists (because they just started the session and we didn't save it), create it now.
+      if (vendorData) {
+        const user = await prisma.user.findUnique({ where: { id: vendorData } });
+        if (user) {
+          isNewRecord = true;
+          kyc = await prisma.kyc_verifications.create({
+            data: {
+              user_id: user.id,
+              document_type: "didit",
+              document_url: sessionId,
+              status: "pending",
+              verification_notes: "Automated verification processed via Didit webhook",
+              full_name: (user as any).full_name || (user as any).fullName || "Didit User",
+            }
+          });
+        }
+      }
+
+      if (!kyc) {
+        return NextResponse.json({ error: "KYC record not found and could not be created" }, { status: 404 });
+      }
     }
 
-    if (kyc.status !== "pending") {
+    if (kyc.status !== "pending" && !isNewRecord) {
        return NextResponse.json({ message: "Already processed" });
     }
 
@@ -45,6 +72,9 @@ export async function POST(request: Request) {
     const isApproved = lowerStatus === "approved" || lowerStatus === "verified";
     const isRejected = lowerStatus === "declined" || lowerStatus === "rejected";
     
+    // Extract rejection reason if available
+    const rejectionReason = body.decision_reason || body.reason || body.message || "Your document or selfie did not meet our verification requirements.";
+
     // Default to pending if it's "in progress", "in review", etc.
     let newStatus = "pending";
     if (isApproved) newStatus = "approved";
@@ -55,7 +85,7 @@ export async function POST(request: Request) {
       where: { id: kyc.id },
       data: {
         status: newStatus,
-        verification_notes: `Automated Didit result: ${status}`
+        verification_notes: `Automated Didit result: ${status}${isRejected ? ` - ${rejectionReason}` : ''}`
       }
     });
 
@@ -65,12 +95,29 @@ export async function POST(request: Request) {
       data: { isVerified: isApproved }
     });
 
-    if (isApproved) {
-      // Issue referral reward
-      try {
-        await issueReferralRewardOnKycApproval(kyc.user_id);
-      } catch (err) {
-        console.error("Referral reward error:", err);
+    // Send Emails
+    const userProfile = await prisma.user.findUnique({ where: { id: kyc.user_id }, select: { email: true } });
+    if (userProfile?.email) {
+      const userName = kyc.full_name || "User";
+      
+      if (isApproved) {
+        await sendKycApprovedEmail(userProfile.email, userName);
+        try {
+          await issueReferralRewardOnKycApproval(kyc.user_id);
+        } catch (err) {
+          console.error("Referral reward error:", err);
+        }
+      } else if (isRejected) {
+        await sendKycRejectedEmail(userProfile.email, userName, rejectionReason);
+      } else if (newStatus === "pending") {
+        // Didit is in manual review or processing
+        await sendKycSubmittedEmail(userProfile.email, userName);
+        await sendKycSubmissionAdminNotification(
+          userProfile.email,
+          userName,
+          kyc.user_id,
+          "https://verification.didit.me/admin" // Or wherever admins check Didit
+        );
       }
     }
 
