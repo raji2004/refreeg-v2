@@ -78,7 +78,7 @@ Before running this project, make sure you have the following installed:
 - AWS Account with S3 bucket and IAM permissions
 - Paystack account for fiat payments
 - MetaMask or compatible crypto wallet for crypto donations
-- Run Ngrok Locally for webhook to work. Run .\scripts\start-ngrok.ps1
+- Run Ngrok Locally for webhook to work. Run .\scripts\start-ngrok.ps1 or ngrok http 3000
 
 ## 🛠️ Installation
 

@@ -16,6 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 type KycSetupClientProps = {
   userId: string;
@@ -25,6 +27,18 @@ type KycSetupClientProps = {
 };
 
 export default function KycSetupClient(props: KycSetupClientProps) {
+  const router = useRouter();
+
+  // Poll for updates if the status is pending
+  useEffect(() => {
+    if (props.currentKyc?.status === "pending") {
+      const interval = setInterval(() => {
+        router.refresh();
+      }, 5000); // Check every 5 seconds
+      return () => clearInterval(interval);
+    }
+  }, [props.currentKyc?.status, router]);
+
   console.log("[KYC Setup] Client wrapper received props:", props);
   
   if (props.currentKyc?.status === "pending") {

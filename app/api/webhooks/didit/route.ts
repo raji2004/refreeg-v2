@@ -81,6 +81,9 @@ export async function POST(request: Request) {
     if (isApproved) newStatus = "approved";
     if (isRejected) newStatus = "rejected";
 
+    // Only consider it manual review if status explicitly mentions review or pending
+    const requiresManualReview = lowerStatus.includes("review") || lowerStatus === "pending";
+
     // Update kyc record
     await prisma.kyc_verifications.update({
       where: { id: kyc.id },
@@ -110,8 +113,8 @@ export async function POST(request: Request) {
         }
       } else if (isRejected) {
         await sendKycRejectedEmail(userProfile.email, userName, rejectionReason);
-      } else if (newStatus === "pending") {
-        // Didit is in manual review or processing
+      } else if (newStatus === "pending" && requiresManualReview) {
+        // Didit is explicitly in manual review
         await sendKycSubmittedEmail(userProfile.email, userName);
         await sendKycSubmissionAdminNotification(
           userProfile.email,
