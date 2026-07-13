@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { issueReferralRewardOnKycApproval } from "@/actions/kyc-actions";
 import {
@@ -119,6 +120,14 @@ export async function POST(request: Request) {
           "https://verification.didit.me/admin" // Or wherever admins check Didit
         );
       }
+    }
+
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/dashboard", "layout");
+      revalidatePath("/dashboard/settings", "layout");
+    } catch (e) {
+      console.error("Failed to revalidate paths:", e);
     }
 
     return NextResponse.json({ success: true });
