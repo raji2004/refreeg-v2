@@ -58,7 +58,6 @@ const Hero = () => {
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-background px-4 sm:px-6">
-      
       {/* Background Glow */}
       <div className="absolute top-[-200px] left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#0A3CB5]/20 blur-3xl" />
 
@@ -70,15 +69,9 @@ const Hero = () => {
         ref={heroRef}
         className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center text-center md:pt-0 sm:pt-28"
       >
-        
         {/* Badge */}
         <div className="hero-badge flex items-center gap-2 rounded-full border border-border bg-[#CFF454] px-4 py-2 text-xs sm:text-sm font-semibold text-[#0B1410] shadow-md">
-          <Image
-            src="/dot.svg"
-            alt="On-chain Icon"
-            width={8}
-            height={8}
-          />
+          <Image src="/dot.svg" alt="On-chain Icon" width={8} height={8} />
           <span className="whitespace-nowrap">
             Live on-chain · 10,000+ donations verified
           </span>
@@ -86,16 +79,14 @@ const Hero = () => {
 
         {/* Heading */}
         <h1 className="hero-title mt-4 max-w-4xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl">
-          Give and see <br className="hidden sm:block" /> 
-          exactly where <br className="hidden sm:block" />it{" "}
-          <span className="italic text-[#0A3CB5]">
-            lands.
-          </span>
+          Give and see <br className="hidden sm:block" />
+          exactly where <br className="hidden sm:block" />
+          it <span className="italic text-[#0A3CB5]">lands.</span>
         </h1>
 
         {/* Description */}
         <p className="hero-description mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
-          RefreeG puts every dollar on-chain. Donors get a receipt, not a
+          RefreeG puts every naira on-chain. Donors get a receipt, not a
           brochure. Causes get funded in seconds, not weeks. No black box, no
           trust tax — just verifiable giving.
         </p>
@@ -106,7 +97,7 @@ const Hero = () => {
             size="lg"
             className="w-full rounded-full bg-[#0A3CB5] px-8 text-white shadow-xl sm:w-auto"
           >
-            <Link href="/donate">
+            <Link href="/causes">
               Give to a cause
               <Image
                 src="/arrow.svg"
@@ -123,7 +114,7 @@ const Hero = () => {
             size="lg"
             className="w-full rounded-full border-border bg-background/70 px-8 backdrop-blur-md sm:w-auto"
           >
-            <Link href="/learn">Raise for one</Link>
+            <Link href="/dashboard/causes/create">Raise for one</Link>
           </Button>
         </div>
 

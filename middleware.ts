@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth/auth";
 const PUBLIC_API_PREFIXES = [
   "/api/auth", // NextAuth routes
   "/api/health", // Monitoring health checks
+  "/api/error-report", // Same-origin browser error intake (rate limited)
   "/api/bot", // Developer API — authenticated via API keys
   "/api/webhooks", // Incoming webhooks (Paystack, etc.)
   "/api/payments", // Guest donation checkout + verification
@@ -34,6 +35,7 @@ const APP_ROUTE_PREFIXES = [
 const APP_HOST = "apps.refreeg.com";
 const WWW_HOST = "www.refreeg.com";
 const Test_HOST = "http://localhost:3000/";
+const HOST_NEUTRAL_API_PREFIXES = ["/api/health", "/api/error-report"];
 
 export default auth(async (req) => {
   const { pathname } = req.nextUrl;
@@ -52,8 +54,11 @@ export default auth(async (req) => {
   const isAppRoute = APP_ROUTE_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix),
   );
+  const isHostNeutralApiRoute = HOST_NEUTRAL_API_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix),
+  );
 
-  if (host === WWW_HOST && isAppRoute) {
+  if (host === WWW_HOST && isAppRoute && !isHostNeutralApiRoute) {
     const target = req.nextUrl.clone();
     target.hostname = APP_HOST;
     target.protocol = targetProtocol;
@@ -61,7 +66,12 @@ export default auth(async (req) => {
     return NextResponse.redirect(target, 308);
   }
 
-  if (host === APP_HOST && !isAppRoute && pathname !== "/") {
+  if (
+    host === APP_HOST &&
+    !isAppRoute &&
+    !isHostNeutralApiRoute &&
+    pathname !== "/"
+  ) {
     const target = req.nextUrl.clone();
     target.hostname = WWW_HOST;
     target.protocol = targetProtocol;

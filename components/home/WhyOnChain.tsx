@@ -32,7 +32,7 @@ const features = [
     iconColor: "text-[#CEF037]",
     title: "Zero hidden fees.",
     description:
-      "Smart contracts execute on flat, public gas. No 8% off the top. No mystery deductions. Every cent is accounted for in code.",
+      "Smart contracts execute on flat, public gas. No 8% off the top. No mystery deductions. Every kobo is accounted for in code.",
     linkLabel: "See our fee policy",
     href: "#",
   },
@@ -222,8 +222,8 @@ export default function WhyOnChain() {
               ref={heroSubRef}
               className="text-[#0D0D0D] text-sm sm:text-base leading-relaxed m-0 mb-6 sm:mb-8 text-center md:text-left"
             >
-              Whether you give ten dollars or rally ten thousand people, RefreeG
-              turns intent into impact you can prove.
+              Whether you give ₦10 or rally ten thousand people, RefreeG turns
+              intent into impact you can prove.
             </p>
 
             <div
@@ -241,7 +241,7 @@ export default function WhyOnChain() {
               </Link>
 
               <Link
-                href="#"
+                href="/dashboard/causes/create"
                 className="flex items-center justify-center text-[#0D0D0D] text-[15px] font-medium rounded-full px-6 py-[14px] border border-[#0D0D0D] hover:bg-black/5 transition-colors no-underline w-full sm:w-auto"
               >
                 Start a campaign

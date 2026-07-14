@@ -213,4 +213,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/auth/signin",
     newUser: "/onboarding",
   },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production" ? `__Secure-authjs.session-token` : `authjs.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        domain: process.env.NODE_ENV === "production" ? ".refreeg.com" : undefined,
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
 });

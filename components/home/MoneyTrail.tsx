@@ -39,7 +39,7 @@ const features = [
     iconHeight: 24,
     title: "Zero hidden fees.",
     description:
-      "Smart contracts execute on flat, public gas. No 8% off the top. No mystery deductions. Every cent is accounted for in code.",
+      "Smart contracts execute on flat, public gas. No 8% off the top. No mystery deductions. Every kobo is accounted for in code.",
     link: {
       label: "See our fee policy",
       href: "/fee-policy",

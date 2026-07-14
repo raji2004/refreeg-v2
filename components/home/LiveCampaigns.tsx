@@ -145,9 +145,9 @@ export default function LiveCampaigns() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-NG", {
       style: "currency",
-      currency: "USD",
+      currency: "NGN",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -211,7 +211,7 @@ export default function LiveCampaigns() {
 
         <p className="text-gray-600 max-w-2xl text-base mb-8">
           A glimpse of what's funding right now. Each campaign is verified,
-          every dollar tracked from contribution to impact.
+          every naira tracked from contribution to impact.
         </p>
 
         {showScrollHint && (
