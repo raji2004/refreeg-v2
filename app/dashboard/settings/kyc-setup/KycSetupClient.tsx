@@ -84,5 +84,9 @@ export default function KycSetupClient(props: KycSetupClientProps) {
     );
   }
 
-  return <DiditKycForm userId={props.userId} />;
+  return (
+    <div data-testid="kyc-setup-container" data-userid={props.userId}>
+      <DiditKycForm userId={props.userId} />
+    </div>
+  );
 }

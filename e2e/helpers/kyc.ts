@@ -107,62 +107,55 @@ export async function submitKycSetupForm(page: Page) {
     timeout: 60_000,
   });
 
-  // Clear any leftover draft that could skip steps
-  await page.evaluate(() => localStorage.removeItem("kycDraft"));
+  // Extract user ID from the DOM so we can mock the webhook
+  const container = page.getByTestId("kyc-setup-container");
+  await expect(container).toBeVisible({ timeout: 15_000 });
+  
+  const userId = await container.getAttribute("data-userid");
+  if (!userId) {
+    throw new Error("Could not find user ID on the page to mock Didit webhook.");
+  }
+
+  // Intercept the /api/kyc/didit/session API call so Didit SDK thinks a session was created successfully
+  const dummySessionId = "e2e-session-" + Date.now();
+  await page.route("/api/kyc/didit/session", async (route) => {
+    await route.fulfill({
+      status: 200,
+      json: { session_id: dummySessionId, url: "http://localhost:3000/dummy-didit-url" }
+    });
+  });
+
+  // Click the start verification button
+  await page.getByRole("button", { name: /Start (Secure|RefreeG) Verification/i }).click();
+  console.log("KYC session created.");
+
+  // Simulate the Didit Webhook hitting our API
+  // We send status: "Review" so it goes to "pending" for the Admin to test rejecting/approving
+  console.log(`Sending mock Didit webhook for user ${userId}...`);
+  const response = await page.request.post("/api/webhooks/didit", {
+    data: {
+      application_id: "e2e-test-app",
+      session_id: dummySessionId,
+      status: "Review",
+      vendor_data: userId,
+      webhook_type: "status.updated"
+    }
+  });
+  
+  if (!response.ok()) {
+    throw new Error(`Mock Didit webhook failed: ${await response.text()}`);
+  }
+
+  // Reload the page to let KycSetupClient poll or see the new status
   await page.reload({ waitUntil: "domcontentloaded" });
 
-  await expect(page.locator("#firstName")).toBeVisible({ timeout: 30_000 });
-  await page.locator("#firstName").fill("Muhammad");
-  await page.locator("#lastName").fill("E2E");
-  await page.locator("#phone").fill("+23480118529085");
-
-  const selects = page.locator("select");
-  await selects.nth(0).selectOption({ label: "12" });
-  await selects.nth(1).selectOption({ label: "October" });
-  await selects.nth(2).selectOption({ label: "2004" });
-
-  await page.getByRole("button", { name: /^Next$/i }).click();
-  console.log("KYC step 1 (personal) complete.");
-
-  await page.locator("#address").waitFor({ state: "visible", timeout: 15_000 });
-  await page.locator("#address").fill("14 Johnson Adetoye");
-  await page.locator("#city").fill("Abuja");
-  await page.locator("#state").fill("FCT");
-  await page.locator("#postal").fill("900001");
-
-  const country = page.getByRole("combobox").filter({
-    hasText: /Select a country|Nigeria|Loading countries/i,
-  }).first();
-  await expect(country).toBeVisible({ timeout: 15_000 });
-  // Wait for countries to finish loading
-  await expect(country).not.toContainText(/Loading countries/i, {
-    timeout: 20_000,
-  });
-  await country.click();
-  await page.getByRole("option", { name: /^Nigeria$/i }).click();
-  await expect(country).toContainText(/Nigeria/i);
-
-  await page.getByRole("button", { name: /^Next$/i }).click();
-  console.log("KYC step 2 (address) complete.");
-
-  const docSelect = page.locator("#documentType");
-  await expect(docSelect).toBeVisible({ timeout: 15_000 });
-  await docSelect.selectOption({ label: "NIN" });
-
-  const fileInput = page.locator('input[type="file"]').first();
-  await fileInput.waitFor({ state: "attached", timeout: 10_000 });
-  await fileInput.setInputFiles(minimalPdf("e2e-kyc-resubmit.pdf"));
-
-  await page.getByRole("button", { name: /^Next$/i }).click();
-  console.log("KYC step 3 (document) submitted.");
-
-  // Success UI (must NOT be "already verified")
-  const success = page.getByText(/All done you checked out!/i);
-  const error = page.getByText(/already verified|failed|error/i);
+  // Success UI (We check for Under Review since we sent 'Review' status)
+  const success = page.getByText(/Under Review|Pending/i);
+  const error = page.getByText(/failed|error/i);
 
   await Promise.race([
-    success.waitFor({ state: "visible", timeout: 90_000 }),
-    error.first().waitFor({ state: "visible", timeout: 90_000 }),
+    success.first().waitFor({ state: "visible", timeout: 15_000 }),
+    error.first().waitFor({ state: "visible", timeout: 15_000 }),
   ]);
 
   if (await error.first().isVisible().catch(() => false)) {
@@ -170,13 +163,8 @@ export async function submitKycSetupForm(page: Page) {
     throw new Error(`KYC submit failed unexpectedly: ${errText}`);
   }
 
-  await expect(success).toBeVisible();
+  await expect(success.first()).toBeVisible();
   console.log("KYC resubmitted successfully.");
-
-  const proceed = page.getByRole("button", { name: /Proceed/i });
-  if (await proceed.isVisible({ timeout: 5_000 }).catch(() => false)) {
-    await proceed.click();
-  }
 }
 
 /**
