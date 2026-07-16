@@ -12,7 +12,9 @@
     "test:unit": "jest",
     "test:no-coverage": "jest --coverage=false",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:prod": "PLAYWRIGHT_BASE_URL=https://apps.refreeg.com playwright test",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^2.0.29",
@@ -115,6 +117,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-jest": "^30.4.1",
+    "cross-env": "^10.1.0",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.2.6",
     "jest": "^30.4.2",

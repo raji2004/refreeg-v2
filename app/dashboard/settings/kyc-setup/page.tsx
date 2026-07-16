@@ -31,6 +31,7 @@ export default async function KycSetupPage() {
       userId={user.id}
       rejectedKyc={rejectedKyc}
       kycFetchError={kycError}
+      currentKyc={status}
     />
   );
 }
