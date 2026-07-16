@@ -548,6 +548,7 @@ function MediaCard({ media, cause }: { media: string[]; cause: CauseDetail }) {
           media={media}
           coverImage={cause.image || undefined}
           title={cause.title}
+          imageFit="cover"
         />
       ) : (
         <div className="flex h-64 items-center justify-center bg-slate-100 text-slate-400">
