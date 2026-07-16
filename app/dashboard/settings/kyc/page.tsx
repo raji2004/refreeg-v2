@@ -35,7 +35,7 @@ export default function KycSettingsPage() {
         | "rejected"
         | undefined;
 
-      if (!kycStatus || searchParams.get("error") === "kyc_required") {
+      if (searchParams.get("error") === "kyc_required") {
         if (!hasShownToast.current) {
           hasShownToast.current = true;
           toast({

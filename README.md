@@ -78,6 +78,7 @@ Before running this project, make sure you have the following installed:
 - AWS Account with S3 bucket and IAM permissions
 - Paystack account for fiat payments
 - MetaMask or compatible crypto wallet for crypto donations
+- Run Ngrok Locally for webhook to work. Run .\scripts\start-ngrok.ps1 or ngrok http 3000
 
 ## 🛠️ Installation
 
@@ -119,7 +120,6 @@ Before running this project, make sure you have the following installed:
    ```
 
 4. **Set up Database & ORM**:
-
    - Create a local PostgreSQL database or connect to your AWS EC2 instance.
    - Run Prisma migrations:
      ```bash
@@ -128,7 +128,6 @@ Before running this project, make sure you have the following installed:
      ```
 
 5. **Set up AWS S3**:
-
    - Create a new private S3 bucket on AWS
    - Ensure the bucket has Block Public Access turned ON
    - If deploying to EC2, attach an IAM Role to the instance with `s3:GetObject` and `s3:PutObject` permissions

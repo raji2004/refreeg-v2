@@ -1,127 +1,141 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
     <title>New KYC Submission - Admin Notification</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        line-height: 1.6;
-        color: #333;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background-color: #f4f7f6;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
         max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
+        margin: 40px auto;
+        background: #ffffff;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
       }
-      .header {
-        background-color: #003366;
-        color: white;
-        padding: 20px;
+      .logo {
         text-align: center;
-        border-radius: 8px 8px 0 0;
+        margin-bottom: 30px;
       }
-      .content {
-        background-color: #f9f9f9;
-        padding: 30px;
-        border-radius: 0 0 8px 8px;
+      .logo img {
+        max-height: 40px;
+        vertical-align: middle;
+        display: inline-block;
+      }
+      .brand-name {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333333;
+        vertical-align: middle;
+        display: inline-block;
+        margin-left: 10px;
+      }
+      h1 {
+        color: #333333;
+        font-size: 24px;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      p {
+        color: #555555;
+        font-size: 16px;
+        line-height: 1.6;
+      }
+      .center-text {
+        text-align: center;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #007bff;
+        color: #ffffff;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        margin: 20px 0;
+      }
+      .btn-container {
+        text-align: center;
+      }
+      .info-box {
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        color: #334155;
+        font-size: 16px;
+        text-align: left;
+        padding: 20px;
+        margin: 30px 0;
+        border-radius: 8px;
+      }
+      .info-box ul {
+        margin: 10px 0 0 0;
+        padding-left: 20px;
+      }
+      .info-box li {
+        margin-bottom: 8px;
+      }
+      .alert-box {
+        background: #fff8e6;
+        border: 2px solid #ffc107;
+        color: #856404;
+        font-size: 16px;
+        text-align: left;
+        padding: 20px;
+        margin: 30px 0;
+        border-radius: 8px;
       }
       .footer {
         text-align: center;
-        margin-top: 20px;
-        color: #666;
+        margin-top: 40px;
         font-size: 14px;
-      }
-      .highlight {
-        background-color: #fff3cd;
-        padding: 15px;
-        border-radius: 5px;
-        margin: 20px 0;
-        border-left: 4px solid #ffc107;
-      }
-      .info-box {
-        background-color: #e8f4fd;
-        padding: 15px;
-        border-radius: 5px;
-        margin: 20px 0;
-        border-left: 4px solid #0066cc;
-      }
-      .cta-button {
-        display: inline-block;
-        background-color: #0066cc;
-        color: white !important;
-        padding: 12px 24px;
-        text-decoration: none;
-        border-radius: 8px;
-        margin: 20px 0;
-        font-weight: bold;
-        font-size: 16px;
-        transition: background-color 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      .cta-button:hover {
-        background-color: #0052a3;
-        color: white !important;
+        color: #999999;
+        border-top: 1px solid #eeeeee;
+        padding-top: 20px;
       }
     </style>
   </head>
   <body>
-    <div class="header">
-      <h1>New KYC Submission</h1>
-    </div>
-
-    <div class="content">
+    <div class="container">
+      <div class="logo">
+        <img src="https://www.refreeg.com/logo.svg" alt="RefreeG Logo" />
+        <span class="brand-name">RefreeG</span>
+      </div>
+      
+      <h1>Action Required: New KYC Submission</h1>
       <p>Dear {{adminName}},</p>
-
-      <div class="highlight">
-        <strong>⚠️ Action Required</strong>
-        <p>
-          A new KYC (Know Your Customer) verification has been submitted and
-          requires your review.
-        </p>
+      <p>A new Know Your Customer (KYC) verification has been submitted via Didit and requires a manual review.</p>
+      
+      <div class="alert-box">
+        <strong>⚠️ Review Required</strong>
+        <p style="margin-top: 10px; margin-bottom: 0;">Please review this submission within 24-48 hours to ensure a smooth onboarding process for the user.</p>
       </div>
 
       <div class="info-box">
         <strong>Submission Details:</strong>
-        <ul style="margin: 10px 0; padding-left: 20px">
+        <ul>
           <li><strong>User Name:</strong> {{userName}}</li>
-          <li><strong>User Email:</strong> {{userEmail}}</li>
+          <li><strong>Email:</strong> {{userEmail}}</li>
           <li><strong>Status:</strong> Pending Review</li>
         </ul>
       </div>
-
-      <p>
-        Please review the submitted KYC documents and verify the user's
-        identity. This is important for maintaining platform security and
-        compliance.
-      </p>
-
-      <div style="text-align: center">
-        <a
-          href="{{kycReviewUrl}}"
-          class="cta-button"
-          style="color: white; text-decoration: none"
-          >👉 Review KYC Submission</a
-        >
+      
+      <div class="btn-container">
+        <a href="{{kycReviewUrl}}" class="btn">Review in Didit</a>
       </div>
-
-      <p>
-        <strong>Note:</strong> Please review this submission within 24-48 hours
-        to ensure timely processing for the user.
+      
+      <p class="center-text">
+        This is an automated administrative notification.
       </p>
 
-      <p>Thank you for your attention to this matter.</p>
-
-      <p>
-        Best regards,<br />
-        The {{organizationName}} Team
-      </p>
-    </div>
-
-    <div class="footer">
-      <p>
-        This is an automated notification. Please do not reply to this email.
-      </p>
-      <p>&copy; {{organizationName}} {{currentYear}}. All rights reserved.</p>
+      <div class="footer">
+        &copy; {{currentYear}} {{organizationName}}. All rights reserved.
+      </div>
     </div>
   </body>
 </html>
