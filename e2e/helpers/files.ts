@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+
 /** Minimal valid 1×1 JPEG for cover / KYC uploads in E2E. */
 export function minimalJpeg(name = "e2e-cover.jpg") {
   // Standard 1x1 red JPEG
@@ -47,5 +50,15 @@ export function minimalPdf(name = "e2e-kyc.pdf") {
     name,
     mimeType: "application/pdf",
     buffer: Buffer.from(content, "utf-8"),
+  };
+}
+
+/** Short (~2s) WebM clip for multimedia gallery E2E. */
+export function shortWebm(name = "e2e-clip.webm") {
+  const fixturePath = path.join(__dirname, "../fixtures/e2e-short.webm");
+  return {
+    name,
+    mimeType: "video/webm",
+    buffer: fs.readFileSync(fixturePath),
   };
 }

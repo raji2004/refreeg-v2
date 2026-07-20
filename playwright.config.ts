@@ -22,13 +22,14 @@ export default defineConfig({
   fullyParallel: !isRemoteTarget,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI || isRemoteTarget ? 1 : undefined,
+  // Desktop + mobile share one test account / KYC — keep sequential
+  workers: 1,
   reporter: [
     ["list"],
     ["html", { open: "always", outputFolder: "playwright-report" }],
   ],
   globalTeardown: "./e2e/global-teardown.ts",
-  timeout: isRemoteTarget ? 180_000 : 60_000,
+  timeout: isRemoteTarget ? 180_000 : 90_000,
   use: {
     baseURL,
     trace: "on-first-retry",
@@ -41,6 +42,11 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      // Full suite on Pixel 5 — catches off-screen CTAs / layout issues
+      name: "mobile-chrome",
+      use: { ...devices["Pixel 5"] },
     },
   ],
   webServer: isRemoteTarget

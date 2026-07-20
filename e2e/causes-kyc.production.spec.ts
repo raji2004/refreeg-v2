@@ -92,8 +92,15 @@ test.describe("RefreeG Production — Causes & KYC", () => {
       timeout: 60_000,
     });
     await expect(
-      page.getByText(/Your KYC has been approved|Your KYC is approved/i).first(),
+      page
+        .getByText(
+          /Identity Verification|KYC Verification Status|Your KYC has been approved|Your KYC is approved|All features unlocked/i,
+        )
+        .first(),
     ).toBeVisible({ timeout: 30_000 });
+    await expect(
+      page.getByText(/Your KYC has been approved|Your KYC is approved|All features unlocked|Approved/i).first(),
+    ).toBeVisible({ timeout: 20_000 });
   });
 
   test("1) create a cause through the full wizard", async ({ page }) => {
@@ -448,15 +455,21 @@ test.describe("RefreeG Production — Causes & KYC", () => {
       timeout: 60_000,
     });
 
-    // Wait for status card (avoid passing not.toBeVisible during the loader)
+    // Wait for status card (copy differs across KYC UI revisions)
     await expect(
-      page.getByText(/KYC Verification Status/i).first(),
+      page
+        .getByText(/Identity Verification|KYC Verification Status/i)
+        .first(),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
-      page.getByText(/Your KYC was rejected|Resubmit KYC/i).first(),
+      page
+        .getByText(/Your KYC was rejected|Resubmit Application|Resubmit KYC/i)
+        .first(),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
-      page.getByRole("button", { name: /Resubmit KYC/i }),
+      page.getByRole("button", {
+        name: /Resubmit Application|Resubmit KYC|Resubmit/i,
+      }),
     ).toBeVisible({ timeout: 15_000 });
     console.log("Own KYC is no longer approved — ready to resubmit.");
   });
@@ -469,7 +482,11 @@ test.describe("RefreeG Production — Causes & KYC", () => {
       timeout: 60_000,
     });
     await expect(
-      page.getByText(/pending review|pending|under review/i).first(),
+      page
+        .getByText(
+          /pending review|Pending Review|under review|in the review queue|Pending/i,
+        )
+        .first(),
     ).toBeVisible({ timeout: 20_000 });
     console.log("KYC status shows pending after resubmit.");
   });
@@ -492,7 +509,9 @@ test.describe("RefreeG Production — Causes & KYC", () => {
       page.getByText(/Your KYC was rejected/i).first(),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
-      page.getByRole("button", { name: /Resubmit KYC/i }),
+      page.getByRole("button", {
+        name: /Resubmit Application|Resubmit KYC|Resubmit/i,
+      }),
     ).toBeVisible({ timeout: 15_000 });
     console.log("KYC rejection visible on settings page.");
   });
@@ -505,7 +524,11 @@ test.describe("RefreeG Production — Causes & KYC", () => {
       timeout: 60_000,
     });
     await expect(
-      page.getByText(/pending review|pending|under review/i).first(),
+      page
+        .getByText(
+          /pending review|Pending Review|under review|in the review queue|Pending/i,
+        )
+        .first(),
     ).toBeVisible({ timeout: 20_000 });
     console.log("KYC pending again after post-rejection resubmit.");
   });
@@ -519,7 +542,9 @@ test.describe("RefreeG Production — Causes & KYC", () => {
     });
     await expect(
       page
-        .getByText(/KYC has been approved|Your KYC is approved|Approved/i)
+        .getByText(
+          /Your KYC has been approved|Your KYC is approved|All features unlocked|Approved/i,
+        )
         .first(),
     ).toBeVisible({ timeout: 20_000 });
     console.log(

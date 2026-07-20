@@ -14,6 +14,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:prod": "PLAYWRIGHT_BASE_URL=https://apps.refreeg.com playwright test",
+    "test:e2e:prod:mobile": "PLAYWRIGHT_BASE_URL=https://apps.refreeg.com playwright test --project=mobile-chrome",
+    "test:e2e:multimedia": "playwright test e2e/causes-multimedia.spec.ts",
     "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
