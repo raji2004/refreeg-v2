@@ -1,117 +1,114 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KYC Verification Approved</title>
+    <meta charset="utf-8" />
+    <title>KYC Application Approved</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        line-height: 1.6;
-        color: #333;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background-color: #f4f7f6;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
         max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
+        margin: 40px auto;
+        background: #ffffff;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
       }
-      .header {
-        background-color: #4caf50;
-        color: white;
-        padding: 20px;
+      .logo {
         text-align: center;
-        border-radius: 8px 8px 0 0;
+        margin-bottom: 30px;
       }
-      .content {
-        background-color: #f9f9f9;
-        padding: 30px;
-        border-radius: 0 0 8px 8px;
+      .logo img {
+        max-height: 40px;
+        vertical-align: middle;
+        display: inline-block;
+      }
+      .brand-name {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333333;
+        vertical-align: middle;
+        display: inline-block;
+        margin-left: 10px;
+      }
+      h1 {
+        color: #333333;
+        font-size: 24px;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      p {
+        color: #555555;
+        font-size: 16px;
+        line-height: 1.6;
+        text-align: center;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #10b981;
+        color: #ffffff;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        margin: 20px 0;
+      }
+      .btn-container {
+        text-align: center;
+      }
+      .success-box {
+        background: #ecfdf5;
+        border: 2px solid #10b981;
+        color: #047857;
+        font-size: 20px;
+        font-weight: bold;
+        text-align: center;
+        padding: 20px;
+        margin: 30px 0;
+        border-radius: 8px;
       }
       .footer {
         text-align: center;
-        margin-top: 20px;
-        color: #666;
+        margin-top: 40px;
         font-size: 14px;
-      }
-      .highlight {
-        background-color: #e8f5e8;
-        padding: 15px;
-        border-radius: 5px;
-        margin: 20px 0;
-        border-left: 4px solid #4caf50;
-      }
-      .cta-button {
-        display: inline-block;
-        background-color: #0066cc;
-        color: white !important;
-        padding: 12px 24px;
-        text-decoration: none;
-        border-radius: 8px;
-        margin: 20px 0;
-        font-weight: bold;
-        font-size: 16px;
-        transition: background-color 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      .cta-button:hover {
-        background-color: #0052a3;
-        color: white !important;
+        color: #999999;
+        border-top: 1px solid #eeeeee;
+        padding-top: 20px;
       }
     </style>
   </head>
   <body>
-    <div class="header">
-      <h1>🎉 KYC Verification Approved!</h1>
-    </div>
-
-    <div class="content">
-      <p>Dear {{userName}},</p>
-
+    <div class="container">
+      <div class="logo">
+        <img src="https://www.refreeg.com/logo.svg" alt="RefreeG Logo" />
+        <span class="brand-name">{{organizationName}}</span>
+      </div>
+      <h1>Identity Verification Approved</h1>
+      <p>Hi {{userName}},</p>
       <p>
-        Great news! Your KYC (Know Your Customer) verification has been
-        successfully approved by our team.
+        Great news! Your identity verification has been successfully approved by our team.
       </p>
-
-      <div class="highlight">
-        <strong>What this means for you:</strong>
-        <ul>
-          <li>
-            ✅ You can now list causes and fundraise on {{organizationName}}
-          </li>
-          <li>✅ Access to all platform features is now available</li>
-          <li>✅ Your account is fully verified and trusted</li>
-          <li>✅ You can start making a difference in your community</li>
-        </ul>
+      
+      <div class="success-box">
+        All Premium Features Unlocked! 🚀
       </div>
 
       <p>
-        You're all set to start creating and managing causes. We're excited to
-        see the positive impact you'll make!
+        You now have full access to create petitions, launch donation campaigns, and utilize all platform features.
       </p>
-
-      <p style="text-align: center">
-        <a
-          href="{{createCauseUrl}}"
-          class="cta-button"
-          style="color: white; text-decoration: none"
-          >👉 Start Creating Causes</a
-        >
-      </p>
-
-      <p>
-        If you have any questions or need assistance getting started, our
-        support team is here to help.
-      </p>
-
-      <p>Thank you for choosing {{organizationName}}!</p>
-
-      <p>
-        With care,<br />
-        The Refreeg Team
-      </p>
-    </div>
-
-    <div class="footer">
-      <p>This is an automated message. Please do not reply to this email.</p>
-      <p>&copy; {{organizationName}}. All rights reserved.</p>
+      
+      <div class="btn-container">
+        <a href="{{createCauseUrl}}" class="btn">Go to Dashboard</a>
+      </div>
+      
+      <div class="footer">
+        &copy; {{currentYear}} {{organizationName}}. All rights reserved.
+      </div>
     </div>
   </body>
 </html>

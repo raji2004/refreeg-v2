@@ -123,138 +123,201 @@ export function KycTab({ profile, user }: KycTabProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-          <CardTitle className="flex items-center gap-3">
-            {getStatusIcon()}
-            KYC Verification Status
-          </CardTitle>
-          <CardDescription>Your identity verification status</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row justify-between mb-4">
-            <p className="text-sm text-gray-600">{getStatusMessage()}</p>
-            {getStatusBadge()}
+    <div className="space-y-6 max-w-4xl">
+      {/* Main Status Card */}
+      {!kycData ? (
+        <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white to-slate-50/50 pointer-events-none" />
+          <CardContent className="p-8 md:p-12 text-center relative z-10 flex flex-col items-center">
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-6 shadow-sm border border-blue-100">
+              <Shield className="h-8 w-8 text-blue-600" />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight mb-4">
+              Secure Your RefreeG Account
+            </h2>
+            <p className="text-slate-600 max-w-2xl mx-auto mb-10 text-base md:text-lg">
+              Identity verification keeps the RefreeG community safe and trusted. 
+              By verifying your identity, you unlock the ability to create petitions, launch donation campaigns, and access all premium platform features.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl mb-12 text-left">
+              <div className="p-5 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                <Shield className="h-6 w-6 text-blue-500 mb-3" />
+                <h4 className="font-semibold text-slate-900 mb-2">Platform Trust</h4>
+                <p className="text-sm text-slate-500 leading-relaxed">Show supporters you are a verified creator, increasing engagement and donations.</p>
+              </div>
+              <div className="p-5 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                <CheckCircle className="h-6 w-6 text-emerald-500 mb-3" />
+                <h4 className="font-semibold text-slate-900 mb-2">Unlock Features</h4>
+                <p className="text-sm text-slate-500 leading-relaxed">Gain full access to campaign creation, wallet withdrawals, and premium tools.</p>
+              </div>
+              <div className="p-5 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                <Clock className="h-6 w-6 text-amber-500 mb-3" />
+                <h4 className="font-semibold text-slate-900 mb-2">Fast Process</h4>
+                <p className="text-sm text-slate-500 leading-relaxed">Our automated system verifies your identity securely in just a few minutes.</p>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => router.push("/dashboard/settings/kyc-setup")}
+              className="bg-slate-900 hover:bg-slate-800 text-white transition-all duration-200 px-8 py-6 text-base rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5"
+            >
+              <Shield className="h-5 w-5 mr-3" />
+              Start RefreeG Verification
+            </Button>
+            <p className="text-xs text-slate-400 mt-4">
+              Your data is encrypted and securely processed.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden">
+          <div className="bg-slate-50/50 border-b border-slate-100 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white rounded-xl shadow-sm border border-slate-100">
+                {getStatusIcon()}
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 tracking-tight">Identity Verification</h3>
+                <p className="text-sm text-slate-500 mt-1">{getStatusMessage()}</p>
+              </div>
+            </div>
+            <div className="flex-shrink-0">
+              {getStatusBadge()}
+            </div>
           </div>
+          
+          <CardContent className="p-6">
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-          {error && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              {kycData?.status === "rejected" && (
+                <Button
+                  onClick={() => router.push("/dashboard/settings/kyc-setup")}
+                  variant="destructive"
+                  className="transition-colors duration-200 px-6"
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Resubmit Application
+                </Button>
+              )}
 
-      {kycData && (
-        <Card className="shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              KYC Submission Details
+              {kycData?.status === "pending" && (
+                <div className="flex items-center gap-2 text-amber-700 bg-amber-50/80 px-4 py-2.5 rounded-lg border border-amber-200/50">
+                  <Clock className="h-5 w-5" />
+                  <span className="text-sm font-medium">Your application is in the review queue</span>
+                </div>
+              )}
+
+              {kycData?.status === "approved" && (
+                <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50/80 px-4 py-2.5 rounded-lg border border-emerald-200/50">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="text-sm font-medium">All features unlocked</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Legacy KYC Details - Hidden for Didit users */}
+      {kycData && kycData.document_type !== "didit" && (
+        <Card className="border border-slate-200 shadow-sm bg-white">
+          <CardHeader className="border-b border-slate-100 pb-4">
+            <CardTitle className="text-base font-semibold text-slate-900 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-slate-400" />
+              Legacy Submission Details
             </CardTitle>
-            <CardDescription>
-              Information you provided for verification
+            <CardDescription className="text-slate-500">
+              Information provided via manual upload
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Personal Info */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-sm text-gray-600 uppercase tracking-wide">
+                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   Personal Information
                 </h4>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <User className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">Full Name:</span>
-                    <span className="text-gray-700">
-                      {kycData.full_name || "-"}
-                    </span>
+                    <User className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm font-medium text-slate-500 w-24">Full Name</span>
+                    <span className="text-sm text-slate-900">{kycData.full_name || "-"}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">Date of Birth:</span>
-                    <span className="text-gray-700">{kycData.dob || "-"}</span>
+                    <Calendar className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm font-medium text-slate-500 w-24">Date of Birth</span>
+                    <span className="text-sm text-slate-900">{kycData.dob || "-"}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Phone className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">Phone:</span>
-                    <span className="text-gray-700">
-                      {kycData.phone || "-"}
-                    </span>
+                    <Phone className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm font-medium text-slate-500 w-24">Phone</span>
+                    <span className="text-sm text-slate-900">{kycData.phone || "-"}</span>
                   </div>
                 </div>
               </div>
 
+              {/* Address Info */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-sm text-gray-600 uppercase tracking-wide">
+                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   Address Information
                 </h4>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <MapPin className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">Address:</span>
-                    <span className="text-gray-700">
-                      {kycData.address || "-"}
+                    <MapPin className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm font-medium text-slate-500 w-24">Address</span>
+                    <span className="text-sm text-slate-900">{kycData.address || "-"}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-4 w-4 text-slate-400 opacity-0" />
+                    <span className="text-sm font-medium text-slate-500 w-24">City/State</span>
+                    <span className="text-sm text-slate-900">
+                      {[kycData.city, kycData.state].filter(Boolean).join(", ") || "-"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <MapPin className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">City:</span>
-                    <span className="text-gray-700">{kycData.city || "-"}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">State:</span>
-                    <span className="text-gray-700">
-                      {kycData.state || "-"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">Postal Code:</span>
-                    <span className="text-gray-700">
-                      {kycData.postal || "-"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">Country:</span>
-                    <span className="text-gray-700">
-                      {kycData.country || "-"}
+                    <MapPin className="h-4 w-4 text-slate-400 opacity-0" />
+                    <span className="text-sm font-medium text-slate-500 w-24">Postal/Country</span>
+                    <span className="text-sm text-slate-900">
+                      {[kycData.postal, kycData.country].filter(Boolean).join(", ") || "-"}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <Separator className="my-6" />
+            <Separator className="my-8" />
 
             <div className="space-y-4">
-              <h4 className="font-semibold text-sm text-gray-600 uppercase tracking-wide">
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                 Document Preview
               </h4>
 
               {kycData?.document_url ? (
                 <>
                   {kycData.document_url.endsWith(".pdf") ? (
-                    <div className="border rounded-lg p-4 bg-gray-50 flex items-center gap-4">
-                      <span className="w-8 h-8 bg-gray-200 flex items-center justify-center rounded">
-                        📄
-                      </span>
+                    <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 flex items-center gap-4 transition-colors hover:bg-slate-100">
+                      <div className="w-10 h-10 bg-white border border-slate-200 flex items-center justify-center rounded shadow-sm">
+                        <FileText className="h-5 w-5 text-blue-500" />
+                      </div>
                       <a
                         href={getMediaUrl(kycData.document_url)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 underline"
+                        className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
                       >
                         View PDF Document
                       </a>
                     </div>
                   ) : (
                     <div
-                      className="border rounded-lg p-4 bg-gray-50 flex flex-col items-center cursor-zoom-in"
+                      className="border border-slate-200 rounded-lg p-4 bg-slate-50 flex flex-col items-center cursor-pointer hover:bg-slate-100 transition-colors group"
                       onClick={() => setPreviewOpen(true)}
                     >
                       <Image
@@ -262,117 +325,61 @@ export function KycTab({ profile, user }: KycTabProps) {
                         alt="KYC Document"
                         width={400}
                         height={300}
-                        className="object-contain rounded shadow-sm max-h-64"
-                        unoptimized={isProxyMediaUrl(
-                          getMediaUrl(kycData.document_url),
-                        )}
+                        className="object-contain rounded max-h-64 opacity-90 group-hover:opacity-100 transition-opacity"
+                        unoptimized={isProxyMediaUrl(getMediaUrl(kycData.document_url))}
                       />
-                      <p className="text-sm text-blue-600 mt-2 text-center">
+                      <p className="text-xs text-slate-500 mt-3 font-medium">
                         Click image to view full size
                       </p>
                     </div>
                   )}
                 </>
               ) : (
-                <div className="border rounded-lg p-8 bg-gray-50 text-center text-gray-500">
+                <div className="border border-dashed border-slate-200 rounded-lg p-8 text-center text-sm text-slate-500">
                   No document uploaded
                 </div>
               )}
 
               {previewOpen && (
                 <div
-                  className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+                  className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 transition-all"
                   onClick={() => setPreviewOpen(false)}
                 >
                   <div
-                    className="relative max-w-5xl w-full max-h-[90vh]"
+                    className="relative max-w-5xl w-full max-h-[90vh] shadow-2xl"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Image
                       src={getMediaUrl(kycData.document_url)}
                       alt="Full size document"
                       fill
-                      className="object-contain rounded-lg bg-black"
-                      unoptimized={isProxyMediaUrl(
-                        getMediaUrl(kycData.document_url),
-                      )}
+                      className="object-contain rounded-lg bg-slate-950"
+                      unoptimized={isProxyMediaUrl(getMediaUrl(kycData.document_url))}
                     />
-
                     <button
                       onClick={() => setPreviewOpen(false)}
-                      className="absolute top-4 right-4 bg-black/70 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-black"
+                      className="absolute -top-4 -right-4 bg-white text-slate-900 rounded-full w-10 h-10 flex items-center justify-center hover:bg-slate-100 shadow-lg transition-transform hover:scale-105"
                     >
-                      ✕
+                      <XCircle className="w-6 h-6" />
                     </button>
                   </div>
                 </div>
               )}
 
-              {kycData?.status === "rejected" &&
-                kycData?.verification_notes && (
-                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mt-4">
-                    <h3 className="font-medium text-destructive mb-2">
-                      Rejection Reason
-                    </h3>
-                    <p className="text-sm text-destructive">
-                      {kycData.verification_notes}
-                    </p>
-                  </div>
-                )}
-            </div>
-
-            <Separator className="my-6" />
-
-            <div className="flex items-center gap-3">
-              <FileText className="h-4 w-4 text-gray-500" />
-              <span className="font-medium">Document Type:</span>
-              <span className="text-gray-700">
-                {kycData.document_type || "-"}
-              </span>
+              {kycData?.status === "rejected" && kycData?.verification_notes && (
+                <div className="p-4 bg-red-50 border border-red-100 rounded-lg mt-6">
+                  <h3 className="text-sm font-semibold text-red-800 mb-1">
+                    Rejection Reason
+                  </h3>
+                  <p className="text-sm text-red-600">
+                    {kycData.verification_notes}
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
       )}
-
-      <Card className="shadow-lg">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {!kycData && (
-              <Button
-                onClick={() => router.push("/dashboard/settings/kyc-setup")}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                Setup KYC Verification
-              </Button>
-            )}
-
-            {kycData?.status === "rejected" && (
-              <Button
-                onClick={() => router.push("/dashboard/settings/kyc-setup")}
-                className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3"
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                Resubmit KYC
-              </Button>
-            )}
-
-            {kycData?.status === "pending" && (
-              <div className="text-center text-gray-600">
-                <Clock className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
-                <p>Your KYC is under review. Please wait until we review it.</p>
-              </div>
-            )}
-
-            {kycData?.status === "approved" && (
-              <div className="text-center text-green-600">
-                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
-                <p>Your KYC is approved! You can now list causes.</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

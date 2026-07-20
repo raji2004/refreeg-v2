@@ -1,116 +1,102 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KYC Verification Submitted</title>
+    <meta charset="utf-8" />
+    <title>KYC Application Submitted</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        line-height: 1.6;
-        color: #333;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background-color: #f4f7f6;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
         max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
+        margin: 40px auto;
+        background: #ffffff;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
       }
-      .header {
-        background-color: #003366;
-        color: white;
-        padding: 20px;
+      .logo {
         text-align: center;
-        border-radius: 8px 8px 0 0;
+        margin-bottom: 30px;
       }
-      .content {
-        background-color: #f9f9f9;
-        padding: 30px;
-        border-radius: 0 0 8px 8px;
+      .logo img {
+        max-height: 40px;
+        vertical-align: middle;
+        display: inline-block;
+      }
+      .brand-name {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333333;
+        vertical-align: middle;
+        display: inline-block;
+        margin-left: 10px;
+      }
+      h1 {
+        color: #333333;
+        font-size: 24px;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      p {
+        color: #555555;
+        font-size: 16px;
+        line-height: 1.6;
+        text-align: center;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #007bff;
+        color: #ffffff;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        margin: 20px 0;
+      }
+      .btn-container {
+        text-align: center;
       }
       .footer {
         text-align: center;
-        margin-top: 20px;
-        color: #666;
+        margin-top: 40px;
         font-size: 14px;
-      }
-      .highlight {
-        background-color: #e8f4fd;
-        padding: 15px;
-        border-radius: 5px;
-        margin: 20px 0;
-        border-left: 4px solid #0066cc;
-      }
-      .cta-button {
-        display: inline-block;
-        background-color: #0066cc;
-        color: white !important;
-        padding: 12px 24px;
-        text-decoration: none;
-        border-radius: 8px;
-        margin: 20px 0;
-        font-weight: bold;
-        font-size: 16px;
-        transition: background-color 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      .cta-button:hover {
-        background-color: #0052a3;
-        color: white !important;
+        color: #999999;
+        border-top: 1px solid #eeeeee;
+        padding-top: 20px;
       }
     </style>
   </head>
   <body>
-    <div class="header">
-      <h1>KYC Verification Submitted</h1>
-    </div>
-
-    <div class="content">
-      <p>Dear {{userName}},</p>
-
-      <p>
-        Thank you for submitting your KYC (Know Your Customer) verification
-        documents to {{organizationName}}. We have successfully received your
-        submission and it is now under review.
-      </p>
-
-      <div class="highlight">
-        <strong>What happens next?</strong>
-        <ul>
-          <li>Our team will review your submitted documents</li>
-          <li>This process typically takes {{reviewTimeframe}}</li>
-          <li>
-            You will receive an email notification once the review is complete
-          </li>
-          <li>
-            If approved, you'll be able to list causes and access all features
-          </li>
-        </ul>
+    <div class="container">
+      <div class="logo">
+        <img src="https://www.refreeg.com/logo.svg" alt="RefreeG Logo" />
+        <span class="brand-name">{{organizationName}}</span>
       </div>
-
-      <!-- Optional: Add a CTA button if you want users to view their dashboard -->
-      <div style="text-align: center">
-        <a
-          href="{{dashboardUrl}}"
-          class="cta-button"
-          style="color: white; text-decoration: none"
-          >👉 View Your Dashboard</a
-        >
+      <h1>Identity Verification Submitted</h1>
+      <p>Hi {{userName}},</p>
+      <p>
+        Thank you for submitting your identity verification details. Your application is currently under review by our team.
+      </p>
+      <p>
+        The review process typically takes <strong>{{reviewTimeframe}}</strong>. We will notify you via email as soon as there is an update.
+      </p>
+      
+      <div class="btn-container">
+        <a href="{{dashboardUrl}}" class="btn">Check Status on Dashboard</a>
       </div>
-
+      
       <p>
-        If you have any questions or need to provide additional information,
-        please don't hesitate to contact our support team.
+        If you have any questions, please contact our support team at <a href="mailto:refreegcorrespondence@gmail.com" style="color: #007bff; text-decoration: none;">refreegcorrespondence@gmail.com</a>.
       </p>
 
-      <p>Thank you for your patience and for choosing {{organizationName}}.</p>
-
-      <p>
-        With care,<br />
-        The Refreeg Team
-      </p>
-    </div>
-
-    <div class="footer">
-      <p>This is an automated message. Please do not reply to this email.</p>
-      <p>&copy; {{organizationName}}. All rights reserved.</p>
+      <div class="footer">
+        &copy; {{currentYear}} {{organizationName}}. All rights reserved.
+      </div>
     </div>
   </body>
 </html>
