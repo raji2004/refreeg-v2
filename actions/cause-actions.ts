@@ -128,9 +128,14 @@ async function uploadFileToS3(
   causeId: string,
   type: "cover" | "additional",
 ): Promise<string> {
+  if (file.type.startsWith("video/")) {
+    throw new Error(
+      "Video files must be uploaded via presigned URL before submit",
+    );
+  }
+
   const ext = file.name.split('.').pop() || 'file';
   const uniqueId = Math.random().toString(36).substring(2, 15);
-  const isVideo = file.type.startsWith("video/");
   
   try {
     const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
@@ -139,7 +144,7 @@ async function uploadFileToS3(
       entityType: "causes",
       userId,
       entityId: causeId,
-      mediaType: isVideo ? "videos" : "images",
+      mediaType: "images",
       filename: `${uniqueId}_${type}.${ext}`,
     });
 

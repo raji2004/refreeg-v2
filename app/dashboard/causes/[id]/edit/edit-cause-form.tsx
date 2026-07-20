@@ -50,6 +50,12 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { sendCauseEditedEmail } from "@/services/mail";
 import { useToast } from "@/hooks/use-toast";
+import {
+  isVideoFile,
+  MAX_VIDEOS_PER_CAUSE,
+  validateGalleryVideo,
+} from "@/lib/media/video";
+import { resolveMultimediaForSubmit } from "@/lib/s3/upload-client";
 
 const Calendar = dynamic(
   () => import("@/components/ui/calendar").then((mod) => mod.Calendar),
@@ -85,6 +91,12 @@ const MultimediaCarousel = dynamic(
 
 const currencies = [{ id: "NGN", name: "Naira (₦)" }];
 const MAX_DURATION_DAYS = 180;
+
+const GALLERY_ACCEPT = {
+  "image/*": [],
+  "video/mp4": [".mp4"],
+  "video/webm": [".webm"],
+};
 
 type FormData = {
   title: string;
@@ -246,29 +258,62 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
       return;
     }
 
-    // Process and compress each file if it's an image
+    const existingVideoCount = (formData.multimedia || []).filter(isVideoFile)
+      .length;
+    const incomingVideos = files.filter((f) => f.type.startsWith("video/"));
+    if (existingVideoCount + incomingVideos.length > MAX_VIDEOS_PER_CAUSE) {
+      setErrors((prev) => ({
+        ...prev,
+        multimedia: `You can upload at most ${MAX_VIDEOS_PER_CAUSE} videos per cause`,
+      }));
+      return;
+    }
+
     const processedFiles: (File | string)[] = [];
     const { compressImage } = await import("@/utils/image-compression");
+    let videoSlot = existingVideoCount;
 
     for (const file of files) {
+      if (file.type.startsWith("video/")) {
+        const videoError = await validateGalleryVideo(file, {
+          existingVideoCount: videoSlot,
+        });
+        if (videoError) {
+          setErrors((prev) => ({ ...prev, multimedia: videoError }));
+          return;
+        }
+        videoSlot += 1;
+        processedFiles.push(file);
+        continue;
+      }
+
       if (file.type.startsWith("image/")) {
         try {
-          const compressed = await compressImage(file, 1000, 0.7);
-          processedFiles.push(compressed);
+          processedFiles.push(await compressImage(file, 1000, 0.7));
         } catch (err) {
           console.error("Compression error:", err);
           processedFiles.push(file);
         }
       } else {
-        processedFiles.push(file);
+        setErrors((prev) => ({
+          ...prev,
+          multimedia: "Only images (any) and videos (MP4/WebM) are allowed",
+        }));
+        return;
       }
     }
 
     const currentSize =
       formData.multimedia && formData.multimedia.length > 0
-        ? formData.multimedia.reduce((acc, item) => acc + (typeof item === "string" ? 0 : item.size), 0)
+        ? formData.multimedia.reduce(
+            (acc, item) => acc + (typeof item === "string" ? 0 : item.size),
+            0,
+          )
         : 0;
-    const newFilesSize = processedFiles.reduce((acc, item) => acc + (typeof item === "string" ? 0 : item.size), 0);
+    const newFilesSize = processedFiles.reduce(
+      (acc, item) => acc + (typeof item === "string" ? 0 : item.size),
+      0,
+    );
 
     if (currentSize + newFilesSize > MAX_TOTAL_SIZE) {
       setErrors((prev) => ({
@@ -369,6 +414,11 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
     };
 
     try {
+      causeData.multimedia = await resolveMultimediaForSubmit(
+        formData.multimedia || [],
+        { entityType: "causes", entityId: cause.id },
+      );
+
       await updateCause(cause.id, user.id, causeData);
       await sendCauseEditedEmail({
         causeName: formData.title,
@@ -384,9 +434,13 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
       router.push("/dashboard/causes");
     } catch (error: any) {
       console.error("Error updating cause:", error);
+      const message =
+        error?.message ||
+        "Something went wrong while saving your changes. Please try again.";
+      setErrors((prev) => ({ ...prev, multimedia: message }));
       toast({
         title: "Update Failed",
-        description: error.message || "Something went wrong while saving your changes. Please try again.",
+        description: message,
         variant: "destructive",
       });
     }
@@ -840,14 +894,16 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                     Multimedia Gallery
                   </Label>
                   <span className="text-xs text-brand font-medium bg-brand/5 px-2 py-1 rounded-full border border-brand/10">
-                    Max 5 files
+                    Max 5 files · 2 videos (MP4/WebM, 50MB, 90s)
                   </span>
                 </div>
                 <div className="glass-panel p-6 rounded-2xl border-brand/10">
                   <ImageUpload
                     onUpload={(files) => handleMultimediaUpload(files)}
                     maxFiles={5 - (formData.multimedia?.length || 0)}
-                    description="Upload up to 5 files"
+                    accept={GALLERY_ACCEPT}
+                    enableCrop={false}
+                    description="Images or short videos (MP4/WebM, max 50MB / 90s each)"
                   />
                   {errors.multimedia && (
                     <p className="mt-2 text-sm text-red-500 font-medium">

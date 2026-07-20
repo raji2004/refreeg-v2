@@ -15,13 +15,38 @@ import {
 } from "./dialog";
 import { Slider } from "./slider";
 
+type AcceptProp = string | Record<string, string[]>;
+
 interface ImageUploadProps {
   onUpload: (files: File[]) => void;
   maxFiles?: number;
-  accept?: string;
+  accept?: AcceptProp;
   description?: string;
   enableCrop?: boolean;
   cropAspect?: number;
+}
+
+function toDropzoneAccept(
+  accept?: AcceptProp,
+): Record<string, string[]> | undefined {
+  if (!accept) return undefined;
+  if (typeof accept !== "string") return accept;
+  const parts = accept
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const result: Record<string, string[]> = {};
+  for (const part of parts) {
+    result[part] = [];
+  }
+  return result;
+}
+
+function acceptAllowsImages(accept: AcceptProp): boolean {
+  if (typeof accept === "string") {
+    return accept.split(",").some((p) => p.trim().startsWith("image"));
+  }
+  return Object.keys(accept).some((k) => k.startsWith("image"));
 }
 
 const DEFAULT_CROP_ASPECT = 16 / 9;
@@ -178,7 +203,7 @@ export function ImageUpload({
     (file: File) =>
       enableCrop &&
       maxFiles === 1 &&
-      accept.startsWith("image") &&
+      acceptAllowsImages(accept) &&
       file.type.startsWith("image/"),
     [accept, enableCrop, maxFiles],
   );
@@ -222,7 +247,7 @@ export function ImageUpload({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     maxFiles,
-    accept: accept ? { [accept]: [] } : undefined,
+    accept: toDropzoneAccept(accept),
   });
 
   const handleCropConfirm = React.useCallback(async () => {
@@ -393,7 +418,7 @@ export function ImageUpload({
                 ? "Upload a single file"
                 : `Upload up to ${maxFiles} files`)}
           </p>
-          {enableCrop && maxFiles === 1 && accept.startsWith("image") && (
+          {enableCrop && maxFiles === 1 && acceptAllowsImages(accept) && (
             <p className="text-[11px] text-muted-foreground/80">
               You can crop the image before it is added.
             </p>
