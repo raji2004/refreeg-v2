@@ -76,7 +76,8 @@ export default function MultimediaCarousel({
 
     return media.map((url) => ({
       type:
-        url.match(/\.(mp4|mov|webm)$/i) ||
+        url.match(/\.(mp4|mov|webm)(\?|$)/i) ||
+        url.includes("/videos/") ||
         url.match(/(youtube\.com|youtu\.be|tiktok\.com|drive\.google\.com)/i)
           ? "video"
           : "image",
