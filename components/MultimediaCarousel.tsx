@@ -9,6 +9,8 @@ interface MediaItem {
   url: string;
 }
 
+type ImageOrientation = "portrait" | "landscape";
+
 export default function MultimediaCarousel({
   media,
   coverImage,
@@ -19,6 +21,9 @@ export default function MultimediaCarousel({
   title: string;
 }) {
   const [current, setCurrent] = useState(0);
+  const [imageOrientations, setImageOrientations] = useState<
+    Record<number, ImageOrientation>
+  >({});
 
   // Helpers to normalize and extract IDs from popular providers
   const extractYouTubeId = (rawUrl: string): string | null => {
@@ -92,6 +97,20 @@ export default function MultimediaCarousel({
   const goTo = (idx: number) => setCurrent(idx);
   const prev = () => setCurrent((c) => (c === 0 ? slides.length - 1 : c - 1));
   const next = () => setCurrent((c) => (c === slides.length - 1 ? 0 : c + 1));
+
+  const rememberImageOrientation = (
+    idx: number,
+    image: HTMLImageElement,
+  ) => {
+    const orientation: ImageOrientation =
+      image.naturalHeight > image.naturalWidth ? "portrait" : "landscape";
+
+    setImageOrientations((orientations) =>
+      orientations[idx] === orientation
+        ? orientations
+        : { ...orientations, [idx]: orientation },
+    );
+  };
 
   const renderMediaItem = (item: MediaItem, idx: number) => {
     if (item.type === "video") {
@@ -179,13 +198,29 @@ export default function MultimediaCarousel({
     } else {
       // Image
       return (
-        <div className="relative h-full w-full flex items-center justify-center bg-slate-950">
+        <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-slate-950">
+          <Image
+            src={item.url}
+            alt=""
+            fill
+            sizes="(max-width: 768px) 100vw, 80vw"
+            className="pointer-events-none scale-110 object-cover opacity-45 blur-3xl saturate-110"
+            aria-hidden="true"
+            unoptimized={isProxyMediaUrl(item.url)}
+          />
+          <div
+            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/10 via-slate-950/20 to-slate-950/35"
+            aria-hidden="true"
+          />
           <Image
             src={item.url}
             alt={`${title} - Image ${idx + 1}`}
             fill
             sizes="(max-width: 768px) 100vw, 80vw"
-            className="object-contain"
+            className="z-10 object-contain drop-shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
+            onLoad={(event) =>
+              rememberImageOrientation(idx, event.currentTarget)
+            }
             unoptimized={isProxyMediaUrl(item.url)}
           />
         </div>
@@ -193,9 +228,19 @@ export default function MultimediaCarousel({
     }
   };
 
+  const currentSlide = slides[current];
+  const mobileAspectClass =
+    currentSlide?.type === "video"
+      ? "aspect-video"
+      : imageOrientations[current] === "portrait"
+        ? "aspect-[4/5]"
+        : "aspect-[4/3]";
+
   return (
     <div className="rounded-[22px] border border-slate-200/80 bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3">
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[18px] bg-black sm:aspect-[16/10] lg:aspect-[16/9]">
+      <div
+        className={`relative w-full overflow-hidden rounded-[18px] bg-black transition-[aspect-ratio] duration-300 sm:aspect-[4/3] ${mobileAspectClass}`}
+      >
         {slides.map((item, idx) => (
           <div
             key={idx}
@@ -212,7 +257,7 @@ export default function MultimediaCarousel({
           <>
             <button
               onClick={prev}
-              className="absolute left-4 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white shadow-[0_12px_28px_rgba(15,23,42,0.38)] backdrop-blur-md transition-all duration-200 hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-0"
+              className="absolute left-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white shadow-[0_12px_28px_rgba(15,23,42,0.38)] backdrop-blur-md transition-all duration-200 hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-0 sm:left-4 sm:h-11 sm:w-11"
               aria-label="Previous"
               type="button"
             >
@@ -220,7 +265,7 @@ export default function MultimediaCarousel({
             </button>
             <button
               onClick={next}
-              className="absolute right-4 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white shadow-[0_12px_28px_rgba(15,23,42,0.38)] backdrop-blur-md transition-all duration-200 hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-0"
+              className="absolute right-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white shadow-[0_12px_28px_rgba(15,23,42,0.38)] backdrop-blur-md transition-all duration-200 hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-0 sm:right-4 sm:h-11 sm:w-11"
               aria-label="Next"
               type="button"
             >
