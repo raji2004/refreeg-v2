@@ -879,7 +879,11 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                       </div>
                     )}
                   </div>
-                  <ImageUpload onUpload={handleImageUpload} maxFiles={1} />
+                  <ImageUpload
+                    onUpload={handleImageUpload}
+                    maxFiles={1}
+                    autoNormalize
+                  />
                   {errors.coverImage && (
                     <p className="mt-2 text-sm text-red-500 font-medium">
                       {errors.coverImage}
@@ -904,6 +908,7 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                     accept={GALLERY_ACCEPT}
                     enableCrop={false}
                     description="Images or short videos (MP4/WebM, max 50MB / 90s each)"
+                    autoNormalize
                   />
                   {errors.multimedia && (
                     <p className="mt-2 text-sm text-red-500 font-medium">
