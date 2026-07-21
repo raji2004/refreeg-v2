@@ -1091,6 +1091,7 @@ export default function CreateCauseForm() {
                   <ImageUpload
                     onUpload={(files) => handleImageUpload(files)}
                     maxFiles={1}
+                    autoNormalize
                   />
                   {formData.coverImage && (
                     <div className="mt-4 relative group aspect-video rounded-xl overflow-hidden shadow-sm border border-brand/10">
@@ -1141,6 +1142,7 @@ export default function CreateCauseForm() {
                     accept={GALLERY_ACCEPT}
                     enableCrop={false}
                     description="Images or short videos (MP4/WebM, max 50MB / 90s each)"
+                    autoNormalize
                   />
                   {errors.multimedia && (
                     <p className="mt-2 text-sm text-red-500 font-medium">
