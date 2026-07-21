@@ -530,13 +530,16 @@ export default function CreateCauseForm() {
       video_links: formData.videoLinks,
     };
     try {
-      await sendCauseUnderReviewEmail({
+      await createCause(user.id, causeData);
+      localStorage.removeItem("causeDraft");
+
+      sendCauseUnderReviewEmail({
         causeName: causeData.title,
         reviewTimeframe: "3-5 business days",
         dashboardUrl: `${window.location.origin}/dashboard/causes`,
+      }).catch((error) => {
+        console.error("Failed to send cause-under-review email:", error);
       });
-      await createCause(user.id, causeData);
-      localStorage.removeItem("causeDraft");
 
       router.push("/dashboard/causes");
     } catch (error) {
