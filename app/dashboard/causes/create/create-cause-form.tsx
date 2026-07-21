@@ -84,9 +84,21 @@ import {
 } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  isVideoFile,
+  MAX_VIDEOS_PER_CAUSE,
+  validateGalleryVideo,
+} from "@/lib/media/video";
+import { resolveMultimediaForSubmit } from "@/lib/s3/upload-client";
 
 const currencies = [{ id: "NGN", name: "Naira (₦)" }];
 const MAX_DURATION_DAYS = 180;
+
+const GALLERY_ACCEPT = {
+  "image/*": [],
+  "video/mp4": [".mp4"],
+  "video/webm": [".webm"],
+};
 
 type FormData = {
   title: string;
@@ -99,7 +111,7 @@ type FormData = {
   sections: { heading: string; description: string }[];
   startDate: Date | undefined;
   endDate: Date | undefined;
-  multimedia: File[];
+  multimedia: (File | string)[];
   videoLinks: string[];
 };
 
@@ -127,7 +139,7 @@ type CauseFormData = {
   sections: { heading: string; description: string }[];
   startDate: Date | undefined;
   endDate: Date | undefined;
-  multimedia: File[];
+  multimedia: (File | string)[];
   video_links: string[];
 };
 
@@ -196,7 +208,10 @@ const validateForm = (formData: FormData): FormErrors => {
   const MAX_TOTAL_SIZE = 100 * 1024 * 1024;
   const totalSize =
     formData.multimedia && formData.multimedia.length > 0
-      ? formData.multimedia.reduce((acc, file) => acc + file.size, 0)
+      ? formData.multimedia.reduce(
+          (acc, file) => acc + (typeof file === "string" ? 0 : file.size),
+          0,
+        )
       : 0;
   if (totalSize > MAX_TOTAL_SIZE) {
     errors.multimedia = "Total multimedia size must be less than 100MB";
@@ -392,21 +407,53 @@ export default function CreateCauseForm() {
       return;
     }
 
+    const existingVideoCount = (formData.multimedia || []).filter(isVideoFile)
+      .length;
+    const incomingVideos = files.filter((f) => f.type.startsWith("video/"));
+    if (existingVideoCount + incomingVideos.length > MAX_VIDEOS_PER_CAUSE) {
+      setErrors((prev) => ({
+        ...prev,
+        multimedia: `You can upload at most ${MAX_VIDEOS_PER_CAUSE} videos per cause`,
+      }));
+      return;
+    }
+
     try {
       const { compressImage } = await import("@/utils/image-compression");
+      const processedFiles: File[] = [];
+      let videoSlot = existingVideoCount;
 
-      const processedFiles = await Promise.all(
-        files.map(async (file) => {
-          if (file.type.startsWith("image/")) {
-            return await compressImage(file, 1000, 0.7);
+      for (const file of files) {
+        if (file.type.startsWith("video/")) {
+          const videoError = await validateGalleryVideo(file, {
+            existingVideoCount: videoSlot,
+          });
+          if (videoError) {
+            setErrors((prev) => ({ ...prev, multimedia: videoError }));
+            return;
           }
-          return file;
-        }),
-      );
+          videoSlot += 1;
+          processedFiles.push(file);
+          continue;
+        }
+
+        if (file.type.startsWith("image/")) {
+          processedFiles.push(await compressImage(file, 1000, 0.7));
+        } else {
+          setErrors((prev) => ({
+            ...prev,
+            multimedia: "Only images (any) and videos (MP4/WebM) are allowed",
+          }));
+          return;
+        }
+      }
 
       const currentSize =
         formData.multimedia && formData.multimedia.length > 0
-          ? formData.multimedia.reduce((acc, file) => acc + file.size, 0)
+          ? formData.multimedia.reduce(
+              (acc, file) => acc + (typeof file === "string" ? 0 : file.size),
+              0,
+            )
           : 0;
       const newFilesSize = processedFiles.reduce(
         (acc, file) => acc + file.size,
@@ -432,13 +479,10 @@ export default function CreateCauseForm() {
         setErrors((prev) => ({ ...prev, multimedia: undefined }));
       }
     } catch (error) {
-      console.error("Multimedia compression error:", error);
-      // Fallback to original files
-      setFormData((prev) => ({
+      console.error("Multimedia processing error:", error);
+      setErrors((prev) => ({
         ...prev,
-        multimedia: Array.isArray(prev.multimedia)
-          ? [...prev.multimedia, ...files]
-          : [...files],
+        multimedia: "Failed to process media. Please try again.",
       }));
     }
   };
@@ -530,6 +574,13 @@ export default function CreateCauseForm() {
       video_links: formData.videoLinks,
     };
     try {
+      // Videos go direct to S3 via presign; images stay as Files for server action
+      const draftEntityId = crypto.randomUUID();
+      causeData.multimedia = await resolveMultimediaForSubmit(
+        formData.multimedia || [],
+        { entityType: "causes", entityId: draftEntityId },
+      );
+
       await createCause(user.id, causeData);
       localStorage.removeItem("causeDraft");
 
@@ -544,6 +595,13 @@ export default function CreateCauseForm() {
       router.push("/dashboard/causes");
     } catch (error) {
       console.error("Error submitting cause:", error);
+      setErrors((prev) => ({
+        ...prev,
+        multimedia:
+          error instanceof Error
+            ? error.message
+            : "Failed to upload media or create cause",
+      }));
     } finally {
       setSubmitting(false);
     }
@@ -1076,14 +1134,16 @@ export default function CreateCauseForm() {
                     Multimedia Gallery
                   </Label>
                   <span className="w-fit rounded-full border border-brand/10 bg-brand/5 px-2 py-1 text-xs font-medium text-brand">
-                    Max 5 files
+                    Max 5 files · 2 videos (MP4/WebM, 50MB, 90s)
                   </span>
                 </div>
                 <div className="glass-panel rounded-2xl border-brand/10 p-4 sm:p-6">
                   <ImageUpload
                     onUpload={(files) => handleMultimediaUpload(files)}
                     maxFiles={5 - (formData.multimedia?.length || 0)}
-                    description="Upload up to 5 files"
+                    accept={GALLERY_ACCEPT}
+                    enableCrop={false}
+                    description="Images or short videos (MP4/WebM, max 50MB / 90s each)"
                   />
                   {errors.multimedia && (
                     <p className="mt-2 text-sm text-red-500 font-medium">
@@ -1181,7 +1241,9 @@ export default function CreateCauseForm() {
                   <MultimediaCarousel
                     media={[
                       ...(formData.multimedia?.map((file) =>
-                        URL.createObjectURL(file),
+                        typeof file === "string"
+                          ? file
+                          : URL.createObjectURL(file),
                       ) || []),
                       ...(formData.videoLinks || []),
                     ]}
