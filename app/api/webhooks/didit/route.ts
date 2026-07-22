@@ -8,10 +8,65 @@ import {
   sendKycRejectedEmail,
   sendKycSubmissionAdminNotification,
 } from "@/services/mail";
+import crypto from "crypto";
+
+/**
+ * Verifies the HMAC-SHA256 signature from Didit's webhook.
+ * Didit sends the signature in the `X-Signature-V2` header.
+ * Returns true if the signature is valid, false otherwise.
+ */
+function verifyDiditWebhookSignature(
+  rawBody: string,
+  signatureHeader: string | null
+): boolean {
+  const webhookSecret = process.env.DIDIT_WEBHOOK_SECRET;
+
+  // If no secret is configured, skip verification (dev/test environments)
+  if (!webhookSecret) {
+    console.warn(
+      "[Didit Webhook] DIDIT_WEBHOOK_SECRET not set — skipping signature verification"
+    );
+    return true;
+  }
+
+  if (!signatureHeader) {
+    console.error("[Didit Webhook] Missing X-Signature-V2 header");
+    return false;
+  }
+
+  const expectedSignature = crypto
+    .createHmac("sha256", webhookSecret)
+    .update(rawBody, "utf-8")
+    .digest("hex");
+
+  // Constant-time comparison to prevent timing attacks
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(signatureHeader, "hex"),
+      Buffer.from(expectedSignature, "hex")
+    );
+  } catch {
+    // If the signature header is not valid hex, comparison fails
+    return false;
+  }
+}
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    // Read the raw body for signature verification
+    const rawBody = await request.text();
+    const signatureHeader = request.headers.get("x-signature-v2");
+
+    // Verify HMAC signature
+    if (!verifyDiditWebhookSignature(rawBody, signatureHeader)) {
+      console.error("[Didit Webhook] Invalid signature — rejecting request");
+      return NextResponse.json(
+        { error: "Invalid webhook signature" },
+        { status: 401 }
+      );
+    }
+
+    const body = JSON.parse(rawBody);
     console.log("Didit webhook received:", body);
 
     const sessionId = body.session_id;

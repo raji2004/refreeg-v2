@@ -80,6 +80,16 @@ export default function ApiSidebar({
       ],
     },
     {
+      title: "Mobile KYC API",
+      items: [
+        { id: "Mobile KYC Overview", label: "Overview & Flow", icon: <BookOpen className="w-4 h-4" /> },
+        { id: "Start Mobile KYC", label: "Start Verification", icon: <Terminal className="w-4 h-4" /> },
+        { id: "Check Mobile KYC Status", label: "Check Status", icon: <ShieldCheck className="w-4 h-4" /> },
+        { id: "Mobile KYC Session", label: "Session Decision", icon: <Terminal className="w-4 h-4" /> },
+        { id: "Legacy Mobile KYC", label: "Legacy KYC Data", icon: <Box className="w-4 h-4" /> },
+      ],
+    },
+    {
       title: "Resources",
       items: [
         { id: "API Playground", label: "Interactive Playground", icon: <Play className="w-4 h-4" /> },
