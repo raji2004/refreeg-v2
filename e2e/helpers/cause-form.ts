@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import { minimalJpeg } from "./files";
+import { minimalJpeg, shortWebm } from "./files";
 
 export async function pickCalendarDay(
   page: Page,
@@ -33,6 +33,7 @@ async function selectCategory(page: Page, category: string) {
 async function advanceFromStep1(page: Page) {
   const continueBtn = page.getByRole("button", { name: /^Continue$/i }).last();
   await continueBtn.scrollIntoViewIfNeeded();
+  await expect(continueBtn).toBeInViewport({ timeout: 10_000 });
   await continueBtn.click();
 
   const storyHeading = page.locator("#section-heading-0");
@@ -44,12 +45,29 @@ async function advanceFromStep1(page: Page) {
       .allTextContents();
     console.log("Step 1 validation errors:", errors);
     await page.waitForTimeout(500);
+    await continueBtn.scrollIntoViewIfNeeded();
     await continueBtn.click();
     await expect(storyHeading).toBeVisible({ timeout: 15_000 });
   }
 }
 
-export async function fillCreateCauseWizard(
+/** Assert primary wizard CTAs are reachable on the current viewport (desktop + mobile). */
+export async function expectWizardActionReachable(
+  page: Page,
+  name: RegExp,
+) {
+  const btn = page.getByRole("button", { name }).last();
+  await btn.scrollIntoViewIfNeeded();
+  await expect(btn).toBeVisible({ timeout: 15_000 });
+  await expect(btn).toBeInViewport({ timeout: 10_000 });
+  await expect(btn).toBeEnabled({ timeout: 10_000 });
+  return btn;
+}
+
+/**
+ * Walk create-cause steps 1–3 and land on Visual Impact (media).
+ */
+export async function gotoCreateCauseVisualImpact(
   page: Page,
   opts: {
     title: string;
@@ -67,7 +85,6 @@ export async function fillCreateCauseWizard(
     goal = "250000",
   } = opts;
 
-  // Avoid stale draft overriding typed values mid-flow
   await page.evaluate(() => localStorage.removeItem("causeDraft"));
   await page.reload({ waitUntil: "domcontentloaded" });
 
@@ -75,7 +92,6 @@ export async function fillCreateCauseWizard(
     page.getByRole("heading", { name: /Launch Your Impact/i }),
   ).toBeVisible({ timeout: 30_000 });
 
-  // Step 1 — Basic Info
   await page.locator("#title").click();
   await page.locator("#title").fill("");
   await page.locator("#title").pressSequentially(title, { delay: 15 });
@@ -83,9 +99,7 @@ export async function fillCreateCauseWizard(
 
   await page.locator("#summary").fill(summary);
   await page.locator("#location").fill(location);
-
   await selectCategory(page, category);
-
   await page.locator("#goal").fill(goal);
   await expect(page.locator("#goal")).toHaveValue(goal);
 
@@ -93,18 +107,16 @@ export async function fillCreateCauseWizard(
   await advanceFromStep1(page);
   console.log("Step 1 (Basic Info) complete.");
 
-  // Step 2 — Story
   await page.locator("#section-heading-0").fill("The Challenge");
   await page
     .locator("#section-description-0")
     .fill(
       "This is an automated E2E story section describing why this cause matters to the community and how funds will help.",
     );
-  await page.getByRole("button", { name: /^Continue$/i }).last().click();
+  await (await expectWizardActionReachable(page, /^Continue$/i)).click();
   await expect(page.locator("#start-date")).toBeVisible({ timeout: 20_000 });
   console.log("Step 2 (Story) complete.");
 
-  // Step 3 — Timeline (defaults to today → +7 days; only pick if empty)
   await expect(page.locator("#start-date")).toBeVisible({ timeout: 20_000 });
   const startLabel = (await page.locator("#start-date").innerText()).trim();
   const endLabel = (await page.locator("#end-date").innerText()).trim();
@@ -119,41 +131,128 @@ export async function fillCreateCauseWizard(
     await pickCalendarDay(page, "end-date", Math.min(end.getDate(), 28));
   }
 
-  // Confirm dates are set before continuing
   await expect(page.locator("#start-date")).not.toContainText(/Pick a date/i);
   await expect(page.locator("#end-date")).not.toContainText(/Pick a date/i);
 
-  await page.getByRole("button", { name: /^Continue$/i }).last().click();
+  await (await expectWizardActionReachable(page, /^Continue$/i)).click();
   await expect(
     page.getByRole("heading", { name: /Visual Impact/i }),
   ).toBeVisible({ timeout: 20_000 });
-  console.log("Step 3 (Timeline) complete.");
+  console.log("Step 3 (Timeline) complete — on Visual Impact.");
+}
 
-  // Step 4 — Media (react-dropzone input is often hidden)
+export async function uploadCoverImage(page: Page) {
   const fileInput = page.locator('input[type="file"]').first();
   await fileInput.waitFor({ state: "attached", timeout: 15_000 });
   await fileInput.setInputFiles(minimalJpeg("e2e-cover.jpg"));
 
-  // ImageUpload may open a crop dialog — confirm if present
-  const applyCrop = page.getByRole("button", {
-    name: /Apply|Save|Confirm|Done|Crop/i,
-  });
-  if (await applyCrop.first().isVisible({ timeout: 5_000 }).catch(() => false)) {
-    await applyCrop.first().click();
+  // Cover upload opens Crop Image dialog. Prefer "Use Original" — Apply Crop
+  // often fails on the tiny 1×1 E2E JPEG, and on mobile the footer can be flaky.
+  const useOriginal = page.getByRole("button", { name: /^Use Original$/i });
+  const applyCrop = page.getByRole("button", { name: /^Apply Crop$/i });
+
+  try {
+    await useOriginal.waitFor({ state: "visible", timeout: 12_000 });
+    await useOriginal.scrollIntoViewIfNeeded();
+    await useOriginal.click();
+  } catch {
+    if (await applyCrop.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await applyCrop.scrollIntoViewIfNeeded();
+      await applyCrop.click();
+    }
   }
+
+  await expect(page.getByRole("heading", { name: /Crop Image/i }))
+    .toBeHidden({ timeout: 20_000 })
+    .catch(() => undefined);
 
   await expect(
     page.locator('img[alt="Cover Preview"], img[src^="blob:"]').first(),
   ).toBeVisible({ timeout: 20_000 });
-  await page.getByRole("button", { name: /^Continue$/i }).last().click();
-  await expect(page.getByRole("button", { name: /Launch Cause/i })).toBeVisible({
-    timeout: 20_000,
+}
+
+/**
+ * Uploads a short WebM into the multimedia gallery (2nd file input on Visual Impact).
+ * Scrolls the gallery into view first (mobile nav / sticky footers can cover it).
+ */
+export async function uploadGalleryVideo(page: Page) {
+  await page.getByText(/Multimedia Gallery/i).first().scrollIntoViewIfNeeded();
+
+  const galleryInput = page.locator('input[type="file"]').nth(1);
+  await galleryInput.waitFor({ state: "attached", timeout: 15_000 });
+  await galleryInput.setInputFiles(shortWebm("e2e-clip.webm"));
+
+  const videoPreview = page.locator("video").first();
+  await expect(videoPreview).toBeVisible({ timeout: 20_000 });
+  await videoPreview.scrollIntoViewIfNeeded();
+  await expect(page.getByText(/Video/i).first()).toBeVisible({
+    timeout: 10_000,
   });
+  console.log("Gallery video preview visible.");
+  return videoPreview;
+}
+
+/**
+ * Mock presigned S3 upload so Launch works without live bucket CORS.
+ * Images still go through the server action path.
+ */
+export async function mockVideoPresignUpload(page: Page) {
+  await page.route("**/api/s3/presign", async (route) => {
+    const body = route.request().postDataJSON() as {
+      filename?: string;
+      contentType?: string;
+    };
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        uploadUrl: "https://e2e-mock-s3.local/put",
+        key: `uploads/causes/e2e/videos/${body?.filename || "clip.webm"}`,
+        contentType: body?.contentType || "video/webm",
+        expiresIn: 900,
+      }),
+    });
+  });
+
+  await page.route("https://e2e-mock-s3.local/**", async (route) => {
+    await route.fulfill({ status: 200, body: "" });
+  });
+}
+
+export async function fillCreateCauseWizard(
+  page: Page,
+  opts: {
+    title: string;
+    summary?: string;
+    location?: string;
+    category?: string;
+    goal?: string;
+    includeGalleryVideo?: boolean;
+    mockVideoUpload?: boolean;
+  },
+) {
+  const { includeGalleryVideo = false, mockVideoUpload = false, ...rest } =
+    opts;
+
+  if (mockVideoUpload || includeGalleryVideo) {
+    await mockVideoPresignUpload(page);
+  }
+
+  await gotoCreateCauseVisualImpact(page, rest);
+  await uploadCoverImage(page);
+
+  if (includeGalleryVideo) {
+    await uploadGalleryVideo(page);
+  }
+
+  await (await expectWizardActionReachable(page, /^Continue$/i)).click();
+  await expectWizardActionReachable(page, /Launch Cause/i);
   console.log("Step 4 (Media) complete.");
 
-  // Step 5 — Review & Launch
-  await expect(page.getByText(title).first()).toBeVisible({ timeout: 15_000 });
-  await page.getByRole("button", { name: /Launch Cause/i }).click();
+  await expect(page.getByText(rest.title).first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await (await expectWizardActionReachable(page, /Launch Cause/i)).click();
   console.log("Submitted Launch Cause.");
 }
 

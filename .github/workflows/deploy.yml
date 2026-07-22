@@ -1,0 +1,253 @@
+name: Deploy Refreeg v2
+
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  # ── Test & lint gate ──────────────────────────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Unit tests
+        run: pnpm run test:no-coverage
+
+  # ── Build & deploy ────────────────────────────────────────────────────────
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+
+    steps:
+      # ── 1. Source ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Build (on the generous GitHub runner, not on your small EC2) ───
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install all dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: pnpm run build
+
+      # ── 3. Prune to production-only node_modules (save disk on EC2) ───────
+      - name: Prune dev dependencies
+        run: pnpm prune --prod
+
+      # ── 4. Package the minimal artifact ───────────────────────────────────
+      - name: Create deployment tarball
+        run: |
+          TARBALL="deploy-${{ github.sha }}.tar.gz"
+          tar -czf "$TARBALL" \
+            .next \
+            public \
+            package.json \
+            pnpm-lock.yaml \
+            node_modules \
+            ecosystem.config.js
+          echo "Tarball size: $(du -sh "$TARBALL" | cut -f1)"
+          echo "TARBALL=$TARBALL" >> "$GITHUB_ENV"
+
+      # ── 5. Generate secrets.env from GitHub Secrets (never committed) ─────
+      - name: Create secrets env file
+        env:
+          DIDIT_WEBHOOK_SECRET: ${{ secrets.DIDIT_WEBHOOK_SECRET }}
+          DIDIT_WORKFLOW_ID: ${{ secrets.DIDIT_WORKFLOW_ID }}
+          DIDIT_CLIENT_SECRET: ${{ secrets.DIDIT_CLIENT_SECRET }}
+          DIDIT_CLIENT_ID: ${{ secrets.DIDIT_CLIENT_ID }}
+          NEXT_PUBLIC_BREET_ENV: ${{ secrets.NEXT_PUBLIC_BREET_ENV }}
+          NEXT_PUBLIC_BREET_WEBHOOK_SECRET: ${{ secrets.NEXT_PUBLIC_BREET_WEBHOOK_SECRET }}
+          BREET_APP_SECRET: ${{ secrets.BREET_APP_SECRET }}
+          BREET_APP_ID: ${{ secrets.BREET_APP_ID }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AUTH_TRUST_HOST: ${{ secrets.AUTH_TRUST_HOST }}
+          AUTH_URL: ${{ secrets.AUTH_URL }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          CONVERTKIT_API_KEY: ${{ secrets.CONVERTKIT_API_KEY }}
+          CONVERTKIT_FORM_ID: ${{ secrets.CONVERTKIT_FORM_ID }}
+          CONVERTKIT_API_SECRET: ${{ secrets.CONVERTKIT_API_SECRET }}
+          NEXT_PUBLIC_REFREEG_SERVICE_FEE: ${{ secrets.NEXT_PUBLIC_REFREEG_SERVICE_FEE }}
+          PAYSTACK_SECRET_KEY: ${{ secrets.PAYSTACK_SECRET_KEY }}
+          NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY }}
+        run: |
+          cat > secrets.env <<EOF
+          DIDIT_WEBHOOK_SECRET=${DIDIT_WEBHOOK_SECRET}
+          DIDIT_WORKFLOW_ID=${DIDIT_WORKFLOW_ID}
+          DIDIT_CLIENT_SECRET=${DIDIT_CLIENT_SECRET}
+          DIDIT_CLIENT_ID=${DIDIT_CLIENT_ID}
+          NEXT_PUBLIC_BREET_ENV=${NEXT_PUBLIC_BREET_ENV}
+          NEXT_PUBLIC_BREET_WEBHOOK_SECRET=${NEXT_PUBLIC_BREET_WEBHOOK_SECRET}
+          BREET_APP_SECRET=${BREET_APP_SECRET}
+          BREET_APP_ID=${BREET_APP_ID}
+          AWS_S3_BUCKET=${AWS_S3_BUCKET}
+          AWS_REGION=${AWS_REGION}
+          AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+          AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+          AUTH_TRUST_HOST=${AUTH_TRUST_HOST}
+          AUTH_URL=${AUTH_URL}
+          AUTH_SECRET=${AUTH_SECRET}
+          DATABASE_URL=${DATABASE_URL}
+          DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+          GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+          EMAIL_FROM=${EMAIL_FROM}
+          SMTP_HOST=${SMTP_HOST}
+          SMTP_PASSWORD=${SMTP_PASSWORD}
+          SMTP_PORT=${SMTP_PORT}
+          SMTP_USER=${SMTP_USER}
+          CONVERTKIT_API_KEY=${CONVERTKIT_API_KEY}
+          CONVERTKIT_FORM_ID=${CONVERTKIT_FORM_ID}
+          CONVERTKIT_API_SECRET=${CONVERTKIT_API_SECRET}
+          NEXT_PUBLIC_REFREEG_SERVICE_FEE=${NEXT_PUBLIC_REFREEG_SERVICE_FEE}
+          PAYSTACK_SECRET_KEY=${PAYSTACK_SECRET_KEY}
+          NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=${NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY}
+          NODE_ENV=production
+          PORT=3000
+          API_PORT=4000
+          EOF
+          chmod 600 secrets.env
+
+      # ── 6. SSH Agent ───────────────────────────────────────────────────────
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Add EC2 host to known_hosts
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          chmod 600 ~/.ssh/known_hosts
+
+      # ── 7. Transfer artifacts to EC2 ──────────────────────────────────────
+      - name: Transfer artifacts to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          SSH_USER: ec2-user
+          APP_DIR: /home/ec2-user/refreeg
+        run: |
+          # Ensure the app/shared directories exist on the remote host
+          ssh ${{ env.SSH_USER }}@${{ env.EC2_HOST }} \
+            "mkdir -p ${{ env.APP_DIR }}/releases ${{ env.APP_DIR }}/shared/logs"
+
+          # Transfer the build tarball, secrets file, and both scripts
+          scp \
+            "$TARBALL" \
+            secrets.env \
+            ./scripts/remote-deploy.sh \
+            ./scripts/rollback.sh \
+            ./ecosystem.config.js \
+            ${{ env.SSH_USER }}@${{ env.EC2_HOST }}:${{ env.APP_DIR }}/
+
+      # ── 8. Run remote deploy script on EC2 ────────────────────────────────
+      - name: Deploy on EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          SSH_USER: ec2-user
+        run: |
+          ssh ${{ env.SSH_USER }}@${{ env.EC2_HOST }} \
+            "RELEASE_ID='${{ github.sha }}' TARBALL='$TARBALL' bash /home/ec2-user/refreeg/remote-deploy.sh"
+
+      # ── 9. Health check ───────────────────────────────────────────────────
+      - name: Health check
+        run: |
+          echo "Waiting 15 seconds for PM2 processes to fully start..."
+          sleep 15
+
+          check() {
+            url="$1"
+            for attempt in 1 2 3; do
+              status=$(curl -s -o /dev/null -w "%{http_code}" "$url" || echo "000")
+              echo "Attempt $attempt — $url — HTTP $status"
+              if [ "$status" -eq 200 ]; then
+                echo "✅ $url passed."
+                return 0
+              fi
+              echo "Retrying in 10 seconds..."
+              sleep 10
+            done
+            echo "❌ $url failed after 3 attempts."
+            return 1
+          }
+
+          check "http://www.refreeg.com/api/health" && frontend_ok=1 || frontend_ok=0
+          check "http://apps.refreeg.com/api/health" && api_ok=1 || api_ok=0
+
+          if [ "$frontend_ok" -eq 1 ] && [ "$api_ok" -eq 1 ]; then
+            exit 0
+          fi
+          exit 1
+
+      # ── 10. Status badge note ─────────────────────────────────────────────
+      - name: Status badge
+        if: always()
+        run: |
+          echo "Add this badge to your README.md:"
+          echo "![Deploy](https://github.com/${{ github.repository }}/actions/workflows/deploy.yml/badge.svg)"
+
+      # ── 11. Rollback on any failure ───────────────────────────────────────
+      - name: Rollback on failure
+        if: failure()
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          SSH_USER: ec2-user
+        run: |
+          echo "🔄 Deployment failed — triggering rollback..."
+          ssh ${{ env.SSH_USER }}@${{ env.EC2_HOST }} \
+            "bash /home/ec2-user/refreeg/rollback.sh"
+
+      # ── 12. Cleanup local secrets ──────────────────────────────────────────
+      - name: Remove local secrets file
+        if: always()
+        run: rm -f secrets.env

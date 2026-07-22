@@ -1,15 +1,13 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageIcon, Play } from "lucide-react";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 interface MediaItem {
   type: "image" | "video";
   url: string;
 }
-
-type ImageOrientation = "portrait" | "landscape";
 
 export default function MultimediaCarousel({
   media,
@@ -21,9 +19,7 @@ export default function MultimediaCarousel({
   title: string;
 }) {
   const [current, setCurrent] = useState(0);
-  const [imageOrientations, setImageOrientations] = useState<
-    Record<number, ImageOrientation>
-  >({});
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   // Helpers to normalize and extract IDs from popular providers
   const extractYouTubeId = (rawUrl: string): string | null => {
@@ -75,42 +71,56 @@ export default function MultimediaCarousel({
     return null;
   };
 
-  // Convert string array to MediaItem array
-  const processMedia = (): MediaItem[] => {
-    if (media.length === 0) return [];
+  const slides = useMemo(() => {
+    const urls = [coverImage, ...media].filter(
+      (url): url is string => Boolean(url?.trim()),
+    );
 
-    return media.map((url) => ({
+    // The cause screen used to pass the cover as both `coverImage` and the
+    // media fallback. De-duplicate here so every consumer gets sane controls.
+    return Array.from(new Set(urls)).map<MediaItem>((url) => ({
       type:
-        url.match(/\.(mp4|mov|webm)(\?|$)/i) ||
+        url.match(/\.(mp4|mov|webm)(?:[?#].*)?$/i) ||
         url.includes("/videos/") ||
         url.match(/(youtube\.com|youtu\.be|tiktok\.com|drive\.google\.com)/i)
           ? "video"
           : "image",
       url: getMediaUrl(url),
     }));
-  };
+  }, [coverImage, media]);
 
-  const mediaItems = processMedia();
-  const slides = coverImage
-    ? [{ type: "image" as const, url: getMediaUrl(coverImage) }, ...mediaItems]
-    : mediaItems;
+  useEffect(() => {
+    setCurrent((selected) => Math.min(selected, Math.max(slides.length - 1, 0)));
+  }, [slides.length]);
 
   const goTo = (idx: number) => setCurrent(idx);
-  const prev = () => setCurrent((c) => (c === 0 ? slides.length - 1 : c - 1));
-  const next = () => setCurrent((c) => (c === slides.length - 1 ? 0 : c + 1));
-
-  const rememberImageOrientation = (
-    idx: number,
-    image: HTMLImageElement,
-  ) => {
-    const orientation: ImageOrientation =
-      image.naturalHeight > image.naturalWidth ? "portrait" : "landscape";
-
-    setImageOrientations((orientations) =>
-      orientations[idx] === orientation
-        ? orientations
-        : { ...orientations, [idx]: orientation },
+  const previous = () =>
+    setCurrent((selected) =>
+      selected === 0 ? slides.length - 1 : selected - 1,
     );
+  const next = () =>
+    setCurrent((selected) =>
+      selected === slides.length - 1 ? 0 : selected + 1,
+    );
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    touchStart.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = touchStart.current;
+    const touch = event.changedTouches[0];
+    touchStart.current = null;
+
+    if (!start || slides.length < 2) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) < 45 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+
+    if (deltaX < 0) next();
+    else previous();
   };
 
   const renderMediaItem = (item: MediaItem, idx: number) => {
@@ -219,9 +229,6 @@ export default function MultimediaCarousel({
             fill
             sizes="(max-width: 768px) 100vw, 80vw"
             className="z-10 object-contain drop-shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
-            onLoad={(event) =>
-              rememberImageOrientation(idx, event.currentTarget)
-            }
             unoptimized={isProxyMediaUrl(item.url)}
           />
         </div>
@@ -230,17 +237,24 @@ export default function MultimediaCarousel({
   };
 
   const currentSlide = slides[current];
-  const mobileAspectClass =
-    currentSlide?.type === "video"
-      ? "aspect-video"
-      : imageOrientations[current] === "portrait"
-        ? "aspect-[4/5]"
-        : "aspect-[4/3]";
+
+  if (!currentSlide) {
+    return (
+      <div className="flex aspect-[4/3] items-center justify-center rounded-[18px] border border-dashed border-slate-300 bg-slate-50 text-slate-400">
+        <div className="text-center">
+          <ImageIcon className="mx-auto h-6 w-6" />
+          <p className="mt-2 text-sm">No campaign media yet</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="rounded-[22px] border border-slate-200/80 bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3">
+    <div className="rounded-[22px] border border-slate-200/80 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3">
       <div
-        className={`relative w-full overflow-hidden rounded-[18px] bg-black transition-[aspect-ratio] duration-300 sm:aspect-[4/3] ${mobileAspectClass}`}
+        className="relative mx-auto aspect-video w-full touch-pan-y overflow-hidden rounded-[18px] bg-slate-950"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         {slides.map((item, idx) => (
           <div
@@ -253,46 +267,85 @@ export default function MultimediaCarousel({
           </div>
         ))}
         <div className="pointer-events-none absolute inset-0 rounded-[18px] ring-1 ring-inset ring-black/10" />
-        {/* Navigation Buttons */}
         {slides.length > 1 && (
           <>
             <button
-              onClick={prev}
-              className="absolute left-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white shadow-[0_12px_28px_rgba(15,23,42,0.38)] backdrop-blur-md transition-all duration-200 hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-0 sm:left-4 sm:h-11 sm:w-11"
-              aria-label="Previous"
+              onClick={previous}
+              className="absolute left-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-slate-950/45 text-white shadow-lg backdrop-blur-md transition hover:bg-slate-950/65 sm:flex"
+              aria-label="Show previous media"
               type="button"
             >
-              <ChevronLeft className="h-5 w-5 stroke-[2.25]" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
             <button
               onClick={next}
-              className="absolute right-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white shadow-[0_12px_28px_rgba(15,23,42,0.38)] backdrop-blur-md transition-all duration-200 hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-0 sm:right-4 sm:h-11 sm:w-11"
-              aria-label="Next"
+              className="absolute right-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-slate-950/45 text-white shadow-lg backdrop-blur-md transition hover:bg-slate-950/65 sm:flex"
+              aria-label="Show next media"
               type="button"
             >
-              <ChevronRight className="h-5 w-5 stroke-[2.25]" />
+              <ChevronRight className="h-5 w-5" />
             </button>
+            <div className="absolute right-3 top-3 z-20 hidden rounded-full bg-slate-950/70 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md sm:block">
+              {current + 1} / {slides.length}
+            </div>
+            <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5 rounded-full bg-slate-950/35 px-2.5 py-2 backdrop-blur-sm sm:hidden">
+              {slides.map((item, idx) => (
+                <button
+                  key={`indicator-${item.url}-${idx}`}
+                  onClick={() => goTo(idx)}
+                  className={`h-2 rounded-full transition-all ${
+                    idx === current ? "w-5 bg-white" : "w-2 bg-white/60"
+                  }`}
+                  aria-label={`Show media ${idx + 1}`}
+                  aria-current={idx === current}
+                  type="button"
+                />
+              ))}
+            </div>
+            <span className="sr-only" aria-live="polite">
+              Showing media {current + 1} of {slides.length}. Swipe left or
+              right to browse.
+            </span>
           </>
         )}
-        {/* Indicators */}
-        {slides.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full bg-black/20 px-3 py-2 backdrop-blur-sm">
-            {slides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => goTo(idx)}
-                className={`h-2.5 rounded-full transition-all duration-300 ${
-                  idx === current
-                    ? "w-2.5 scale-125 bg-white"
-                    : "w-2.5 scale-100 bg-white/55 hover:bg-white/80"
-                }`}
-                aria-label={`Go to slide ${idx + 1}`}
-                type="button"
-              />
-            ))}
-          </div>
-        )}
       </div>
+
+      {slides.length > 1 && (
+        <div
+          className="mt-3 hidden gap-2 overflow-x-auto px-1 pb-1 sm:flex"
+          aria-label="Campaign media"
+        >
+          {slides.map((item, idx) => (
+            <button
+              key={`${item.url}-${idx}`}
+              onClick={() => goTo(idx)}
+              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-slate-100 transition sm:h-20 sm:w-20 ${
+                idx === current
+                  ? "border-blue-600 ring-2 ring-blue-100"
+                  : "border-transparent opacity-70 hover:opacity-100"
+              }`}
+              aria-label={`Show ${item.type} ${idx + 1} of ${slides.length}`}
+              aria-current={idx === current}
+              type="button"
+            >
+              {item.type === "image" ? (
+                <Image
+                  src={item.url}
+                  alt=""
+                  fill
+                  sizes="80px"
+                  className="object-cover"
+                  unoptimized={isProxyMediaUrl(item.url)}
+                />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center bg-slate-900 text-white">
+                  <Play className="h-5 w-5 fill-current" />
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

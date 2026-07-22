@@ -24,6 +24,7 @@ interface ImageUploadProps {
   description?: string;
   enableCrop?: boolean;
   cropAspect?: number;
+  autoNormalize?: boolean;
 }
 
 function toDropzoneAccept(
@@ -86,6 +87,73 @@ const loadImage = (src: string) =>
     image.onerror = reject;
     image.src = src;
   });
+
+const normalizeImageToAspect = async (
+  file: File,
+  aspect: number,
+): Promise<File> => {
+  const src = await readFileAsDataUrl(file);
+  const image = await loadImage(src);
+  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 16 / 9;
+  const outputWidth = 1600;
+  const outputHeight = Math.round(outputWidth / safeAspect);
+  const canvas = document.createElement("canvas");
+  canvas.width = outputWidth;
+  canvas.height = outputHeight;
+
+  const context = canvas.getContext("2d");
+  if (!context) return file;
+
+  // Fill the fixed frame without discarding any of the original image. The
+  // softened backdrop makes portrait and square uploads feel intentional.
+  const coverScale = Math.max(
+    outputWidth / image.naturalWidth,
+    outputHeight / image.naturalHeight,
+  );
+  const backdropWidth = image.naturalWidth * coverScale * 1.08;
+  const backdropHeight = image.naturalHeight * coverScale * 1.08;
+  context.save();
+  context.filter = "blur(32px) brightness(0.68)";
+  context.drawImage(
+    image,
+    (outputWidth - backdropWidth) / 2,
+    (outputHeight - backdropHeight) / 2,
+    backdropWidth,
+    backdropHeight,
+  );
+  context.restore();
+
+  context.fillStyle = "rgba(15, 23, 42, 0.14)";
+  context.fillRect(0, 0, outputWidth, outputHeight);
+
+  const containScale = Math.min(
+    outputWidth / image.naturalWidth,
+    outputHeight / image.naturalHeight,
+  );
+  const imageWidth = image.naturalWidth * containScale;
+  const imageHeight = image.naturalHeight * containScale;
+  context.drawImage(
+    image,
+    (outputWidth - imageWidth) / 2,
+    (outputHeight - imageHeight) / 2,
+    imageWidth,
+    imageHeight,
+  );
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/jpeg", 0.9);
+  });
+  if (!blob) return file;
+
+  return new File(
+    [blob],
+    `${file.name.replace(/\.[^/.]+$/, "")}-16x9.jpg`,
+    {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    },
+  );
+};
 
 const getInitialCropRect = (): CropRect => ({
   x: 20,
@@ -184,12 +252,14 @@ export function ImageUpload({
   description,
   enableCrop = true,
   cropAspect = DEFAULT_CROP_ASPECT,
+  autoNormalize = false,
 }: ImageUploadProps) {
   const [pendingFile, setPendingFile] = React.useState<File | null>(null);
   const [cropSource, setCropSource] = React.useState<string | null>(null);
   const [zoom, setZoom] = React.useState([1]);
   const [cropRect, setCropRect] = React.useState<CropRect>(getInitialCropRect);
   const [isCropping, setIsCropping] = React.useState(false);
+  const [isNormalizing, setIsNormalizing] = React.useState(false);
   const [isDragging, setIsDragging] = React.useState(false);
   const previewFrameRef = React.useRef<HTMLDivElement | null>(null);
   const dragStateRef = React.useRef<{
@@ -226,6 +296,26 @@ export function ImageUpload({
         return;
       }
 
+      if (autoNormalize) {
+        setIsNormalizing(true);
+        try {
+          const normalizedFiles = await Promise.all(
+            acceptedFiles.map((file) =>
+              file.type.startsWith("image/")
+                ? normalizeImageToAspect(file, cropAspect)
+                : Promise.resolve(file),
+            ),
+          );
+          onUpload(normalizedFiles);
+        } catch (error) {
+          console.error("Failed to normalize uploaded image:", error);
+          onUpload(acceptedFiles);
+        } finally {
+          setIsNormalizing(false);
+        }
+        return;
+      }
+
       if (shouldCropFile(firstFile)) {
         try {
           const preview = await readFileAsDataUrl(firstFile);
@@ -241,12 +331,13 @@ export function ImageUpload({
 
       onUpload(acceptedFiles);
     },
-    [onUpload, shouldCropFile],
+    [autoNormalize, cropAspect, onUpload, shouldCropFile],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     maxFiles,
+    disabled: isNormalizing,
     accept: toDropzoneAccept(accept),
   });
 
@@ -395,13 +486,15 @@ export function ImageUpload({
           isDragActive
             ? "border-primary bg-primary/5"
             : "border-muted-foreground/25"
-        }`}
+        } ${isNormalizing ? "cursor-wait opacity-70" : ""}`}
       >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center gap-2">
           <Icons.upload className="h-8 w-8 text-muted-foreground" />
           <div className="text-sm text-muted-foreground">
-            {isDragActive ? (
+            {isNormalizing ? (
+              <p>Formatting images to 16:9...</p>
+            ) : isDragActive ? (
               <p>Drop the files here ...</p>
             ) : (
               <p>
@@ -418,11 +511,16 @@ export function ImageUpload({
                 ? "Upload a single file"
                 : `Upload up to ${maxFiles} files`)}
           </p>
-          {enableCrop && maxFiles === 1 && acceptAllowsImages(accept) && (
+          {autoNormalize && acceptAllowsImages(accept) ? (
+            <p className="text-[11px] text-muted-foreground/80">
+              Images are automatically formatted to 16:9 without cropping out
+              content.
+            </p>
+          ) : enableCrop && maxFiles === 1 && acceptAllowsImages(accept) ? (
             <p className="text-[11px] text-muted-foreground/80">
               You can crop the image before it is added.
             </p>
-          )}
+          ) : null}
         </div>
       </div>
       <Dialog
