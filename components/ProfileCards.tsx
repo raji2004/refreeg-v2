@@ -116,7 +116,7 @@ export function DonationCard({ donation }: { donation: any }) {
         )}
       </div>
       {donation.message && (
-        <p className="mt-2 text-sm italic">"{donation.message}"</p>
+        <p className="mt-2 text-sm italic">&quot;{donation.message}&quot;</p>
       )}
     </div>
   );

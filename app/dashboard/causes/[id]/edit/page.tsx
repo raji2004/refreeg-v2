@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { hasBankDetails } from "@/actions/profile-actions";
 import { getCause } from "@/actions/cause-actions";
 import dynamic from "next/dynamic";
@@ -48,12 +49,12 @@ export default async function EditCausePage({
           You already have an edit request for this cause pending review. 
           Please wait for our team to approve or reject your previous changes before making more edits.
         </p>
-        <a
+        <Link
           href="/dashboard/causes"
           className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
         >
           Back to Causes
-        </a>
+        </Link>
       </div>
     );
   }
@@ -76,12 +77,12 @@ export default async function EditCausePage({
               Please add your bank details in the settings to edit your cause.
               This is required to receive donations.
             </p>
-            <a
+            <Link
               href="/dashboard/settings/bank"
               className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
             >
               Add Bank Details
-            </a>
+            </Link>
           </div>
         ) : (
           <EditCauseForm cause={cause} />

@@ -128,7 +128,7 @@ export default function ApiDocsPage() {
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
             <Search className="w-12 h-12 mb-4 opacity-20" />
             <p className="text-lg font-medium">
-              No results found for "{searchQuery}"
+              No results found for &quot;{searchQuery}&quot;
             </p>
           </div>
         );
@@ -140,7 +140,7 @@ export default function ApiDocsPage() {
               Search Results
             </h1>
             <p className="text-slate-500">
-              Found {filteredItems.length} matches for "{searchQuery}"
+              Found {filteredItems.length} matches for &quot;{searchQuery}&quot;
             </p>
           </header>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -30,7 +30,7 @@ function OurStory() {
               <p>
                 We believe that helping others should not be complicated. Yet
                 many people hesitate to donate because they fear their money
-                won't reach the right hands. We asked ourselves:
+                won&apos;t reach the right hands. We asked ourselves:
               </p>
 
               <ul className="space-y-2 pl-4 text-sm">

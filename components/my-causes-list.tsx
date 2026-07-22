@@ -91,19 +91,19 @@ export async function MyCausesList({ status, userId }: MyCausesListProps) {
         <h3 className="text-lg font-medium mb-2">No causes found</h3>
         {status === "all" ? (
           <p className="text-muted-foreground mb-4">
-            You haven't created any causes yet.
+            You haven&apos;t created any causes yet.
           </p>
         ) : status === "approved" ? (
           <p className="text-muted-foreground mb-4">
-            You don't have any active causes.
+            You don&apos;t have any active causes.
           </p>
         ) : status === "pending" ? (
           <p className="text-muted-foreground mb-4">
-            You don't have any causes pending approval.
+            You don&apos;t have any causes pending approval.
           </p>
         ) : (
           <p className="text-muted-foreground mb-4">
-            You don't have any rejected causes.
+            You don&apos;t have any rejected causes.
           </p>
         )}
         <Link href="/dashboard/causes/create">

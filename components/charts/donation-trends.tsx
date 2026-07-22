@@ -18,7 +18,7 @@ export function DonationTrends({ data }: DonationTrendsProps) {
             <Card>
                 <CardHeader>
                     <CardTitle>Donation Trends</CardTitle>
-                    <CardDescription>Track your cause's donation patterns over time</CardDescription>
+                    <CardDescription>Track your cause&apos;s donation patterns over time</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
@@ -35,7 +35,7 @@ export function DonationTrends({ data }: DonationTrendsProps) {
         <Card>
             <CardHeader>
                 <CardTitle>Donation Trends</CardTitle>
-                <CardDescription>Track your cause's donation patterns over time</CardDescription>
+                <CardDescription>Track your cause&apos;s donation patterns over time</CardDescription>
             </CardHeader>
             <CardContent>
                 <ChartContainer config={{

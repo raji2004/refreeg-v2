@@ -14,7 +14,7 @@ export default function SectionAiBlueprint() {
           The AI Integration Blueprint
         </h1>
         <p className="text-slate-500 text-lg leading-relaxed">
-          RefreeG is designed to be a "Headless Crowdfunding Engine." You can integrate 
+          RefreeG is designed to be a &quot;Headless Crowdfunding Engine.&quot; You can integrate 
           Large Language Models (LLMs) like GPT-4, Claude, or Gemini to autonomously 
           generate and manage campaigns.
         </p>

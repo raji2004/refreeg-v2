@@ -1279,7 +1279,7 @@ export default function CreateCauseForm() {
                     )}
                     {formData.summary && (
                       <p className="text-gray-500 italic mb-4 border-l-4 border-brand/20 pl-4 py-1">
-                        "{formData.summary}"
+                        &quot;{formData.summary}&quot;
                       </p>
                     )}
                     {formData.sections[0]?.heading && (

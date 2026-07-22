@@ -192,7 +192,7 @@ export default function VerifyOtpPage() {
               Verify your email
             </h1>
             <p className="text-slate-500 text-sm sm:text-base leading-relaxed px-2">
-              We've sent a 6-digit verification code to
+              We&apos;ve sent a 6-digit verification code to
               <br />
               <span className="text-[#002B5B] font-semibold break-all">
                 {email}
@@ -233,7 +233,7 @@ export default function VerifyOtpPage() {
 
           <div className="text-center">
             <p className="text-xs sm:text-sm text-slate-500">
-              Didn't receive the code?{" "}
+              Didn&apos;t receive the code?{" "}
               <button
                 onClick={handleResend}
                 disabled={isResending || cooldown > 0}

@@ -317,7 +317,7 @@ export default function ManagePetition() {
           <DialogHeader>
             <DialogTitle>Reject Petition</DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejecting "{rejectDialog.title}". This
+              Please provide a reason for rejecting &quot;{rejectDialog.title}&quot;. This
               will be shown to the user.
             </DialogDescription>
           </DialogHeader>

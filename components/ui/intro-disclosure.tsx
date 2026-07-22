@@ -386,7 +386,7 @@ function StepContent({
               htmlFor="skipNextTime"
               className="text-sm text-muted-foreground"
             >
-              Don't show this again
+              Don&apos;t show this again
             </label>
           </div>
         </motion.div>
@@ -427,11 +427,6 @@ export function IntroDisclosure({
     }
   }, [open, currentStep]);
 
-  // Early return if feature should be hidden
-  if (!isVisible || !open) {
-    return null;
-  }
-
   const handleNext = () => {
     setDirection(1);
     setCompletedSteps((prev) =>
@@ -451,6 +446,23 @@ export function IntroDisclosure({
       setCurrentStep(currentStep - 1);
     }
   };
+
+  const handleSwipe = (swipeDirection: "left" | "right") => {
+    if (swipeDirection === "left") {
+      handleNext();
+    } else {
+      handlePrevious();
+    }
+  };
+
+  // useSwipe must run unconditionally, before the early return below,
+  // so hook call order stays consistent across renders.
+  const { handleDragEnd } = useSwipe(handleSwipe);
+
+  // Early return if feature should be hidden
+  if (!isVisible || !open) {
+    return null;
+  }
 
   const handleSkip = () => {
     setOpen(false);
@@ -473,14 +485,6 @@ export function IntroDisclosure({
     setCurrentStep(index);
   };
 
-  const handleSwipe = (swipeDirection: "left" | "right") => {
-    if (swipeDirection === "left") {
-      handleNext();
-    } else {
-      handlePrevious();
-    }
-  };
-
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
       handleNext();
@@ -488,8 +492,6 @@ export function IntroDisclosure({
       handlePrevious();
     }
   };
-
-  const { handleDragEnd } = useSwipe(handleSwipe);
 
   if (isDesktop) {
     return (
@@ -657,7 +659,7 @@ export function IntroDisclosure({
                   htmlFor="skipNextTime"
                   className="text-sm text-muted-foreground"
                 >
-                  Don't show this again
+                  Don&apos;t show this again
                 </label>
               </div>
             </div>
