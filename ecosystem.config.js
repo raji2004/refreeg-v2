@@ -1,4 +1,5 @@
 /**
+ * PM2 Ecosystem Configuration for Refreeg v2
  *
  * Frontend (landing page) → port 3000  (http://www.refreeg.com)
  * API / App              → port 4000  (http://apps.refreeg.com)
