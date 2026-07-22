@@ -70,7 +70,7 @@ jobs:
 
       # ── 3. Prune to production-only node_modules (save disk on EC2) ───────
       - name: Prune dev dependencies
-        run: pnpm prune --prod
+        run: pnpm prune --prod --ignore-scripts
 
       # ── 4. Package the minimal artifact ───────────────────────────────────
       - name: Create deployment tarball
