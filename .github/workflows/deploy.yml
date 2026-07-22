@@ -118,6 +118,7 @@ jobs:
           NEXT_PUBLIC_REFREEG_SERVICE_FEE: ${{ secrets.NEXT_PUBLIC_REFREEG_SERVICE_FEE }}
           PAYSTACK_SECRET_KEY: ${{ secrets.PAYSTACK_SECRET_KEY }}
           NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY }}
+          HEALTH_CHECK_TOKEN: ${{ secrets.HEALTH_CHECK_TOKEN }}
         run: |
           cat > secrets.env <<EOF
           DIDIT_WEBHOOK_SECRET=${DIDIT_WEBHOOK_SECRET}
@@ -149,6 +150,7 @@ jobs:
           NEXT_PUBLIC_REFREEG_SERVICE_FEE=${NEXT_PUBLIC_REFREEG_SERVICE_FEE}
           PAYSTACK_SECRET_KEY=${PAYSTACK_SECRET_KEY}
           NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=${NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY}
+          HEALTH_CHECK_TOKEN=${HEALTH_CHECK_TOKEN}
           NODE_ENV=production
           PORT=3000
           API_PORT=4000
@@ -201,6 +203,8 @@ jobs:
 
       # ── 9. Health check ───────────────────────────────────────────────────
       - name: Health check
+        env:
+          HEALTH_CHECK_TOKEN: ${{ secrets.HEALTH_CHECK_TOKEN }}
         run: |
           echo "Waiting 15 seconds for PM2 processes to fully start..."
           sleep 15
@@ -208,7 +212,9 @@ jobs:
           check() {
             url="$1"
             for attempt in 1 2 3; do
-              status=$(curl -s -o /dev/null -w "%{http_code}" "$url" || echo "000")
+              status=$(curl -s -o /dev/null -w "%{http_code}" \
+                -H "x-health-check-token: ${HEALTH_CHECK_TOKEN}" \
+                "$url" || echo "000")
               echo "Attempt $attempt — $url — HTTP $status"
               if [ "$status" -eq 200 ]; then
                 echo "✅ $url passed."
