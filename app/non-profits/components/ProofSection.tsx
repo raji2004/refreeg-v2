@@ -133,7 +133,7 @@ export default function ProofSection() {
             className="text-base sm:text-lg md:text-xl text-gray-600 leading-relaxed max-w-lg text-center lg:text-left mx-auto lg:mx-0"
             variants={itemVariants}
           >
-            RefreeG's fraud-compliance system and blockchain-powered
+            RefreeG&apos;s fraud-compliance system and blockchain-powered
             transparency protect donors and elevate your credibility, so your
             nonprofit stands out as trustworthy and professional.
           </motion.p>

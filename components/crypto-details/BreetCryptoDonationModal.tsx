@@ -204,7 +204,7 @@ export function BreetCryptoDonationModal({
               <p className="text-xs text-slate-500 px-2 leading-relaxed">
                 Transfer stablecoin <strong>USDT</strong> straight to this
                 address. It will automatically liquidate to Naira (NGN) and
-                settle inside the organizer's bank account.
+                settle inside the organizer&apos;s bank account.
               </p>
             </div>
 

@@ -420,7 +420,7 @@ export default function ManageCauses() {
           <DialogHeader>
             <DialogTitle>Reject Cause</DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejecting "{rejectDialog.title}". This
+              Please provide a reason for rejecting &quot;{rejectDialog.title}&quot;. This
               will be shown to the user.
             </DialogDescription>
           </DialogHeader>

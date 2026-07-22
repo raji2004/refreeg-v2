@@ -113,7 +113,7 @@ export default function DeveloperApiReportsPage() {
                     {report.message && (
                       <div className="bg-slate-50 p-3 rounded-md border border-slate-100">
                         <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Additional Details</h4>
-                        <p className="text-sm text-slate-700 italic">"{report.message}"</p>
+                        <p className="text-sm text-slate-700 italic">&quot;{report.message}&quot;</p>
                       </div>
                     )}
                   </div>

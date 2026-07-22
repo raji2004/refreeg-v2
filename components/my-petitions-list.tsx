@@ -109,19 +109,19 @@ export async function MyPetitionsList({
         <h3 className="text-lg font-medium mb-2">No petitions found</h3>
         {status === "all" ? (
           <p className="text-muted-foreground mb-4">
-            You haven't created any petitions yet.
+            You haven&apos;t created any petitions yet.
           </p>
         ) : status === "approved" ? (
           <p className="text-muted-foreground mb-4">
-            You don't have any active petitions.
+            You don&apos;t have any active petitions.
           </p>
         ) : status === "pending" ? (
           <p className="text-muted-foreground mb-4">
-            You don't have any petitions pending approval.
+            You don&apos;t have any petitions pending approval.
           </p>
         ) : (
           <p className="text-muted-foreground mb-4">
-            You don't have any rejected petitions.
+            You don&apos;t have any rejected petitions.
           </p>
         )}
         <Link href="/dashboard/petitions/create">

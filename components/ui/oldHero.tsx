@@ -25,7 +25,7 @@ const Hero = () => {
       {/* hero caption  */}
       <div className="md:pt-10 mt-12 md:mt-0 text-center">
         <p className="text-[12px] md:text-[14px] font-semibold text-center text-foreground">
-          Building Africa's number 1 crowd funding platform.
+          Building Africa&apos;s number 1 crowd funding platform.
         </p>
         <p className="text-[65px] md:text-[100px] font-bold md:font-semibold  text-[#10467c]">
           RefreeG

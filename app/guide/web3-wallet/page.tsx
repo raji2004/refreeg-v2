@@ -59,7 +59,7 @@ export default function Web3WalletGuide() {
                       <p>Steps to install MetaMask:</p>
                       <ol className="list-decimal list-inside space-y-2">
                         <li>Visit the official MetaMask website</li>
-                        <li>Click "Download" and select your browser</li>
+                        <li>Click &quot;Download&quot; and select your browser</li>
                         <li>Add the extension to your browser</li>
                         <li>Create a new wallet or import an existing one</li>
                         <li>Follow the setup instructions</li>
