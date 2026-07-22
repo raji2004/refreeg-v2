@@ -43,7 +43,7 @@ export default function MoreOnBusiness() {
         className="text-base md:text-2xl lg:text-5xl font-semibold leading-relaxed"
         variants={itemVariants}
       >
-        We only succeed when you do. Our transparent fees fuel the platform's growth and maintain the integrity of your campaigns. Every transaction, every payout — visible, verifiable, and fair.
+        We only succeed when you do. Our transparent fees fuel the platform&apos;s growth and maintain the integrity of your campaigns. Every transaction, every payout — visible, verifiable, and fair.
       </motion.div>
       <motion.div variants={itemVariants}>
         <Button className="bg-[#FAFAFA] border text-black px-10 py-4 flex items-center gap-2 rounded-full">

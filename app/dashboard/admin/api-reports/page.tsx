@@ -209,7 +209,7 @@ export default function AdminApiReportsPage() {
                         Additional Details
                       </h4>
                       <p className="text-sm text-slate-700 italic">
-                        "{report.message}"
+                        &quot;{report.message}&quot;
                       </p>
                     </div>
                   )}
@@ -259,8 +259,8 @@ export default function AdminApiReportsPage() {
                             Takedown
                           </DialogTitle>
                           <DialogDescription>
-                            Are you sure you want to takedown the campaign "
-                            {report.api_campaigns?.title}"? This will cancel the
+                            Are you sure you want to takedown the campaign &quot;
+                            {report.api_campaigns?.title}&quot;? This will cancel the
                             campaign and notify the developer. This action
                             cannot be easily undone.
                           </DialogDescription>

@@ -132,7 +132,7 @@ export default function SectionWebhooks() {
             </h3>
             <p className="text-slate-300 text-[14px] leading-relaxed">
               Every webhook contains a <code className="text-blue-400 font-bold bg-white/5 px-2 py-0.5 rounded">X-RefreeG-Signature</code> header. 
-              Always verify this using your webhook's unique <span className="font-bold text-white px-1">signing_secret</span> to ensure the data is authentically from RefreeG.
+              Always verify this using your webhook&apos;s unique <span className="font-bold text-white px-1">signing_secret</span> to ensure the data is authentically from RefreeG.
             </p>
 
             <div className="bg-slate-950 p-6 rounded-2xl border border-white/5">

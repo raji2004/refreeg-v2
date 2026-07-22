@@ -100,7 +100,7 @@ export default function DiditKycForm({ userId }: DiditKycFormProps) {
                 3
               </span>
               <span className="leading-relaxed">
-                Complete a quick facial scan to verify it's you.
+                Complete a quick facial scan to verify it&apos;s you.
               </span>
             </li>
           </ul>

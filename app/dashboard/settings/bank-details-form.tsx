@@ -191,7 +191,7 @@ export function BankDetailsForm({ profile, user }: BankDetailsFormProps) {
             </div>
             {verificationFailed && (
               <p className="text-xs text-destructive">
-                We couldn't verify this account. Please enter the name exactly as it appears on your bank statement.
+                We couldn&apos;t verify this account. Please enter the name exactly as it appears on your bank statement.
               </p>
             )}
           </div>

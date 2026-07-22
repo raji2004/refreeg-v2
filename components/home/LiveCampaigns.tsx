@@ -210,7 +210,7 @@ export default function LiveCampaigns() {
         </div>
 
         <p className="text-gray-600 max-w-2xl text-base mb-8">
-          A glimpse of what's funding right now. Each campaign is verified,
+          A glimpse of what&apos;s funding right now. Each campaign is verified,
           every naira tracked from contribution to impact.
         </p>
 
