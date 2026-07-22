@@ -7,6 +7,8 @@ import { auth } from "@/lib/auth/auth";
  */
 const PUBLIC_API_PREFIXES = [
   "/api/auth", // NextAuth routes
+  "/api/health", // Monitoring health checks
+  "/api/error-report", // Same-origin browser error intake (rate limited)
   "/api/bot", // Developer API — authenticated via API keys
   "/api/mobile", // Mobile API - authenticated via custom JWT
   "/api/webhooks", // Incoming webhooks (Paystack, etc.)
@@ -19,9 +21,64 @@ const PUBLIC_API_PREFIXES = [
   "/api/s3", // S3 image proxy (public images)
 ];
 
-export default auth((req) => {
+const APP_ROUTE_PREFIXES = [
+  "/dashboard",
+  "/onboarding",
+  "/auth",
+  "/causes",
+  "/campaign",
+  "/petitions",
+  "/referrals",
+  "/api",
+  "/s",
+];
+
+const APP_HOST = "apps.refreeg.com";
+const WWW_HOST = "www.refreeg.com";
+const Test_HOST = "http://localhost:3000/";
+const HOST_NEUTRAL_API_PREFIXES = ["/api/health", "/api/error-report"];
+
+export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   const user = req.auth?.user;
+  const hostHeader =
+    req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+  const forwardedProto = req.headers.get("x-forwarded-proto") || "";
+  const targetProtocol = forwardedProto
+    ? `${forwardedProto.split(",")[0].trim()}:`
+    : req.nextUrl.protocol;
+  const host = hostHeader.split(":")[0].toLowerCase();
+
+  // ── 0. Domain split for single-process deployment ────────────────
+  // Keep landing pages on www and app features on apps while both hosts
+  // are served by the same Next.js process.
+  const isAppRoute = APP_ROUTE_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix),
+  );
+  const isHostNeutralApiRoute = HOST_NEUTRAL_API_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix),
+  );
+
+  if (host === WWW_HOST && isAppRoute && !isHostNeutralApiRoute) {
+    const target = req.nextUrl.clone();
+    target.hostname = APP_HOST;
+    target.protocol = targetProtocol;
+    target.port = req.nextUrl.port;
+    return NextResponse.redirect(target, 308);
+  }
+
+  if (
+    host === APP_HOST &&
+    !isAppRoute &&
+    !isHostNeutralApiRoute &&
+    pathname !== "/"
+  ) {
+    const target = req.nextUrl.clone();
+    target.hostname = WWW_HOST;
+    target.protocol = targetProtocol;
+    target.port = req.nextUrl.port;
+    return NextResponse.redirect(target, 308);
+  }
 
   // ── 1. Protect API routes ─────────────────────────────────────────
   // Return 401 for authenticated API routes when no session exists.
@@ -47,6 +104,15 @@ export default auth((req) => {
     const signInUrl = new URL("/auth/signin", req.url);
     signInUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(signInUrl);
+  }
+
+  // Admin authorization is enforced in each /dashboard/admin page (Node runtime).
+  // Middleware runs on Edge and cannot call Prisma.
+  if (pathname.startsWith("/dashboard/admin") && user) {
+    const role = (user as { role?: string }).role;
+    if (role === "user") {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
   }
 
   // ── 3. Redirect authenticated users away from auth pages ──────────

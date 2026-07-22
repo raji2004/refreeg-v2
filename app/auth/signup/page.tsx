@@ -23,11 +23,17 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loadingType, setLoadingType] = useState<"manual" | "google" | null>(null);
+  const [loadingType, setLoadingType] = useState<"manual" | "google" | null>(
+    null,
+  );
   const [refV1FromUrl, setRefV1FromUrl] = useState<string | null>(null);
   const [utmSource, setUtmSource] = useState<string | null>(null);
   const [utmMedium, setUtmMedium] = useState<string | null>(null);
   const [utmCampaign, setUtmCampaign] = useState<string | null>(null);
+
+  // ✅ Password validation state
+  const [passwordError, setPasswordError] = useState<string>("");
+  const [isPasswordValid, setIsPasswordValid] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -44,10 +50,27 @@ export default function SignUpPage() {
       if (medium) setUtmMedium(medium);
       if (campaign) setUtmCampaign(campaign);
 
-      // Prefetch the OTP page to make routing faster
       router.prefetch("/auth/verify-otp");
     }
   }, [router]);
+
+  const validatePassword = (value: string) => {
+    setPassword(value);
+
+    if (value.length === 0) {
+      setPasswordError("");
+      setIsPasswordValid(false);
+      return;
+    }
+
+    if (value.length < 8) {
+      setPasswordError("Password must be at least 8 characters long");
+      setIsPasswordValid(false);
+    } else {
+      setPasswordError("");
+      setIsPasswordValid(true);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -61,6 +84,15 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (password.length < 8) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 8 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (password !== confirmPassword) {
       toast({
@@ -82,14 +114,13 @@ export default function SignUpPage() {
       const signUpEmail = email.trim();
       const normalizedEmail = signUpEmail.toLowerCase();
 
-      // Initiate pending registration
       const response = await fetch("/api/auth/register-pending", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email: normalizedEmail, 
+        body: JSON.stringify({
+          email: normalizedEmail,
           password,
-          referralCode: refV1FromUrl
+          referralCode: refV1FromUrl,
         }),
       });
 
@@ -104,7 +135,6 @@ export default function SignUpPage() {
         description: "We've sent a 6-digit code to verify your email.",
       });
 
-      // Redirect to the OTP verification page
       router.push(
         `/auth/verify-otp?email=${encodeURIComponent(normalizedEmail)}`,
       );
@@ -156,9 +186,13 @@ export default function SignUpPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => validatePassword(e.target.value)}
                     required
-                    className="pr-10"
+                    className={cn(
+                      "pr-10",
+                      passwordError &&
+                        "border-red-500 focus-visible:ring-red-500",
+                    )}
                   />
                   <button
                     type="button"
@@ -171,6 +205,25 @@ export default function SignUpPage() {
                       <Eye className="h-4 w-4 text-gray-400" />
                     )}
                   </button>
+                </div>
+                {/* ✅ Show password requirements */}
+                <div className="mt-1">
+                  <p
+                    className={cn(
+                      "text-xs",
+                      password.length === 0
+                        ? "text-gray-400"
+                        : password.length < 8
+                          ? "text-red-500"
+                          : "text-green-600",
+                    )}
+                  >
+                    {password.length === 0
+                      ? "Password must be at least 8 characters"
+                      : password.length < 8
+                        ? `Password must be at least 8 characters (${password.length}/8)`
+                        : "✓ Password meets requirements"}
+                  </p>
                 </div>
               </LabelInputContainer>
             </div>
@@ -186,7 +239,12 @@ export default function SignUpPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    className="pr-10"
+                    className={cn(
+                      "pr-10",
+                      confirmPassword &&
+                        password !== confirmPassword &&
+                        "border-red-500 focus-visible:ring-red-500",
+                    )}
                   />
                   <button
                     type="button"
@@ -200,12 +258,29 @@ export default function SignUpPage() {
                     )}
                   </button>
                 </div>
+
+                {confirmPassword && (
+                  <p
+                    className={cn(
+                      "text-xs",
+                      password === confirmPassword
+                        ? "text-green-600"
+                        : "text-red-500",
+                    )}
+                  >
+                    {password === confirmPassword
+                      ? "✓ Passwords match"
+                      : "✗ Passwords do not match"}
+                  </p>
+                )}
               </LabelInputContainer>
             </div>
 
             <Button
               type="submit"
-              disabled={loadingType !== null}
+              disabled={
+                loadingType !== null || !isPasswordValid || password.length < 8
+              }
               className="group/btn relative h-10 w-full rounded-md font-medium text-white flex items-center justify-center gap-2"
             >
               {loadingType === "manual" ? (

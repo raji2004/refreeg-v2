@@ -61,7 +61,7 @@ export default function HopeTransparency() {
         variants={imageAnim}
       >
         <Image
-          src="/healthmap.png"
+          src="/healthmap.jpg"
           alt="Transparency That Builds Hope"
           width={800}
           height={400}

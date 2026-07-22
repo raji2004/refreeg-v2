@@ -10,6 +10,12 @@ import {
   Ban,
   Scale,
   CheckCircle,
+  Info,
+  Search,
+  RefreshCw,
+  Users,
+  Lock,
+  Globe,
 } from "lucide-react";
 import { useAnimateInView } from "@/hooks/use-animate-In-view";
 
@@ -55,12 +61,86 @@ const sections = [
     ],
   },
   {
+    icon: Search,
+    title: "3. Cause Vetting Process",
+    content: [
+      {
+        subtitle: "Verification Requirements",
+        text: "All causes created on RefreeG undergo a mandatory vetting process before going live. This includes identity verification of the cause creator, review of supporting documentation, and assessment of the cause's legitimacy and purpose.",
+      },
+      {
+        subtitle: "Due Diligence",
+        text: "RefreeG conducts due diligence on each cause to verify the authenticity of the campaign, the intended use of funds, and the credibility of the beneficiary. We reserve the right to request additional information or documentation at any time.",
+      },
+      {
+        subtitle: "Right to Reject",
+        text: "RefreeG reserves the right to reject, suspend, or remove any cause that fails our vetting process, contains false information, or appears fraudulent. We are committed to protecting our users from scams and malicious campaigns.",
+      },
+      {
+        subtitle: "Ongoing Monitoring",
+        text: "Causes may be subject to ongoing monitoring and review even after going live. We may investigate reports of misuse, fraud, or violation of these Terms and take appropriate action, including removing the cause or freezing funds.",
+      },
+      {
+        subtitle: "No Guarantee of Authenticity",
+        text: "While we take reasonable steps to vet all causes and prevent fraudulent activity, RefreeG cannot guarantee the absolute authenticity, truthfulness, or accuracy of every cause. We encourage users to exercise due diligence and report any suspicious activity immediately.",
+      },
+    ],
+  },
+  {
+    icon: RefreshCw,
+    title: "4. Fund Usage and Reporting",
+    content: [
+      {
+        subtitle: "Transparency Requirements",
+        text: "Cause creators are required to provide regular updates on how funds are being utilized. This includes sharing progress reports, receipts, and evidence of fund application to ensure donor trust and accountability.",
+      },
+      {
+        subtitle: "Update Schedule",
+        text: "Creators must provide updates at least once every 30 days or at key milestones of their project. Failure to provide timely updates may result in account suspension or removal of the cause from the platform.",
+      },
+      {
+        subtitle: "Proof of Impact",
+        text: "Donors have the right to request proof of fund utilization. Cause creators must maintain documentation and evidence of how funds are spent and make this available upon reasonable request.",
+      },
+      {
+        subtitle: "Consequences of Misuse",
+        text: "Misappropriation of funds, failure to provide updates, or inability to demonstrate proper use of donations may result in legal action, account termination, and reporting to relevant authorities.",
+      },
+    ],
+  },
+  {
+    icon: Info,
+    title: "5. Platform Nature and Funding",
+    content: [
+      {
+        subtitle: "Platform Role",
+        text: "RefreeG is a crowdfunding platform that provides a space for verified cause creators to present their campaigns to potential supporters. We are not an investor matching service, venture capital firm, or funding provider. We do not guarantee that any cause will receive contributions, reach its funding goal, or attract investors.",
+      },
+      {
+        subtitle: "No Investment Obligations",
+        text: "RefreeG does not have a board of investors, funding pool, or internal investment committee that reviews or donates to campaigns. We do not promise or imply that using our platform will result in funding from RefreeG or any affiliated entities. All contributions come from independent third-party donors and supporters.",
+      },
+      {
+        subtitle: "Campaign Success Disclaimer",
+        text: "Creating a cause on RefreeG does not guarantee that it will be funded. The success of any campaign depends on the appeal of the cause to the public and the promotional efforts of the campaign creator. We do not accept liability or responsibility for campaigns that fail to attract contributions.",
+      },
+      {
+        subtitle: "No Funding Obligation",
+        text: "RefreeG does not have an obligation to contribute to, invest in, or provide funding for any cause created on the platform. We are not responsible for sourcing investors or connecting cause creators with funding opportunities. Users should not create campaigns with the expectation that RefreeG will fund them.",
+      },
+      {
+        subtitle: "User Acknowledgment",
+        text: "By using RefreeG, you expressly acknowledge and agree that: (a) RefreeG is solely a technology platform; (b) we do not provide financial advice or investment services; (c) we are not an investor, lender, or funding source; and (d) any expectation of funding from RefreeG or its affiliates is unfounded and not part of this agreement.",
+      },
+    ],
+  },
+  {
     icon: Ban,
-    title: "3. Prohibited Activities",
+    title: "6. Prohibited Activities",
     content: [
       {
         subtitle: "Fraudulent Causes",
-        text: "Creating causes with false, misleading, or deceptive information is strictly prohibited. This includes misrepresenting the purpose, beneficiary, or urgency of a cause.",
+        text: "Creating causes with false, misleading, or deceptive information is strictly prohibited. This includes misrepresenting the purpose, beneficiary, or urgency of a cause, or implying that RefreeG has endorsed or will fund the cause.",
       },
       {
         subtitle: "Hate Speech and Discrimination",
@@ -78,7 +158,7 @@ const sections = [
   },
   {
     icon: DollarSign,
-    title: "4. Payments and Fees",
+    title: "7. Payments and Fees",
     content: [
       {
         subtitle: "Transaction Fees",
@@ -100,7 +180,7 @@ const sections = [
   },
   {
     icon: Shield,
-    title: "5. Platform Security",
+    title: "8. Platform Security",
     content: [
       {
         subtitle: "Account Security",
@@ -118,11 +198,11 @@ const sections = [
   },
   {
     icon: AlertCircle,
-    title: "6. Disclaimers and Limitations",
+    title: "9. Disclaimers and Limitations",
     content: [
       {
         subtitle: "No Guarantees",
-        text: "RefreeG does not guarantee that any cause will reach its funding goal or that donations will be used as intended. We provide a platform but cannot control individual user behavior.",
+        text: "RefreeG does not guarantee that any cause will reach its funding goal or that donations will be used exactly as intended. While we thoroughly vet all causes before they go live to minimize the risk of fraud and scams, we cannot control individual user behavior after funds are disbursed. However, we require regular updates from creators to maintain transparency and accountability.",
       },
       {
         subtitle: "Platform Availability",
@@ -134,13 +214,13 @@ const sections = [
       },
       {
         subtitle: "Limitation of Liability",
-        text: "RefreeG and its affiliates shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform, to the fullest extent permitted by law.",
+        text: "RefreeG and its affiliates shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform, to the fullest extent permitted by law, including but not limited to any loss of funding opportunities, failure to raise funds, or reliance on the platform as a funding source.",
       },
     ],
   },
   {
     icon: Scale,
-    title: "7. Dispute Resolution",
+    title: "10. Dispute Resolution",
     content: [
       {
         subtitle: "Governing Law",
@@ -158,7 +238,7 @@ const sections = [
   },
   {
     icon: FileText,
-    title: "8. Changes to Terms",
+    title: "11. Changes to Terms",
     content: [
       {
         subtitle: "Modifications",
@@ -230,8 +310,8 @@ export default function TermsOfService() {
             <p className="text-gray-700 leading-relaxed mb-4">
               These Terms of Service ("Terms") govern your access to and use of
               RefreeG's blockchain-powered crowdfunding platform. RefreeG
-              connects cause creators with supporters to make a positive impact
-              through transparent and secure fundraising.
+              connects verified cause creators with supporters to make a
+              positive impact through transparent and secure fundraising.
             </p>
             <p className="text-gray-700 leading-relaxed">
               By creating an account or using our services, you acknowledge that

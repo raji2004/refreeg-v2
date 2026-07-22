@@ -25,9 +25,9 @@ model State {
 }
 
 model City {
-  id           BigInt    @id
+  id           BigInt  @id
   name         String?
-  stateId      BigInt?   @map("state_id")
+  stateId      BigInt? @map("state_id")
   state_code   String?
   state_name   String?
   country_id   BigInt?

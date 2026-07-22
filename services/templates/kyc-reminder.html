@@ -1,259 +1,125 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Verify Your Identity on Refreeg</title>
+    <title>Don't forget to verify your account</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        line-height: 1.6;
-        color: #333;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background-color: #f4f7f6;
         margin: 0;
         padding: 0;
-        background-color: #f0f4f8;
       }
-
       .container {
         max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: #ffffff;
-      }
-
-      .header {
-        background-color: #003366;
-        color: white;
-        padding: 30px 20px;
-        text-align: center;
-      }
-
-      .header h1 {
-        color: #ffffff;
-        margin: 0;
-        font-size: 22px;
-      }
-
-      .content {
-        padding: 28px 24px;
-        background-color: #f9f9f9;
-      }
-
-      .benefits-box {
-        background-color: #ffffff;
-        border: 1px solid #e0e7ef;
-        border-radius: 10px;
-        padding: 20px 24px;
-        margin: 20px 0;
-      }
-
-      .benefits-box h3 {
-        color: #003366;
-        margin-top: 0;
-        margin-bottom: 14px;
-        font-size: 16px;
-      }
-
-      .benefit-item {
-        display: flex;
-        align-items: flex-start;
-        margin-bottom: 12px;
-        font-size: 14px;
-        color: #444;
-      }
-
-      .benefit-icon {
-        font-size: 18px;
-        margin-right: 10px;
-        min-width: 24px;
-      }
-
-      .highlight-banner {
-        background-color: #e8f4fd;
-        border-left: 4px solid #0066cc;
-        border-radius: 0 8px 8px 0;
-        padding: 14px 18px;
-        margin: 20px 0;
-        font-size: 14px;
-        color: #003366;
-      }
-
-      .cta-wrapper {
-        text-align: center;
-        margin: 28px 0 16px;
-      }
-
-      .cta-button {
-        display: inline-block;
-        background-color: #0066cc;
-        color: white !important;
-        padding: 14px 32px;
-        text-decoration: none;
+        margin: 40px auto;
+        background: #ffffff;
+        padding: 40px;
         border-radius: 8px;
-        font-weight: bold;
-        font-size: 16px;
-        box-shadow: 0 2px 6px rgba(0, 102, 204, 0.35);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
       }
-
-      .steps-box {
-        background-color: #ffffff;
-        border: 1px solid #e0e7ef;
-        border-radius: 10px;
-        padding: 18px 24px;
+      .logo {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .logo img {
+        max-height: 40px;
+        vertical-align: middle;
+        display: inline-block;
+      }
+      .brand-name {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333333;
+        vertical-align: middle;
+        display: inline-block;
+        margin-left: 10px;
+      }
+      h1 {
+        color: #333333;
+        font-size: 24px;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      p {
+        color: #555555;
+        font-size: 16px;
+        line-height: 1.6;
+        text-align: center;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #007bff;
+        color: #ffffff;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
         margin: 20px 0;
       }
-
-      .steps-box h3 {
-        color: #003366;
-        margin-top: 0;
-        font-size: 15px;
+      .btn-container {
+        text-align: center;
       }
-
-      .step {
-        display: flex;
-        align-items: flex-start;
+      .info-box {
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        color: #334155;
+        font-size: 16px;
+        text-align: left;
+        padding: 20px;
+        margin: 30px 0;
+        border-radius: 8px;
+      }
+      .info-box ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+      .info-box li {
         margin-bottom: 10px;
-        font-size: 14px;
       }
-
-      .step-num {
-        background-color: #003366;
-        color: white;
-        border-radius: 50%;
-        width: 22px;
-        height: 22px;
-        min-width: 22px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: bold;
-        margin-right: 10px;
-        margin-top: 1px;
-      }
-
       .footer {
         text-align: center;
-        padding: 20px;
-        font-size: 12px;
-        color: #777;
-        border-top: 3px solid #003366;
-        background-color: #f9f9f9;
+        margin-top: 40px;
+        font-size: 14px;
+        color: #999999;
+        border-top: 1px solid #eeeeee;
+        padding-top: 20px;
       }
     </style>
   </head>
-
   <body>
     <div class="container">
-      <div class="header">
-        <h1>🔐 Your Account is Unverified — Here's Why That Matters</h1>
+      <div class="logo">
+        <img src="https://www.refreeg.com/logo.svg" alt="RefreeG Logo" />
+        <span class="brand-name">RefreeG</span>
       </div>
-
-      <div class="content">
-        <p>Hi {{userName}},</p>
-
-        <p>
-          We noticed you haven't completed your
-          <strong>KYC (Know Your Customer) verification</strong> on Refreeg yet.
-          Verification is a quick and secure process that unlocks the full power
-          of your account.
-        </p>
-
-        <div class="highlight-banner">
-          💡 <strong>Verified users on Refreeg raise more, withdraw faster, and build greater trust with supporters.</strong>
-          It only takes a few minutes — and it's free.
-        </div>
-
-        <div class="benefits-box">
-          <h3>✅ Benefits of Completing Your KYC</h3>
-
-          <div class="benefit-item">
-            <span class="benefit-icon">💰</span>
-            <span>
-              <strong>Unlock payouts & withdrawals</strong> — Verified accounts can withdraw donated funds directly to their bank account without delays.
-            </span>
-          </div>
-
-          <div class="benefit-item">
-            <span class="benefit-icon">🛡️</span>
-            <span>
-              <strong>Earn a Verified badge</strong> — A visible trust signal on your profile and causes that tells donors you're legitimate.
-            </span>
-          </div>
-
-          <div class="benefit-item">
-            <span class="benefit-icon">🚀</span>
-            <span>
-              <strong>Create & publish causes</strong> — Some cause types are only available to verified users. Don't leave impact on the table.
-            </span>
-          </div>
-
-          <div class="benefit-item">
-            <span class="benefit-icon">🤝</span>
-            <span>
-              <strong>Build donor confidence</strong> — Donors are significantly more likely to give to verified creators and organisations.
-            </span>
-          </div>
-
-          <div class="benefit-item">
-            <span class="benefit-icon">⚡</span>
-            <span>
-              <strong>Faster donation processing</strong> — Verified accounts move money faster, getting support where it's needed most.
-            </span>
-          </div>
-
-          <div class="benefit-item">
-            <span class="benefit-icon">📋</span>
-            <span>
-              <strong>Stay compliant</strong> — KYC keeps Refreeg a safe, fraud-free platform for everyone — including your supporters.
-            </span>
-          </div>
-        </div>
-
-        <div class="steps-box">
-          <h3>How to Complete Your Verification (3 Easy Steps)</h3>
-          <div class="step">
-            <span class="step-num">1</span>
-            <span>Log in to your Refreeg account and go to <strong>Settings → KYC Verification</strong>.</span>
-          </div>
-          <div class="step">
-            <span class="step-num">2</span>
-            <span>Enter your personal details and upload a valid government-issued ID.</span>
-          </div>
-          <div class="step">
-            <span class="step-num">3</span>
-            <span>Submit and wait — our team reviews submissions within <strong>3–5 business days</strong>.</span>
-          </div>
-        </div>
-
-        <div class="cta-wrapper">
-          <a
-            href="{{kycUrl}}"
-            class="cta-button"
-            style="color: white; text-decoration: none"
-          >
-            Verify My Account Now →
-          </a>
-        </div>
-
-        <p>
-          Have questions? Reply to this email or visit our
-          <a href="https://www.refreeg.com/faq" style="color: #0066cc">FAQ page</a>.
-        </p>
-
-        <p>
-          With care,<br />
-          The Refreeg Team
-        </p>
+      <h1>Verify Your Identity</h1>
+      <p>Hi {{userName}},</p>
+      <p>
+        We noticed that your RefreeG account hasn't been fully verified yet.
+      </p>
+      
+      <div class="info-box">
+        <strong>Why verify your account?</strong>
+        <br/><br/>
+        <ul>
+          <li><strong>Platform Trust:</strong> Show supporters you are a verified creator, increasing engagement and donations.</li>
+          <li><strong>Unlock Features:</strong> Gain full access to campaign creation, wallet withdrawals, and premium tools.</li>
+          <li><strong>Fast Process:</strong> Our automated system verifies your identity securely in just a few minutes.</li>
+        </ul>
       </div>
+      
+      <div class="btn-container">
+        <a href="{{kycUrl}}" class="btn">Verify Now</a>
+      </div>
+      
+      <p>
+        Verifying is fast, secure, and helps keep our community safe. If you have any questions, please contact our support team at <a href="mailto:refreegcorrespondence@gmail.com" style="color: #007bff; text-decoration: none;">refreegcorrespondence@gmail.com</a>.
+      </p>
 
       <div class="footer">
-        <p>
-          You received this email because your Refreeg account does not yet have
-          a verified identity. If you've already submitted your KYC, please
-          disregard this message.
-        </p>
-        <p>© {{currentYear}} RefreeG. All rights reserved.</p>
+        &copy; {{currentYear}} RefreeG. All rights reserved.
       </div>
     </div>
   </body>

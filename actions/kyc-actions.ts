@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { KycVerification, KycStatus } from "@/types/kyc-types";
 import { logAdminActivity } from "@/actions/database-actions";
@@ -14,211 +15,6 @@ import {
   sendKycReminderEmail,
 } from "@/services/mail";
 
-export async function uploadKycDocument(
-  userId: string,
-  file: File,
-  documentType: string,
-  personalData: {
-    fullName: string;
-    dob: string;
-    phone: string;
-    address: string;
-    city: string;
-    state: string;
-    postal: string;
-    country: string;
-  },
-): Promise<{ documentUrl: string; error: string | null }> {
-  try {
-    // Check for existing KYC record using Prisma
-    const existingKyc = await prisma.kyc_verifications.findFirst({
-      where: { user_id: userId },
-      orderBy: { created_at: "desc" },
-    });
-
-    if (existingKyc) {
-      if (existingKyc.status === "approved") {
-        return { documentUrl: "", error: "You are already verified." };
-      }
-
-      const fileExt = file.name.split(".").pop();
-
-      const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
-      if (!allowedTypes.includes(file.type)) {
-        return {
-          documentUrl: "",
-          error: "Invalid file type. Please upload a JPEG, PNG, or PDF file.",
-        };
-      }
-
-      const maxSize = 5 * 1024 * 1024;
-      if (file.size > maxSize) {
-        return {
-          documentUrl: "",
-          error: "File size too large. Maximum size is 5MB.",
-        };
-      }
-
-      // Use S3 for storage upload
-      let fileName = "";
-      try {
-        const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
-        const s3Key = generateS3Key({
-          entityType: "kyc",
-          userId,
-          entityId: existingKyc.id,
-          mediaType: "documents",
-          filename: `${userId}_${Date.now()}.${fileExt}`,
-        });
-        const buffer = Buffer.from(await file.arrayBuffer());
-        await uploadToS3(buffer, s3Key, file.type);
-        fileName = s3Key;
-      } catch (uploadError: any) {
-        console.error("Error uploading document:", uploadError);
-        return { documentUrl: "", error: uploadError.message };
-      }
-
-      // Update existing KYC record using Prisma
-      await prisma.kyc_verifications.update({
-        where: { id: existingKyc.id },
-        data: {
-          document_type: documentType,
-          document_url: fileName,
-          status: "pending",
-          verification_notes: "Resubmitted for review",
-          full_name: personalData.fullName,
-          dob: personalData.dob,
-          phone: personalData.phone,
-          address: personalData.address,
-          city: personalData.city,
-          state: personalData.state,
-          postal: personalData.postal,
-          country: personalData.country,
-          updated_at: new Date(),
-        },
-      });
-
-      revalidatePath("/dashboard/settings/kyc");
-      revalidatePath(`/dashboard/admin/users/kyc/${userId}`);
-
-      try {
-        const profile = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { email: true },
-        });
-
-        if (profile?.email) {
-          await sendKycSubmittedEmail(profile.email, personalData.fullName);
-        }
-
-        const baseUrl =
-          process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
-        const kycReviewUrl = `${baseUrl}/dashboard/admin/users/kyc/${userId}`;
-        // Send notification in background - do not await
-        sendKycSubmissionAdminNotification(
-          profile?.email || "",
-          personalData.fullName,
-          userId,
-          kycReviewUrl,
-        ).catch((err) => console.error("Background notification error:", err));
-      } catch (emailError) {
-        console.error("Error sending KYC submission email:", emailError);
-      }
-
-      return { documentUrl: fileName, error: null };
-    } else {
-      const fileExt = file.name.split(".").pop();
-
-      const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
-      if (!allowedTypes.includes(file.type)) {
-        return {
-          documentUrl: "",
-          error: "Invalid file type. Please upload a JPEG, PNG, or PDF file.",
-        };
-      }
-
-      const maxSize = 5 * 1024 * 1024;
-      if (file.size > maxSize) {
-        return {
-          documentUrl: "",
-          error: "File size too large. Maximum size is 5MB.",
-        };
-      }
-
-      const kycId = crypto.randomUUID();
-      // Use S3 for storage upload
-      let fileName = "";
-      try {
-        const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
-        const s3Key = generateS3Key({
-          entityType: "kyc",
-          userId,
-          entityId: kycId,
-          mediaType: "documents",
-          filename: `${userId}_${Date.now()}.${fileExt}`,
-        });
-        const buffer = Buffer.from(await file.arrayBuffer());
-        await uploadToS3(buffer, s3Key, file.type);
-        fileName = s3Key;
-      } catch (uploadError: any) {
-        console.error("Error uploading document:", uploadError);
-        return { documentUrl: "", error: uploadError.message };
-      }
-      
-      // Insert new KYC record using Prisma
-      await prisma.kyc_verifications.create({
-        data: {
-          id: kycId,
-          user_id: userId,
-          document_type: documentType,
-          document_url: fileName,
-          status: "pending",
-          verification_notes: "Awaiting admin review",
-          full_name: personalData.fullName,
-          dob: personalData.dob,
-          phone: personalData.phone,
-          address: personalData.address,
-          city: personalData.city,
-          state: personalData.state,
-          postal: personalData.postal,
-          country: personalData.country,
-        },
-      });
-
-      revalidatePath("/dashboard/settings/kyc");
-      revalidatePath(`/dashboard/admin/users/kyc/${userId}`);
-
-      try {
-        const profile = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { email: true },
-        });
-
-        if (profile?.email) {
-          await sendKycSubmittedEmail(profile.email, personalData.fullName);
-        }
-
-        const baseUrl =
-          process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
-        const kycReviewUrl = `${baseUrl}/dashboard/admin/users/kyc/${userId}`;
-        // Send notification in background - do not await
-        sendKycSubmissionAdminNotification(
-          profile?.email || "",
-          personalData.fullName,
-          userId,
-          kycReviewUrl,
-        ).catch((err) => console.error("Background notification error:", err));
-      } catch (emailError) {
-        console.error("Error sending KYC submission email:", emailError);
-      }
-
-      return { documentUrl: fileName, error: null };
-    }
-  } catch (error) {
-    console.error("Error in uploadKycDocument:", error);
-    return { documentUrl: "", error: "Failed to process document" };
-  }
-}
 
 export async function getVerificationStatus(
   userId: string,
@@ -231,7 +27,7 @@ export async function getVerificationStatus(
 
     if (data?.document_url) {
       // Use S3 proxy for generating the URL
-      if (!data.document_url.startsWith("http")) {
+      if (!data.document_url.startsWith("http") && !data.document_url.startsWith("/api/s3/image")) {
         (data as any).document_url = `/api/s3/image?key=${encodeURIComponent(data.document_url)}`;
       }
     }
@@ -249,6 +45,60 @@ export async function getVerificationStatus(
             : JSON.stringify(error) || "Failed to get status",
     };
   }
+}
+
+type PendingReferralRow = {
+  id_v1: string;
+  referrer_id_v1: string;
+};
+
+export async function issueReferralRewardOnKycApproval(refereeUserId: string) {
+  const referrals = await prisma.$queryRaw<PendingReferralRow[]>(Prisma.sql`
+    SELECT id_v1, referrer_id_v1
+    FROM referrals_v1
+    WHERE referee_id_v1 = CAST(${refereeUserId} AS uuid)
+      AND reward_status_v1 = 'PENDING'
+    ORDER BY created_at_v1 DESC
+    LIMIT 1
+  `);
+
+  const referral = referrals[0];
+  if (!referral?.referrer_id_v1) {
+    return;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const lockedReferralCount = await tx.$executeRaw(Prisma.sql`
+      UPDATE referrals_v1
+      SET
+        reward_status_v1 = 'ISSUED',
+        kyc_verified_v1 = true,
+        rewarded_at_v1 = NOW(),
+        reward_v1 = '+5 pts'
+      WHERE id_v1 = CAST(${referral.id_v1} AS uuid)
+        AND reward_status_v1 = 'PENDING'
+    `);
+
+    if (lockedReferralCount === 0) {
+      return;
+    }
+
+    await tx.user.update({
+      where: { id: referral.referrer_id_v1 },
+      data: {
+        total_points: { increment: 5 },
+      },
+    });
+
+    await tx.rewardTransaction.create({
+      data: {
+        userId: referral.referrer_id_v1,
+        amount: 5,
+        transactionType: "referral_bonus",
+        status: "completed",
+      },
+    });
+  });
 }
 
 export async function updateVerificationStatus(
@@ -321,6 +171,15 @@ export async function updateVerificationStatus(
           where: { id: verification.user_id },
           data: { isVerified: true },
         });
+
+        try {
+          await issueReferralRewardOnKycApproval(verification.user_id);
+        } catch (referralError) {
+          console.error(
+            "[KYC] Referral reward failed after approval:",
+            referralError,
+          );
+        }
       } else if (status === "rejected") {
         await prisma.user.update({
           where: { id: verification.user_id },

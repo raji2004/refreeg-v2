@@ -21,7 +21,7 @@ export default function Statistics() {
           color: "blue",
           text: "Over 1,000 registered donors",
         },
-        { icon: CreditCard, color: "green", text: "Over $2,000 donated" },
+        { icon: CreditCard, color: "green", text: "Over ₦2,000 donated" },
         {
           icon: FileText,
           color: "purple",

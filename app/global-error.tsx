@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SupportErrorCta } from "@/components/support-error-cta";
+import { reportClientError } from "@/lib/client-error-reporter";
 
 export default function GlobalError({
   error,
@@ -11,6 +13,11 @@ export default function GlobalError({
   reset: () => void;
 }) {
   const router = useRouter();
+
+  useEffect(() => {
+    reportClientError(error, { type: "react" });
+    console.error(error);
+  }, [error]);
 
   return (
     <html lang="en">

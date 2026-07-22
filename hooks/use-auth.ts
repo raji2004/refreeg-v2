@@ -7,15 +7,29 @@ import { signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/
 import { useAuthContext } from "@/components/auth-provider";
 import { signUpAction, requestPasswordResetAction, resetPasswordAction } from "@/actions/auth-actions";
 
+function normalizeRedirectPath(target?: string | null): string | null {
+  if (!target) return null;
+  if (!target.startsWith("/")) return null;
+  // Prevent protocol-relative redirects (e.g. //evil.com)
+  if (target.startsWith("//")) return null;
+  return target;
+}
+
 export function useAuth() {
   const { user, isLoading, isAuthenticated } = useAuthContext();
   const router = useRouter();
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (
+    email: string,
+    password: string,
+    redirectTo?: string | null,
+  ) => {
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+
       const res = await nextAuthSignIn("credentials", {
         redirect: false,
-        email,
+        email: normalizedEmail,
         password,
       });
 
@@ -33,8 +47,9 @@ export function useAuth() {
         description: "You have successfully signed in.",
       });
 
+      const safeRedirect = normalizeRedirectPath(redirectTo) || "/dashboard";
       router.refresh();
-      router.push("/dashboard");
+      router.push(safeRedirect);
     } catch (error: any) {
       toast({
         title: "Error signing in",
@@ -51,8 +66,15 @@ export function useAuth() {
     accountType?: "individual" | "organization" | null,
   ) => {
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+
       // Execute the server action to create the profile in Prisma
-      const res = await signUpAction(email, password, fullName, accountType);
+      const res = await signUpAction(
+        normalizedEmail,
+        password,
+        fullName,
+        accountType
+      );
       
       if (!res.success) {
         toast({
@@ -66,7 +88,7 @@ export function useAuth() {
       // Automatically sign the user in via NextAuth credentials provider
       await nextAuthSignIn("credentials", {
         redirect: false,
-        email,
+        email: normalizedEmail,
         password,
       });
 
@@ -88,10 +110,15 @@ export function useAuth() {
     }
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (redirectTo?: string | null) => {
     try {
+      const safeRedirect = normalizeRedirectPath(redirectTo);
+      const callbackUrl = safeRedirect
+        ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(safeRedirect)}`
+        : `${window.location.origin}/auth/callback`;
+
       await nextAuthSignIn("google", {
-        callbackUrl: `${window.location.origin}/auth/callback`,
+        callbackUrl,
       });
     } catch (error: any) {
       toast({

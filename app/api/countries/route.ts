@@ -10,17 +10,17 @@ export async function GET() {
     });
 
     if (!countries.length) {
-      return NextResponse.json(
-        ALL_COUNTRIES.map((name: string) => ({ name })),
-        { status: 200, headers: { "x-data-source": "static" } }
-      );
+      return NextResponse.json(ALL_COUNTRIES, {
+        status: 200,
+        headers: { "x-data-source": "static" },
+      });
     }
 
-    return NextResponse.json(countries);
+    return NextResponse.json(countries.map((c) => c.name));
   } catch (error) {
-    return NextResponse.json(
-      ALL_COUNTRIES.map((name: string) => ({ name })),
-      { status: 200, headers: { "x-data-source": "fallback" } }
-    );
+    return NextResponse.json(ALL_COUNTRIES, {
+      status: 200,
+      headers: { "x-data-source": "fallback" },
+    });
   }
 }

@@ -11,13 +11,22 @@ import {
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getMediaUrl } from "@/lib/s3/media";
+import { isVideoFile } from "@/lib/media/video";
 
 import { motion, AnimatePresence } from "framer-motion";
 
-  interface SelectedMediaCarouselProps {
+interface SelectedMediaCarouselProps {
   files: (File | string)[];
   onRemove: (index: number) => void;
   className?: string;
+}
+
+function resolvePreviewUrl(file: File | string): string {
+  if (typeof file === "string") {
+    return getMediaUrl(file);
+  }
+  return URL.createObjectURL(file);
 }
 
 export function SelectedMediaCarousel({
@@ -25,17 +34,20 @@ export function SelectedMediaCarousel({
   onRemove,
   className,
 }: SelectedMediaCarouselProps) {
-  const [previews, setPreviews] = React.useState<string[]>([]);
+  const [previews, setPreviews] = React.useState<
+    { url: string; isVideo: boolean }[]
+  >([]);
 
   React.useEffect(() => {
-    const urls = files.map((file) => 
-      typeof file === "string" ? file : URL.createObjectURL(file)
-    );
-    setPreviews(urls);
+    const next = files.map((file) => ({
+      url: resolvePreviewUrl(file),
+      isVideo: isVideoFile(file),
+    }));
+    setPreviews(next);
     return () => {
-      urls.forEach((url, index) => {
+      next.forEach((item, index) => {
         if (typeof files[index] !== "string") {
-          URL.revokeObjectURL(url);
+          URL.revokeObjectURL(item.url);
         }
       });
     };
@@ -50,19 +62,28 @@ export function SelectedMediaCarousel({
         <Carousel className="w-full">
           <CarouselContent>
             <AnimatePresence mode="popLayout">
-              {previews.map((url, index) => (
-                <CarouselItem key={url} className="basis-full">
+              {previews.map((item, index) => (
+                <CarouselItem key={`${item.url}-${index}`} className="basis-full">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black/20"
                   >
-                    <img
-                      src={url}
-                      alt={`Preview ${index}`}
-                      className="object-cover w-full h-full"
-                    />
+                    {item.isVideo ? (
+                      <video
+                        src={item.url}
+                        controls
+                        playsInline
+                        className="object-contain w-full h-full bg-black"
+                      />
+                    ) : (
+                      <img
+                        src={item.url}
+                        alt={`Preview ${index + 1}`}
+                        className="object-cover w-full h-full"
+                      />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
 
                     <Button
@@ -78,7 +99,9 @@ export function SelectedMediaCarousel({
                     <div className="absolute bottom-4 left-4 glass-morphism px-4 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
                       <span className="text-white text-sm font-semibold tracking-tight">
-                        {index + 1} <span className="opacity-60 mx-1">/</span>{" "}
+                        {item.isVideo ? "Video" : "Image"}{" "}
+                        {index + 1}{" "}
+                        <span className="opacity-60 mx-1">/</span>{" "}
                         {files.length}
                       </span>
                     </div>
@@ -97,9 +120,9 @@ export function SelectedMediaCarousel({
       {/* Desktop Grid View */}
       <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence mode="popLayout">
-          {previews.map((url, index) => (
+          {previews.map((item, index) => (
             <motion.div
-              key={url}
+              key={`${item.url}-${index}`}
               layout
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -107,25 +130,34 @@ export function SelectedMediaCarousel({
               transition={{ delay: index * 0.05 }}
               className="relative group aspect-video rounded-2xl overflow-hidden shadow-lg border border-brand/5 bg-black/5"
             >
-              <img
-                src={url}
-                alt={`Preview ${index}`}
-                className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
+              {item.isVideo ? (
+                <video
+                  src={item.url}
+                  controls
+                  playsInline
+                  className="object-contain w-full h-full bg-black"
+                />
+              ) : (
+                <img
+                  src={item.url}
+                  alt={`Preview ${index + 1}`}
+                  className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
+                />
+              )}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px] pointer-events-none group-hover:pointer-events-auto">
                 <Button
                   type="button"
                   variant="destructive"
                   size="sm"
                   onClick={() => onRemove(index)}
-                  className="rounded-full h-12 w-12 p-0 shadow-2xl border-2 border-white/10 hover:scale-110 active:scale-95 transition-all transform translate-y-4 group-hover:translate-y-0"
+                  className="rounded-full h-12 w-12 p-0 shadow-2xl border-2 border-white/10 hover:scale-110 active:scale-95 transition-all transform translate-y-4 group-hover:translate-y-0 pointer-events-auto"
                 >
                   <X className="h-6 w-6" />
                 </Button>
               </div>
               <div className="absolute bottom-4 right-4 glass-morphism px-3 py-1 rounded-lg border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
                 <span className="text-white text-[10px] font-bold tracking-[0.1em] uppercase">
-                  Item 0{index + 1}
+                  {item.isVideo ? "Video" : "Item"} 0{index + 1}
                 </span>
               </div>
             </motion.div>

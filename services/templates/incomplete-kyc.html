@@ -1,134 +1,101 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Complete Your KYC Verification - Refreeg</title>
+    <title>Complete Your Identity Verification</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        line-height: 1.6;
-        color: #333;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background-color: #f4f7f6;
         margin: 0;
         padding: 0;
       }
-
       .container {
         max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
+        margin: 40px auto;
+        background: #ffffff;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
       }
-
-      .header {
-        background-color: #003366;
-        color: white;
-        padding: 20px;
-        text-align: center;
-      }
-
       .logo {
-        max-width: 150px;
-        margin-bottom: 10px;
-      }
-
-      .content {
-        padding: 20px;
-        background-color: #f9f9f9;
-      }
-
-      .footer {
         text-align: center;
-        padding: 20px;
-        font-size: 12px;
-        color: #777;
-        border-top: 3px solid #003366;
+        margin-bottom: 30px;
       }
-
-      h1 {
-        color: #ffffff;
-        margin-top: 0;
-      }
-
-      .highlight {
-        font-weight: bold;
-        color: #003366;
-      }
-
-      .cta-button {
+      .logo img {
+        max-height: 40px;
+        vertical-align: middle;
         display: inline-block;
-        background-color: #0066cc;
-        color: white !important;
+      }
+      .brand-name {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333333;
+        vertical-align: middle;
+        display: inline-block;
+        margin-left: 10px;
+      }
+      h1 {
+        color: #333333;
+        font-size: 24px;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      p {
+        color: #555555;
+        font-size: 16px;
+        line-height: 1.6;
+        text-align: center;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #007bff;
+        color: #ffffff;
         padding: 12px 24px;
         text-decoration: none;
-        border-radius: 8px;
+        border-radius: 6px;
+        font-weight: 600;
         margin: 20px 0;
-        font-weight: bold;
-        font-size: 16px;
-        transition: background-color 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
-
-      .cta-button:hover {
-        background-color: #0052a3;
-        color: white !important;
+      .btn-container {
+        text-align: center;
       }
-
-      .security-section {
-        background-color: #e8f4fd;
-        padding: 15px;
-        border-radius: 5px;
-        margin: 15px 0;
-        border-left: 4px solid #0066cc;
+      .footer {
+        text-align: center;
+        margin-top: 40px;
+        font-size: 14px;
+        color: #999999;
+        border-top: 1px solid #eeeeee;
+        padding-top: 20px;
       }
     </style>
   </head>
-
   <body>
     <div class="container">
-      <div class="header">
-        <h1>Just one more step to unlock your account ✅</h1>
+      <div class="logo">
+        <img src="https://www.refreeg.com/logo.svg" alt="RefreeG Logo" />
+        <span class="brand-name">RefreeG</span>
       </div>
-      <div class="content">
-        <p>Hey {{userName}},</p>
-
-        <p>
-          You started your KYC but didn't finish it. Completing your
-          verification helps us confirm your identity and makes sure funds reach
-          you safely and quickly.
-        </p>
-
-        <div class="security-section">
-          <p>
-            <strong>Why complete KYC?</strong><br />
-            • Secure your account and transactions<br />
-            • Ensure donations reach you quickly<br />
-            • Build trust with your supporters<br />
-            • Comply with financial regulations
-          </p>
-        </div>
-
-        <p>It's simple and only takes a few minutes to wrap up.</p>
-
-        <div style="text-align: center">
-          <a
-            href="{{continueUrl}}"
-            class="cta-button"
-            style="color: white; text-decoration: none"
-            >👉 Complete Verification</a
-          >
-        </div>
-
-        <p>
-          With care,<br />
-          The Refreeg Team
-        </p>
+      <h1>Just One More Step!</h1>
+      <p>Hi {{userName}},</p>
+      <p>
+        We noticed you haven't completed your identity verification yet. It only takes a couple of minutes!
+      </p>
+      <p>
+        Verifying your identity unlocks the ability to create petitions, launch donation campaigns, and access all premium platform features.
+      </p>
+      
+      <div class="btn-container">
+        <a href="{{continueUrl}}" class="btn">Complete Verification</a>
       </div>
+      
+      <p>
+        If you have any questions or need assistance with the process, please contact our support team at <a href="mailto:refreegcorrespondence@gmail.com" style="color: #007bff; text-decoration: none;">refreegcorrespondence@gmail.com</a>. We're here to help!
+      </p>
+
       <div class="footer">
-        <p>
-          This is an automated email. Please do not reply directly to this
-          message.
-        </p>
-        <p>© {{currentYear}} RefreeG. All rights reserved.</p>
+        &copy; {{currentYear}} RefreeG. All rights reserved.
       </div>
     </div>
   </body>
