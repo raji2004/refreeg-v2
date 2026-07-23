@@ -17,7 +17,7 @@ module.exports = {
       name: "frontend",
       script: "node_modules/.bin/next",
       args: "start",
-      cwd: "/home/ec2-user/refreeg/current",
+      cwd: "/var/www/refreeg/current",
       env: {
         NODE_ENV: "production",
         PORT: 3000,
@@ -29,8 +29,8 @@ module.exports = {
       exec_mode: "fork",           // fork mode (cluster mode needs more RAM)
 
       // ── Logging ───────────────────────────────────────────────────────────
-      out_file: "/home/ec2-user/refreeg/shared/logs/frontend.out.log",
-      error_file: "/home/ec2-user/refreeg/shared/logs/frontend.err.log",
+      out_file: "/var/www/refreeg/shared/logs/frontend.out.log",
+      error_file: "/var/www/refreeg/shared/logs/frontend.err.log",
       merge_logs: true,
       log_date_format: "YYYY-MM-DD HH:mm:ss Z",
 
@@ -46,7 +46,7 @@ module.exports = {
       name: "api",
       script: "node_modules/.bin/next",
       args: "start",
-      cwd: "/home/ec2-user/refreeg/current",
+      cwd: "/var/www/refreeg/current",
       env: {
         NODE_ENV: "production",
         PORT: 4000,
@@ -58,8 +58,8 @@ module.exports = {
       exec_mode: "fork",
 
       // ── Logging ───────────────────────────────────────────────────────────
-      out_file: "/home/ec2-user/refreeg/shared/logs/api.out.log",
-      error_file: "/home/ec2-user/refreeg/shared/logs/api.err.log",
+      out_file: "/var/www/refreeg/shared/logs/api.out.log",
+      error_file: "/var/www/refreeg/shared/logs/api.err.log",
       merge_logs: true,
       log_date_format: "YYYY-MM-DD HH:mm:ss Z",
 
