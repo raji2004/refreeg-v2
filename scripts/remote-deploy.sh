@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ── Configuration ────────────────────────────────────────────────────────────
-APP_DIR="/var/www/refreeg"
+APP_DIR="/mnt/data/refreeg"
 RELEASES_DIR="${APP_DIR}/releases"
 SHARED_DIR="${APP_DIR}/shared"
 CURRENT_LINK="${APP_DIR}/current"

@@ -2,7 +2,7 @@ name: Deploy Refreeg v2
 
 on:
   push:
-    branches: [main, dev]
+    branches: [automatic-deployment]
   workflow_dispatch:
 
 permissions:
@@ -177,7 +177,7 @@ jobs:
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           SSH_USER: ec2-user
-          APP_DIR: /var/www/refreeg
+          APP_DIR: /mnt/data/refreeg
         run: |
           # Ensure APP_DIR exists and is owned by ec2-user (idempotent — relies on
           # ec2-user having passwordless sudo, the AWS EC2 default). scp writes as
@@ -204,7 +204,7 @@ jobs:
           SSH_USER: ec2-user
         run: |
           ssh ${{ env.SSH_USER }}@${{ env.EC2_HOST }} \
-            "RELEASE_ID='${{ github.sha }}' TARBALL='$TARBALL' bash /var/www/refreeg/remote-deploy.sh"
+            "RELEASE_ID='${{ github.sha }}' TARBALL='$TARBALL' bash /mnt/data/refreeg/remote-deploy.sh"
 
       # ── 9. Health check ───────────────────────────────────────────────────
       - name: Health check
@@ -256,7 +256,7 @@ jobs:
         run: |
           echo "🔄 Deployment failed — triggering rollback..."
           ssh ${{ env.SSH_USER }}@${{ env.EC2_HOST }} \
-            "bash /var/www/refreeg/rollback.sh"
+            "bash /mnt/data/refreeg/rollback.sh"
 
       # ── 12. Cleanup local secrets ──────────────────────────────────────────
       - name: Remove local secrets file

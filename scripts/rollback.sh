@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="/var/www/refreeg"
+APP_DIR="/mnt/data/refreeg"
 RELEASES_DIR="${APP_DIR}/releases"
 CURRENT_LINK="${APP_DIR}/current"
 
