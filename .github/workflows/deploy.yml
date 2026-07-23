@@ -5,6 +5,7 @@ on:
     branches: [automatic-deployment]
   workflow_dispatch:
 
+    
 permissions:
   contents: read
 
