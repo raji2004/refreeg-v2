@@ -179,9 +179,14 @@ jobs:
           SSH_USER: ec2-user
           APP_DIR: /var/www/refreeg
         run: |
-          # Ensure the app/shared directories exist on the remote host
+          # Ensure APP_DIR exists and is owned by ec2-user (idempotent — relies on
+          # ec2-user having passwordless sudo, the AWS EC2 default). scp writes as
+          # ec2-user directly and cannot elevate mid-transfer, so ownership must be
+          # fixed here, before any scp/tar happens.
           ssh ${{ env.SSH_USER }}@${{ env.EC2_HOST }} \
-            "mkdir -p ${{ env.APP_DIR }}/releases ${{ env.APP_DIR }}/shared/logs"
+            "sudo mkdir -p ${{ env.APP_DIR }} && \
+             sudo chown ${{ env.SSH_USER }}:${{ env.SSH_USER }} ${{ env.APP_DIR }} && \
+             mkdir -p ${{ env.APP_DIR }}/releases ${{ env.APP_DIR }}/shared/logs"
 
           # Transfer the build tarball, secrets file, and both scripts
           scp \
