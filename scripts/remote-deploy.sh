@@ -62,7 +62,12 @@ mv -Tf "${APP_DIR}/current_tmp" "$CURRENT_LINK"
 echo "current -> releases/${RELEASE_ID}"
 
 # ── 6. Start/reload via PM2 ───────────────────────────────────────────────────
-pm2 startOrReload "${CURRENT_LINK}/ecosystem.config.js" --update-env
+# `pm2 startOrReload` can reuse a stale process definition (e.g. an old `script`
+# path) for an app name it already knows about, especially if that process was
+# left in a crashed/errored state. Delete by name first so every deploy always
+# registers fresh from the current ecosystem.config.js.
+pm2 delete frontend api 2>/dev/null || true
+pm2 start "${CURRENT_LINK}/ecosystem.config.js" --update-env
 
 # ── 7. Persist new PM2 state (only after successful reload) ──────────────────
 pm2 save --force
