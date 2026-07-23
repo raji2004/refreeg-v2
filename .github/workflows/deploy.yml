@@ -217,7 +217,7 @@ jobs:
           check() {
             url="$1"
             for attempt in 1 2 3; do
-              status=$(curl -s -o /dev/null -w "%{http_code}" \
+              status=$(curl -s -L -o /dev/null -w "%{http_code}" \
                 -H "x-health-check-token: ${HEALTH_CHECK_TOKEN}" \
                 "$url" || echo "000")
               echo "Attempt $attempt — $url — HTTP $status"
