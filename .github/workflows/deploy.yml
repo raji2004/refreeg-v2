@@ -177,7 +177,7 @@ jobs:
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           SSH_USER: ec2-user
-          APP_DIR: /home/ec2-user/refreeg
+          APP_DIR: /var/www/refreeg
         run: |
           # Ensure the app/shared directories exist on the remote host
           ssh ${{ env.SSH_USER }}@${{ env.EC2_HOST }} \
@@ -199,7 +199,7 @@ jobs:
           SSH_USER: ec2-user
         run: |
           ssh ${{ env.SSH_USER }}@${{ env.EC2_HOST }} \
-            "RELEASE_ID='${{ github.sha }}' TARBALL='$TARBALL' bash /home/ec2-user/refreeg/remote-deploy.sh"
+            "RELEASE_ID='${{ github.sha }}' TARBALL='$TARBALL' bash /var/www/refreeg/remote-deploy.sh"
 
       # ── 9. Health check ───────────────────────────────────────────────────
       - name: Health check
@@ -251,7 +251,7 @@ jobs:
         run: |
           echo "🔄 Deployment failed — triggering rollback..."
           ssh ${{ env.SSH_USER }}@${{ env.EC2_HOST }} \
-            "bash /home/ec2-user/refreeg/rollback.sh"
+            "bash /var/www/refreeg/rollback.sh"
 
       # ── 12. Cleanup local secrets ──────────────────────────────────────────
       - name: Remove local secrets file
