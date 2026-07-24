@@ -18,7 +18,12 @@ module.exports = {
       script: "node_modules/next/dist/bin/next",
       args: "start",
       cwd: "/mnt/data/refreeg/current",
+      // Spread process.env so every secret sourced from shared/secrets.env by
+      // remote-deploy.sh (DATABASE_URL, PAYSTACK_SECRET_KEY, etc.) reaches the
+      // spawned process — PM2 does NOT auto-forward the invoking shell's env
+      // for apps started from a config file, only what's listed here.
       env: {
+        ...process.env,
         NODE_ENV: "production",
         PORT: 3000,
       },
@@ -48,6 +53,7 @@ module.exports = {
       args: "start",
       cwd: "/mnt/data/refreeg/current",
       env: {
+        ...process.env,
         NODE_ENV: "production",
         PORT: 4000,
       },
