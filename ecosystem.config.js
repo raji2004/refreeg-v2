@@ -15,8 +15,10 @@ module.exports = {
     {
       // ── Landing page ──────────────────────────────────────────────────────
       name: "frontend",
-      script: "node_modules/next/dist/bin/next",
-      args: "start",
+      // Next.js "standalone" output: a minimal self-contained server.js with
+      // its own pruned node_modules, instead of running via next start out of
+      // a full node_modules copy.
+      script: "server.js",
       cwd: "/mnt/data/refreeg/current",
       // Spread process.env so every secret sourced from shared/secrets.env by
       // remote-deploy.sh (DATABASE_URL, PAYSTACK_SECRET_KEY, etc.) reaches the
@@ -49,8 +51,10 @@ module.exports = {
     {
       // ── API / App ─────────────────────────────────────────────────────────
       name: "api",
-      script: "node_modules/next/dist/bin/next",
-      args: "start",
+      // Next.js "standalone" output: a minimal self-contained server.js with
+      // its own pruned node_modules, instead of running via next start out of
+      // a full node_modules copy.
+      script: "server.js",
       cwd: "/mnt/data/refreeg/current",
       env: {
         ...process.env,

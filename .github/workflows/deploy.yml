@@ -69,21 +69,21 @@ jobs:
       - name: Build application
         run: pnpm run build
 
-      # ── 3. Prune to production-only node_modules (save disk on EC2) ───────
-      - name: Prune dev dependencies
-        run: pnpm prune --prod --ignore-scripts
-
-      # ── 4. Package the minimal artifact ───────────────────────────────────
+      # ── 3. Package the minimal artifact ────────────────────────────────────
+      # `output: "standalone"` (next.config.mjs) already traces only the
+      # dependencies actually used at runtime into .next/standalone/node_modules
+      # — no need to ship the full node_modules or run `pnpm prune` anymore.
+      # public/ and .next/static are excluded from standalone by default and
+      # must be copied in manually per Next.js docs.
       - name: Create deployment tarball
         run: |
+          cp -r public .next/standalone/public
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+          cp ecosystem.config.js .next/standalone/ecosystem.config.js
+
           TARBALL="deploy-${{ github.sha }}.tar.gz"
-          tar -czf "$TARBALL" \
-            .next \
-            public \
-            package.json \
-            pnpm-lock.yaml \
-            node_modules \
-            ecosystem.config.js
+          tar -czf "$TARBALL" -C .next/standalone .
           echo "Tarball size: $(du -sh "$TARBALL" | cut -f1)"
           echo "TARBALL=$TARBALL" >> "$GITHUB_ENV"
 
@@ -189,13 +189,14 @@ jobs:
              sudo chown ${{ env.SSH_USER }}:${{ env.SSH_USER }} ${{ env.APP_DIR }} && \
              mkdir -p ${{ env.APP_DIR }}/releases ${{ env.APP_DIR }}/shared/logs"
 
-          # Transfer the build tarball, secrets file, and both scripts
+          # Transfer the build tarball, secrets file, and both scripts.
+          # ecosystem.config.js is already baked into the tarball root, no
+          # need to ship it separately.
           scp \
             "$TARBALL" \
             secrets.env \
             ./scripts/remote-deploy.sh \
             ./scripts/rollback.sh \
-            ./ecosystem.config.js \
             ${{ env.SSH_USER }}@${{ env.EC2_HOST }}:${{ env.APP_DIR }}/
 
       # ── 8. Run remote deploy script on EC2 ────────────────────────────────

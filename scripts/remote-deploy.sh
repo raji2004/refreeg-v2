@@ -38,16 +38,13 @@ rm -f /tmp/refreeg-secrets.env
 echo "Secrets loaded."
 
 # ── 3. Extract new release into its own versioned directory ──────────────────
+# The tarball root is the Next.js standalone output (server.js, its own pruned
+# node_modules, .next/, public/) plus ecosystem.config.js — self-contained,
+# nothing else needs to be copied in separately.
 echo "Extracting release ${RELEASE_ID}..."
 mkdir -p "$RELEASE_DIR"
 tar -xzf "${APP_DIR}/${TARBALL}" -C "$RELEASE_DIR"
 rm -f "${APP_DIR}/${TARBALL}"   # free space immediately
-
-# ecosystem.config.js is transferred alongside the tarball; make sure the
-# release has its own copy so it's self-contained.
-if [[ -f "${APP_DIR}/ecosystem.config.js" ]]; then
-  cp "${APP_DIR}/ecosystem.config.js" "${RELEASE_DIR}/ecosystem.config.js"
-fi
 echo "Extraction complete."
 
 # ── 4. Record the currently-live release (for rollback) before cutover ───────
@@ -78,3 +75,8 @@ pm2 list
 cd "$RELEASES_DIR"
 ls -1t | grep -v '^\.previous$' | tail -n +$((KEEP_RELEASES + 1)) | xargs -r rm -rf --
 echo "Releases kept: $(ls -1 "$RELEASES_DIR" | grep -v '^\.previous$' | wc -l)"
+
+# ── 9. Cap PM2 log files ──────────────────────────────────────────────────────
+# PM2 appends to these forever with no rotation configured; truncate any that
+# have grown past 20MB so logs can't slowly fill the disk between deploys.
+find "${SHARED_DIR}/logs" -type f -name '*.log' -size +20M -exec truncate -s 0 {} \; 2>/dev/null || true
