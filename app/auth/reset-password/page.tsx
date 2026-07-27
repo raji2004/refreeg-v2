@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
                 Remember your password?{" "}
                 <Link
                   href="/auth/signin"
-                  className="underline underline-offset-4 hover:text-primary"
+                  className="text-secondary underline underline-offset-4 transition-colors hover:text-secondary/80"
                 >
                   Sign in
                 </Link>
@@ -139,7 +139,7 @@ export default function ResetPasswordPage() {
               Remember your password?{" "}
               <Link
                 href="/auth/signin"
-                className="underline underline-offset-4 hover:text-primary"
+                className="text-secondary underline underline-offset-4 transition-colors hover:text-secondary/80"
               >
                 Sign in
               </Link>
@@ -148,7 +148,7 @@ export default function ResetPasswordPage() {
               Don&apos;t have an account?{" "}
               <Link
                 href="/auth/signup"
-                className="underline underline-offset-4 hover:text-primary"
+                className="text-secondary underline underline-offset-4 transition-colors hover:text-secondary/80"
               >
                 Sign up
               </Link>
