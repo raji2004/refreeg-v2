@@ -2,84 +2,82 @@ import Link from "next/link";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, ExternalLink } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  CircleCheck,
+  Clock3,
+  Download,
+  ExternalLink,
+  HeartHandshake,
+  ReceiptText,
+  ShieldCheck,
+  Users,
+  XCircle,
+} from "lucide-react";
 import { listUserDonations } from "@/actions/donation-actions";
-
-// Mock data for user's donations
-const mockUserDonations = [
-  {
-    id: "1",
-    cause_id: "1",
-    cause_title: "Clean Water Initiative",
-    amount: 2500,
-    date: "2023-06-15T10:30:00Z",
-    status: "completed",
-    receipt_url: "#",
-    is_anonymous: false,
-  },
-  {
-    id: "2",
-    cause_id: "2",
-    cause_title: "Education for All",
-    amount: 1000,
-    date: "2023-07-20T14:45:00Z",
-    status: "completed",
-    receipt_url: "#",
-    is_anonymous: true,
-  },
-  {
-    id: "3",
-    cause_id: "5",
-    cause_title: "Disaster Relief Fund",
-    amount: 5000,
-    date: "2023-08-05T09:15:00Z",
-    status: "completed",
-    receipt_url: "#",
-    is_anonymous: false,
-  },
-  {
-    id: "4",
-    cause_id: "6",
-    cause_title: "Animal Shelter Support",
-    amount: 1500,
-    date: "2023-09-10T11:30:00Z",
-    status: "completed",
-    receipt_url: "#",
-    is_anonymous: false,
-  },
-  {
-    id: "5",
-    cause_id: "7",
-    cause_title: "Renewable Energy Project",
-    amount: 3000,
-    date: "2023-10-01T08:45:00Z",
-    status: "completed",
-    receipt_url: "#",
-    is_anonymous: true,
-  },
-];
 
 interface MyDonationsListProps {
   userId: string;
   timeframe?: "all" | "recent";
-  showReceipts?: boolean;
 }
+
+const formatNaira = (value: number) =>
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+
+const formatDate = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not available";
+
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+};
+
+const getStatusDetails = (status: string) => {
+  switch (status) {
+    case "completed":
+      return {
+        label: "Completed",
+        icon: CircleCheck,
+        className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+        accent: "bg-emerald-500",
+      };
+    case "pending":
+      return {
+        label: "Processing",
+        icon: Clock3,
+        className: "border-amber-200 bg-amber-50 text-amber-700",
+        accent: "bg-amber-400",
+      };
+    default:
+      return {
+        label: "Failed",
+        icon: XCircle,
+        className: "border-rose-200 bg-rose-50 text-rose-700",
+        accent: "bg-rose-500",
+      };
+  }
+};
 
 export async function MyDonationsList({
   userId,
   timeframe = "all",
-  showReceipts = false,
 }: MyDonationsListProps) {
   const donations = await listUserDonations(userId, timeframe);
 
-  // Use mock data for now
   let filteredDonations = donations;
   if (timeframe === "recent") {
     // Filter to only show donations from the last 30 days
@@ -98,79 +96,173 @@ export async function MyDonationsList({
 
   if (filteredDonations.length === 0) {
     return (
-      <div className="text-center py-10 border rounded-lg bg-muted/20">
-        <h3 className="text-lg font-medium mb-2">No donations found</h3>
-        <p className="text-muted-foreground mb-4">
+      <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 px-5 py-14 text-center">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+          <HeartHandshake className="h-6 w-6" />
+        </span>
+        <h3 className="mt-5 text-xl font-semibold text-slate-950">
+          No donations found
+        </h3>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
           {timeframe === "recent"
-            ? "You haven't made any donations in the last 30 days."
-            : "You haven't made any donations yet."}
+            ? "You haven't made a donation in the last 30 days."
+            : "Support a cause you care about and your contribution history will appear here."}
         </p>
-        <Link href="/causes">
-          <Button>Explore Causes</Button>
+        <Link href="/causes" className="inline-block">
+          <Button className="mt-6 h-11 rounded-xl bg-blue-600 px-5 text-white hover:bg-blue-700">
+            Explore causes
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-muted/50 p-4 rounded-lg">
-        <div className="text-sm text-muted-foreground">Total Donated</div>
-        <div className="text-3xl font-bold">
-          ₦{totalDonated.toLocaleString()}
+    <div className="space-y-5">
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1.6fr)_minmax(190px,0.8fr)]">
+        <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0f172a_0%,#172554_100%)] p-5 text-white shadow-[0_18px_42px_-28px_rgba(15,23,42,0.8)] sm:p-6">
+          <div className="absolute -right-8 -top-10 h-36 w-36 rounded-full bg-blue-500/20 blur-2xl" />
+          <div className="relative flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
+                Total contributed
+              </p>
+              <p className="mt-2 break-words text-3xl font-bold tracking-tight sm:text-4xl">
+                {formatNaira(totalDonated)}
+              </p>
+              <p className="mt-2 text-sm text-slate-300">
+                Your giving across the selected period
+              </p>
+            </div>
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-blue-100">
+              <HeartHandshake className="h-6 w-6" />
+            </span>
+          </div>
         </div>
-        <div className="text-sm text-muted-foreground mt-1">
-          Across {filteredDonations.length} donation
-          {filteredDonations.length !== 1 ? "s" : ""}
+
+        <div className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_14px_35px_-30px_rgba(15,23,42,0.45)]">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+            <ReceiptText className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-2xl font-bold text-slate-950">
+              {filteredDonations.length}
+            </p>
+            <p className="text-sm text-slate-600">
+              contribution{filteredDonations.length !== 1 ? "s" : ""}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        {filteredDonations.map((donation) => (
-          <Card key={donation.id}>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">
-                    {donation.cause.title}
-                  </CardTitle>
-                  <CardDescription>
-                    {new Date(donation.created_at).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </CardDescription>
+      <div className="grid gap-5 xl:grid-cols-2">
+        {filteredDonations.map((donation) => {
+          const statusDetails = getStatusDetails(donation.status);
+          const StatusIcon = statusDetails.icon;
+
+          return (
+            <Card
+              key={donation.id}
+              className="group relative overflow-hidden rounded-3xl border-slate-200/90 bg-white shadow-[0_14px_35px_-28px_rgba(15,23,42,0.55)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_22px_48px_-30px_rgba(37,99,235,0.35)]"
+            >
+              <div
+                className={`absolute inset-x-0 top-0 h-1 ${statusDetails.accent}`}
+              />
+              <CardHeader className="pb-4 pt-6">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                        {donation.cause.category}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={`gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${statusDetails.className}`}
+                      >
+                        <StatusIcon className="h-3.5 w-3.5" />
+                        {statusDetails.label}
+                      </Badge>
+                    </div>
+                    <CardTitle
+                      className="line-clamp-2 text-xl leading-7 text-slate-950"
+                      title={donation.cause.title}
+                    >
+                      {donation.cause.title}
+                    </CardTitle>
+                  </div>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                    <HeartHandshake className="h-5 w-5" />
+                  </span>
                 </div>
-                <div className="flex items-center">
-                  <Badge variant="outline">
-                    {donation.is_anonymous ? "Anonymous" : "Public"}
-                  </Badge>
+              </CardHeader>
+
+              <CardContent className="space-y-4 pb-5">
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Donation amount
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
+                    {formatNaira(donation.amount)}
+                  </p>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pb-2">
-              <div className="flex justify-between items-center">
-                <div className="text-2xl font-bold">
-                  ₦{donation.amount.toLocaleString()}
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-2xl border border-slate-100 p-3">
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <CalendarDays className="h-4 w-4 text-slate-400" />
+                      Donated
+                    </div>
+                    <p className="mt-1.5 font-medium text-slate-800">
+                      {formatDate(donation.created_at)}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-100 p-3">
+                    <div className="flex items-center gap-2 text-slate-500">
+                      {donation.is_anonymous ? (
+                        <ShieldCheck className="h-4 w-4 text-slate-400" />
+                      ) : (
+                        <Users className="h-4 w-4 text-slate-400" />
+                      )}
+                      Visibility
+                    </div>
+                    <p className="mt-1.5 font-medium text-slate-800">
+                      {donation.is_anonymous ? "Anonymous" : "Public"}
+                    </p>
+                  </div>
                 </div>
-                <Badge variant="default">{donation.status}</Badge>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between pt-4">
-              <Link href={`/causes/${donation.cause_id}`}>
-                <Button variant="outline" size="sm">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  View Cause
-                </Button>
-              </Link>
-              <Button variant="ghost" size="sm">
-                <Download className="mr-2 h-4 w-4" />
-                Receipt
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+              </CardContent>
+
+              <CardFooter className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:flex-row">
+                <Link href={`/causes/${donation.cause_id}`} className="w-full">
+                  <Button
+                    variant="outline"
+                    className="h-11 w-full rounded-xl border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    View cause
+                  </Button>
+                </Link>
+                {donation.receipt_url && (
+                  <Link
+                    href={donation.receipt_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full"
+                  >
+                    <Button
+                      variant="ghost"
+                      className="h-11 w-full rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-950"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Receipt
+                    </Button>
+                  </Link>
+                )}
+              </CardFooter>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
