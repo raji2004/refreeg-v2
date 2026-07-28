@@ -8,9 +8,8 @@
 import type { Config } from "jest";
 import nextJest from "next/jest.js";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const rootDir = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = process.cwd();
 
 const createJestConfig = nextJest({
   // Provide the path to your Next.js app to load next.config.js and .env files in your test environment

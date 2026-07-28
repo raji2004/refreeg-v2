@@ -581,13 +581,16 @@ export default function CreateCauseForm() {
         { entityType: "causes", entityId: draftEntityId },
       );
 
-      await sendCauseUnderReviewEmail({
+      await createCause(user.id, causeData);
+      localStorage.removeItem("causeDraft");
+
+      sendCauseUnderReviewEmail({
         causeName: causeData.title,
         reviewTimeframe: "3-5 business days",
         dashboardUrl: `${window.location.origin}/dashboard/causes`,
+      }).catch((error) => {
+        console.error("Failed to send cause-under-review email:", error);
       });
-      await createCause(user.id, causeData);
-      localStorage.removeItem("causeDraft");
 
       router.push("/dashboard/causes");
     } catch (error) {
@@ -1091,6 +1094,7 @@ export default function CreateCauseForm() {
                   <ImageUpload
                     onUpload={(files) => handleImageUpload(files)}
                     maxFiles={1}
+                    autoNormalize
                   />
                   {formData.coverImage && (
                     <div className="mt-4 relative group aspect-video rounded-xl overflow-hidden shadow-sm border border-brand/10">
@@ -1141,6 +1145,7 @@ export default function CreateCauseForm() {
                     accept={GALLERY_ACCEPT}
                     enableCrop={false}
                     description="Images or short videos (MP4/WebM, max 50MB / 90s each)"
+                    autoNormalize
                   />
                   {errors.multimedia && (
                     <p className="mt-2 text-sm text-red-500 font-medium">
@@ -1277,7 +1282,7 @@ export default function CreateCauseForm() {
                     )}
                     {formData.summary && (
                       <p className="text-gray-500 italic mb-4 border-l-4 border-brand/20 pl-4 py-1">
-                        "{formData.summary}"
+                        &quot;{formData.summary}&quot;
                       </p>
                     )}
                     {formData.sections[0]?.heading && (

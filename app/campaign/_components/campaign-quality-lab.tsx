@@ -543,7 +543,7 @@ function MediaCard({ media, cause }: { media: string[]; cause: CauseDetail }) {
       whileInView="show"
       viewport={{ once: true, amount: 0.2 }}
     >
-      {media.length > 0 ? (
+      {media.length > 0 || cause.image ? (
         <MultimediaCarousel
           media={media}
           coverImage={cause.image || undefined}
@@ -1308,11 +1308,8 @@ export default function CampaignQualityLab({
   );
 
   const media = useMemo(() => {
-    const items = [...(cause.multimedia || []), ...(cause.video_links || [])];
-    if (items.length > 0) return items;
-    if (cause.image) return [cause.image];
-    return [];
-  }, [cause.image, cause.multimedia, cause.video_links]);
+    return [...(cause.multimedia || []), ...(cause.video_links || [])];
+  }, [cause.multimedia, cause.video_links]);
 
   const baseUrl = getBaseURL();
 

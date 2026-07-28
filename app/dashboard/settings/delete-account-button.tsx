@@ -93,7 +93,7 @@ export function DeleteAccountButton({ userId }: DeleteAccountButtonProps) {
               <li>Your profile information</li>
               <li>KYC verification data</li>
               <li>Bank and crypto details</li>
-              <li>All causes you've created</li>
+              <li>All causes you&apos;ve created</li>
               <li>Donation history</li>
             </ul>
           </AlertDescription>

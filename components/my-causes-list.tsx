@@ -2,80 +2,76 @@ import Link from "next/link";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getCurrentUser } from "@/actions/auth-actions";
 import { Progress } from "@/components/ui/progress";
-import { Edit, Eye, MoreHorizontal, Trash } from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { deleteCause, getUserCausesWithStatus } from "@/actions/cause-actions";
+  AlertCircle,
+  ArrowRight,
+  BarChart3,
+  CalendarDays,
+  CircleCheck,
+  Clock3,
+  FileText,
+  PencilLine,
+  Plus,
+} from "lucide-react";
+import { getUserCausesWithStatus } from "@/actions/cause-actions";
 import { CauseDropdown } from "./cause-dropdown";
-
-// Mock data for user's causes
-const mockUserCauses = [
-  {
-    id: "1",
-    title: "Clean Water Initiative",
-    description: "Providing clean water to communities in rural areas.",
-    category: "Environment",
-    raised: 12500,
-    goal: 20000,
-    status: "approved",
-    created_at: "2023-05-15T10:30:00Z",
-    updated_at: "2023-05-16T08:45:00Z",
-  },
-  {
-    id: "2",
-    title: "Education for All",
-    description: "Supporting education for underprivileged children.",
-    category: "Education",
-    raised: 8700,
-    goal: 15000,
-    status: "approved",
-    created_at: "2023-06-10T14:45:00Z",
-    updated_at: "2023-06-11T09:30:00Z",
-  },
-  {
-    id: "3",
-    title: "Medical Supplies Drive",
-    description: "Collecting medical supplies for local clinics.",
-    category: "Healthcare",
-    raised: 0,
-    goal: 10000,
-    status: "pending",
-    created_at: "2023-07-05T09:15:00Z",
-    updated_at: "2023-07-05T09:15:00Z",
-  },
-  {
-    id: "4",
-    title: "Community Garden Project",
-    description: "Creating a sustainable garden in our neighborhood.",
-    category: "Community",
-    raised: 0,
-    goal: 5000,
-    status: "rejected",
-    created_at: "2023-07-10T11:30:00Z",
-    updated_at: "2023-07-12T15:20:00Z",
-    rejection_reason:
-      "Insufficient details provided about project implementation.",
-  },
-];
 
 interface MyCausesListProps {
   status: string;
   userId: string;
 }
+
+const formatNaira = (value: number | string | null | undefined) =>
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0);
+
+const formatDate = (value: string | Date | null | undefined) => {
+  if (!value) return "Not available";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not available";
+
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+};
+
+const getStatusDetails = (status: string) => {
+  switch (status) {
+    case "approved":
+      return {
+        label: "Active",
+        icon: CircleCheck,
+        badge: "border-emerald-200 bg-emerald-50 text-emerald-700",
+        accent: "bg-emerald-500",
+      };
+    case "pending":
+      return {
+        label: "Pending review",
+        icon: Clock3,
+        badge: "border-amber-200 bg-amber-50 text-amber-700",
+        accent: "bg-amber-400",
+      };
+    default:
+      return {
+        label: "Needs revision",
+        icon: AlertCircle,
+        badge: "border-rose-200 bg-rose-50 text-rose-700",
+        accent: "bg-rose-500",
+      };
+  }
+};
 
 export async function MyCausesList({ status, userId }: MyCausesListProps) {
   const causes = await getUserCausesWithStatus(userId, status);
@@ -87,121 +83,190 @@ export async function MyCausesList({ status, userId }: MyCausesListProps) {
 
   if (filteredCauses.length === 0) {
     return (
-      <div className="text-center py-10 border rounded-lg bg-muted/20">
-        <h3 className="text-lg font-medium mb-2">No causes found</h3>
+      <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 px-5 py-14 text-center">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+          <FileText className="h-6 w-6" />
+        </span>
+        <h3 className="mt-5 text-xl font-semibold text-slate-950">
+          No causes found
+        </h3>
         {status === "all" ? (
-          <p className="text-muted-foreground mb-4">
-            You haven't created any causes yet.
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+            You haven&apos;t created any causes yet.
           </p>
         ) : status === "approved" ? (
-          <p className="text-muted-foreground mb-4">
-            You don't have any active causes.
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+            You don&apos;t have any active causes.
           </p>
         ) : status === "pending" ? (
-          <p className="text-muted-foreground mb-4">
-            You don't have any causes pending approval.
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+            You don&apos;t have any causes pending approval.
           </p>
         ) : (
-          <p className="text-muted-foreground mb-4">
-            You don't have any rejected causes.
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+            You don&apos;t have any rejected causes.
           </p>
         )}
-        <Link href="/dashboard/causes/create">
-          <Button>Create a New Cause</Button>
+        <Link href="/dashboard/causes/create" className="inline-block">
+          <Button className="mt-6 h-11 rounded-xl bg-blue-600 px-5 text-white hover:bg-blue-700">
+            <Plus className="mr-2 h-4 w-4" />
+            Create a new cause
+          </Button>
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {filteredCauses.map((cause) => (
-        <Card key={cause.id}>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-lg line-clamp-1">
-                  {cause.title}
-                </CardTitle>
-                {/* <CardDescription className="line-clamp-2">{cause.description}</CardDescription> */}
+    <div className="grid gap-5 xl:grid-cols-2">
+      {filteredCauses.map((cause) => {
+        const raised = Number(cause.raised) || 0;
+        const goal = Number(cause.goal) || 0;
+        const progress =
+          goal > 0 ? Math.min(Math.max((raised / goal) * 100, 0), 100) : 0;
+        const statusDetails = getStatusDetails(cause.status);
+        const StatusIcon = statusDetails.icon;
+
+        return (
+          <Card
+            key={cause.id}
+            className="group relative overflow-hidden rounded-3xl border-slate-200/90 bg-white shadow-[0_14px_35px_-28px_rgba(15,23,42,0.55)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_22px_48px_-30px_rgba(37,99,235,0.35)]"
+          >
+            <div
+              className={`absolute inset-x-0 top-0 h-1 ${statusDetails.accent}`}
+            />
+            <CardHeader className="pb-4 pt-6">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    {cause.category && (
+                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                        {cause.category}
+                      </span>
+                    )}
+                    <Badge
+                      variant="outline"
+                      className={`gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${statusDetails.badge}`}
+                    >
+                      <StatusIcon className="h-3.5 w-3.5" />
+                      {statusDetails.label}
+                    </Badge>
+                  </div>
+                  <CardTitle
+                    className="line-clamp-2 text-xl leading-7 text-slate-950"
+                    title={cause.title}
+                  >
+                    {cause.title}
+                  </CardTitle>
+                  {cause.description && (
+                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+                      {cause.description}
+                    </p>
+                  )}
+                </div>
+                <div className="shrink-0">
+                  <CauseDropdown causeId={cause.id} />
+                </div>
               </div>
-              <div className="flex items-center">
-                <Badge
-                  variant={
-                    cause.status === "approved"
-                      ? "default"
-                      : cause.status === "pending"
-                        ? "secondary"
-                        : "destructive"
-                  }
+            </CardHeader>
+
+            <CardContent className="space-y-5 pb-5">
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="flex items-end justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Amount raised
+                    </p>
+                    <p
+                      className="mt-1 truncate text-xl font-bold tracking-tight text-slate-950"
+                      title={formatNaira(raised)}
+                    >
+                      {formatNaira(raised)}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs text-slate-500">
+                      Goal {formatNaira(goal)}
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-blue-700">
+                      {progress.toFixed(0)}%
+                    </p>
+                  </div>
+                </div>
+                <Progress value={progress} className="mt-3 h-2.5 bg-slate-200" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-2xl border border-slate-100 bg-white p-3">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <CalendarDays className="h-4 w-4 text-slate-400" />
+                    Created
+                  </div>
+                  <p className="mt-1.5 font-medium text-slate-800">
+                    {formatDate(cause.created_at)}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-100 bg-white p-3">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Clock3 className="h-4 w-4 text-slate-400" />
+                    Updated
+                  </div>
+                  <p className="mt-1.5 font-medium text-slate-800">
+                    {formatDate(cause.updated_at)}
+                  </p>
+                </div>
+              </div>
+
+              {cause.status === "rejected" && cause.rejection_reason && (
+                <div className="flex gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-3.5 text-sm text-rose-800">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p className="min-w-0 leading-5">
+                    <strong className="font-semibold">Review note:</strong>{" "}
+                    {cause.rejection_reason}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+
+            <CardFooter className="border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+              {cause.status === "approved" ? (
+                <Link
+                  href={`/dashboard/causes/${cause.id}/analytics`}
+                  className="w-full"
                 >
-                  {cause.status}
+                  <Button className="h-11 w-full rounded-xl bg-blue-600 text-white hover:bg-blue-700">
+                    <BarChart3 className="mr-2 h-4 w-4" />
+                    View analytics
+                    <ArrowRight className="ml-auto h-4 w-4" />
+                  </Button>
+                </Link>
+              ) : cause.status === "pending" ? (
+                <Badge
+                  variant="outline"
+                  className="flex h-11 w-full justify-center rounded-xl border-amber-200 bg-amber-50 text-sm font-medium text-amber-700"
+                >
+                  <Clock3 className="mr-2 h-4 w-4" />
+                  Awaiting approval
                 </Badge>
-                <CauseDropdown causeId={cause.id} />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pb-2">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="font-medium">
-                  ₦{Number(cause.raised).toLocaleString()}
-                </span>
-                <span className="text-muted-foreground">
-                  of ₦{Number(cause.goal).toLocaleString()}
-                </span>
-              </div>
-              <Progress
-                value={(Number(cause.raised) / Number(cause.goal)) * 100}
-              />
-            </div>
-            <div className="mt-4 text-sm text-muted-foreground">
-              <div className="flex justify-between">
-                <span>Created:</span>
-                <span>
-                  {new Date(cause.created_at || "").toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Last updated:</span>
-                <span>
-                  {new Date(cause.updated_at || "").toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-            {cause.status === "rejected" && cause.rejection_reason && (
-              <div className="mt-4 p-2 bg-destructive/10 text-destructive text-sm rounded">
-                <strong>Reason:</strong> {cause.rejection_reason}
-              </div>
-            )}
-          </CardContent>
-          <CardFooter className="flex justify-between pt-4">
-            {cause.status === "approved" ? (
-              <Link
-                href={`/dashboard/causes/${cause.id}/analytics`}
-                className="w-full"
-              >
-                <Button variant="outline" className="w-full">
-                  View Analytics
-                </Button>
-              </Link>
-            ) : cause.status === "pending" ? (
-              <Button variant="outline" className="w-full" disabled>
-                Awaiting Approval
-              </Button>
-            ) : (
-              <Link
-                href={`/dashboard/causes/${cause.id}/edit`}
-                className="w-full"
-              >
-                <Button variant="outline" className="w-full">
-                  Revise & Resubmit
-                </Button>
-              </Link>
-            )}
-          </CardFooter>
-        </Card>
-      ))}
+              ) : (
+                <Link
+                  href={`/dashboard/causes/${cause.id}/edit`}
+                  className="w-full"
+                >
+                  <Button
+                    variant="outline"
+                    className="h-11 w-full rounded-xl border-rose-200 bg-white text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                  >
+                    <PencilLine className="mr-2 h-4 w-4" />
+                    Revise and resubmit
+                    <ArrowRight className="ml-auto h-4 w-4" />
+                  </Button>
+                </Link>
+              )}
+            </CardFooter>
+          </Card>
+        );
+      })}
     </div>
   );
 }

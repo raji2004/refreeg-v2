@@ -88,7 +88,7 @@ export default function Step2({
         transition={{ duration: 0.4, delay: 0.1 }}
         className="text-center text-2xl font-semibold text-gray-900 mb-8 font-montserrat"
       >
-        What's your gender?
+        What&apos;s your gender?
       </motion.h2>
 
       {/* Gender Options */}

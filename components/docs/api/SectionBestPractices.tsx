@@ -22,7 +22,7 @@ export default function SectionBestPractices() {
             </div>
             <p className="text-sm text-slate-600 leading-relaxed">
                Always test your logic in the sandbox environment using **rg_test_sk_** keys. 
-               Don't switch to production until you've successfully verified a donation flow via webhooks.
+               Don&apos;t switch to production until you&apos;ve successfully verified a donation flow via webhooks.
             </p>
           </div>
 

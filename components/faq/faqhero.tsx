@@ -50,7 +50,7 @@ export default function FAQHero() {
           
           {/* Subtext */}
           <p className="text-base md:text-lg text-slate-600 mb-8 max-w-lg">
-            Don't wait. Start your cause today and turn support into real impact.
+            Don&apos;t wait. Start your cause today and turn support into real impact.
           </p>
           
           {/* CTA Button */}

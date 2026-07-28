@@ -337,7 +337,7 @@ export default function MaticDonationButton({
           Donate with MATIC
         </h2>
         <div className="mt-4 p-3 bg-yellow-50 text-yellow-700 rounded-md">
-          <p>The creator hasn't set up a Polygon wallet address.</p>
+          <p>The creator hasn&apos;t set up a Polygon wallet address.</p>
           <p className="mt-2">
             <Link
               href={`/cause/${params.cause_id}/payment`}

@@ -51,7 +51,7 @@ export default async function AnalyticsPage({
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Cause Analytics</h1>
         <p className="text-muted-foreground">
-          Track your cause's performance and engagement
+          Track your cause&apos;s performance and engagement
         </p>
       </div>
 
