@@ -16,11 +16,15 @@ import { useRouter } from "next/navigation";
 interface BreetCryptoDonationModalProps {
   causeId: string;
   donorId: string | null;
+  triggerClassName?: string;
+  triggerLabel?: string;
 }
 
 export function BreetCryptoDonationModal({
   causeId,
   donorId,
+  triggerClassName,
+  triggerLabel = "Donate with Crypto (USDT)",
 }: BreetCryptoDonationModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -135,14 +139,20 @@ export function BreetCryptoDonationModal({
       }}
     >
       <DialogTrigger asChild>
-        <Button className="w-full gap-x-2 rounded-xl bg-[#2563EB] py-6 text-base font-semibold text-white shadow-[0_12px_24px_rgba(37,99,235,0.2)] transition hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]">
+        <Button
+          variant={triggerClassName ? "outline" : "default"}
+          className={
+            triggerClassName ||
+            "w-full gap-x-2 rounded-xl bg-[#2563EB] py-6 text-base font-semibold text-white shadow-[0_12px_24px_rgba(37,99,235,0.2)] transition hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+          }
+        >
           <svg
             className="h-5 w-5 fill-[#14F195] bg-white rounded-full p-0.5 shrink-0"
             viewBox="0 0 24 24"
           >
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.62 6.77h3.46v2.18h-3.46v1.4c1.19.11 2.29.38 3.19.78l-.63 1.95c-.96-.4-2.12-.66-3.32-.73v4.88h-1.74v-4.87c-1.2.06-2.35.31-3.32.72l-.63-1.95c.9-.4 2-.67 3.19-.78v-1.4H6.92V8.77h3.46V5.45h1.62v3.32z" />
           </svg>
-          Donate with Crypto (USDT)
+          {triggerLabel}
         </Button>
       </DialogTrigger>
 
