@@ -3,6 +3,7 @@ output "alb_dns_name" {
   value       = aws_lb.app.dns_name
 }
 
+
 output "rds_endpoint" {
   description = "RDS connection endpoint (host:port). Build DATABASE_URL from this after migrating data."
   value       = aws_db_instance.app.endpoint
