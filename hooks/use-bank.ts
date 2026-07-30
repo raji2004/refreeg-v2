@@ -10,6 +10,8 @@ interface UseBankProps {
     bank_name: string | null;
     account_name: string | null;
     sub_account_code: string | null;
+    flutterwave_subaccount_id?: string | null;
+    country?: string | null;
   };
   userId: string;
 }
@@ -25,6 +27,8 @@ export function useBank({ initialData, userId }: UseBankProps) {
     bankName: initialData?.bank_name || "",
     accountName: initialData?.account_name || "",
     sub_account_code: initialData?.sub_account_code || "",
+    flutterwave_subaccount_id: initialData?.flutterwave_subaccount_id || "",
+    country: initialData?.country || "NG",
   });
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [verificationFailed, setVerificationFailed] = useState(false);
@@ -43,6 +47,8 @@ export function useBank({ initialData, userId }: UseBankProps) {
         bankName: initialData.bank_name || "",
         accountName: initialData.account_name || "",
         sub_account_code: initialData.sub_account_code || "",
+        flutterwave_subaccount_id: initialData.flutterwave_subaccount_id || "",
+        country: initialData.country || "NG",
       });
       lastInitialDataRef.current = currentKey;
     }
@@ -51,9 +57,10 @@ export function useBank({ initialData, userId }: UseBankProps) {
   useEffect(() => {
     isMountedRef.current = true;
     const fetchBanks = async () => {
+      if (!formData.country) return;
       setIsLoadingBanks(true);
       try {
-        const response = await fetch("/api/banks");
+        const response = await fetch(`/api/banks?country=${formData.country}`);
         const result = await response.json();
 
         if (!result.success) {
@@ -94,17 +101,17 @@ export function useBank({ initialData, userId }: UseBankProps) {
 
     fetchBanks();
     return () => { isMountedRef.current = false; };
-  }, []);
+  }, [formData.country]);
 
   const verifyAccount = useCallback(
-    async (accountNumber: string, bankCode: string) => {
+    async (accountNumber: string, bankCode: string, country: string = "NG") => {
       try {
         const response = await fetch("/api/banks/verify", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ accountNumber, bankCode }),
+          body: JSON.stringify({ accountNumber, bankCode, country }),
         });
 
         const result = await response.json();
@@ -147,9 +154,9 @@ export function useBank({ initialData, userId }: UseBankProps) {
 
     if (formData.accountNumber && formData.bankName && banks.length > 0) {
       const bank = banks.find((b) => b.name === formData.bankName);
-      if (bank && formData.accountNumber.length >= 10 && !isVerifying && !formData.accountName) {
+      if (bank && formData.accountNumber.length >= 8 && !isVerifying && !formData.accountName) {
         setIsVerifying(true);
-        verifyAccount(formData.accountNumber, bank.code);
+        verifyAccount(formData.accountNumber, bank.code, formData.country || "NG");
       }
     }
   }, [
@@ -159,7 +166,8 @@ export function useBank({ initialData, userId }: UseBankProps) {
     verifyAccount,
     hasUserInteracted,
     formData.accountName,
-    isVerifying
+    isVerifying,
+    formData.country
   ]);
 
   const handleBankChange = (value: string, field: string) => {
@@ -170,9 +178,12 @@ export function useBank({ initialData, userId }: UseBankProps) {
         [field]: value,
       };
       // Clear account name and verification status when account number or bank changes
-      if (field === "accountNumber" || field === "bankName") {
+      if (field === "accountNumber" || field === "bankName" || field === "country") {
         newData.accountName = "";
         setVerificationFailed(false);
+        if (field === "country") {
+          newData.bankName = ""; // Reset bank if country changes
+        }
       }
       return newData;
     });
@@ -187,11 +198,12 @@ export function useBank({ initialData, userId }: UseBankProps) {
         throw new Error("Bank not found");
       }
 
-      const data: ICreateSubaccount = {
+      const data = {
         bank_code: bank.code,
         account_number: formData.accountNumber,
         business_name: formData.accountName,
         percentage_charge: 0,
+        country: formData.country || "NG"
       };
 
       const response = await fetch("/api/banks/subaccount", {
@@ -208,10 +220,11 @@ export function useBank({ initialData, userId }: UseBankProps) {
         throw new Error(result.error || "Failed to create subaccount");
       }
 
-      const sub_account_code = result.data;
+      const sub_account_data = result.data;
       const updatedProfile = await updateBankDetails(userId, {
         ...formData,
-        sub_account_code: sub_account_code.subaccount_code,
+        sub_account_code: sub_account_data.subaccount_code || "",
+        flutterwave_subaccount_id: sub_account_data.flutterwave_subaccount_id || "",
       });
 
       queryClient.setQueryData(["profile", userId], updatedProfile);

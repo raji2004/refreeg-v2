@@ -12,6 +12,10 @@ export interface Donation {
   status: DonationStatus;
   receipt_url: string | null;
   created_at: string;
+  provider?: string;
+  donation_currency?: string;
+  settlement_currency?: string | null;
+  fx_rate?: number | null;
 }
 
 export interface DonationWithCause extends Donation {

@@ -35,6 +35,8 @@ interface DonationFormProps {
     id?: string;
   };
   subaccount?: string;
+  flutterwaveSubaccountId?: string | null;
+  currency?: string;
   status: "pending" | "rejected" | "approved" | "expired";
   causeName?: string; // Add causeName prop
   causeUrl?: string; // Add causeUrl prop for the continue link
@@ -54,6 +56,8 @@ export function DonationForm({
   profile,
   status,
   subaccount,
+  flutterwaveSubaccountId,
+  currency = "NGN",
   causeName = "this cause", // Default value
   causeUrl = "/causes", // Default value
   recurring = "one_time",
@@ -76,6 +80,19 @@ export function DonationForm({
   });
   const [amountError, setAmountError] = useState("");
   const [submitError, setSubmitError] = useState("");
+
+  const isNgn = !currency || currency === "NGN";
+  const hasFlutterwave = !!flutterwaveSubaccountId;
+
+  const [provider, setProvider] = useState<"paystack" | "flutterwave">(
+    isNgn ? "paystack" : "flutterwave"
+  );
+
+  useEffect(() => {
+    if (!isNgn) {
+      setProvider("flutterwave");
+    }
+  }, [isNgn]);
 
   // Sync internal amount with prop when prop changes
   useEffect(() => {
@@ -130,6 +147,7 @@ export function DonationForm({
     causeId,
     causeName,
     causeUrl,
+    donationAttempt.hasStarted,
   ]);
 
   // Track inactivity and send reminder
@@ -243,6 +261,9 @@ export function DonationForm({
         serviceFee: serviceFee,
         tipAmount: tip,
         plan: plan,
+        provider: provider,
+        currency: currency,
+        flutterwaveSubaccountId: flutterwaveSubaccountId || undefined,
         subaccounts: [
           {
             subaccount: subaccount || "",
@@ -305,6 +326,34 @@ export function DonationForm({
                   Minimum donation is ₦{MIN_DONATION_AMOUNT}.
                 </p>
               )}
+            </div>
+          )}
+
+          {isNgn && hasFlutterwave && (
+            <div className="space-y-2">
+              <Label>Payment Provider</Label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <input
+                    type="radio"
+                    name="provider"
+                    value="paystack"
+                    checked={provider === "paystack"}
+                    onChange={() => setProvider("paystack")}
+                  />
+                  Paystack
+                </label>
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <input
+                    type="radio"
+                    name="provider"
+                    value="flutterwave"
+                    checked={provider === "flutterwave"}
+                    onChange={() => setProvider("flutterwave")}
+                  />
+                  Flutterwave
+                </label>
+              </div>
             </div>
           )}
 

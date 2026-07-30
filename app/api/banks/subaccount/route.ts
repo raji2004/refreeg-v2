@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import Paystack from "@/services/paystack";
+import Flutterwave from "@/services/flutterwave";
 import type { ICreateSubaccount } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
-    const data: ICreateSubaccount = await request.json();
+    const data = await request.json();
+    const { country = "NG", ...subaccountData } = data;
 
-    if (!data.account_number || !data.bank_code || !data.business_name) {
+    if (!subaccountData.account_number || !subaccountData.bank_code || !subaccountData.business_name) {
       return NextResponse.json(
         {
           error: "Account number, bank code, and business name are required",
@@ -16,11 +18,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const subaccount = await Paystack.createSubaccount(data);
+    let subaccountResponse: any = {};
+    if (country === "NG") {
+      const paystackSub = await Paystack.createSubaccount(subaccountData as ICreateSubaccount);
+      subaccountResponse.subaccount_code = paystackSub.subaccount_code;
+    } else {
+      const fwSub = await Flutterwave.createSubaccount({
+        account_bank: subaccountData.bank_code,
+        account_number: subaccountData.account_number,
+        business_name: subaccountData.business_name,
+        country: country,
+        split_type: "percentage",
+        split_value: 0.1, // Flutterwave usually requires split value
+      });
+      subaccountResponse.flutterwave_subaccount_id = fwSub.subaccount_id;
+    }
 
     return NextResponse.json({
       success: true,
-      data: subaccount,
+      data: subaccountResponse,
     });
   } catch (error: any) {
     console.error("Error creating subaccount:", error);

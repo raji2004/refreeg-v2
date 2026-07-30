@@ -12,6 +12,8 @@ import { useQueryState } from "nuqs";
 export default function PaymentVerification() {
   const router = useRouter();
   const [reference] = useQueryState("reference");
+  const [txRef] = useQueryState("tx_ref");
+  const [transactionId] = useQueryState("transaction_id");
   const { verifyPayment, error } = usePayment();
   const [verificationStatus, setVerificationStatus] = useState<
     "loading" | "success" | "failed"
@@ -21,8 +23,9 @@ export default function PaymentVerification() {
 
   useEffect(() => {
     const verifyPaymentStatus = async () => {
-      if (hasVerified || !reference) {
-        if (!reference) {
+      const refToVerify = reference || transactionId || txRef;
+      if (hasVerified || !refToVerify) {
+        if (!refToVerify) {
           setVerificationStatus("failed");
           setErrorMessage("Invalid payment verification parameters");
         }
@@ -31,7 +34,7 @@ export default function PaymentVerification() {
 
       try {
         setHasVerified(true);
-        const isSuccessful = await verifyPayment(reference);
+        const isSuccessful = await verifyPayment(refToVerify);
 
         if (isSuccessful) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -48,7 +51,7 @@ export default function PaymentVerification() {
     };
 
     verifyPaymentStatus();
-  }, [reference, verifyPayment, hasVerified]);
+  }, [reference, txRef, transactionId, verifyPayment, hasVerified]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

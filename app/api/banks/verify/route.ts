@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Paystack from "@/services/paystack";
+import Flutterwave from "@/services/flutterwave";
 
 export async function POST(request: NextRequest) {
   try {
-    const { accountNumber, bankCode } = await request.json();
+    const { accountNumber, bankCode, country = "NG" } = await request.json();
 
     if (!accountNumber || !bankCode) {
       return NextResponse.json(
@@ -14,10 +15,19 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const verification = await Paystack.verifyAccountNumber(
-      accountNumber,
-      bankCode
-    );
+
+    let verification;
+    if (country === "NG") {
+      verification = await Paystack.verifyAccountNumber(
+        accountNumber,
+        bankCode
+      );
+    } else {
+      verification = await Flutterwave.verifyAccountNumber(
+        accountNumber,
+        bankCode
+      );
+    }
 
     return NextResponse.json({
       success: true,

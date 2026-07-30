@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
-import { hasBankDetails, isProfileComplete } from "@/actions/profile-actions";
+import { hasBankDetails, isProfileComplete, getProfile } from "@/actions/profile-actions";
 import CreateCauseForm from "./create-cause-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -57,7 +57,7 @@ export default async function CreateCausePage() {
             )}
           </div>
         ) : (
-          <CreateCauseForm />
+          <CreateCauseForm userCountry={(await getProfile(session.user.id as string))?.country} />
         )}
       </div>
     </div>
