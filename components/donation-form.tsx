@@ -47,6 +47,11 @@ interface DonationFormProps {
   flush?: boolean;
   beforeFields?: React.ReactNode;
   afterFields?: React.ReactNode;
+  submitClassName?: string;
+  submitLabel?: string;
+  compactOptionalFields?: boolean;
+  optionalFieldsExtra?: React.ReactNode;
+  stickySubmit?: boolean;
 }
 
 export function DonationForm({
@@ -65,6 +70,11 @@ export function DonationForm({
   flush = false,
   beforeFields,
   afterFields,
+  submitClassName,
+  submitLabel = "Donate Now",
+  compactOptionalFields = false,
+  optionalFieldsExtra,
+  stickySubmit = false,
 }: DonationFormProps) {
   const { initializePayment, isLoading } = usePayment();
   const [formData, setFormData] = useState({
@@ -280,7 +290,7 @@ export function DonationForm({
         </CardHeader>
       )}
       <form onSubmit={handleSubmit}>
-        <CardContent className={cn("space-y-4", flush && "p-0")}>
+        <CardContent className={cn("space-y-3 sm:space-y-4", flush && "p-0")}>
           {beforeFields}
 
           {!hideAmountField && (
@@ -308,7 +318,7 @@ export function DonationForm({
             </div>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-1.5 sm:space-y-2">
             <Label htmlFor="name">Your Name</Label>
             <Input
               id="name"
@@ -321,7 +331,7 @@ export function DonationForm({
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5 sm:space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -334,25 +344,60 @@ export function DonationForm({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="message">Message (Optional)</Label>
-            <Textarea
-              id="message"
-              name="message"
-              placeholder="Leave a message of support"
-              value={formData.message}
-              onChange={handleChange}
-            />
-          </div>
+          {compactOptionalFields ? (
+            <details className="group rounded-xl border border-slate-200 bg-slate-50 sm:rounded-2xl">
+              <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-sm font-semibold text-slate-700 sm:px-4 sm:py-3">
+                More options
+                <span className="text-lg font-normal text-slate-400 transition-transform group-open:rotate-45">
+                  +
+                </span>
+              </summary>
+              <div className="space-y-3 border-t border-slate-200 px-3 py-3 sm:space-y-4 sm:px-4 sm:py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="message">Message (Optional)</Label>
+                  <Textarea
+                    id="message"
+                    name="message"
+                    placeholder="Leave a message of support"
+                    value={formData.message}
+                    onChange={handleChange}
+                  />
+                </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="anonymous"
-              checked={formData.isAnonymous}
-              onCheckedChange={handleSwitchChange}
-            />
-            <Label htmlFor="anonymous">Donate anonymously</Label>
-          </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="anonymous"
+                    checked={formData.isAnonymous}
+                    onCheckedChange={handleSwitchChange}
+                  />
+                  <Label htmlFor="anonymous">Donate anonymously</Label>
+                </div>
+                {optionalFieldsExtra}
+              </div>
+            </details>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="message">Message (Optional)</Label>
+                <Textarea
+                  id="message"
+                  name="message"
+                  placeholder="Leave a message of support"
+                  value={formData.message}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="anonymous"
+                  checked={formData.isAnonymous}
+                  onCheckedChange={handleSwitchChange}
+                />
+                <Label htmlFor="anonymous">Donate anonymously</Label>
+              </div>
+            </>
+          )}
 
           {submitError ? (
             <p className="text-sm font-medium text-rose-600">{submitError}</p>
@@ -385,7 +430,14 @@ export function DonationForm({
             </div>
           )}
         </CardContent>
-        <CardFooter className={cn("flex flex-col gap-4", flush && "p-0 pt-4")}>
+        <CardFooter
+          className={cn(
+            "flex flex-col gap-4",
+            flush && "p-0 pt-4",
+            stickySubmit &&
+              "sticky bottom-3 z-20 mt-4 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-[0_16px_36px_-18px_rgba(15,23,42,0.45)] backdrop-blur-xl",
+          )}
+        >
           {/* REMOVE THIS TEST BUTTON IN PRODUCTION */}
           {/* <Button 
             type="button" 
@@ -410,7 +462,7 @@ export function DonationForm({
             disabled={
               isLoading || isDisabled || donationAmount < MIN_DONATION_AMOUNT
             }
-            className="w-full"
+            className={cn("w-full", submitClassName)}
           >
             {isLoading ? (
               <>
@@ -418,7 +470,7 @@ export function DonationForm({
                 Processing...
               </>
             ) : (
-              "Donate Now"
+              submitLabel
             )}
           </Button>
         </CardFooter>

@@ -19,6 +19,7 @@ export default function MultimediaCarousel({
   title: string;
 }) {
   const [current, setCurrent] = useState(0);
+  const [imageRatios, setImageRatios] = useState<Record<string, number>>({});
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   // Helpers to normalize and extract IDs from popular providers
@@ -230,6 +231,14 @@ export default function MultimediaCarousel({
             sizes="(max-width: 768px) 100vw, 80vw"
             className="z-10 object-contain drop-shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
             unoptimized={isProxyMediaUrl(item.url)}
+            onLoadingComplete={(image) => {
+              const ratio = image.naturalWidth / image.naturalHeight;
+              setImageRatios((currentRatios) =>
+                currentRatios[item.url] === ratio
+                  ? currentRatios
+                  : { ...currentRatios, [item.url]: ratio },
+              );
+            }}
           />
         </div>
       );
@@ -237,6 +246,15 @@ export default function MultimediaCarousel({
   };
 
   const currentSlide = slides[current];
+  const currentRatio =
+    currentSlide?.type === "image"
+      ? imageRatios[currentSlide.url]
+      : 16 / 9;
+  // Keep unusual uploads usable on a phone while closely following the
+  // source image's actual shape.
+  const mobileRatio = currentRatio
+    ? Math.min(Math.max(currentRatio, 0.8), 2)
+    : 4 / 3;
 
   if (!currentSlide) {
     return (
@@ -252,7 +270,12 @@ export default function MultimediaCarousel({
   return (
     <div className="rounded-[22px] border border-slate-200/80 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3">
       <div
-        className="relative mx-auto aspect-video w-full touch-pan-y overflow-hidden rounded-[18px] bg-slate-950"
+        className="relative mx-auto aspect-[var(--mobile-media-ratio)] max-h-[68svh] w-full touch-pan-y overflow-hidden rounded-[14px] bg-slate-950 transition-[aspect-ratio] duration-200 sm:aspect-video sm:max-h-none sm:rounded-[18px]"
+        style={
+          {
+            "--mobile-media-ratio": String(mobileRatio),
+          } as React.CSSProperties
+        }
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
