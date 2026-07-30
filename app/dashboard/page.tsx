@@ -33,12 +33,14 @@ export const metadata: Metadata = {
     "Manage your causes, petitions, and track your social impact on RefreeG.",
 };
 
-const formatNaira = (value: number) =>
-  new Intl.NumberFormat("en-NG", {
+const formatNaira = (value: number | string | null | undefined) => {
+  const amount = typeof value === "number" ? value : Number(value);
+  return new Intl.NumberFormat("en-NG", {
     style: "currency",
     currency: "NGN",
     maximumFractionDigits: 0,
-  }).format(value || 0);
+  }).format(Number.isFinite(amount) ? amount : 0);
+};
 
 export default async function DashboardPage({
   searchParams,

@@ -70,7 +70,7 @@ describe("dashboard-actions", () => {
       const result = await getDashboardStats("user-1");
 
       expect(result).toEqual({
-        totalRaised: expect.stringContaining("0"),
+        totalRaised: 0,
         totalDonors: 0,
         activeCauses: 0,
       });
@@ -91,7 +91,7 @@ describe("dashboard-actions", () => {
 
       expect(result.totalDonors).toBe(2);
       expect(result.activeCauses).toBe(1);
-      expect(result.totalRaised).toContain("1,500");
+      expect(result.totalRaised).toBe(1500);
     });
 
     it("returns zero stats when prisma throws", async () => {
@@ -100,7 +100,7 @@ describe("dashboard-actions", () => {
       const result = await getDashboardStats("user-1");
 
       expect(result).toEqual({
-        totalRaised: expect.stringContaining("0"),
+        totalRaised: 0,
         totalDonors: 0,
         activeCauses: 0,
       });
@@ -232,7 +232,7 @@ describe("dashboard-actions", () => {
       const result = await getPetitionDashboardStats("user-1");
 
       expect(result).toEqual({
-        totalRaised: expect.stringContaining("0"),
+        totalRaised: 0,
         totalDonors: 0,
         activePetitions: 0,
       });
@@ -252,6 +252,7 @@ describe("dashboard-actions", () => {
 
       expect(result.totalDonors).toBe(2);
       expect(result.activePetitions).toBe(1);
+      expect(result.totalRaised).toBe(2000);
     });
   });
 
