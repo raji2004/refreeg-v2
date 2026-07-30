@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
@@ -8,7 +8,6 @@ import {
   CalendarClock,
   CheckCircle2,
   ChevronDown,
-  Globe,
   HandHeart,
   Image as ImageIcon,
   MapPin,
@@ -85,7 +84,7 @@ const CommentsSection = dynamic(
   },
 );
 
-const tabs = ["Milestones", "Updates", "Budget", "Comments", "FAQ"] as const;
+const tabs = ["Updates", "Comments", "FAQ"] as const;
 const donationPresets = [1000, 10000, 100000, 1000000];
 const tipPresets = [100, 500, 1000];
 
@@ -119,12 +118,6 @@ const trustTiles = (cause: CauseDetail) => [
     badgeTextClass: "text-[#0F172A]",
     body: "Open financials and updates.",
   },
-];
-
-const trustStrip = [
-  { label: "Escrowed", tone: "bg-emerald-50 text-emerald-700" },
-  { label: "Verified Updates", tone: "bg-blue-50 text-blue-700" },
-  { label: "Funds Audited", tone: "bg-amber-50 text-amber-700" },
 ];
 
 const defaultFaqs = [
@@ -213,13 +206,15 @@ function StatItem({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-[14px] border border-[#E5E7EB] bg-white px-3 py-2 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
-      <span className="text-[#64748B]">{icon}</span>
+    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-white/80 bg-white/75 px-4 py-3 text-sm shadow-[0_14px_35px_-24px_rgba(31,75,153,0.45)] backdrop-blur-sm">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#E7F0FF] text-[#2457D6]">
+        {icon}
+      </span>
       <div>
-        <p className="text-xs uppercase tracking-[0.15em] text-[#64748B]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#72829A]">
           {label}
         </p>
-        <p className="font-semibold text-[#0F172A]">{value}</p>
+        <p className="mt-0.5 truncate font-semibold text-[#10233F]">{value}</p>
       </div>
     </div>
   );
@@ -242,31 +237,32 @@ function HeaderMeta({
   const router = useRouter();
 
   return (
-    <motion.div className="space-y-2" variants={fadeUp}>
+    <motion.div variants={fadeUp}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
-        {/* LEFT: Badges */}
-        <div className="flex flex-wrap items-center gap-2 text-xs text-[#64748B] sm:text-sm">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-3 py-1 sm:px-4 sm:py-2 font-semibold text-[#0F172A] shadow-sm">
-            <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#2457D6] px-3.5 py-2 font-bold text-white shadow-sm">
+            <ShieldCheck className="h-4 w-4" />
             <span>{status === "approved" ? "Verified" : "In review"}</span>
           </span>
 
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-3 py-1 sm:px-4 sm:py-2 font-medium text-[#0F172A] shadow-sm">
-            <BadgeCheck className="h-4 w-4 sm:h-5 sm:w-5 text-[#2563EB]" />
-            <span className="uppercase tracking-[0.2em] text-[10px] text-slate-400">
+          <span
+            className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-3.5 py-2 font-medium text-[#10233F] backdrop-blur-sm"
+            title="Impact score reflects plan clarity, transparency, and available campaign evidence."
+            aria-label={`Impact score ${resolvedTrustScore}. Based on plan clarity, transparency, and available campaign evidence.`}
+          >
+            <BadgeCheck className="h-4 w-4 text-[#2457D6]" />
+            <span className="uppercase tracking-[0.18em] text-[9px] text-[#72829A]">
               Trust
             </span>
-            <span className="rounded-full bg-[#2563EB] px-2 py-0.5 text-xs font-semibold text-white">
-              {resolvedTrustScore}
-            </span>
+            <span className="font-bold">{resolvedTrustScore}</span>
           </span>
 
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-3 py-1 sm:px-4 sm:py-2 font-medium text-[#0F172A] shadow-sm">
-            <CalendarClock className="h-4 w-4 sm:h-5 sm:w-5 text-[#64748B]" />
-            <span className="hidden sm:inline uppercase tracking-[0.2em] text-[10px] text-[#64748B]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-3.5 py-2 font-medium text-[#53647A] backdrop-blur-sm">
+            <CalendarClock className="h-4 w-4 text-[#72829A]" />
+            <span className="hidden uppercase tracking-[0.18em] text-[9px] text-[#72829A] sm:inline">
               Updated
             </span>
-            <span className="text-xs sm:text-sm font-semibold text-[#0F172A]">
+            <span className="font-semibold text-[#10233F]">
               {formattedDate}
             </span>
           </span>
@@ -295,28 +291,48 @@ function HeroSummary({
   cause: CauseDetail;
   donorsCount: number;
 }) {
+  const verified = cause.status === "approved";
+
   return (
-    <motion.div className="flex flex-col gap-4" variants={fadeUp}>
-      <h1 className="text-2xl font-semibold leading-snug tracking-tight text-[#0F172A] sm:text-3xl lg:text-5xl">
-        {cause.title}
-      </h1>
-      <p className="text-sm leading-relaxed text-[#64748B] sm:text-base lg:text-lg">
-        {cause.summary ||
-          "Verified, milestone-based relief with evidence-locked releases and transparent updates."}
-      </p>
-      <div className="flex flex-wrap items-center gap-3 text-sm text-[#64748B] sm:gap-4 sm:text-sm">
-        <span className="inline-flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-[#2563EB]" />
-          {cause.location || "Location on request"}
+    <motion.div
+      className="rounded-2xl border border-[#CBD7E4] bg-[linear-gradient(135deg,#F9FCFF_0%,#E6F0FF_52%,#EEF8F6_100%)] p-4 sm:rounded-[22px] sm:p-7"
+      variants={fadeUp}
+    >
+      <div className="mb-3 flex flex-wrap items-center gap-2 sm:mb-4">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${
+            verified
+              ? "bg-[#2563EB]/10 text-[#2563EB]"
+              : "bg-[#F59E0B]/15 text-[#B66A00]"
+          }`}
+        >
+          <BadgeCheck className="h-3.5 w-3.5" />
+          {verified ? "Verified" : "In review"}
         </span>
-        <span className="inline-flex items-center gap-2">
-          <Users className="h-4 w-4 text-[#2563EB]" />
-          {donorsCount} supporters
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#D9FF5B]/40 px-3 py-1.5 text-[11px] font-extrabold text-[#596817]">
+          <Users className="h-3.5 w-3.5" strokeWidth={2.5} />
+          A community-powered cause
         </span>
-        <span className="inline-flex items-center gap-2">
-          <Globe className="h-4 w-4 text-[#2563EB]" />
-          Worldwide donors welcome
-        </span>
+      </div>
+
+      <div className="flex max-w-3xl flex-col gap-3 sm:gap-4">
+        <h1 className="text-2xl font-extrabold leading-[1.2] tracking-[-0.02em] text-[#10233F] sm:text-[32px]">
+          {cause.title}
+        </h1>
+        <p className="max-w-2xl text-sm leading-6 text-[#53647A] sm:text-[15px] sm:leading-7">
+          {cause.summary ||
+            "Verified, milestone-based relief with evidence-locked releases and transparent updates."}
+        </p>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-[#33445A] sm:text-[13px]">
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin className="h-4 w-4 text-[#235DA7]" />
+            {cause.location || "Location on request"}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Users className="h-4 w-4 text-[#235DA7]" />
+            {donorsCount} supporters
+          </span>
+        </div>
       </div>
     </motion.div>
   );
@@ -345,45 +361,59 @@ function TrustPanel({
           url.match(/(youtube\.com|youtu\.be|tiktok\.com|drive\.google\.com)/i);
         return !isVideo;
       })
-      .reverse() // Show latest first
-      .slice(0, 3);
+      .reverse(); // Show latest first
   }, [cause.image, cause.multimedia]);
+  const [failedEvidence, setFailedEvidence] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const visibleProofMedia = useMemo(
+    () => proofMedia.filter((item) => !failedEvidence.has(item)),
+    [failedEvidence, proofMedia],
+  );
 
   const tiles = trustTiles(cause);
 
   return (
     <motion.div
-      className="rounded-[14px] border border-[#E5E7EB] bg-white p-5 shadow-[0_10px_30px_rgba(0,0,0,0.06)]"
+      className="overflow-hidden rounded-2xl bg-[linear-gradient(165deg,#10233F_0%,#0C1B33_100%)] text-white sm:rounded-[20px]"
       variants={fadeUp}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.2 }}
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.15em] text-[#64748B]">
-            Trust strip
-          </p>
-          <p className="mt-1 text-sm text-[#64748B]">
-            Verified releases with evidence checkpoints.
-          </p>
-        </div>
-        <ShareModal
-          url={`${baseUrl}/causes/${cause.id}`}
-          title={cause.title}
-          entityId={cause.id}
-          entityType="cause"
-        />
-      </div>
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 sm:gap-4 sm:p-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#D9FF5B] text-[#10233F]">
+              <ShieldCheck className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="font-bold text-white">
+                Verified and escrow protected
+              </p>
+              <p className="mt-0.5 truncate text-xs text-white/60">
+                View trust details and campaign evidence
+              </p>
+            </div>
+          </div>
+          <ChevronDown className="h-5 w-5 shrink-0 text-white/60 transition-transform group-open:rotate-180" />
+        </summary>
 
-      <div className="mt-4 grid gap-3 text-sm text-[#64748B] sm:grid-cols-2">
+        <div className="border-t border-white/10 px-4 pb-5 pt-4 sm:px-6 sm:pb-6 sm:pt-5">
+          <div className="flex justify-end">
+            <ShareModal
+              url={`${baseUrl}/causes/${cause.id}`}
+              title={cause.title}
+              entityId={cause.id}
+              entityType="cause"
+            />
+          </div>
+
+      <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         {tiles.map((tile: any) => (
           <div
             key={tile.title}
-            className="rounded-[14px] border border-[#E5E7EB] bg-white p-4"
+            className="rounded-2xl border border-white/15 bg-white/[0.055] p-4"
           >
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-[0.15em] text-[#64748B]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-white/60">
                 {tile.title}
               </p>
               <span
@@ -392,35 +422,61 @@ function TrustPanel({
                 {tile.status}
               </span>
             </div>
-            <p className="mt-2 text-sm text-[#64748B]">{tile.body}</p>
+            <p className="mt-2 text-[13px] leading-5 text-white/80">
+              {tile.body}
+            </p>
           </div>
         ))}
       </div>
 
-      {proofMedia.length > 0 && (
-        <div className="mt-4">
-          <p className="text-xs uppercase tracking-[0.15em] text-[#64748B]">
-            Latest proof
-          </p>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {proofMedia.slice(0, 3).map((item: any, index: any) => (
+      {visibleProofMedia.length > 0 && (
+        <div className="mt-6 border-t border-white/10 pt-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-white/60">
+              Campaign evidence
+            </p>
+            <span className="text-[11px] text-white/45">
+              {visibleProofMedia.length}{" "}
+              {visibleProofMedia.length === 1 ? "image" : "images"}
+            </span>
+          </div>
+          <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
+            {visibleProofMedia.map((item: any, index: any) => (
               <div
                 key={`${item}-${index}`}
-                className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
+                className="relative aspect-[4/3] w-[78%] shrink-0 snap-center overflow-hidden rounded-xl border border-white/15 bg-[#08162B] sm:aspect-video sm:w-auto"
               >
                 <Image
                   src={getMediaUrl(item)}
-                  alt="Proof"
+                  alt=""
                   fill
-                  className="h-full w-full object-cover"
+                  className="scale-110 object-cover opacity-35 blur-xl"
                   loading="lazy"
                   unoptimized={isProxyMediaUrl(getMediaUrl(item))}
+                  aria-hidden="true"
+                />
+                <Image
+                  src={getMediaUrl(item)}
+                  alt=""
+                  fill
+                  className="object-contain"
+                  loading="lazy"
+                  unoptimized={isProxyMediaUrl(getMediaUrl(item))}
+                  onError={() =>
+                    setFailedEvidence((current) => {
+                      const next = new Set(current);
+                      next.add(item);
+                      return next;
+                    })
+                  }
                 />
               </div>
             ))}
           </div>
         </div>
       )}
+        </div>
+      </details>
     </motion.div>
   );
 }
@@ -430,25 +486,36 @@ function ImpactCard({ cause }: { cause: CauseDetail }) {
     cause.sections
       ?.map((section) => section.heading || section.description)
       .filter(Boolean) || [];
-  const bullets = impactItems.slice(0, 3);
+  const fallbackImpact = [
+    `Direct support for the campaign in ${cause.location || "the target community"}`,
+    "Funds released against reviewed campaign milestones",
+    "Progress and evidence shared with supporters",
+  ];
+  const bullets = [...impactItems, ...fallbackImpact]
+    .filter((item, index, items) => items.indexOf(item) === index)
+    .slice(0, 3);
 
   return (
     <motion.div
-      className="rounded-[14px] border border-[#E5E7EB] bg-white p-4 text-sm text-[#64748B] shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-6"
+      className="rounded-[20px] border border-[#DDE3EA] bg-white p-6 text-sm text-[#53647A] sm:p-7"
       variants={fadeUp}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.2 }}
     >
-      <p className="text-xs uppercase tracking-[0.15em] text-[#64748B]">
-        Impact in 3 bullets
+      <div className="text-[11px] font-bold uppercase tracking-[0.09em] text-[#235DA7]">
+        Expected impact
+      </div>
+      <p className="mt-2 text-[21px] font-extrabold tracking-tight text-[#10233F]">
+        Where your support goes
       </p>
       {bullets.length > 0 ? (
-        <div className="mt-3 grid gap-2">
+        <div className="mt-5 grid gap-4">
           {bullets.map((item, index) => (
-            <div key={`${item}-${index}`} className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-500" />
-              <span>{item}</span>
+            <div key={`${item}-${index}`} className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#ECF5FF]">
+                <CheckCircle2 className="h-4 w-4 text-[#235DA7]" />
+              </span>
+              <span className="pt-1.5 text-[14px] font-semibold text-[#33445A]">
+                {item}
+              </span>
             </div>
           ))}
         </div>
@@ -470,10 +537,7 @@ function StatsRow({
   donorsCount: number;
 }) {
   return (
-    <motion.div
-      className="grid gap-3 sm:gap-4 sm:grid-cols-3"
-      variants={fadeUp}
-    >
+    <motion.div className="grid gap-3 sm:grid-cols-3" variants={fadeUp}>
       <StatItem
         icon={<Target className="h-4 w-4" />}
         label="Raised"
@@ -504,14 +568,11 @@ function PledgesCard({
 
   return (
     <motion.div
-      className="rounded-[14px] border border-[#E5E7EB] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-6"
+      className="rounded-[28px] border border-[#DDE3EA] bg-white p-5 shadow-[0_24px_70px_-45px_rgba(16,35,63,0.45)] sm:p-6"
       variants={fadeUp}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.2 }}
     >
       <div className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#65758B]">
           Pledge
         </p>
         <HandHeart className="h-4 w-4 text-[#2563EB]" />
@@ -537,11 +598,8 @@ function PledgesCard({
 function MediaCard({ media, cause }: { media: string[]; cause: CauseDetail }) {
   return (
     <motion.div
-      className="overflow-hidden rounded-[14px] border border-[#E5E7EB] bg-white shadow-[0_10px_30px_rgba(0,0,0,0.06)]"
+      className="overflow-hidden"
       variants={fadeUp}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.2 }}
     >
       {media.length > 0 || cause.image ? (
         <MultimediaCarousel
@@ -567,34 +625,37 @@ function ProgressCard({
 }) {
   return (
     <motion.div
-      className="rounded-[14px] border border-[#E5E7EB] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-6"
+      className="rounded-2xl border border-[#DDE3EA] bg-white p-4 sm:rounded-[20px] sm:p-7"
       variants={fadeUp}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.2 }}
     >
       <div className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
-          Progress
+        <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-[#235DA7]">
+          Funding progress
         </p>
-        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+        <span className="rounded-full bg-[#E6F6D2] px-3 py-1.5 text-xs font-bold text-[#31551A]">
           {percentRaised}% funded
         </span>
       </div>
-      <div className="mt-4 flex items-end gap-3">
-        <p className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+      <div className="mt-4 flex flex-wrap items-end gap-x-3 gap-y-1 sm:mt-5">
+        <p className="text-[28px] font-extrabold tabular-nums tracking-tight text-[#10233F] sm:text-[32px]">
           ₦{cause.raised.toLocaleString()}
         </p>
         <p className="text-sm text-slate-500">
           raised of ₦{cause.goal.toLocaleString()}
         </p>
       </div>
-      <div className="mt-4">
-        <Progress value={percentRaised} />
-      </div>
-      <div className="mt-3 text-sm text-slate-500">
-        ₦{cause.raised.toLocaleString()} raised • {percentRaised}% funded •{" "}
-        {cause.days_active} days left
+      <Progress
+        value={percentRaised}
+        className="mt-4 h-2.5 bg-[#E8EDF2] sm:mt-5 [&>div]:bg-[#235DA7]"
+      />
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs tabular-nums text-[#65758B]">
+        <span>
+          ₦{cause.raised.toLocaleString()} raised • {percentRaised}% funded
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ECF5FF] px-3 py-1.5 font-bold text-[#235DA7]">
+          <CalendarClock className="h-3.5 w-3.5" />
+          {cause.days_active} days left
+        </span>
       </div>
     </motion.div>
   );
@@ -618,15 +679,12 @@ function TabsCard({
   const commentCount = comments.length;
   return (
     <motion.div
-      className="rounded-[14px] border border-[#E5E7EB] bg-white shadow-[0_10px_30px_rgba(0,0,0,0.06)]"
+      className="overflow-hidden rounded-2xl border border-[#DDE3EA] bg-white sm:rounded-[20px]"
       variants={fadeUp}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.2 }}
     >
-      <div className="border-b border-slate-200 px-3 py-3 sm:px-4">
+      <div className="border-b border-[#E8EDF2] px-4 py-4 sm:hidden">
         <select
-          className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 sm:hidden"
+          className="w-full rounded-xl border border-[#DDE3EA] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-[#10233F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7]"
           value={activeTab}
           onChange={(event) => setActiveTab(event.target.value as TabKey)}
         >
@@ -638,16 +696,16 @@ function TabsCard({
         </select>
       </div>
 
-      <div className="hidden items-center gap-2 overflow-x-auto border-b border-slate-200 px-3 py-3 sm:flex sm:px-4">
+      <div className="hidden items-center gap-1 overflow-x-auto border-b border-[#E8EDF2] px-6 py-4 sm:flex">
         {tabs.map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 sm:px-4 sm:py-2 sm:text-xs ${
+            className={`shrink-0 whitespace-nowrap rounded-[10px] px-4 py-2.5 text-[13px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7] ${
               activeTab === tab
-                ? "bg-slate-900 text-white"
-                : "border border-slate-200 bg-white text-slate-600"
+                ? "bg-[#ECF5FF] text-[#235DA7]"
+                : "text-[#53647A] hover:bg-[#F8FAFC] hover:text-[#10233F]"
             }`}
             aria-pressed={activeTab === tab}
           >
@@ -656,28 +714,15 @@ function TabsCard({
         ))}
       </div>
 
-      <div className="p-4 sm:p-6">
-        {activeTab === "Milestones" && (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
-            Milestones are not yet configured for this campaign. Add milestone
-            proof to unlock escrowed releases.
-          </div>
-        )}
-
+      <div className="p-5 sm:p-7">
         {activeTab === "Updates" && (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
+          <div className="rounded-2xl border border-dashed border-[#CCD6E0] bg-[#F8FAFC] p-6 text-sm leading-6 text-[#53647A]">
             No updates yet. The organiser will post timeline updates here.
           </div>
         )}
 
-        {activeTab === "Budget" && (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
-            Budget breakdown will appear once provided by the organiser.
-          </div>
-        )}
-
         {activeTab === "Comments" && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-2xl bg-[#F8FAFC] p-4 sm:p-5">
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <MessagesSquare className="h-4 w-4 text-emerald-500" />
               {commentCount} comments
@@ -738,11 +783,7 @@ function DonateCard({
   setTip,
   serviceFee,
   totalWithTip,
-  impactText,
   profile,
-  creatorHasWallet,
-  donorsPreview,
-  raisedToday,
 }: {
   cause: CauseDetail;
   donation: number;
@@ -753,36 +794,31 @@ function DonateCard({
   setTip: (value: number) => void;
   serviceFee: number;
   totalWithTip: number;
-  impactText: string;
   profile: ProfileSummary;
-  creatorHasWallet: boolean;
-  donorsPreview: { id: string; name: string; amount: number }[];
-  raisedToday: number;
 }) {
   return (
     <motion.div
-      className="rounded-[14px] border border-[#E5E7EB] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-6"
+      className="overflow-hidden rounded-[20px] border border-[#DDE3EA] bg-white"
       variants={fadeUp}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.2 }}
     >
-      <div className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
-          Donate
+      <div className="bg-[#10233F] px-4 py-4 text-white sm:px-6 sm:py-5">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D9FF5B]">
+            Support this campaign
+          </p>
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 sm:h-9 sm:w-9">
+            <HandHeart className="h-4 w-4 text-[#D9FF5B]" />
+          </span>
+        </div>
+        <h3 className="mt-1.5 text-xl font-bold tracking-tight sm:mt-2 sm:text-2xl">
+          Make a donation
+        </h3>
+        <p className="mt-1.5 hidden text-xs leading-5 text-white/55 sm:block">
+          Secure checkout · Publicly audited milestones
         </p>
-        <HandHeart className="h-4 w-4 text-[#2563EB]" />
       </div>
 
-      <h3 className="mt-3 text-xl font-semibold text-slate-900 sm:text-2xl">
-        Make a donation
-      </h3>
-      <p className="mt-2 text-sm text-slate-600">
-        Rewards only apply to verified campaigns. Every milestone release is
-        publicly audited.
-      </p>
-
-      <div className="mt-4 space-y-3">
+      <div className="space-y-3 p-4 sm:p-6 [&_label]:text-sm [&_label]:text-[#33445A] [&_input]:h-10 sm:[&_input]:h-11 [&_input]:rounded-xl [&_input]:border-[#D8E0E8] [&_textarea]:rounded-xl [&_textarea]:border-[#D8E0E8]">
         <DonationForm
           causeId={cause.id}
           profile={profile}
@@ -797,18 +833,21 @@ function DonateCard({
           hideAmountField
           hideCheckoutSummary
           flush
+          compactOptionalFields
+          submitLabel="Donate"
+          submitClassName="h-11 rounded-xl bg-[#235DA7] text-sm font-bold text-white shadow-[0_14px_30px_-14px_rgba(35,93,167,0.8)] hover:bg-[#1D4E8E] disabled:bg-[#AAB7C5] sm:h-12"
           beforeFields={
             <>
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+              <div className="grid grid-cols-2 gap-2">
                 {donationPresets.map((amount) => (
                   <button
                     key={amount}
                     type="button"
                     onClick={() => setDonation(amount)}
-                    className={`rounded-full border px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
+                    className={`rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7] sm:py-2.5 ${
                       donation === amount
-                        ? "border-[#2563EB] bg-[#2563EB] text-white"
-                        : "border-[#E5E7EB] bg-white text-[#64748B]"
+                        ? "border-[#2563EB] bg-[#ECF5FF] text-[#2563EB]"
+                        : "border-[#D8E0E8] bg-white text-[#53647A] hover:border-[#8FA5BC]"
                     }`}
                   >
                     ₦{amount.toLocaleString()}
@@ -816,38 +855,41 @@ function DonateCard({
                 ))}
               </div>
 
-              <label className="grid gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
-                <span className="text-xs uppercase tracking-[0.15em] text-slate-500">
+              <label className="grid gap-2 text-sm">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#65758B]">
                   Donation amount
                 </span>
-                <div className="flex items-stretch overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                  <span className="flex items-center justify-center bg-slate-900 px-3 text-sm font-semibold text-white">
+                <div className="flex items-stretch overflow-hidden rounded-xl border border-[#CBD7E4] bg-white">
+                  <span className="flex items-center justify-center bg-[#10233F] px-4 text-sm font-bold text-white">
                     ₦
                   </span>
                   <input
                     type="text"
                     inputMode="numeric"
-                    maxLength={12}
-                    value={donation ? donation.toString() : ""}
+                    maxLength={16}
+                    value={
+                      donation ? donation.toLocaleString("en-US") : ""
+                    }
                     onChange={(event) => {
                       const next = event.target.value.replace(/\D/g, "");
                       const capped = next.slice(0, 12);
                       setDonation(capped ? Number(capped) : 0);
                     }}
-                    className="w-full appearance-none bg-transparent px-3 py-2 text-right text-sm text-slate-900 outline-none"
-                    placeholder="0"
+                    className="min-w-0 flex-1 appearance-none bg-transparent px-3 py-2 text-right text-lg font-bold tabular-nums text-[#10233F] outline-none"
+                    placeholder="Enter amount"
+                    aria-label="Donation amount"
                   />
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="hidden text-xs text-slate-500 sm:block">
                   This is the amount that goes toward the campaign.
                 </p>
               </label>
             </>
           }
-          afterFields={
-            <div className="grid gap-3">
-              <label className="grid gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-4 text-sm text-[#64748B]">
-                <span className="font-semibold text-slate-700">
+          optionalFieldsExtra={
+            <div className="grid gap-5 border-t border-slate-200 pt-4">
+              <label className="grid gap-2 text-sm text-[#53647A]">
+                <span className="font-semibold text-[#33445A]">
                   Contribution schedule
                 </span>
                 <select
@@ -857,7 +899,7 @@ function DonateCard({
                       event.target.value as "one_time" | "weekly" | "monthly",
                     )
                   }
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                  className="rounded-xl border border-[#D8E0E8] bg-white px-3 py-3 text-sm font-semibold text-[#33445A] outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7]"
                 >
                   <option value="one_time">One-time</option>
                   <option value="weekly">Every week</option>
@@ -865,136 +907,99 @@ function DonateCard({
                 </select>
               </label>
 
-              <label className="grid gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-4 text-sm text-[#64748B]">
-                <span className="text-base font-semibold text-slate-800">
+              <div className="grid gap-2 text-sm text-[#53647A]">
+                <span className="font-semibold text-[#33445A]">
                   Optional platform tip
                 </span>
-                <p className="text-xs text-slate-500">
-                  Add a separate tip to support Refreeg operation.
-                </p>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <div className="grid grid-cols-3 gap-2">
                   {tipPresets.map((value) => (
                     <button
                       key={value}
                       type="button"
                       onClick={() => setTip(tip === value ? 0 : value)}
-                      className={`rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
+                      className={`rounded-xl px-2 py-2.5 text-xs font-semibold transition ${
                         tip === value
-                          ? "bg-[#0F172A] text-white shadow-[0_10px_18px_rgba(15,23,42,0.18)]"
-                          : "border border-[#E5E7EB] bg-white text-[#64748B]"
+                          ? "bg-[#10233F] text-white"
+                          : "border border-[#D8E0E8] bg-white text-[#53647A]"
                       }`}
                     >
                       ₦{value.toLocaleString()}
                     </button>
                   ))}
-                  <div className="col-span-2 sm:col-span-1">
-                    <div className="flex items-stretch overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                      <span className="flex items-center justify-center bg-slate-900 px-3 text-sm font-semibold text-white">
-                        ₦
-                      </span>
-                      <input
-                        type="number"
-                        min={0}
-                        value={tip}
-                        onChange={(event) => setTip(Number(event.target.value))}
-                        className="w-full bg-transparent px-3 py-2 text-right text-sm font-semibold text-slate-900 outline-none"
-                        placeholder="Custom"
-                      />
-                      {/* Hidden input to keep DonationForm logic intact */}
-                      <input
-                        type="range"
-                        min={0}
-                        max={20}
-                        step={1}
-                        value={
-                          typeof tip === "number" && donation > 0
-                            ? Math.round((tip / donation) * 100)
-                            : 0
-                        }
-                        onChange={(e) => {
-                          const pct = Number(e.target.value);
-                          setTip(Math.round(donation * (pct / 100)));
-                        }}
-                        className="hidden"
-                      />
-                    </div>
-                  </div>
                 </div>
-              </label>
-
-              <div className="rounded-[14px] border border-[#E5E7EB] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
-                <p className="text-xs uppercase tracking-[0.15em] text-[#64748B]">
-                  Donation summary
-                </p>
-                <p className="mt-2 text-sm text-[#0F172A]">{impactText}</p>
-                {donation > 0 && (
-                  <div className="mt-3 space-y-1 border-t border-slate-100 pt-3">
-                    <div className="flex justify-between text-sm font-semibold text-slate-900">
-                      <span>Your donation</span>
-                      <span>₦{donation.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-xs text-slate-500">
+                <div className="flex items-stretch overflow-hidden rounded-xl border border-[#D8E0E8] bg-white">
+                  <span className="flex items-center justify-center bg-[#10233F] px-3 text-sm font-semibold text-white">
+                    ₦
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={16}
+                    value={tip ? tip.toLocaleString("en-US") : ""}
+                    onChange={(event) => {
+                      const digits = event.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 12);
+                      setTip(digits ? Number(digits) : 0);
+                    }}
+                    className="min-w-0 flex-1 bg-transparent px-3 py-2 text-right text-sm font-semibold tabular-nums text-[#10233F] outline-none"
+                    placeholder="Enter custom tip"
+                    aria-label="Custom platform tip amount"
+                  />
+                </div>
+              </div>
+            </div>
+          }
+          afterFields={
+            <div className="rounded-2xl bg-[#ECF5FF] p-3 sm:p-4">
+              <div className="flex items-center justify-between text-sm font-semibold text-[#10233F]">
+                <span>Campaign receives</span>
+                <span>₦{donation.toLocaleString()}</span>
+              </div>
+              <div className="mt-3 flex items-center justify-between border-t border-[#C8D8E8] pt-3">
+                <span className="text-sm font-bold text-[#10233F]">
+                  Checkout total
+                </span>
+                <span className="text-lg font-bold text-[#235DA7]">
+                  ₦{totalWithTip.toLocaleString()}
+                </span>
+              </div>
+              {(serviceFee > 0 || tip > 0) && (
+                <details className="group mt-3 border-t border-[#C8D8E8] pt-3">
+                  <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-[#53647A]">
+                    View breakdown
+                    <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-2 grid gap-1.5 text-xs text-[#65758B]">
+                    <div className="flex justify-between">
                       <span>Service fee</span>
                       <span>₦{serviceFee.toLocaleString()}</span>
                     </div>
                     {tip > 0 && (
-                      <div className="flex justify-between text-xs text-slate-500">
+                      <div className="flex justify-between">
                         <span>Optional platform tip</span>
                         <span>₦{tip.toLocaleString()}</span>
                       </div>
                     )}
                   </div>
-                )}
-              </div>
-
-              <div className="space-y-2 text-sm text-[#64748B]">
-                <div className="flex items-center justify-between">
-                  <span>Total raised today</span>
-                  <span className="text-[#0F172A] font-medium">
-                    ₦{raisedToday.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between border-t border-slate-100 pt-2">
-                  <span className="font-semibold text-slate-700">
-                    Checkout total
-                  </span>
-                  <span className="text-[#2563EB] font-bold">
-                    ₦{totalWithTip.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-600">
-                <p className="text-[11px] uppercase tracking-[0.15em] font-semibold text-slate-700">
-                  Recent donors
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {donorsPreview.length > 0 ? (
-                    donorsPreview.slice(0, 3).map((donor) => (
-                      <span
-                        key={donor.id}
-                        className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs text-slate-700"
-                      >
-                        {donor.name}
-                        <span className="text-emerald-600">
-                          ₦{donor.amount.toLocaleString()}
-                        </span>
-                      </span>
-                    ))
-                  ) : (
-                    <span className="font-semibold text-slate-700">
-                      Be the first to donate.
-                    </span>
-                  )}
-                </div>
-              </div>
+                </details>
+              )}
             </div>
           }
         />
 
+        <div className="flex items-center gap-3 py-1">
+          <span className="h-px flex-1 bg-[#E1E7ED]" />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7B899A]">
+            Or use crypto
+          </span>
+          <span className="h-px flex-1 bg-[#E1E7ED]" />
+        </div>
         <BreetCryptoDonationModal
           causeId={cause.id}
-          donorId={profile.id || null} // ◄ Change 'currentUserId' to 'profile.id' here!
+          donorId={profile.id || null}
+          triggerLabel="Donate with USDT"
+          triggerClassName="h-11 w-full gap-x-2 rounded-xl border-[#CBD7E4] bg-white text-sm font-bold text-[#33445A] shadow-none hover:border-[#235DA7] hover:bg-[#ECF5FF] hover:text-[#235DA7] sm:h-12"
         />
         {/* <Link
           href={`/causes/${cause.id}/pledge`}
@@ -1004,7 +1009,7 @@ function DonateCard({
         </Link> */}
       </div>
 
-      <div className="mt-4 flex items-start gap-2 text-xs text-[#64748B]">
+      <div className="mx-4 mb-4 flex items-start gap-2 border-t border-[#E8EDF2] pt-3 text-[11px] leading-4 text-[#65758B] sm:mx-6 sm:mb-5 sm:pt-4 sm:text-xs sm:leading-5">
         <ShieldAlert className="mt-0.5 h-4 w-4 text-[#F59E0B]" />
         Donations below ₦5 do not earn EIZA. Refunds or chargebacks remove
         rewards.
@@ -1031,18 +1036,15 @@ function CampaignHealthCard({
   currentUserId?: string;
   isFollowing?: boolean;
 }) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-  const totalPages = Math.ceil(donors.length / itemsPerPage);
-
-  const paginatedDonors = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return donors.slice(start, start + itemsPerPage).map((donor) => ({
+  const recentDonors = useMemo(
+    () =>
+      donors.map((donor) => ({
       id: donor.id,
       name: donor.name || "Anonymous",
       amount: donor.amount || 0,
-    }));
-  }, [donors, currentPage]);
+      })),
+    [donors],
+  );
 
   const [followed, setFollowed] = useState(isFollowing || false);
   const [followError, setFollowError] = useState<string | null>(null);
@@ -1071,32 +1073,19 @@ function CampaignHealthCard({
 
   return (
     <motion.div
-      className="rounded-[14px] border border-[#E5E7EB] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-6"
+      className="rounded-[20px] border border-[#DDE3EA] bg-white p-6"
       variants={fadeUp}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.2 }}
     >
       <div className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
-          Campaign health
-        </p>
-        <Target className="h-4 w-4 text-rose-500" />
-      </div>
-      <p className="mt-2 text-xs text-slate-500">
-        Auto prompts trigger when momentum dips or the goal nears completion.
-      </p>
-
-      <div className="mt-4 flex items-center justify-between">
         <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
           Recent donors
         </p>
         <Share2 className="h-4 w-4 text-slate-400" />
       </div>
       <div className="mt-3 grid gap-3 text-sm text-slate-600">
-        {paginatedDonors.length > 0 ? (
+        {recentDonors.length > 0 ? (
           <>
-            {paginatedDonors.map((donor) => (
+            {recentDonors.slice(0, 3).map((donor) => (
               <div key={donor.id} className="flex items-center justify-between">
                 <span className="truncate pr-2">{donor.name}</span>
                 <span className="shrink-0 font-medium text-emerald-600">
@@ -1105,30 +1094,26 @@ function CampaignHealthCard({
               </div>
             ))}
 
-            {totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-500"
-                >
-                  <ChevronLeft className="h-3 w-3" />
-                  Prev
-                </button>
-                <span className="text-[11px] font-medium text-slate-400">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-500"
-                >
-                  Next
-                  <ChevronRight className="h-3 w-3" />
-                </button>
-              </div>
+            {recentDonors.length > 3 && (
+              <details className="group border-t border-slate-100 pt-3">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-bold text-[#235DA7]">
+                  View all donors
+                  <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="mt-3 grid gap-3">
+                  {recentDonors.slice(3).map((donor) => (
+                    <div
+                      key={donor.id}
+                      className="flex items-center justify-between"
+                    >
+                      <span className="truncate pr-2">{donor.name}</span>
+                      <span className="shrink-0 font-medium text-emerald-600">
+                        ₦{Number(donor.amount).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </details>
             )}
           </>
         ) : (
@@ -1138,7 +1123,7 @@ function CampaignHealthCard({
 
       {/* Follow campaign button */}
       {followed ? (
-        <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
+        <div className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-[#C5E6A0] bg-[#EFF9E3] px-4 py-3 text-sm font-semibold text-[#31551A]">
           <CheckCheck className="h-4 w-4" />
           Following this campaign
         </div>
@@ -1148,7 +1133,7 @@ function CampaignHealthCard({
             type="button"
             onClick={handleFollow}
             disabled={isPending}
-            className="mt-4 w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs uppercase tracking-[0.15em] text-slate-600 transition hover:border-slate-400 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#235DA7] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#2563EB] disabled:opacity-50"
           >
             <Bell className="h-3 w-3" />
             {isPending ? "Following..." : "Follow campaign"}
@@ -1214,30 +1199,95 @@ function StorySections({
   sections: { heading: string; description: string }[];
 }) {
   const [expanded, setExpanded] = useState(false);
+  const isLongStory =
+    sections.length > 2 ||
+    sections.reduce(
+      (total, section) =>
+        total + section.heading.length + section.description.length,
+      0,
+    ) > 650;
   const visible = expanded ? sections : sections.slice(0, 2);
 
   return (
-    <div className="space-y-4">
-      {visible.map((section, index) => (
-        <div
-          key={index}
-          className="rounded-xl border border-slate-200 bg-slate-50 p-4"
-        >
-          <p className="text-sm font-semibold text-slate-900">
-            {section.heading}
-          </p>
-          <p className="mt-2 whitespace-pre-line text-sm text-slate-600">
-            {section.description}
-          </p>
-        </div>
-      ))}
-      {sections.length > 2 && (
+    <div>
+      <div
+        className={`relative space-y-4 ${
+          isLongStory && !expanded ? "max-h-[210px] overflow-hidden" : ""
+        }`}
+      >
+        {visible.map((section, index) => (
+          <div
+            key={index}
+            className="border-b border-[#E1E7ED] pb-5 last:border-0 last:pb-0"
+          >
+            <p className="text-base font-bold text-[#10233F]">
+              {section.heading}
+            </p>
+            <p className="mt-2 whitespace-pre-line text-sm leading-7 text-[#53647A]">
+              {section.description}
+            </p>
+          </div>
+        ))}
+        {isLongStory && !expanded && (
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white via-white/90 to-transparent"
+            aria-hidden="true"
+          />
+        )}
+      </div>
+      {isLongStory && (
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="text-sm font-semibold text-slate-700 underline underline-offset-4"
+          className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[#235DA7] hover:text-[#2563EB]"
+          aria-expanded={expanded}
         >
-          {expanded ? "Show less" : "Read full story"}
+          {expanded ? "Show less" : "Read more"}
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${
+              expanded ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function CollapsibleStoryText({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLongStory = text.length > 650;
+
+  return (
+    <div>
+      <div
+        className={`relative ${
+          isLongStory && !expanded ? "max-h-[210px] overflow-hidden" : ""
+        }`}
+      >
+        <p className="whitespace-pre-line text-sm leading-7 text-[#53647A]">
+          {text}
+        </p>
+        {isLongStory && !expanded && (
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white via-white/90 to-transparent"
+            aria-hidden="true"
+          />
+        )}
+      </div>
+      {isLongStory && (
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[#235DA7] hover:text-[#2563EB]"
+          aria-expanded={expanded}
+        >
+          {expanded ? "Show less" : "Read more"}
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${
+              expanded ? "rotate-180" : ""
+            }`}
+          />
         </button>
       )}
     </div>
@@ -1249,16 +1299,29 @@ export default function CampaignQualityLab({
   donors,
   comments,
   profile,
-  creatorHasWallet,
   currentUserId,
 }: CampaignQualityLabProps) {
-  const [donation, setDonation] = useState(25);
+  const [donation, setDonation] = useState(0);
   const [activeTab, setActiveTab] = useState<TabKey>("Comments");
   const [recurring, setRecurring] = useState<"one_time" | "weekly" | "monthly">(
     "one_time",
   );
-  const [tip, setTip] = useState(5);
+  const [tip, setTip] = useState(0);
+  const [isDonateVisible, setIsDonateVisible] = useState(false);
   const donateRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const donationElement = donateRef.current;
+    if (!donationElement || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsDonateVisible(entry.isIntersecting),
+      { threshold: 0.1 },
+    );
+    observer.observe(donationElement);
+
+    return () => observer.disconnect();
+  }, []);
 
   const percentRaised = useMemo(() => {
     if (!cause.goal) return 0;
@@ -1275,36 +1338,10 @@ export default function CampaignQualityLab({
     [cause.created_at],
   );
 
-  const impactText = useMemo(() => {
-    return (
-      cause.summary ||
-      "Impact details will appear once provided by the campaign creator."
-    );
-  }, [cause.summary]);
-
   const serviceFee = useMemo(() => calculateServiceFee(donation), [donation]);
   const totalWithTip = useMemo(
     () => donation + tip + serviceFee,
     [donation, tip, serviceFee],
-  );
-
-  const raisedToday = useMemo(() => {
-    const today = new Date().toISOString().split("T")[0];
-    return donors.reduce((sum, donor) => {
-      if (!donor.created_at) return sum;
-      const donorDate = new Date(donor.created_at).toISOString().split("T")[0];
-      return donorDate === today ? sum + (donor.amount || 0) : sum;
-    }, 0);
-  }, [donors]);
-
-  const donorsPreview = useMemo(
-    () =>
-      donors.slice(0, 5).map((donor) => ({
-        id: donor.id,
-        name: donor.name || "Anonymous",
-        amount: donor.amount || 0,
-      })),
-    [donors],
   );
 
   const media = useMemo(() => {
@@ -1314,53 +1351,23 @@ export default function CampaignQualityLab({
   const baseUrl = getBaseURL();
 
   return (
-    <div
-      className="min-h-screen bg-[#F6F8FB] pt-0 text-[#0F172A]"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle at 50% 20%, rgba(37,99,235,0.08), transparent 60%)",
-      }}
-    >
-      <div className="border-b border-[#E5E7EB] bg-white">
-        <div className="container px-4 pb-4 pt-0 sm:pb-6 sm:pt-0">
-          <motion.div
-            className="flex flex-col gap-5 sm:gap-6"
-            variants={stagger}
-            initial="hidden"
-            animate="show"
-          >
-            <HeaderMeta
-              status={cause.status}
-              formattedDate={formattedDate}
-              trustScore={cause.trust_score?.impact}
-              cause={cause}
-              profile={profile}
-            />
+    <div className="min-h-screen bg-[#F8FAFC] text-[#10233F]">
+      <main className="mx-auto grid max-w-[1280px] items-start gap-4 px-3 pb-24 pt-4 sm:gap-6 sm:px-6 sm:pb-28 sm:pt-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)] lg:gap-8 lg:px-5">
+        <motion.div
+          className="order-1 lg:col-start-1 lg:row-start-1"
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+        >
+          <HeroSummary
+            cause={cause}
+            donorsCount={donors.length}
+          />
+        </motion.div>
 
-            <motion.div className="grid gap-6" variants={stagger}>
-              <HeroSummary cause={cause} donorsCount={donors.length} />
-            </motion.div>
-
-            <motion.div className="flex flex-wrap gap-2" variants={fadeUp}>
-              {trustStrip.map((item) => (
-                <span
-                  key={item.label}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${item.tone}`}
-                >
-                  {item.label}
-                </span>
-              ))}
-            </motion.div>
-
-            <StatsRow cause={cause} donorsCount={donors.length} />
-          </motion.div>
-        </div>
-      </div>
-
-      <main className="container grid items-start gap-6 px-4 pb-24 pt-6 sm:py-8 lg:grid-cols-[1.05fr_0.95fr]">
-        <aside className="order-2 self-start space-y-6 lg:order-2 lg:col-start-2 lg:row-span-2 lg:self-start">
-          <div className="space-y-6 lg:sticky lg:top-24">
-            <div ref={donateRef}>
+        <aside className="contents lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:block lg:self-start">
+          <div className="contents lg:sticky lg:top-24 lg:block">
+            <div className="order-3" ref={donateRef}>
               <DonateCard
                 cause={cause}
                 donation={donation}
@@ -1371,96 +1378,100 @@ export default function CampaignQualityLab({
                 setTip={setTip}
                 serviceFee={serviceFee}
                 totalWithTip={totalWithTip}
-                impactText={impactText}
                 profile={profile}
-                creatorHasWallet={creatorHasWallet}
-                donorsPreview={donorsPreview}
-                raisedToday={raisedToday}
               />
             </div>
-            {/* <PledgesCard cause={cause} profile={profile} /> */}
-            <CampaignHealthCard
-              donors={donors}
-              causeId={cause.id}
-              currentUserId={currentUserId}
-              isFollowing={cause.isFollowing}
-            />
+            <div className="order-5 lg:mt-6">
+              <CampaignHealthCard
+                donors={donors}
+                causeId={cause.id}
+                currentUserId={currentUserId}
+                isFollowing={cause.isFollowing}
+              />
+            </div>
           </div>
         </aside>
 
-        <section className="order-1 space-y-6 lg:order-1 lg:col-start-1 lg:col-end-2">
-          <MediaCard media={media} cause={cause} />
-          <ProgressCard cause={cause} percentRaised={percentRaised} />
-          <motion.div
-            className="rounded-[14px] border border-[#E5E7EB] bg-white p-4 text-sm text-slate-600 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-6"
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.2 }}
-          >
-            <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
-              Story
-            </p>
-            <div className="mt-3 space-y-4">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <span>Created by</span>
-                <Link
-                  href={`/${cause.user.username}`}
-                  className="flex items-center gap-1.5 hover:underline"
-                >
-                  {cause.user.profile_photo && (
-                    <Image
-                      src={getMediaUrl(cause.user.profile_photo)}
-                      alt={cause.user.name}
-                      width={20}
-                      height={20}
-                      className="rounded-full object-cover"
-                      unoptimized={isProxyMediaUrl(
-                        getMediaUrl(cause.user.profile_photo),
-                      )}
-                    />
-                  )}
-                  <span className="font-medium text-slate-800">
-                    {cause.user.name}
-                  </span>
-                </Link>
-                <span className="text-slate-300">•</span>
-                <span className="capitalize">{cause.category}</span>
-                <span className="text-slate-300">•</span>
-                <span>{formattedDate}</span>
-              </div>
-              {cause.sections && cause.sections.length > 0 ? (
-                <StorySections sections={cause.sections} />
-              ) : cause.description ? (
-                <p className="whitespace-pre-line text-sm text-slate-600">
-                  {cause.description}
-                </p>
-              ) : (
-                <p className="text-sm text-slate-500">
-                  No story yet. The campaign creator can add the full context
-                  and plan here.
-                </p>
-              )}
-            </div>
-          </motion.div>
-          <ImpactCard cause={cause} />
-          <TrustPanel baseUrl={baseUrl} cause={cause} />
-        </section>
+        <div className="order-2 lg:col-start-1 lg:row-start-2">
+          <section className="space-y-4 sm:space-y-6">
+            <MediaCard media={media} cause={cause} />
+            <ProgressCard cause={cause} percentRaised={percentRaised} />
+          </section>
+        </div>
 
-        <section className="order-3 lg:col-start-1 lg:col-end-2">
-          <TabsCard
-            cause={cause}
-            formattedDate={formattedDate}
-            comments={comments}
-            currentUserId={currentUserId}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-          />
-        </section>
+        <div className="order-4 space-y-4 sm:space-y-6 lg:col-start-1 lg:row-start-3">
+          <section className="space-y-4 sm:space-y-6">
+            <motion.div
+              className="rounded-2xl border border-[#DDE3EA] bg-white p-4 text-sm text-[#53647A] sm:rounded-[20px] sm:p-7"
+              variants={fadeUp}
+            >
+              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-[#235DA7]">
+                The story
+              </p>
+              <div className="mt-5 space-y-5">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-[#65758B]">
+                  <Link
+                    href={`/${cause.user.username}`}
+                    className="flex items-center gap-2 font-semibold text-[#10233F] hover:text-[#235DA7]"
+                  >
+                    {cause.user.profile_photo ? (
+                      <Image
+                        src={getMediaUrl(cause.user.profile_photo)}
+                        alt={cause.user.name}
+                        width={24}
+                        height={24}
+                        className="h-6 w-6 rounded-full object-cover"
+                        unoptimized={isProxyMediaUrl(
+                          getMediaUrl(cause.user.profile_photo),
+                        )}
+                      />
+                    ) : (
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#10233F] text-[9px] text-white">
+                        {cause.user.name.slice(0, 1)}
+                      </span>
+                    )}
+                    {cause.user.name}
+                  </Link>
+                  <span className="text-[#C2CBD5]">•</span>
+                  <span className="capitalize">{cause.category}</span>
+                  <span className="text-[#C2CBD5]">•</span>
+                  <span>{formattedDate}</span>
+                </div>
+                {cause.sections && cause.sections.length > 0 ? (
+                  <StorySections sections={cause.sections} />
+                ) : cause.description ? (
+                  <CollapsibleStoryText text={cause.description} />
+                ) : (
+                  <p className="text-sm text-[#65758B]">
+                    No story yet. The campaign creator can add the full context
+                    and plan here.
+                  </p>
+                )}
+              </div>
+            </motion.div>
+            <TrustPanel baseUrl={baseUrl} cause={cause} />
+          </section>
+
+          <section>
+            <TabsCard
+              cause={cause}
+              formattedDate={formattedDate}
+              comments={comments}
+              currentUserId={currentUserId}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+          </section>
+        </div>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] sm:hidden">
-        <div className="mx-auto flex max-w-md items-center gap-3">
+      {!isDonateVisible && (
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#D8E0E8] bg-white/95 px-4 py-3 shadow-[0_-16px_40px_rgba(16,35,63,0.14)] backdrop-blur-xl sm:hidden">
+        <div className="mx-auto flex max-w-md items-center gap-4">
+          <div className="min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#65758B]">Raised</p>
+            <p className="truncate text-sm font-bold text-[#10233F]">₦{cause.raised.toLocaleString()}</p>
+          </div>
           <button
             type="button"
             onClick={() => {
@@ -1469,12 +1480,13 @@ export default function CampaignQualityLab({
                 block: "start",
               });
             }}
-            className="flex-1 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+            className="flex-1 rounded-xl bg-[#235DA7] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_-12px_rgba(35,93,167,0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7]"
           >
-            Donate
+            Donate now
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 }
