@@ -10,6 +10,32 @@
  * Docs: https://pm2.keymetrics.io/docs/usage/application-declaration/
  */
 
+const fs = require("fs");
+
+// Read secrets directly from disk instead of relying on the invoking shell's
+// environment. `pm2 start ecosystem.config.js` only forwards this file's own
+// `env` object to the spawned process — spreading `...process.env` used to
+// be how DATABASE_URL etc. got in, but that only works if whoever ran `pm2
+// start` happened to have secrets already sourced into their shell. Any
+// manual `pm2 restart`/`pm2 start`, or SSM Run Command invoked slightly
+// differently, could silently start the app with no secrets at all. Reading
+// the file here instead means it works identically every time, regardless of
+// how/by whom PM2 is invoked.
+function loadSecrets(secretsPath) {
+  if (!fs.existsSync(secretsPath)) return {};
+  const env = {};
+  for (const line of fs.readFileSync(secretsPath, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const idx = trimmed.indexOf("=");
+    if (idx === -1) continue;
+    env[trimmed.slice(0, idx).trim()] = trimmed.slice(idx + 1).trim();
+  }
+  return env;
+}
+
+const secrets = loadSecrets("/opt/refreeg/shared/secrets.env");
+
 module.exports = {
   apps: [
     {
@@ -20,14 +46,15 @@ module.exports = {
       // a full node_modules copy.
       script: "server.js",
       cwd: "/opt/refreeg/current",
-      // Spread process.env so every secret fetched from SSM Parameter Store by
-      // remote-deploy-scaled.sh (DATABASE_URL, PAYSTACK_SECRET_KEY, etc.)
-      // reaches the spawned process — PM2 does NOT auto-forward the invoking
-      // shell's env for apps started from a config file, only what's listed here.
       env: {
-        ...process.env,
+        ...secrets,
         NODE_ENV: "production",
         PORT: 3000,
+        // Next.js standalone server.js binds to process.env.HOSTNAME if set,
+        // defaulting to 0.0.0.0 otherwise. Pin it explicitly so the server
+        // always listens on all interfaces, reachable via 127.0.0.1 (required
+        // for the ALB health check target and any localhost check).
+        HOSTNAME: "0.0.0.0",
       },
 
       // ── Resource limits ───────────────────────────────────────────────────
@@ -54,9 +81,11 @@ module.exports = {
       script: "server.js",
       cwd: "/opt/refreeg/current",
       env: {
-        ...process.env,
+        ...secrets,
         NODE_ENV: "production",
         PORT: 4000,
+        // See the "frontend" app above.
+        HOSTNAME: "0.0.0.0",
       },
 
       // ── Resource limits ───────────────────────────────────────────────────
