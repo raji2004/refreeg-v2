@@ -2,15 +2,25 @@
 set -euo pipefail
 
 # ── Configuration ────────────────────────────────────────────────────────────
-APP_DIR="/mnt/data/refreeg"
+# Invoked two ways, both providing the same env vars:
+#   1. AWS SSM Run Command, targeting all running ASG instances on every push.
+#   2. A new ASG instance's own user-data script on boot (scripts/bootstrap-instance.sh),
+#      fetching whatever the latest deployed release currently is.
+# Either way this is the same code path — that's what makes scale-out
+# "automatic": a brand-new instance ends up running exactly what every other
+# instance is already running, no separate provisioning logic to maintain.
+APP_DIR="/opt/refreeg"
 RELEASES_DIR="${APP_DIR}/releases"
 SHARED_DIR="${APP_DIR}/shared"
 CURRENT_LINK="${APP_DIR}/current"
 RELEASE_ID="${RELEASE_ID:?RELEASE_ID env var is required (git sha)}"
-TARBALL="${TARBALL:?TARBALL env var is required}"
+RELEASES_BUCKET="${RELEASES_BUCKET:?RELEASES_BUCKET env var is required (S3 bucket name)}"
+SSM_PARAM_PATH="${SSM_PARAM_PATH:?SSM_PARAM_PATH env var is required (e.g. /refreeg/production)}"
 RELEASE_DIR="${RELEASES_DIR}/${RELEASE_ID}"
 KEEP_RELEASES=5
 MIN_FREE_DISK_KB=200000           # Require at least ~200 MB free before extracting
+
+mkdir -p "$APP_DIR" "$RELEASES_DIR" "$SHARED_DIR/logs"
 
 # ── 1. Disk-space guard ──────────────────────────────────────────────────────
 FREE_KB=$(df --output=avail "$APP_DIR" | tail -1)
@@ -20,31 +30,58 @@ if (( FREE_KB < MIN_FREE_DISK_KB )); then
 fi
 echo "Disk space OK (${FREE_KB} KB free)."
 
-# ── 2. Load environment variables from secrets.env (shared across releases) ──
-mkdir -p "$SHARED_DIR/logs"
-if [[ -f "${APP_DIR}/secrets.env" ]]; then
-  mv "${APP_DIR}/secrets.env" "${SHARED_DIR}/secrets.env"
-fi
-if [[ ! -f "${SHARED_DIR}/secrets.env" ]]; then
-  echo "ERROR: secrets.env not found at ${SHARED_DIR}/secrets.env. Aborting."
+# ── 2. Fetch secrets from SSM Parameter Store (SecureString, KMS-encrypted) ──
+# Read via the instance's own IAM role — nothing is ever transferred as a
+# plaintext file. Rebuilt fresh on every deploy so rotated secrets take effect
+# on the next push without any separate "update secrets" step.
+echo "Fetching secrets from ${SSM_PARAM_PATH}..."
+: > "${SHARED_DIR}/secrets.env"
+NEXT_TOKEN=""
+while : ; do
+  if [[ -n "$NEXT_TOKEN" ]]; then
+    PAGE=$(aws ssm get-parameters-by-path --path "$SSM_PARAM_PATH" --with-decryption --recursive --next-token "$NEXT_TOKEN" --output json)
+  else
+    PAGE=$(aws ssm get-parameters-by-path --path "$SSM_PARAM_PATH" --with-decryption --recursive --output json)
+  fi
+
+  echo "$PAGE" | node -e '
+    const data = JSON.parse(require("fs").readFileSync(0, "utf8"));
+    const prefix = process.argv[1] + "/";
+    for (const p of data.Parameters) {
+      const key = p.Name.startsWith(prefix) ? p.Name.slice(prefix.length) : p.Name;
+      const value = String(p.Value).replace(/\n/g, "\\n");
+      process.stdout.write(`${key}=${value}\n`);
+    }
+  ' "$SSM_PARAM_PATH" >> "${SHARED_DIR}/secrets.env"
+
+  NEXT_TOKEN=$(echo "$PAGE" | node -e 'const d=JSON.parse(require("fs").readFileSync(0,"utf8"));process.stdout.write(d.NextToken||"")')
+  [[ -z "$NEXT_TOKEN" ]] && break
+done
+
+if [[ ! -s "${SHARED_DIR}/secrets.env" ]]; then
+  echo "ERROR: No secrets found under ${SSM_PARAM_PATH}. Aborting."
   exit 1
 fi
 chmod 600 "${SHARED_DIR}/secrets.env"
-# Strip leading whitespace (heredoc indent) then source
-sed 's/^[[:space:]]*//' "${SHARED_DIR}/secrets.env" > /tmp/refreeg-secrets.env
 # shellcheck source=/dev/null
-source /tmp/refreeg-secrets.env
-rm -f /tmp/refreeg-secrets.env
-echo "Secrets loaded."
+source "${SHARED_DIR}/secrets.env"
+echo "Secrets loaded ($(wc -l < "${SHARED_DIR}/secrets.env") keys)."
 
-# ── 3. Extract new release into its own versioned directory ──────────────────
+# ── 2b. Keep rollback.sh current on disk ──────────────────────────────────────
+# The "Rollback on failure" SSM command just runs this path directly — refresh
+# it on every deploy so it's always present and up to date, same reasoning as
+# bootstrap-instance.sh always fetching the latest remote-deploy.sh.
+aws s3 cp "s3://${RELEASES_BUCKET}/scripts/rollback.sh" "${APP_DIR}/rollback.sh"
+chmod +x "${APP_DIR}/rollback.sh"
+
+# ── 3. Fetch and extract the release tarball from S3 ─────────────────────────
 # The tarball root is the Next.js standalone output (server.js, its own pruned
-# node_modules, .next/, public/) plus ecosystem.config.js — self-contained,
-# nothing else needs to be copied in separately.
-echo "Extracting release ${RELEASE_ID}..."
+# node_modules, .next/, public/) plus ecosystem.config.js — self-contained.
+echo "Fetching release ${RELEASE_ID} from s3://${RELEASES_BUCKET}/releases/${RELEASE_ID}.tar.gz..."
 mkdir -p "$RELEASE_DIR"
-tar -xzf "${APP_DIR}/${TARBALL}" -C "$RELEASE_DIR"
-rm -f "${APP_DIR}/${TARBALL}"   # free space immediately
+aws s3 cp "s3://${RELEASES_BUCKET}/releases/${RELEASE_ID}.tar.gz" "/tmp/${RELEASE_ID}.tar.gz"
+tar -xzf "/tmp/${RELEASE_ID}.tar.gz" -C "$RELEASE_DIR"
+rm -f "/tmp/${RELEASE_ID}.tar.gz"
 echo "Extraction complete."
 
 # ── 4. Record the currently-live release (for rollback) before cutover ───────
