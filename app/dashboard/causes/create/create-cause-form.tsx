@@ -3,6 +3,7 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -295,13 +296,16 @@ export default function CreateCauseForm() {
     return () => clearTimeout(timer);
   }, [formData]);
 
+  const hasTitle = Boolean(formData.title);
+  const hasCategory = Boolean(formData.category);
+  const hasGoal = Boolean(formData.goal);
+
   useEffect(() => {
     let inactivityTimer: NodeJS.Timeout;
 
     const setupInactivityTracking = () => {
       const hasDraft = localStorage.getItem("causeDraft");
-      const hasStartedFilling =
-        formData.title || formData.category || formData.goal;
+      const hasStartedFilling = hasTitle || hasCategory || hasGoal;
 
       if (hasDraft || hasStartedFilling) {
         const resetTimer = () => {
@@ -340,12 +344,7 @@ export default function CreateCauseForm() {
 
     const cleanup = setupInactivityTracking();
     return cleanup;
-  }, [
-    formData.title ? true : false,
-    formData.category ? true : false,
-    formData.goal ? true : false,
-    user,
-  ]);
+  }, [hasTitle, hasCategory, hasGoal, user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -1095,10 +1094,12 @@ export default function CreateCauseForm() {
                   />
                   {formData.coverImage && (
                     <div className="mt-4 relative group aspect-video rounded-xl overflow-hidden shadow-sm border border-brand/10">
-                      <img
+                      <Image
                         src={URL.createObjectURL(formData.coverImage)}
                         alt="Cover Preview"
+                        fill
                         className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                        unoptimized
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Button

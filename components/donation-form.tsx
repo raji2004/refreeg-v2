@@ -130,6 +130,7 @@ export function DonationForm({
     causeId,
     causeName,
     causeUrl,
+    donationAttempt.hasStarted,
   ]);
 
   // Track inactivity and send reminder
