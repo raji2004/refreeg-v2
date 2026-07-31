@@ -23,12 +23,7 @@ export const usePayment = (): UsePaymentReturn => {
       setIsLoading(true);
       setError(null);
 
-      const provider = data.provider || "paystack";
-      const endpoint = provider === "flutterwave"
-        ? "/api/payments/initialize/flutterwave"
-        : "/api/payments/initialize";
-
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/payments/initialize", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,14 +37,9 @@ export const usePayment = (): UsePaymentReturn => {
         throw new Error(result.error || "Failed to initialize payment");
       }
 
-      const redirectUrl = provider === "flutterwave"
-        ? result.data.link
-        : result.data.authorization_url;
+      localStorage.setItem("payment_reference", result.data.reference);
 
-      localStorage.setItem("payment_reference", result.data.reference || result.data.tx_ref);
-      localStorage.setItem("payment_provider", provider);
-
-      window.location.href = redirectUrl;
+      window.location.href = result.data.authorization_url;
     } catch (error) {
       console.error("Payment initialization failed:", error);
       setError("Failed to initialize payment. Please try again.");
@@ -112,18 +102,12 @@ export const usePayment = (): UsePaymentReturn => {
         setIsLoading(true);
         setError(null);
 
-        const provider = localStorage.getItem("payment_provider") || "paystack";
-        const endpoint = provider === "flutterwave"
-          ? "/api/payments/verify/flutterwave"
-          : "/api/payments/verify";
-        const bodyKey = provider === "flutterwave" ? "transaction_id" : "reference";
-
-        const response = await fetch(endpoint, {
+        const response = await fetch("/api/payments/verify", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ [bodyKey]: reference }),
+          body: JSON.stringify({ reference }),
         });
 
         const result = await response.json();

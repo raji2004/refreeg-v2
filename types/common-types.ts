@@ -38,8 +38,6 @@ export interface BankDetailsFormData {
   bankName: string;
   accountName: string;
   sub_account_code: string;
-  flutterwave_subaccount_id?: string;
-  country?: string;
 }
 
 // FormData removed - moved to specialized type files
@@ -69,15 +67,12 @@ export interface TransactionData
   causeId: string;
   message: string;
   isAnonymous: boolean;
-  provider?: "paystack" | "flutterwave";
-  currency?: string;
   plan?: string;
   callbackUrl?: string;
   subaccounts: {
     subaccount: string;
     share: number;
   }[];
-  flutterwaveSubaccountId?: string;
   /** Paystack: save card for future pledge charge */
   pledgeFlow?: "authorization";
   pledgeId?: string;

@@ -25,13 +25,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Icons } from "@/components/icons";
 import { useBank } from "@/hooks/use-bank";
 import { sendBankAccountAddedEmail } from "@/services/mail";
@@ -45,8 +38,6 @@ interface BankDetailsFormProps {
     bank_name: string | null;
     account_name: string | null;
     sub_account_code: string | null;
-    flutterwave_subaccount_id?: string | null;
-    country?: string | null;
   };
   user: {
     id: string;
@@ -101,31 +92,11 @@ export function BankDetailsForm({ profile, user }: BankDetailsFormProps) {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="country">Country</Label>
-            <Select
-              value={formData.country || "NG"}
-              onValueChange={(value) => handleBankChange(value, "country")}
-            >
-              <SelectTrigger id="country">
-                <SelectValue placeholder="Select Country" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="NG">Nigeria</SelectItem>
-                <SelectItem value="GH">Ghana</SelectItem>
-                <SelectItem value="KE">Kenya</SelectItem>
-                <SelectItem value="UG">Uganda</SelectItem>
-                <SelectItem value="ZA">South Africa</SelectItem>
-                <SelectItem value="TZ">Tanzania</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="accountNumber">Account Number</Label>
             <Input
               id="accountNumber"
               name="accountNumber"
-              placeholder="Your bank account number"
+              placeholder="Your Nigerian bank account number"
               value={formData.accountNumber}
               onChange={(e) =>
                 handleBankChange(e.target.value, "accountNumber")

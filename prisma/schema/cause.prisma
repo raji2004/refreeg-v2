@@ -1,5 +1,5 @@
 model Cause {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   userId           String             @map("user_id") @db.Uuid
   title            String
   description      String?
@@ -39,7 +39,7 @@ model Cause {
 }
 
 model Donation {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                 String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   causeId            String    @map("cause_id") @db.Uuid
   userId             String?   @map("user_id") @db.Uuid
   amount             Decimal   @db.Decimal
@@ -52,11 +52,6 @@ model Donation {
   createdAt          DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   tip_amount         Decimal?  @default(0) @db.Decimal
   paystack_reference String?   @unique(map: "donations_unique") @db.VarChar
-  provider           String?   @default("paystack") @db.VarChar(20)
-  provider_reference String?   @unique @db.VarChar
-  donation_currency  String?   @default("NGN") @db.VarChar(3)
-  settlement_currency String?  @db.VarChar(3)
-  fx_rate            Decimal?  @db.Decimal(12, 6)
   cause              Cause     @relation(fields: [causeId], references: [id])
   user               User?     @relation(fields: [userId], references: [id])
 
@@ -140,7 +135,7 @@ model cause_shares {
 }
 
 model comments {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   cause_id   String   @db.Uuid
   user_id    String   @db.Uuid
   content    String
@@ -157,7 +152,7 @@ model comments {
 }
 
 model crypto_donations {
-  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   cause_id             String    @db.Uuid
   user_id              String?   @db.Uuid
   amount_in_naira      Decimal   @db.Decimal

@@ -39,8 +39,6 @@ export default async function QuickDonatePage({
       goal={cause.goal}
       raised={cause.raised}
       subaccount={(cause as any).user?.sub_account_code ?? undefined}
-      flutterwaveSubaccountId={(cause as any).user?.flutterwave_subaccount_id ?? undefined}
-      currency="NGN"
       defaultName={profile?.full_name ?? ""}
       defaultEmail={profile?.email ?? ""}
       userId={user?.id}

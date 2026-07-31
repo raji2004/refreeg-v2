@@ -176,7 +176,6 @@ type CauseDetail = Cause & {
     name: string;
     email: string;
     sub_account_code?: string | null;
-    flutterwave_subaccount_id?: string | null;
     username: string;
     profile_photo?: string | null;
   };
@@ -789,8 +788,6 @@ function DonateCard({
           profile={profile}
           status={cause.status}
           subaccount={cause?.user.sub_account_code ?? undefined}
-          flutterwaveSubaccountId={cause?.user.flutterwave_subaccount_id ?? undefined}
-          currency="NGN"
           causeName={cause.title}
           causeUrl={`/causes/${cause.id}`}
           recurring={recurring}

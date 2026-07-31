@@ -32,8 +32,6 @@ interface QuickDonateFormProps {
   goal: number;
   raised: number;
   subaccount?: string;
-  flutterwaveSubaccountId?: string | null;
-  currency?: string;
   defaultName?: string;
   defaultEmail?: string;
   userId?: string;
@@ -47,8 +45,6 @@ export default function QuickDonateForm({
   goal,
   raised,
   subaccount,
-  flutterwaveSubaccountId,
-  currency = "NGN",
   defaultName = "",
   defaultEmail = "",
   userId,
@@ -61,19 +57,6 @@ export default function QuickDonateForm({
   const [message, setMessage] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [amountError, setAmountError] = useState("");
-
-  const isNgn = !currency || currency === "NGN";
-  const hasFlutterwave = !!flutterwaveSubaccountId;
-
-  const [provider, setProvider] = useState<"paystack" | "flutterwave">(
-    isNgn ? "paystack" : "flutterwave"
-  );
-
-  React.useEffect(() => {
-    if (!isNgn) {
-      setProvider("flutterwave");
-    }
-  }, [isNgn]);
 
   const donationAmount = Number(amount) || 0;
   const serviceFee = useMemo(
@@ -98,9 +81,6 @@ export default function QuickDonateForm({
       id: userId || "",
       full_name: name,
       serviceFee,
-      provider: provider,
-      currency: currency,
-      flutterwaveSubaccountId: flutterwaveSubaccountId || undefined,
       subaccounts: [
         { subaccount: subaccount || "", share: donationAmount * 100 },
       ],
@@ -225,34 +205,6 @@ export default function QuickDonateForm({
               </p>
             )}
           </div>
-
-          {isNgn && hasFlutterwave && (
-            <div>
-              <Label className="text-xs text-slate-500 uppercase tracking-widest mb-2 block">Payment Provider</Label>
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <input
-                    type="radio"
-                    name="provider"
-                    value="paystack"
-                    checked={provider === "paystack"}
-                    onChange={() => setProvider("paystack")}
-                  />
-                  Paystack
-                </label>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <input
-                    type="radio"
-                    name="provider"
-                    value="flutterwave"
-                    checked={provider === "flutterwave"}
-                    onChange={() => setProvider("flutterwave")}
-                  />
-                  Flutterwave
-                </label>
-              </div>
-            </div>
-          )}
 
           {/* Name */}
           <div>

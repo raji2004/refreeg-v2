@@ -1,18 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import Paystack from "@/services/paystack";
-import Flutterwave from "@/services/flutterwave";
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const country = searchParams.get("country") || "NG";
-
-    let banks;
-    if (country === "NG") {
-      banks = await Paystack.listBanks();
-    } else {
-      banks = await Flutterwave.listBanks(country);
-    }
+    const banks = await Paystack.listBanks();
 
     return NextResponse.json({
       success: true,

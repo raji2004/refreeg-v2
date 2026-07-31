@@ -1,4 +1,4 @@
-"use server"; // TS check
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
@@ -25,8 +25,6 @@ function mapPrismaToProfile(p: any): Profile {
     bank_name: p.bankName,
     account_name: p.accountName,
     sub_account_code: p.subAccountCode,
-    flutterwave_subaccount_id: p.flutterwaveSubaccountId,
-    country: p.country,
     profile_photo: p.profilePhoto,
     is_blocked: p.isBlocked ?? false,
     created_at: p.createdAt.toISOString(),
@@ -145,9 +143,7 @@ export async function updateBankDetails(
         accountNumber: bankData.accountNumber,
         bankName: bankData.bankName,
         accountName: bankData.accountName,
-        subAccountCode: bankData.sub_account_code || null,
-        flutterwaveSubaccountId: bankData.flutterwave_subaccount_id || null,
-        country: bankData.country || null,
+        subAccountCode: bankData.sub_account_code,
       },
     });
 

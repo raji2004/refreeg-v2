@@ -9,8 +9,6 @@ model User {
   updatedAt             DateTime?           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   isBlocked             Boolean?            @map("is_blocked")
   subAccountCode        String?             @map("sub_account_code")
-  flutterwaveSubaccountId String?           @map("flutterwave_subaccount_id")
-  country               String?
   bio                   String?
   solana_wallet         String?
   twitter_url           String?
@@ -126,7 +124,7 @@ model PendingRegistration {
 }
 
 model Role {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   user_id    String    @db.Uuid
   role       String
   created_at DateTime? @default(now()) @db.Timestamptz(6)

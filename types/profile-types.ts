@@ -11,8 +11,6 @@ export interface Profile {
   bank_name: string | null;
   account_name: string | null;
   sub_account_code: string | null;
-  flutterwave_subaccount_id?: string | null;
-  country?: string;
   profile_photo: string | null;
   is_blocked: boolean;
   created_at: string;

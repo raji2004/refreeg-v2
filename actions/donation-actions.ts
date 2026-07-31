@@ -1,4 +1,4 @@
-"use server"; // TS check again
+"use server";
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -19,13 +19,6 @@ export async function createDonation(
   donationData: DonationFormData,
   tipAmount: number = 0,
   paystackReference?: string | null,
-  providerInfo?: {
-    provider?: "paystack" | "flutterwave";
-    providerReference?: string;
-    donationCurrency?: string;
-    settlementCurrency?: string;
-    fxRate?: number;
-  }
 ): Promise<Donation> {
   const donationAmount =
     typeof donationData.amount === "string"
@@ -53,20 +46,6 @@ export async function createDonation(
         if (existingDonation) return mapPrismaToDonation(existingDonation);
       }
     }
-
-    if (providerInfo?.providerReference) {
-      const existing = await prisma.donation.findFirst({
-        where: { provider_reference: providerInfo.providerReference },
-        select: { id: true },
-      });
-
-      if (existing) {
-        const existingDonation = await prisma.donation.findUnique({
-          where: { id: existing.id },
-        });
-        if (existingDonation) return mapPrismaToDonation(existingDonation);
-      }
-    }
     data = await prisma.donation.create({
       data: {
         causeId: causeId,
@@ -82,11 +61,6 @@ export async function createDonation(
         message: donationData.message || null,
         is_anonymous: donationData.isAnonymous,
         status: "completed",
-        provider: providerInfo?.provider || "paystack",
-        provider_reference: providerInfo?.providerReference || null,
-        donation_currency: providerInfo?.donationCurrency || "NGN",
-        settlement_currency: providerInfo?.settlementCurrency || null,
-        fx_rate: providerInfo?.fxRate || null,
       },
     });
 

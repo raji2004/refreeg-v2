@@ -1,4 +1,4 @@
-"use server"; // TS check
+"use server";
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -55,7 +55,6 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
           email: true,
           username: true,
           subAccountCode: true,
-          flutterwaveSubaccountId: true,
           profilePhoto: true,
         },
       },
@@ -100,7 +99,6 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
       email: data.user?.email || "",
       username: data.user?.username || null,
       sub_account_code: data.user?.subAccountCode || "",
-      flutterwave_subaccount_id: data.user?.flutterwaveSubaccountId || null,
       profile_photo: data.user?.profilePhoto || null,
     },
     sections: data.sections || [],

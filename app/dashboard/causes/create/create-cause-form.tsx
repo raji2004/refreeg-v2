@@ -3,7 +3,6 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -92,14 +91,7 @@ import {
 } from "@/lib/media/video";
 import { resolveMultimediaForSubmit } from "@/lib/s3/upload-client";
 
-const currencies = [
-  { id: "NGN", name: "Naira (₦)", country: "NG" },
-  { id: "GHS", name: "Cedi (GH₵)", country: "GH" },
-  { id: "KES", name: "Shilling (KSh)", country: "KE" },
-  { id: "UGX", name: "Shilling (USh)", country: "UG" },
-  { id: "ZAR", name: "Rand (R)", country: "ZA" },
-  { id: "TZS", name: "Shilling (TSh)", country: "TZ" },
-];
+const currencies = [{ id: "NGN", name: "Naira (₦)" }];
 const MAX_DURATION_DAYS = 180;
 
 const GALLERY_ACCEPT = {
@@ -228,7 +220,7 @@ const validateForm = (formData: FormData): FormErrors => {
   return errors;
 };
 
-export default function CreateCauseForm({ userCountry }: { userCountry?: string | null }) {
+export default function CreateCauseForm() {
   const { user } = useAuth();
   const { isLoading, createCause } = useCause();
   const router = useRouter();
@@ -241,7 +233,7 @@ export default function CreateCauseForm({ userCountry }: { userCountry?: string 
     location: "",
     category: "",
     goal: "",
-    currency: currencies.find(c => c.country === (userCountry || "NG"))?.id || "NGN",
+    currency: "NGN",
     coverImage: null,
     sections: [{ heading: "", description: "" }],
     startDate: startOfDay(new Date()),
@@ -303,16 +295,13 @@ export default function CreateCauseForm({ userCountry }: { userCountry?: string 
     return () => clearTimeout(timer);
   }, [formData]);
 
-  const hasTitle = Boolean(formData.title);
-  const hasCategory = Boolean(formData.category);
-  const hasGoal = Boolean(formData.goal);
-
   useEffect(() => {
     let inactivityTimer: NodeJS.Timeout;
 
     const setupInactivityTracking = () => {
       const hasDraft = localStorage.getItem("causeDraft");
-      const hasStartedFilling = hasTitle || hasCategory || hasGoal;
+      const hasStartedFilling =
+        formData.title || formData.category || formData.goal;
 
       if (hasDraft || hasStartedFilling) {
         const resetTimer = () => {
@@ -351,7 +340,12 @@ export default function CreateCauseForm({ userCountry }: { userCountry?: string 
 
     const cleanup = setupInactivityTracking();
     return cleanup;
-  }, [hasTitle, hasCategory, hasGoal, user]);
+  }, [
+    formData.title ? true : false,
+    formData.category ? true : false,
+    formData.goal ? true : false,
+    user,
+  ]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -798,7 +792,7 @@ export default function CreateCauseForm({ userCountry }: { userCountry?: string 
                         )}
                       />
                       <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold sm:left-4">
-                        {currencies.find((c) => c.id === formData.currency)?.name.match(/\((.*?)\)/)?.[1] || "₦"}
+                        ₦
                       </span>
                     </div>
                     {errors.goal && (
@@ -1101,12 +1095,10 @@ export default function CreateCauseForm({ userCountry }: { userCountry?: string 
                   />
                   {formData.coverImage && (
                     <div className="mt-4 relative group aspect-video rounded-xl overflow-hidden shadow-sm border border-brand/10">
-                      <Image
+                      <img
                         src={URL.createObjectURL(formData.coverImage)}
                         alt="Cover Preview"
-                        fill
                         className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-                        unoptimized
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Button
