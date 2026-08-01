@@ -21,6 +21,7 @@ import {
   CheckCheck,
   ChevronLeft,
   ChevronRight,
+  Maximize2,
 } from "lucide-react";
 import type { Cause } from "@/types";
 import dynamic from "next/dynamic";
@@ -43,6 +44,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { BreetCryptoDonationModal } from "@/components/crypto-details/BreetCryptoDonationModal";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 const DonationForm = dynamic(
   () => import("@/components/donation-form").then((mod) => mod.DonationForm),
@@ -366,6 +368,9 @@ function TrustPanel({
   const [failedEvidence, setFailedEvidence] = useState<Set<string>>(
     () => new Set(),
   );
+  const [expandedProofIndex, setExpandedProofIndex] = useState<number | null>(
+    null,
+  );
   const visibleProofMedia = useMemo(
     () => proofMedia.filter((item) => !failedEvidence.has(item)),
     [failedEvidence, proofMedia],
@@ -470,9 +475,27 @@ function TrustPanel({
                     })
                   }
                 />
+                <button
+                  type="button"
+                  onClick={() => setExpandedProofIndex(index)}
+                  className="absolute bottom-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-slate-950/60 text-white shadow-lg backdrop-blur-md transition hover:scale-105 hover:bg-slate-950/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  aria-label={`Enlarge latest proof ${index + 1} of ${visibleProofMedia.length}`}
+                >
+                  <Maximize2 className="h-4 w-4" aria-hidden="true" />
+                </button>
               </div>
             ))}
           </div>
+          <ImageLightbox
+            images={visibleProofMedia.map((item, index) => ({
+              src: getMediaUrl(item),
+              alt: `${cause.title} - Enlarged proof ${index + 1}`,
+            }))}
+            currentIndex={expandedProofIndex}
+            onIndexChange={setExpandedProofIndex}
+            onClose={() => setExpandedProofIndex(null)}
+            label={`Latest proof for ${cause.title}`}
+          />
         </div>
       )}
         </div>
