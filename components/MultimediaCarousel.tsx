@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, ImageIcon, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, ImageIcon, Play } from "lucide-react";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { Button } from "@/components/ui/button";
 
 interface MediaItem {
   type: "image" | "video";
@@ -40,6 +41,9 @@ export default function MultimediaCarousel({
       // youtube.com/embed/ID already embedded
       const embedMatch = url.pathname.match(/\/embed\/([^/?#]+)/);
       if (embedMatch) return embedMatch[1];
+      // youtube.com/v/ID (legacy)
+      const legacyMatch = url.pathname.match(/\/v\/([^/?#]+)/);
+      if (legacyMatch) return legacyMatch[1];
       return null;
     } catch {
       // Fallback regex if URL constructor fails
@@ -124,6 +128,34 @@ export default function MultimediaCarousel({
     else previous();
   };
 
+  // Shown when a video can't be embedded directly (no extractable ID, or the
+  // provider refuses to be framed) — a styled card instead of a bare text
+  // link, consistent with the rest of the carousel's visual language.
+  const renderExternalVideoFallback = (url: string, platform: string) => (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-slate-950 p-6 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10">
+        <Play className="h-6 w-6 fill-white text-white" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-white">Video preview unavailable</p>
+        <p className="text-xs text-white/60">
+          This {platform} video can&apos;t be embedded directly
+        </p>
+      </div>
+      <Button
+        asChild
+        variant="outline"
+        size="sm"
+        className="border-white/20 text-white hover:bg-white/10 hover:text-white"
+      >
+        <a href={url} target="_blank" rel="noopener noreferrer">
+          Watch on {platform}
+          <ExternalLink className="ml-2 h-3.5 w-3.5" />
+        </a>
+      </Button>
+    </div>
+  );
+
   const renderMediaItem = (item: MediaItem, idx: number) => {
     if (item.type === "video") {
       const url = item.url;
@@ -131,16 +163,23 @@ export default function MultimediaCarousel({
       // YouTube embed
       if (url.includes("youtube.com") || url.includes("youtu.be")) {
         const videoId = extractYouTubeId(url);
-        return (
-          <iframe
-            src={videoId ? `https://www.youtube.com/embed/${videoId}` : url}
-            title={`${title} - Video ${idx + 1}`}
-            className="w-full h-full"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        );
+        if (videoId) {
+          return (
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}`}
+              title={`${title} - Video ${idx + 1}`}
+              className="w-full h-full"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          );
+        }
+        // No embeddable video ID could be extracted — YouTube's normal
+        // watch-page URLs refuse to load in an iframe (X-Frame-Options), so
+        // falling back to the raw url here would always render a broken
+        // frame. Link out instead, matching the TikTok/Drive fallback below.
+        return renderExternalVideoFallback(url, "YouTube");
       }
 
       // TikTok embed (requires /embed/VIDEO_ID)
@@ -158,16 +197,7 @@ export default function MultimediaCarousel({
             />
           );
         }
-        return (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
-          >
-            View TikTok Video
-          </a>
-        );
+        return renderExternalVideoFallback(url, "TikTok");
       }
 
       // Google Drive embed (/file/{id}/preview)
@@ -184,16 +214,7 @@ export default function MultimediaCarousel({
             />
           );
         }
-        return (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
-          >
-            View Google Drive Video
-          </a>
-        );
+        return renderExternalVideoFallback(url, "Google Drive");
       }
 
       // Direct video file
