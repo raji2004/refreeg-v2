@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { getMediaUrl } from "@/lib/s3/media";
+import Image from "next/image";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 import {
   Carousel,
@@ -29,13 +30,13 @@ export default function UrgentCausesCarousel({ causes }: { causes: any[] }) {
   const [api, setApi] = useState<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const startAutoplay = () => {
+  const startAutoplay = useCallback(() => {
     if (!api) return;
 
     timerRef.current = setInterval(() => {
       api.scrollNext();
     }, 6500);
-  };
+  }, [api]);
 
   const stopAutoplay = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -47,7 +48,7 @@ export default function UrgentCausesCarousel({ causes }: { causes: any[] }) {
     startAutoplay();
 
     return () => stopAutoplay();
-  }, [api]);
+  }, [api, startAutoplay]);
 
   return (
     <Carousel
@@ -70,12 +71,16 @@ export default function UrgentCausesCarousel({ causes }: { causes: any[] }) {
               <Link href={`/causes/${cause.id}`} className="group block h-full">
                 <AnimatedCard>
                   <Card className="overflow-hidden cursor-pointer transition h-full flex flex-col border border-gray-300">
-                    <div className="aspect-video w-full overflow-hidden rounded-t-lg">
-                      <img
+                    <div className="relative aspect-video w-full overflow-hidden rounded-t-lg">
+                      <Image
                         src={getMediaUrl(cause.image) || "/placeholder.svg"}
                         alt={cause.title}
-                        loading="lazy"
-                        className="object-cover w-full h-full"
+                        fill
+                        sizes="(max-width: 768px) 85vw, 33vw"
+                        unoptimized={isProxyMediaUrl(
+                          getMediaUrl(cause.image)
+                        )}
+                        className="object-cover"
                       />
                     </div>
 

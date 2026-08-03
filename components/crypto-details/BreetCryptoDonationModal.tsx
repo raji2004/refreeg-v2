@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -195,10 +196,13 @@ export function BreetCryptoDonationModal({
         ) : paymentData ? (
           <div className="flex flex-col items-center space-y-5 pt-2">
             <div className="relative p-4 border border-slate-100 bg-slate-50 rounded-2xl shadow-inner max-w-[200px] aspect-square flex items-center justify-center">
-              <img
+              <Image
                 src={paymentData.qrCode}
                 alt="Scan QR Code to transfer assets"
-                className="w-full h-full rounded-xl mix-blend-multiply"
+                fill
+                sizes="200px"
+                unoptimized
+                className="rounded-xl mix-blend-multiply object-contain"
               />
             </div>
 
