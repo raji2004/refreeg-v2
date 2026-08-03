@@ -1,0 +1,57 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import MultimediaCarousel from "@/components/MultimediaCarousel";
+
+describe("MultimediaCarousel image lightbox", () => {
+  it("enlarges an image and supports keyboard navigation and closing", () => {
+    render(
+      <MultimediaCarousel
+        media={["gallery/first.jpg", "gallery/second.jpg"]}
+        title="Community fundraiser"
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByAltText("Community fundraiser - Image 1"),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enlarge image 1 of 2" }),
+    );
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByAltText("Community fundraiser - Enlarged image 1"),
+    ).toBeInTheDocument();
+    expect(document.body).toHaveStyle({ overflow: "hidden" });
+    expect(document.body).toHaveAttribute("data-media-lightbox-open", "true");
+
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(
+      screen.getByAltText("Community fundraiser - Enlarged image 2"),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("");
+    expect(document.body).not.toHaveAttribute("data-media-lightbox-open");
+  });
+
+  it("closes the enlarged image from its close button", () => {
+    render(
+      <MultimediaCarousel
+        media={["gallery/photo.jpg"]}
+        title="School supplies"
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enlarge image 1 of 1" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Close enlarged image" }),
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});

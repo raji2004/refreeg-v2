@@ -4,6 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Keep campaign photos unobstructed while the full-screen gallery is open. */
+body[data-media-lightbox-open="true"] [data-support-bot] {
+  display: none;
+}
+
 /* Prevent Chrome autofill styles */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
@@ -282,6 +287,15 @@ select:focus {
 
 .premium-input {
   @apply bg-white/50 border-gray-200/50 focus:border-brand/50 focus:ring-brand/20 transition-all duration-300;
+}
+
+/* Flat, product-led styling for the cause creation workspace. */
+.cause-flow .premium-input {
+  @apply rounded-xl border-[#D8E0E8] bg-white shadow-none transition-colors duration-150 focus:border-[#235DA7] focus:ring-[#235DA7]/15;
+}
+
+.cause-flow label {
+  color: #33445a;
 }
 
 .stepper-line {
