@@ -70,6 +70,25 @@ export default function SolDonationButton({
   const nairaInputRef = useRef<HTMLInputElement>(null);
   const solInputRef = useRef<HTMLInputElement>(null);
 
+  // Refs mirroring the latest input state so the polling effect below can
+  // read current values without needing to restart its interval whenever
+  // the user types (which would reset the 5-minute poll cadence).
+  const donationAmountRef = useRef(donationAmount);
+  const nairaInputValueRef = useRef(nairaInput);
+  const inputModeRef = useRef(inputMode);
+
+  useEffect(() => {
+    donationAmountRef.current = donationAmount;
+  }, [donationAmount]);
+
+  useEffect(() => {
+    nairaInputValueRef.current = nairaInput;
+  }, [nairaInput]);
+
+  useEffect(() => {
+    inputModeRef.current = inputMode;
+  }, [inputMode]);
+
   const params = useParams();
   const { toast } = useToast();
 
@@ -79,14 +98,14 @@ export default function SolDonationButton({
       setExchangeRate(rate);
 
       // Update the opposite field based on current input mode
-      if (inputMode === "sol") {
-        const amount = parseFloat(donationAmount);
+      if (inputModeRef.current === "sol") {
+        const amount = parseFloat(donationAmountRef.current);
         if (!isNaN(amount) && amount > 0) {
           const nairaValue = (amount * rate).toFixed(2);
           setNairaInput(formatNumberWithCommas(nairaValue));
         }
       } else {
-        const cleanNaira = removeCommas(nairaInput);
+        const cleanNaira = removeCommas(nairaInputValueRef.current);
         const amount = parseFloat(cleanNaira);
         if (!isNaN(amount) && amount > 0) {
           const solValue = (amount / rate).toFixed(6);
@@ -98,6 +117,10 @@ export default function SolDonationButton({
 
     const interval = setInterval(getExchangeRate, 5 * 60 * 1000);
     return () => clearInterval(interval);
+    // Intentionally run once on mount: this sets up a 5-minute polling
+    // interval. Latest input values are read via refs above so the
+    // interval doesn't need to be torn down/recreated on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const formatNumberWithCommas = (value: string): string => {

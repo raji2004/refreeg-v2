@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import {
@@ -36,13 +36,13 @@ export default function FeaturedPetitionsCarousel({
   const [api, setApi] = useState<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const startAutoplay = () => {
+  const startAutoplay = useCallback(() => {
     if (!api) return;
 
     timerRef.current = setInterval(() => {
       api.scrollNext();
     }, 6500);
-  };
+  }, [api]);
 
   const stopAutoplay = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -53,7 +53,7 @@ export default function FeaturedPetitionsCarousel({
 
     startAutoplay();
     return () => stopAutoplay();
-  }, [api]);
+  }, [api, startAutoplay]);
   
 
   return (
