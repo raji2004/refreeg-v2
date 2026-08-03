@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import type { Comment } from "@/types/common-types";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { followCampaign } from "@/actions/cause-actions";
 import { SupportErrorCta } from "@/components/support-error-cta";
 import {
@@ -375,6 +376,7 @@ function TrustPanel({
     () => proofMedia.filter((item) => !failedEvidence.has(item)),
     [failedEvidence, proofMedia],
   );
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const tiles = trustTiles(cause);
 
@@ -447,9 +449,12 @@ function TrustPanel({
           </div>
           <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
             {visibleProofMedia.map((item: any, index: any) => (
-              <div
+              <button
                 key={`${item}-${index}`}
-                className="relative aspect-[4/3] w-[78%] shrink-0 snap-center overflow-hidden rounded-xl border border-white/15 bg-[#08162B] sm:aspect-video sm:w-auto"
+                type="button"
+                onClick={() => setLightboxIndex(index)}
+                aria-label="View evidence image full size"
+                className="group relative aspect-[4/3] w-[78%] shrink-0 snap-center overflow-hidden rounded-xl border border-white/15 bg-[#08162B] sm:aspect-video sm:w-auto"
               >
                 <Image
                   src={getMediaUrl(item)}
@@ -464,7 +469,7 @@ function TrustPanel({
                   src={getMediaUrl(item)}
                   alt=""
                   fill
-                  className="object-contain"
+                  className="object-contain transition-transform duration-200 group-hover:scale-[1.03]"
                   loading="lazy"
                   unoptimized={isProxyMediaUrl(getMediaUrl(item))}
                   onError={() =>
@@ -475,26 +480,19 @@ function TrustPanel({
                     })
                   }
                 />
-                <button
-                  type="button"
-                  onClick={() => setExpandedProofIndex(index)}
-                  className="absolute bottom-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-slate-950/60 text-white shadow-lg backdrop-blur-md transition hover:scale-105 hover:bg-slate-950/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                  aria-label={`Enlarge latest proof ${index + 1} of ${visibleProofMedia.length}`}
-                >
-                  <Maximize2 className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
+                <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/30 group-hover:opacity-100">
+                  <span className="rounded-full bg-black/60 px-3 py-1 text-[11px] font-medium text-white">
+                    View full size
+                  </span>
+                </span>
+              </button>
             ))}
           </div>
+
           <ImageLightbox
-            images={visibleProofMedia.map((item, index) => ({
-              src: getMediaUrl(item),
-              alt: `${cause.title} - Enlarged proof ${index + 1}`,
-            }))}
-            currentIndex={expandedProofIndex}
-            onIndexChange={setExpandedProofIndex}
-            onClose={() => setExpandedProofIndex(null)}
-            label={`Latest proof for ${cause.title}`}
+            images={visibleProofMedia.map((item) => getMediaUrl(item))}
+            index={lightboxIndex}
+            onOpenChange={setLightboxIndex}
           />
         </div>
       )}
