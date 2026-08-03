@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, ExternalLink, ImageIcon, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, ImageIcon, Maximize2, Play, X } from "lucide-react";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { Button } from "@/components/ui/button";
 
@@ -330,7 +330,7 @@ export default function MultimediaCarousel({
           <button
             type="button"
             className="absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-slate-950/60 text-white shadow-lg backdrop-blur-md transition hover:scale-105 hover:bg-slate-950/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            onClick={() => openLightbox(idx)}
+            onClick={() => setLightboxIndex(idx)}
             aria-label={`Enlarge image ${idx + 1} of ${slides.length}`}
           >
             <Maximize2 className="h-4 w-4" aria-hidden="true" />
