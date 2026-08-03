@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import {
   Popover,
   PopoverContent,
