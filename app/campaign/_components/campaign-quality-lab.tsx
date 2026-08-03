@@ -34,7 +34,6 @@ import { Button } from "@/components/ui/button";
 import type { Comment } from "@/types/common-types";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { followCampaign } from "@/actions/cause-actions";
 import { SupportErrorCta } from "@/components/support-error-cta";
 import {
@@ -490,9 +489,14 @@ function TrustPanel({
           </div>
 
           <ImageLightbox
-            images={visibleProofMedia.map((item) => getMediaUrl(item))}
-            index={lightboxIndex}
-            onOpenChange={setLightboxIndex}
+            images={visibleProofMedia.map((item, mediaIndex) => ({
+              src: getMediaUrl(item),
+              alt: `${cause.title} evidence ${mediaIndex + 1}`,
+            }))}
+            currentIndex={lightboxIndex}
+            onIndexChange={setLightboxIndex}
+            onClose={() => setLightboxIndex(null)}
+            label={`${cause.title} campaign evidence`}
           />
         </div>
       )}
