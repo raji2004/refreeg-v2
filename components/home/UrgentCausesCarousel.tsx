@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
@@ -43,13 +43,13 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
   const [api, setApi] = useState<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const startAutoplay = () => {
+  const startAutoplay = useCallback(() => {
     if (!api) return;
 
     timerRef.current = setInterval(() => {
       api.scrollNext();
     }, 6500);
-  };
+  }, [api]);
 
   const stopAutoplay = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -60,7 +60,7 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
 
     startAutoplay();
     return () => stopAutoplay();
-  }, [api]);
+  }, [api, startAutoplay]);
 
   const renderCard = (cause: any) => {
     const percentRaised =

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   getApiCampaignReports,
   updateReportStatus,
@@ -44,7 +44,7 @@ export default function AdminApiReportsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getApiCampaignReports();
@@ -59,11 +59,11 @@ export default function AdminApiReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [fetchReports]);
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {

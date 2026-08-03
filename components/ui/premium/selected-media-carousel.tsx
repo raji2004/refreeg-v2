@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getMediaUrl } from "@/lib/s3/media";
+import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { isVideoFile } from "@/lib/media/video";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -135,8 +135,11 @@ export function SelectedMediaCarousel({
                         alt={`Preview ${index + 1}`}
                         fill
                         sizes="100vw"
+                        unoptimized={
+                          item.url.startsWith("blob:") ||
+                          isProxyMediaUrl(item.url)
+                        }
                         className="object-cover"
-                        unoptimized
                       />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
@@ -197,9 +200,11 @@ export function SelectedMediaCarousel({
                   src={item.url}
                   alt={`Preview ${index + 1}`}
                   fill
-                  sizes="33vw"
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  unoptimized={
+                    item.url.startsWith("blob:") || isProxyMediaUrl(item.url)
+                  }
                   className="object-cover transition-transform duration-700 group-hover:scale-110"
-                  unoptimized
                 />
               )}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px] pointer-events-none group-hover:pointer-events-auto">

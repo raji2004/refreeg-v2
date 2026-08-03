@@ -141,7 +141,7 @@ export default function OnboardingPage() {
     };
 
     checkUser();
-  }, [router, session, status, isLoading]);
+  }, [router, session, status, isLoading, update]);
 
   // Additional protection: Reset to step 1 if user tries to access steps 4-5 without completing step 3
   useEffect(() => {

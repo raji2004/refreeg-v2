@@ -3,6 +3,7 @@
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -308,11 +309,16 @@ export default function CreateCauseForm() {
     return () => clearTimeout(timer);
   }, [formData]);
 
+  const hasTitle = formData.title ? true : false;
+  const hasCategory = formData.category ? true : false;
+  const hasGoal = formData.goal ? true : false;
+
   useEffect(() => {
     let inactivityTimer: NodeJS.Timeout;
 
     const setupInactivityTracking = () => {
       const hasDraft = localStorage.getItem("causeDraft");
+      const hasStartedFilling = hasTitle || hasCategory || hasGoal;
 
       if (hasDraft || hasStartedFilling) {
         const resetTimer = () => {
@@ -351,7 +357,7 @@ export default function CreateCauseForm() {
 
     const cleanup = setupInactivityTracking();
     return cleanup;
-  }, [hasStartedFilling, user]);
+  }, [hasTitle, hasCategory, hasGoal, user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -1078,14 +1084,14 @@ export default function CreateCauseForm() {
                     autoNormalize
                   />
                   {formData.coverImage && (
-                    <div className="relative mt-4 aspect-video overflow-hidden rounded-xl border border-[#DDE3EA]">
+                    <div className="mt-4 relative group aspect-video rounded-xl overflow-hidden shadow-sm border border-brand/10">
                       <Image
                         src={URL.createObjectURL(formData.coverImage)}
                         alt="Cover Preview"
                         fill
-                        sizes="(max-width: 768px) 100vw, 800px"
-                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 50vw"
                         unoptimized
+                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                       />
                       <Button
                         type="button"
