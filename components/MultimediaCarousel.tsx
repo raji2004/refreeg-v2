@@ -1,5 +1,12 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, ExternalLink, ImageIcon, Play } from "lucide-react";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
@@ -20,8 +27,10 @@ export default function MultimediaCarousel({
   title: string;
 }) {
   const [current, setCurrent] = useState(0);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [imageRatios, setImageRatios] = useState<Record<string, number>>({});
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const didSwipe = useRef(false);
 
   // Helpers to normalize and extract IDs from popular providers
   const extractYouTubeId = (rawUrl: string): string | null => {
@@ -98,6 +107,60 @@ export default function MultimediaCarousel({
     setCurrent((selected) => Math.min(selected, Math.max(slides.length - 1, 0)));
   }, [slides.length]);
 
+  const imageIndexes = useMemo(
+    () =>
+      slides.reduce<number[]>((indexes, slide, index) => {
+        if (slide.type === "image") indexes.push(index);
+        return indexes;
+      }, []),
+    [slides],
+  );
+
+  const moveLightbox = useCallback(
+    (direction: -1 | 1) => {
+      if (lightboxIndex === null || imageIndexes.length < 2) return;
+
+      const position = imageIndexes.indexOf(lightboxIndex);
+      const nextPosition =
+        (position + direction + imageIndexes.length) % imageIndexes.length;
+      const nextIndex = imageIndexes[nextPosition];
+      setCurrent(nextIndex);
+      setLightboxIndex(nextIndex);
+    },
+    [imageIndexes, lightboxIndex],
+  );
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousLightboxState = document.body.getAttribute(
+      "data-media-lightbox-open",
+    );
+    document.body.style.overflow = "hidden";
+    document.body.setAttribute("data-media-lightbox-open", "true");
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLightboxIndex(null);
+      if (event.key === "ArrowLeft") moveLightbox(-1);
+      if (event.key === "ArrowRight") moveLightbox(1);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (previousLightboxState === null) {
+        document.body.removeAttribute("data-media-lightbox-open");
+      } else {
+        document.body.setAttribute(
+          "data-media-lightbox-open",
+          previousLightboxState,
+        );
+      }
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [lightboxIndex, moveLightbox]);
+
   const goTo = (idx: number) => setCurrent(idx);
   const previous = () =>
     setCurrent((selected) =>
@@ -110,6 +173,7 @@ export default function MultimediaCarousel({
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
+    didSwipe.current = false;
     touchStart.current = { x: touch.clientX, y: touch.clientY };
   };
 
@@ -124,6 +188,7 @@ export default function MultimediaCarousel({
     const deltaY = touch.clientY - start.y;
     if (Math.abs(deltaX) < 45 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
 
+    didSwipe.current = true;
     if (deltaX < 0) next();
     else previous();
   };
@@ -252,7 +317,8 @@ export default function MultimediaCarousel({
             sizes="(max-width: 768px) 100vw, 80vw"
             className="z-10 object-contain drop-shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
             unoptimized={isProxyMediaUrl(item.url)}
-            onLoadingComplete={(image) => {
+            onLoad={(event) => {
+              const image = event.currentTarget;
               const ratio = image.naturalWidth / image.naturalHeight;
               setImageRatios((currentRatios) =>
                 currentRatios[item.url] === ratio
@@ -261,6 +327,14 @@ export default function MultimediaCarousel({
               );
             }}
           />
+          <button
+            type="button"
+            className="absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-slate-950/60 text-white shadow-lg backdrop-blur-md transition hover:scale-105 hover:bg-slate-950/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            onClick={() => openLightbox(idx)}
+            aria-label={`Enlarge image ${idx + 1} of ${slides.length}`}
+          >
+            <Maximize2 className="h-4 w-4" aria-hidden="true" />
+          </button>
         </div>
       );
     }
@@ -276,6 +350,10 @@ export default function MultimediaCarousel({
   const mobileRatio = currentRatio
     ? Math.min(Math.max(currentRatio, 0.8), 2)
     : 4 / 3;
+  const lightboxSlide =
+    lightboxIndex === null ? undefined : slides[lightboxIndex];
+  const lightboxPosition =
+    lightboxIndex === null ? -1 : imageIndexes.indexOf(lightboxIndex);
 
   if (!currentSlide) {
     return (
@@ -289,7 +367,8 @@ export default function MultimediaCarousel({
   }
 
   return (
-    <div className="rounded-[22px] border border-slate-200/80 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3">
+    <>
+      <div className="rounded-[22px] border border-slate-200/80 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3">
       <div
         className="relative mx-auto aspect-[var(--mobile-media-ratio)] max-h-[68svh] w-full touch-pan-y overflow-hidden rounded-[14px] bg-slate-950 transition-[aspect-ratio] duration-200 sm:aspect-video sm:max-h-none sm:rounded-[18px]"
         style={
@@ -390,6 +469,68 @@ export default function MultimediaCarousel({
           ))}
         </div>
       )}
-    </div>
+      </div>
+
+      {lightboxSlide?.type === "image" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 p-3 backdrop-blur-sm sm:p-8"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Enlarged image from ${title}`}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setLightboxIndex(null);
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setLightboxIndex(null)}
+              className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white shadow-lg backdrop-blur-md transition hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-6 sm:top-6"
+              aria-label="Close enlarged image"
+              autoFocus
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            <div className="relative h-[calc(100svh-6rem)] w-[calc(100vw-1.5rem)] sm:h-[calc(100vh-7rem)] sm:w-[calc(100vw-8rem)]">
+              <Image
+                src={lightboxSlide.url}
+                alt={`${title} - Enlarged image ${lightboxPosition + 1}`}
+                fill
+                sizes="100vw"
+                className="object-contain drop-shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
+                priority
+                unoptimized={isProxyMediaUrl(lightboxSlide.url)}
+              />
+            </div>
+
+            {imageIndexes.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => moveLightbox(-1)}
+                  className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white shadow-lg backdrop-blur-md transition hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:left-6 sm:h-12 sm:w-12"
+                  aria-label="Show previous enlarged image"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveLightbox(1)}
+                  className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white shadow-lg backdrop-blur-md transition hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-6 sm:h-12 sm:w-12"
+                  aria-label="Show next enlarged image"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-4 py-2 text-sm font-medium text-white backdrop-blur-md sm:bottom-6">
+              {lightboxPosition + 1} / {imageIndexes.length}
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }

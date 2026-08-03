@@ -21,6 +21,7 @@ import {
   CheckCheck,
   ChevronLeft,
   ChevronRight,
+  Maximize2,
 } from "lucide-react";
 import type { Cause } from "@/types";
 import dynamic from "next/dynamic";
@@ -44,6 +45,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { BreetCryptoDonationModal } from "@/components/crypto-details/BreetCryptoDonationModal";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 const DonationForm = dynamic(
   () => import("@/components/donation-form").then((mod) => mod.DonationForm),
@@ -366,6 +368,9 @@ function TrustPanel({
   }, [cause.image, cause.multimedia]);
   const [failedEvidence, setFailedEvidence] = useState<Set<string>>(
     () => new Set(),
+  );
+  const [expandedProofIndex, setExpandedProofIndex] = useState<number | null>(
+    null,
   );
   const visibleProofMedia = useMemo(
     () => proofMedia.filter((item) => !failedEvidence.has(item)),
