@@ -2,7 +2,7 @@ name: Deploy Refreeg v2
 
 on:
   push:
-    branches: []
+    branches: [main]
   workflow_dispatch:
 
 permissions:
