@@ -6,6 +6,7 @@ import {
   sendKycSubmittedEmail,
   sendKycApprovedEmail,
   sendKycRejectedEmail,
+  sendKycResubmittedEmail,
   sendKycSubmissionAdminNotification,
 } from "@/services/mail";
 
@@ -65,13 +66,14 @@ export async function POST(request: Request) {
       }
     }
 
-    if (kyc.status !== "pending" && !isNewRecord) {
+    if (kyc.status !== "pending" && kyc.status !== "resubmitted" && !isNewRecord) {
        return NextResponse.json({ message: "Already processed" });
     }
 
     const lowerStatus = status?.toLowerCase() || "";
     const isApproved = lowerStatus === "approved" || lowerStatus === "verified";
     const isRejected = lowerStatus === "declined" || lowerStatus === "rejected";
+    const isResubmitted = lowerStatus === "resubmitted";
     
     // Extract rejection reason if available
     const rejectionReason = body.decision_reason || body.reason || body.message || "Your document or selfie did not meet our verification requirements.";
@@ -80,6 +82,7 @@ export async function POST(request: Request) {
     let newStatus = "pending";
     if (isApproved) newStatus = "approved";
     if (isRejected) newStatus = "rejected";
+    if (isResubmitted) newStatus = "resubmitted";
 
     // Only consider it manual review if status explicitly mentions review or pending
     const requiresManualReview = lowerStatus.includes("review") || lowerStatus === "pending";
@@ -89,7 +92,7 @@ export async function POST(request: Request) {
       where: { id: kyc.id },
       data: {
         status: newStatus,
-        verification_notes: `Automated Didit result: ${status}${isRejected ? ` - ${rejectionReason}` : ''}`
+        verification_notes: `Automated Didit result: ${status}${isRejected || isResubmitted ? ` - ${rejectionReason}` : ''}`
       }
     });
 
@@ -113,6 +116,8 @@ export async function POST(request: Request) {
         }
       } else if (isRejected) {
         await sendKycRejectedEmail(userProfile.email, userName, rejectionReason);
+      } else if (isResubmitted) {
+        await sendKycResubmittedEmail(userProfile.email, userName, rejectionReason);
       } else if (newStatus === "pending" && requiresManualReview) {
         // Didit is explicitly in manual review
         await sendKycSubmittedEmail(userProfile.email, userName);
