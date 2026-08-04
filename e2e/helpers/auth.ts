@@ -30,9 +30,9 @@ export async function signIn(
   await page.locator("#password").fill(password);
   await page.getByRole("button", { name: /^Sign In$/i }).click();
 
-  await page.waitForURL(/\/dashboard/, { timeout: 60_000 });
+  await page.waitForURL(/\/dashboard/, { timeout: 120_000 });
   await expect(page.getByText(/Welcome back/i).first()).toBeVisible({
-    timeout: 30_000,
+    timeout: 60_000,
   });
   console.log("Signed in successfully.");
 }

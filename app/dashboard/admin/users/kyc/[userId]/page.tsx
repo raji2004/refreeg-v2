@@ -34,10 +34,10 @@ export default async function KycReviewPage({
   params,
   searchParams,
 }: {
-  params: { userId: string };
+  params: Promise<{ userId: string }>;
   searchParams?: Promise<{ kyc_alert?: string }>;
 }) {
-  const userId = params.userId;
+  const { userId } = await params;
 
   const resolvedSearchParams = searchParams ? await searchParams : {};
 
