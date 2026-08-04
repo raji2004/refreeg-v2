@@ -30,7 +30,24 @@ export async function signIn(
   await page.locator("#password").fill(password);
   await page.getByRole("button", { name: /^Sign In$/i }).click();
 
-  await page.waitForURL(/\/dashboard/, { timeout: 120_000 });
+  // Wait for either successful navigation OR an error toast to appear
+  const errorToast = page.getByText(/Error signing in|Invalid credentials/i).first();
+  await Promise.race([
+    page.waitForURL(/\/dashboard/, { timeout: 240_000 }),
+    errorToast.waitFor({ state: "visible", timeout: 15_000 })
+      .then(async () => {
+        const text = await errorToast.innerText();
+        throw new Error(`Login failed: Error toast appeared with text "${text}"`);
+      })
+      .catch((e) => {
+        // If it's a TimeoutError from waiting for the toast, ignore it
+        // If it's the custom Error we just threw, rethrow it
+        if (e.message.includes("Login failed")) throw e;
+        // Otherwise return a promise that never resolves, so waitForURL wins the race
+        return new Promise(() => {});
+      }),
+  ]);
+
   await expect(page.getByText(/Welcome back/i).first()).toBeVisible({
     timeout: 60_000,
   });

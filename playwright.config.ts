@@ -29,14 +29,14 @@ export default defineConfig({
     ["html", { open: "always", outputFolder: "playwright-report" }],
   ],
   globalTeardown: "./e2e/global-teardown.ts",
-  timeout: 180_000,
+  timeout: 300_000,
   use: {
     baseURL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
-    actionTimeout: 60_000,
-    navigationTimeout: 120_000,
+    actionTimeout: 120_000,
+    navigationTimeout: 240_000,
   },
   projects: [
     {

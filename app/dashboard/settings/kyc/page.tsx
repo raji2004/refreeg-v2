@@ -8,11 +8,11 @@ import { KycTab } from "../kyc-tab";
 import { SettingsShell } from "../components/settings-shell";
 import { toast } from "@/components/ui/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { getVerificationStatus } from "@/actions/kyc-actions";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function KycSettingsPage() {
+function KycSettingsContent() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -125,5 +125,19 @@ export default function KycSettingsPage() {
     <SettingsShell>
       {profile && user && <KycTab profile={profile} user={user} />}
     </SettingsShell>
+  );
+}
+
+export default function KycSettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <SettingsShell>
+          <Skeleton className="h-[400px] w-full" />
+        </SettingsShell>
+      }
+    >
+      <KycSettingsContent />
+    </Suspense>
   );
 }
