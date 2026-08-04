@@ -65,6 +65,12 @@ const nextConfig = {
   },
 
   webpack(config, { dev, isServer }) {
+    // Fix Handlebars require.extensions error
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      handlebars: 'handlebars/dist/handlebars.js'
+    };
+
     // Aceternity UI may import CSS that requires MiniCssExtractPlugin in prod
     if (!dev && !isServer) {
       config.plugins.push(
