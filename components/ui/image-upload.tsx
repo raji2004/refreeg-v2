@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useCallback } from "react";
+import Image from "next/image";
 import { useDropzone } from "react-dropzone";
 import { Button } from "./button";
 import { Icons } from "@/components/icons";
@@ -545,10 +546,13 @@ export function ImageUpload({
               className="relative aspect-video overflow-hidden rounded-2xl border border-slate-200 bg-slate-950"
             >
               {cropSource && (
-                <img
+                <Image
                   src={cropSource}
                   alt="Crop preview"
-                  className="absolute inset-0 h-full w-full object-contain transition-transform duration-150"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 768px"
+                  unoptimized
+                  className="object-contain transition-transform duration-150"
                   style={{
                     transform: `scale(${zoom[0] ?? 1})`,
                     transformOrigin: "center",

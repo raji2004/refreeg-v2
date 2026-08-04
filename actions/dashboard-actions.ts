@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { formatCurrency } from "@/lib/utils";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -11,7 +10,7 @@ export async function getDashboardStats(userId: string) {
     });
 
     if (!causes || causes.length === 0) {
-      return { totalRaised: formatCurrency(0), totalDonors: 0, activeCauses: 0 };
+      return { totalRaised: 0, totalDonors: 0, activeCauses: 0 };
     }
 
     const causeIds = causes.map((c) => c.id);
@@ -30,13 +29,13 @@ export async function getDashboardStats(userId: string) {
     const totalDonors = new Set(donations.map((d) => d.userId)).size;
 
     return {
-      totalRaised: formatCurrency(totalRaised),
+      totalRaised,
       totalDonors,
       activeCauses: causes.length,
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
-    return { totalRaised: formatCurrency(0), totalDonors: 0, activeCauses: 0 };
+    return { totalRaised: 0, totalDonors: 0, activeCauses: 0 };
   }
 }
 
@@ -274,7 +273,7 @@ export async function getPetitionDashboardStats(userId: string) {
 
     if (!petitions || petitions.length === 0) {
       return {
-        totalRaised: formatCurrency(0),
+        totalRaised: 0,
         totalDonors: 0,
         activePetitions: 0,
       };
@@ -296,14 +295,14 @@ export async function getPetitionDashboardStats(userId: string) {
     const totalDonors = new Set(signatures.map((s) => s.user_id)).size;
 
     return {
-      totalRaised: formatCurrency(totalRaised),
+      totalRaised,
       totalDonors,
       activePetitions: petitions.length,
     };
   } catch (error) {
     console.error("Error fetching petition dashboard stats:", error);
     return {
-      totalRaised: formatCurrency(0),
+      totalRaised: 0,
       totalDonors: 0,
       activePetitions: 0,
     };

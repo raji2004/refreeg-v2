@@ -1,22 +1,14 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { motion, AnimatePresence } from "framer-motion";
+import { Card } from "@/components/ui/card";
 import { PremiumFormContainer } from "@/components/ui/premium/premium-form-container";
 import { FormStepper } from "@/components/ui/premium/form-stepper";
 import {
@@ -35,7 +27,6 @@ import {
 import { Icons } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
 import { useCause } from "@/hooks/use-cause";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Calendar = dynamic(
@@ -83,7 +74,13 @@ import {
   differenceInDays,
   startOfDay,
 } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarIcon,
+  LockKeyhole,
+  Plus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   isVideoFile,
@@ -226,6 +223,8 @@ export default function CreateCauseForm() {
   const { isLoading, createCause } = useCause();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const flowTopRef = useRef<HTMLDivElement>(null);
+  const previousStepRef = useRef(currentStep);
   const [attemptedStep, setAttemptedStep] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<FormData>({
@@ -243,8 +242,21 @@ export default function CreateCauseForm() {
     videoLinks: [],
   });
   const [errors, setErrors] = useState<FormErrors>({});
-  const [videoLinkInput, setVideoLinkInput] = useState("");
-  const [videoLinkError, setVideoLinkError] = useState<string | null>(null);
+  const hasStartedFilling = Boolean(
+    formData.title || formData.category || formData.goal,
+  );
+
+  useEffect(() => {
+    if (previousStepRef.current === currentStep) return;
+    previousStepRef.current = currentStep;
+
+    window.requestAnimationFrame(() => {
+      flowTopRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, [currentStep]);
 
   useEffect(() => {
     const savedDraft = localStorage.getItem("causeDraft");
@@ -254,20 +266,22 @@ export default function CreateCauseForm() {
       const loadedStartDate = parsedDraft.startDate
         ? new Date(parsedDraft.startDate)
         : undefined;
-      
+
       // Ensure start date is not in the past
-      const startDate = loadedStartDate && !isBefore(loadedStartDate, today)
-        ? loadedStartDate
-        : today;
+      const startDate =
+        loadedStartDate && !isBefore(loadedStartDate, today)
+          ? loadedStartDate
+          : today;
 
       const loadedEndDate = parsedDraft.endDate
         ? new Date(parsedDraft.endDate)
         : undefined;
 
       // Ensure end date is after start date, default to 7 days if invalid
-      const endDate = loadedEndDate && isAfter(loadedEndDate, startDate)
-        ? loadedEndDate
-        : addDays(startDate, 7);
+      const endDate =
+        loadedEndDate && isAfter(loadedEndDate, startDate)
+          ? loadedEndDate
+          : addDays(startDate, 7);
 
       setFormData((prev) => ({
         ...parsedDraft,
@@ -296,9 +310,9 @@ export default function CreateCauseForm() {
     return () => clearTimeout(timer);
   }, [formData]);
 
-  const hasTitle = Boolean(formData.title);
-  const hasCategory = Boolean(formData.category);
-  const hasGoal = Boolean(formData.goal);
+  const hasTitle = formData.title ? true : false;
+  const hasCategory = formData.category ? true : false;
+  const hasGoal = formData.goal ? true : false;
 
   useEffect(() => {
     let inactivityTimer: NodeJS.Timeout;
@@ -406,8 +420,9 @@ export default function CreateCauseForm() {
       return;
     }
 
-    const existingVideoCount = (formData.multimedia || []).filter(isVideoFile)
-      .length;
+    const existingVideoCount = (formData.multimedia || []).filter(
+      isVideoFile,
+    ).length;
     const incomingVideos = files.filter((f) => f.type.startsWith("video/"));
     if (existingVideoCount + incomingVideos.length > MAX_VIDEOS_PER_CAUSE) {
       setErrors((prev) => ({
@@ -580,13 +595,16 @@ export default function CreateCauseForm() {
         { entityType: "causes", entityId: draftEntityId },
       );
 
-      await sendCauseUnderReviewEmail({
+      await createCause(user.id, causeData);
+      localStorage.removeItem("causeDraft");
+
+      sendCauseUnderReviewEmail({
         causeName: causeData.title,
         reviewTimeframe: "3-5 business days",
         dashboardUrl: `${window.location.origin}/dashboard/causes`,
+      }).catch((error) => {
+        console.error("Failed to send cause-under-review email:", error);
       });
-      await createCause(user.id, causeData);
-      localStorage.removeItem("causeDraft");
 
       router.push("/dashboard/causes");
     } catch (error) {
@@ -647,7 +665,7 @@ export default function CreateCauseForm() {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 sm:space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             <div className="space-y-5 sm:space-y-6">
               <div className="space-y-2">
                 <Label
@@ -833,23 +851,16 @@ export default function CreateCauseForm() {
 
       case 2:
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 sm:space-y-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="space-y-1">
-                <h3 className="text-xl font-bold text-gradient">
-                  Tell Your Story
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Add sections to provide more context and depth to your cause.
-                </p>
-              </div>
+          <div className="space-y-6 sm:space-y-8">
+            <div className="flex justify-end">
               <Button
                 type="button"
                 onClick={addSection}
                 variant="outline"
-                className="h-11 w-full rounded-full border-brand/20 text-brand hover:bg-brand/5 sm:w-auto"
+                className="h-10 w-full rounded-full border-[#D8E0E8] bg-white px-4 text-sm font-bold text-[#10233F] shadow-none hover:border-[#235DA7] hover:bg-[#F4F8FC] hover:text-[#10233F] sm:w-auto"
               >
-                Add Section
+                <Plus className="mr-1.5 h-4 w-4" />
+                Add section
               </Button>
             </div>
 
@@ -857,11 +868,11 @@ export default function CreateCauseForm() {
               {formData.sections.map((section, index) => (
                 <Card
                   key={index}
-                  className="relative overflow-hidden border-brand/10 shadow-sm bg-white/50 backdrop-blur-sm"
+                  className="relative overflow-hidden rounded-2xl border-[#DDE3EA] bg-white shadow-none"
                 >
-                  <div className="space-y-4 p-4 sm:p-6">
-                    <div className="-mx-4 -mt-4 mb-2 flex items-center justify-between border-b border-brand/10 bg-brand/5 p-4 sm:-mx-6 sm:-mt-6">
-                      <span className="text-xs font-bold uppercase tracking-wider text-brand">
+                  <div className="space-y-4 px-3 py-4 sm:p-6">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#235DA7]">
                         Section {index + 1}
                       </span>
                       {index > 0 && (
@@ -870,7 +881,7 @@ export default function CreateCauseForm() {
                           onClick={() => removeSection(index)}
                           variant="ghost"
                           size="sm"
-                          className="h-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full"
+                          className="h-8 rounded-full text-red-600 hover:bg-red-50 hover:text-red-700"
                         >
                           Delete
                         </Button>
@@ -880,19 +891,19 @@ export default function CreateCauseForm() {
                       <div className="space-y-2">
                         <Label
                           htmlFor={`section-heading-${index}`}
-                          className="font-semibold text-gray-600"
+                          className="text-sm font-semibold text-[#33445A]"
                         >
                           Heading
                         </Label>
                         <Input
                           id={`section-heading-${index}`}
-                          placeholder="e.g., The Challenge"
+                          placeholder="e.g. Why this matters"
                           value={section.heading}
                           onChange={(e) =>
                             updateSection(index, "heading", e.target.value)
                           }
                           className={cn(
-                            "h-11 premium-input border-brand/5 sm:h-12",
+                            "h-11 premium-input sm:h-12",
                             errors.sections?.[index]?.heading &&
                               "border-red-500 focus:border-red-500 focus:ring-red-100",
                           )}
@@ -907,19 +918,19 @@ export default function CreateCauseForm() {
                       <div className="space-y-2">
                         <Label
                           htmlFor={`section-description-${index}`}
-                          className="font-semibold text-gray-600"
+                          className="text-sm font-semibold text-[#33445A]"
                         >
                           Story Content
                         </Label>
                         <Textarea
                           id={`section-description-${index}`}
-                          placeholder="Provide details about this specific part of your project..."
+                          placeholder="Share the problem, who it affects, and how this campaign helps."
                           value={section.description}
                           onChange={(e) =>
                             updateSection(index, "description", e.target.value)
                           }
                           className={cn(
-                            "min-h-[140px] premium-input border-brand/5 resize-none sm:min-h-[150px]",
+                            "min-h-[120px] resize-none premium-input sm:min-h-[140px]",
                             errors.sections?.[index]?.description &&
                               "border-red-500 focus:border-red-500 focus:ring-red-100",
                           )}
@@ -941,22 +952,12 @@ export default function CreateCauseForm() {
 
       case 3:
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 sm:space-y-8">
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-gradient">
-                Set the Timeline
-              </h3>
-              <p className="text-sm text-gray-500">
-                Choose when your campaign starts and ends. Max duration is 180
-                days.
-              </p>
-            </div>
-
+          <div className="space-y-6 sm:space-y-8">
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-8">
-              <div className="space-y-4">
+              <div className="space-y-3 rounded-2xl border border-[#DDE3EA] bg-white px-3 py-4 sm:p-5">
                 <Label
                   htmlFor="start-date"
-                  className="mb-2 block text-sm font-semibold text-gray-700 sm:text-base"
+                  className="block text-sm font-semibold text-[#33445A]"
                 >
                   Start Date
                 </Label>
@@ -966,12 +967,12 @@ export default function CreateCauseForm() {
                       id="start-date"
                       variant="outline"
                       className={cn(
-                        "h-12 w-full justify-start rounded-2xl border-brand/10 text-left font-normal premium-input sm:h-14",
+                        "h-12 w-full justify-start rounded-xl text-left font-normal premium-input",
                         !formData.startDate && "text-muted-foreground",
                         errors.startDate && "border-red-500",
                       )}
                     >
-                      <CalendarIcon className="mr-3 h-4 w-4 text-brand sm:h-5 sm:w-5" />
+                      <CalendarIcon className="mr-3 h-4 w-4 text-[#235DA7]" />
                       {formData.startDate ? (
                         format(formData.startDate, "PPP")
                       ) : (
@@ -999,10 +1000,10 @@ export default function CreateCauseForm() {
                 )}
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 rounded-2xl border border-[#DDE3EA] bg-white px-3 py-4 sm:p-5">
                 <Label
                   htmlFor="end-date"
-                  className="mb-2 block text-sm font-semibold text-gray-700 sm:text-base"
+                  className="block text-sm font-semibold text-[#33445A]"
                 >
                   End Date
                 </Label>
@@ -1012,12 +1013,12 @@ export default function CreateCauseForm() {
                       id="end-date"
                       variant="outline"
                       className={cn(
-                        "h-12 w-full justify-start rounded-2xl border-brand/10 text-left font-normal premium-input sm:h-14",
+                        "h-12 w-full justify-start rounded-xl text-left font-normal premium-input",
                         !formData.endDate && "text-muted-foreground",
                         errors.endDate && "border-red-500",
                       )}
                     >
-                      <CalendarIcon className="mr-3 h-4 w-4 text-brand sm:h-5 sm:w-5" />
+                      <CalendarIcon className="mr-3 h-4 w-4 text-[#235DA7]" />
                       {formData.endDate ? (
                         format(formData.endDate, "PPP")
                       ) : (
@@ -1036,7 +1037,9 @@ export default function CreateCauseForm() {
                         const maxEnd = addDays(start, MAX_DURATION_DAYS);
                         return isBefore(date, start) || isAfter(date, maxEnd);
                       }}
-                      defaultMonth={formData.endDate || formData.startDate || new Date()}
+                      defaultMonth={
+                        formData.endDate || formData.startDate || new Date()
+                      }
                       initialFocus
                     />
                   </PopoverContent>
@@ -1050,12 +1053,12 @@ export default function CreateCauseForm() {
             </div>
 
             {formData.startDate && formData.endDate && (
-              <div className="flex items-start gap-3 rounded-xl border border-brand/10 bg-brand/5 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+              <div className="flex items-start gap-3 rounded-xl border border-[#C9D9E8] bg-[#F2F7FC] px-3 py-4 sm:p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DCEAF7] text-[#235DA7]">
                   <CalendarIcon className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-brand">
+                  <p className="text-sm font-semibold text-[#10233F]">
                     Duration:{" "}
                     {differenceInDays(formData.endDate, formData.startDate)}{" "}
                     Days
@@ -1072,21 +1075,13 @@ export default function CreateCauseForm() {
 
       case 4:
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 sm:space-y-8">
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-gradient">Visual Impact</h3>
-              <p className="text-sm text-gray-500">
-                High-quality visuals significantly increase support. Add a cover
-                and gallery items.
-              </p>
-            </div>
-
+          <div className="space-y-6 sm:space-y-8">
             <div className="space-y-5 sm:space-y-6">
               <div className="space-y-4">
                 <Label className="block text-sm font-semibold text-gray-700 sm:text-base">
                   Cover Image
                 </Label>
-                <div className="glass-panel rounded-2xl border-brand/10 p-4 transition-all hover:border-brand/30 sm:p-6">
+                <div className="rounded-2xl border border-[#DDE3EA] bg-white px-3 py-4 sm:p-6">
                   <ImageUpload
                     onUpload={(files) => handleImageUpload(files)}
                     maxFiles={1}
@@ -1098,25 +1093,25 @@ export default function CreateCauseForm() {
                         src={URL.createObjectURL(formData.coverImage)}
                         alt="Cover Preview"
                         fill
-                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 50vw"
                         unoptimized
+                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                       />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              coverImage: null,
-                            }))
-                          }
-                          className="rounded-full h-10 w-10 p-0"
-                        >
-                          <Icons.trash className="h-5 w-5" />
-                        </Button>
-                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            coverImage: null,
+                          }))
+                        }
+                        className="absolute right-3 top-3 h-9 w-9 rounded-full border border-white/60 p-0 shadow-sm"
+                        aria-label="Remove cover image"
+                      >
+                        <Icons.trash className="h-4 w-4" />
+                      </Button>
                     </div>
                   )}
                   {errors.coverImage && (
@@ -1132,11 +1127,11 @@ export default function CreateCauseForm() {
                   <Label className="block text-sm font-semibold text-gray-700 sm:text-base">
                     Multimedia Gallery
                   </Label>
-                  <span className="w-fit rounded-full border border-brand/10 bg-brand/5 px-2 py-1 text-xs font-medium text-brand">
+                  <span className="w-fit rounded-full border border-[#D8E0E8] bg-[#F8FAFC] px-2.5 py-1 text-xs font-semibold text-[#53647A]">
                     Max 5 files · 2 videos (MP4/WebM, 50MB, 90s)
                   </span>
                 </div>
-                <div className="glass-panel rounded-2xl border-brand/10 p-4 sm:p-6">
+                <div className="rounded-2xl border border-[#DDE3EA] bg-white px-3 py-4 sm:p-6">
                   <ImageUpload
                     onUpload={(files) => handleMultimediaUpload(files)}
                     maxFiles={5 - (formData.multimedia?.length || 0)}
@@ -1155,6 +1150,7 @@ export default function CreateCauseForm() {
                       <SelectedMediaCarousel
                         files={formData.multimedia}
                         onRemove={removeMultimedia}
+                        variant="refreeg"
                       />
                     </div>
                   )}
@@ -1186,7 +1182,7 @@ export default function CreateCauseForm() {
                       />
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         onClick={() => {
                           const newLinks = formData.videoLinks.filter(
                             (_, i) => i !== index,
@@ -1196,7 +1192,7 @@ export default function CreateCauseForm() {
                             videoLinks: newLinks,
                           }));
                         }}
-                        className="h-11 rounded-lg text-red-500 hover:bg-red-50 sm:h-12"
+                        className="h-11 shrink-0 rounded-xl border-[#E7B9B5] bg-white px-5 font-semibold text-[#B42318] shadow-none hover:border-[#D77A72] hover:bg-[#FFF4F2] hover:text-[#912018] sm:h-12"
                       >
                         Remove
                       </Button>
@@ -1211,9 +1207,10 @@ export default function CreateCauseForm() {
                       }))
                     }
                     variant="outline"
-                    className="h-11 w-full rounded-xl border-2 border-dashed border-gray-200 bg-transparent text-gray-500 transition-colors hover:border-brand/30 hover:bg-brand/5 hover:text-brand sm:h-12"
+                    className="h-11 w-full rounded-xl border border-dashed border-[#B8C5D3] bg-white text-[#53647A] shadow-none hover:border-[#235DA7] hover:bg-[#F4F8FC] hover:text-[#235DA7] sm:h-12"
                   >
-                    + Add Video Link
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Add video link
                   </Button>
                 </div>
               </div>
@@ -1223,21 +1220,11 @@ export default function CreateCauseForm() {
 
       case 5:
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 sm:space-y-8">
-            <div className="space-y-2 border-b border-gray-100 pb-5 sm:pb-6">
-              <h3 className="text-xl font-bold text-gradient sm:text-2xl">
-                Review & Launch
-              </h3>
-              <p className="text-gray-500">
-                Take a moment to review your cause. You can go back to any step
-                to make changes.
-              </p>
-            </div>
-
+          <div className="space-y-6 sm:space-y-8">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
               <div className="space-y-6 lg:col-span-2 lg:space-y-8">
                 {/* Visual Preview */}
-                <div className="glass-panel overflow-hidden rounded-3xl">
+                <div className="overflow-hidden rounded-2xl border border-[#DDE3EA] bg-white">
                   <MultimediaCarousel
                     media={[
                       ...(formData.multimedia?.map((file) =>
@@ -1259,11 +1246,13 @@ export default function CreateCauseForm() {
                 {/* Content Review */}
                 <div className="space-y-5 sm:space-y-6">
                   <div>
-                    <h4 className="text-xl font-bold mb-2">{formData.title}</h4>
+                    <h4 className="mb-2 text-xl font-extrabold text-[#10233F]">
+                      {formData.title}
+                    </h4>
                     {(formData.summary || formData.location) && (
                       <div className="flex flex-wrap gap-4 mb-4">
                         {formData.location && (
-                          <div className="flex items-center gap-1.5 text-sm font-medium text-brand bg-brand/5 px-2.5 py-1 rounded-full border border-brand/10">
+                          <div className="flex items-center gap-1.5 rounded-full border border-[#C9D9E8] bg-[#F2F7FC] px-2.5 py-1 text-sm font-medium text-[#235DA7]">
                             <Icons.mapPin className="w-3.5 h-3.5" />
                             {formData.location}
                           </div>
@@ -1279,7 +1268,7 @@ export default function CreateCauseForm() {
                       </div>
                     )}
                     {formData.summary && (
-                      <p className="text-gray-500 italic mb-4 border-l-4 border-brand/20 pl-4 py-1">
+                      <p className="mb-4 border-l-2 border-[#235DA7] py-1 pl-4 text-[#53647A]">
                         &quot;{formData.summary}&quot;
                       </p>
                     )}
@@ -1308,12 +1297,12 @@ export default function CreateCauseForm() {
 
               {/* Sidebar Info */}
               <div className="space-y-6">
-                <div className="glass-panel space-y-5 rounded-3xl border-brand/10 p-5 sm:p-6 lg:sticky lg:top-6">
+                <div className="space-y-5 rounded-2xl border border-[#DDE3EA] bg-white px-3 py-5 sm:p-6 lg:sticky lg:top-6">
                   <div className="space-y-1">
                     <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
                       Target Goal
                     </p>
-                    <p className="text-3xl font-black text-brand">
+                    <p className="text-3xl font-extrabold text-[#10233F]">
                       {formData.currency}{" "}
                       {Number(formData.goal).toLocaleString()}
                     </p>
@@ -1359,82 +1348,139 @@ export default function CreateCauseForm() {
   };
 
   const steps = ["Basic Info", "Story", "Timeline", "Media", "Review"];
+  const stepMeta = [
+    {
+      title: "Start with the basics",
+      description:
+        "Give supporters a clear snapshot of what you are raising money for.",
+    },
+    {
+      title: "Tell your story",
+      description:
+        "Add sections so supporters understand who this helps and why.",
+    },
+    {
+      title: "Set your timeline",
+      description:
+        "Choose when fundraising starts and ends. Campaigns can run for up to 180 days.",
+    },
+    {
+      title: "Add campaign media",
+      description:
+        "Choose a strong cover image, then add photos or short videos that build trust.",
+    },
+    {
+      title: "Review your cause",
+      description:
+        "Check the details supporters will see before sending your cause for review.",
+    },
+  ] as const;
+  const activeStep = stepMeta[currentStep - 1];
 
   return (
     <PremiumFormContainer
-      title="Launch Your Impact"
-      description="Create a compelling cause and start raising funds for what matters most."
+      title="Create a cause"
+      description="Set up your campaign, explain the need, and submit it for review. Your progress is saved as you go."
+      variant="refreeg"
     >
-      <FormStepper steps={steps} currentStep={currentStep} />
+      <div ref={flowTopRef} className="scroll-mt-28 space-y-4">
+        <FormStepper
+          steps={steps}
+          currentStep={currentStep}
+          variant="refreeg"
+          onStepSelect={(step) => {
+            if (step < currentStep) setCurrentStep(step);
+          }}
+        />
 
-      <form
-        className="space-y-6 sm:space-y-8"
-        autoComplete="off"
-        onKeyDown={(e) => {
-          if (
-            currentStep === 5 &&
-            e.key === "Enter" &&
-            e.target instanceof HTMLElement &&
-            e.target.tagName !== "TEXTAREA" &&
-            e.target.tagName !== "BUTTON"
-          ) {
-            e.preventDefault();
-          }
-        }}
-      >
-        <div className="min-h-[320px] sm:min-h-[400px]">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {renderStep()}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t border-gray-100 bg-white/95 px-4 pb-1 pt-4 backdrop-blur sm:static sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:bg-transparent sm:px-0 sm:pb-0 sm:pt-8 sm:backdrop-blur-0">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={prevStep}
-            disabled={currentStep === 1}
-            className="order-2 h-11 w-full text-slate-700 hover:bg-gray-50 hover:text-slate-900 sm:order-1 sm:w-auto"
-          >
-            Back
-          </Button>
-          <div className="order-1 flex w-full gap-3 sm:order-2 sm:w-auto sm:gap-4">
-            {currentStep < 5 ? (
-              <Button
-                type="button"
-                onClick={nextStep}
-                className="h-11 flex-1 bg-brand text-white hover:bg-brand/90 sm:h-10 sm:flex-none sm:px-8"
-              >
-                Continue
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                disabled={isLoading || submitting}
-                onClick={handleSubmit}
-                className="h-11 flex-1 bg-brand text-white hover:bg-brand/90 sm:h-10 sm:flex-none sm:px-8"
-              >
-                {isLoading || submitting ? (
-                  <>
-                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                    Launching...
-                  </>
-                ) : (
-                  "Launch Cause"
-                )}
-              </Button>
-            )}
+        <section className="overflow-hidden rounded-2xl border border-[#D6DEE7] bg-white shadow-[0_18px_45px_-38px_rgba(16,35,63,0.55)]">
+          <div className="border-b border-[#E1E7ED] bg-[#FBFCFD] px-3 py-4 sm:p-6">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#235DA7]">
+              {steps[currentStep - 1]}
+            </p>
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-[22px] font-extrabold tracking-[-0.015em] text-[#10233F] sm:text-2xl">
+                  {activeStep.title}
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-[#53647A]">
+                  {activeStep.description}
+                </p>
+              </div>
+              <div className="inline-flex w-fit shrink-0 items-center gap-2 rounded-lg border border-[#C9D9E8] bg-[#EEF5FB] px-3 py-2 text-[10px] font-bold text-[#274C72]">
+                <LockKeyhole className="h-3.5 w-3.5" />
+                Milestone protected
+              </div>
+            </div>
           </div>
-        </div>
-      </form>
+
+          <form
+            className="cause-flow space-y-6 px-3 py-4 sm:space-y-8 sm:p-6"
+            autoComplete="off"
+            onKeyDown={(e) => {
+              if (
+                currentStep === 5 &&
+                e.key === "Enter" &&
+                e.target instanceof HTMLElement &&
+                e.target.tagName !== "TEXTAREA" &&
+                e.target.tagName !== "BUTTON"
+              ) {
+                e.preventDefault();
+              }
+            }}
+          >
+            <div className="min-h-[320px] sm:min-h-[400px]">
+              <div
+                key={currentStep}
+                className="animate-in fade-in duration-200"
+              >
+                {renderStep()}
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 z-10 -mx-3 -mb-4 flex items-center justify-between gap-3 border-t border-[#DDE3EA] bg-white px-3 py-4 sm:static sm:-mx-6 sm:-mb-6 sm:px-6 sm:py-5">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 1}
+                className="h-11 rounded-xl border-[#D8E0E8] bg-white px-4 font-bold text-[#10233F] shadow-none hover:border-[#9FB1C5] hover:bg-[#F8FAFC] hover:text-[#10233F] disabled:!border-[#D8E0E8] disabled:!bg-[#F4F6F8] disabled:!text-[#8795A8] disabled:opacity-100 sm:px-5"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+              <div className="flex gap-3">
+                {currentStep < 5 ? (
+                  <Button
+                    type="button"
+                    onClick={nextStep}
+                    className="h-11 rounded-xl bg-[#235DA7] px-5 font-bold text-white shadow-none hover:bg-[#1B4E8C] sm:px-7"
+                  >
+                    Continue
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    disabled={isLoading || submitting}
+                    onClick={handleSubmit}
+                    className="h-11 rounded-xl bg-[#235DA7] px-5 font-bold text-white shadow-none hover:bg-[#1B4E8C] sm:px-7"
+                  >
+                    {isLoading || submitting ? (
+                      <>
+                        <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                        Launching...
+                      </>
+                    ) : (
+                      "Launch Cause"
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </form>
+        </section>
+      </div>
     </PremiumFormContainer>
   );
 }

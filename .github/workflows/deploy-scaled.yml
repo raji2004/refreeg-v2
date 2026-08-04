@@ -1,0 +1,315 @@
+name: Deploy Refreeg v2 (ALB + Auto Scaling Group)
+
+# Manual only, on purpose — this targets the new AWS ALB/ASG/RDS infrastructure
+# (see infra/) which is still being staged and validated (see the plan's
+# staged rollout: apply infra -> smoke-test here -> migrate DB -> DNS cutover).
+# It intentionally does NOT trigger on push, so it can never race with the
+# existing single-EC2 pipeline (.github/workflows/deploy.yml) which is still
+# the one serving real production traffic today. Switch this to push-triggered
+# (and retire deploy.yml) only after DNS has actually been cut over to the ALB.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy-scaled
+  cancel-in-progress: false
+
+jobs:
+  # ── Test & lint gate ──────────────────────────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Unit tests
+        run: pnpm run test:no-coverage
+
+  # ── Build & deploy ────────────────────────────────────────────────────────
+  # Deploys via S3 + AWS SSM Run Command to every instance in the Auto Scaling
+  # Group behind the ALB (infra/asg.tf) — there's no single fixed host to SSH
+  # into anymore. New instances the ASG launches later pull the same release
+  # automatically via scripts/bootstrap-instance.sh (baked into the base AMI),
+  # so scaling out doesn't need a separate deploy step.
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+
+    steps:
+      # ── 1. Source ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Build (on the generous GitHub runner, not on the app instances) ─
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install all dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: pnpm run build
+
+      # ── 3. Package the minimal artifact ────────────────────────────────────
+      # `output: "standalone"` (next.config.mjs) already traces only the
+      # dependencies actually used at runtime into .next/standalone/node_modules.
+      # public/ and .next/static are excluded from standalone by default and
+      # must be copied in manually per Next.js docs.
+      - name: Create deployment tarball
+        run: |
+          cp -r public .next/standalone/public
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+          cp ecosystem.scaled.config.js .next/standalone/ecosystem.config.js
+
+          TARBALL="deploy-${{ github.sha }}.tar.gz"
+          tar -czf "$TARBALL" -C .next/standalone .
+          echo "Tarball size: $(du -sh "$TARBALL" | cut -f1)"
+          echo "TARBALL=$TARBALL" >> "$GITHUB_ENV"
+
+      # ── 4. AWS credentials for every step below ────────────────────────────
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # ── 5. Write secrets to SSM Parameter Store (SecureString) ─────────────
+      # Replaces the old scp'd secrets.env file entirely — instances read
+      # these via their own IAM role at deploy time (scripts/remote-deploy-scaled.sh),
+      # nothing plaintext ever touches disk on the runner or in S3.
+      - name: Write secrets to SSM Parameter Store
+        env:
+          SSM_PARAM_PATH: ${{ vars.SSM_PARAM_PATH }}
+          DIDIT_WEBHOOK_SECRET: ${{ secrets.DIDIT_WEBHOOK_SECRET }}
+          DIDIT_WORKFLOW_ID: ${{ secrets.DIDIT_WORKFLOW_ID }}
+          DIDIT_CLIENT_SECRET: ${{ secrets.DIDIT_CLIENT_SECRET }}
+          DIDIT_CLIENT_ID: ${{ secrets.DIDIT_CLIENT_ID }}
+          NEXT_PUBLIC_BREET_ENV: ${{ secrets.NEXT_PUBLIC_BREET_ENV }}
+          NEXT_PUBLIC_BREET_WEBHOOK_SECRET: ${{ secrets.NEXT_PUBLIC_BREET_WEBHOOK_SECRET }}
+          BREET_APP_SECRET: ${{ secrets.BREET_APP_SECRET }}
+          BREET_APP_ID: ${{ secrets.BREET_APP_ID }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AUTH_TRUST_HOST: ${{ secrets.AUTH_TRUST_HOST }}
+          AUTH_URL: ${{ secrets.AUTH_URL }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          CONVERTKIT_API_KEY: ${{ secrets.CONVERTKIT_API_KEY }}
+          CONVERTKIT_FORM_ID: ${{ secrets.CONVERTKIT_FORM_ID }}
+          CONVERTKIT_API_SECRET: ${{ secrets.CONVERTKIT_API_SECRET }}
+          NEXT_PUBLIC_REFREEG_SERVICE_FEE: ${{ secrets.NEXT_PUBLIC_REFREEG_SERVICE_FEE }}
+          PAYSTACK_SECRET_KEY: ${{ secrets.PAYSTACK_SECRET_KEY }}
+          NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY }}
+          # HEALTH_CHECK_TOKEN intentionally NOT written — the ALB target group
+          # health check can't send custom headers, so /api/health must stay
+          # unauthenticated (it fails open with no token configured).
+        run: |
+          declare -A SECRETS=(
+            [DIDIT_WEBHOOK_SECRET]="$DIDIT_WEBHOOK_SECRET"
+            [DIDIT_WORKFLOW_ID]="$DIDIT_WORKFLOW_ID"
+            [DIDIT_CLIENT_SECRET]="$DIDIT_CLIENT_SECRET"
+            [DIDIT_CLIENT_ID]="$DIDIT_CLIENT_ID"
+            [NEXT_PUBLIC_BREET_ENV]="$NEXT_PUBLIC_BREET_ENV"
+            [NEXT_PUBLIC_BREET_WEBHOOK_SECRET]="$NEXT_PUBLIC_BREET_WEBHOOK_SECRET"
+            [BREET_APP_SECRET]="$BREET_APP_SECRET"
+            [BREET_APP_ID]="$BREET_APP_ID"
+            [AWS_S3_BUCKET]="$AWS_S3_BUCKET"
+            [AUTH_TRUST_HOST]="$AUTH_TRUST_HOST"
+            [AUTH_URL]="$AUTH_URL"
+            [AUTH_SECRET]="$AUTH_SECRET"
+            [DATABASE_URL]="$DATABASE_URL"
+            [DEEPSEEK_API_KEY]="$DEEPSEEK_API_KEY"
+            [GOOGLE_CLIENT_ID]="$GOOGLE_CLIENT_ID"
+            [EMAIL_FROM]="$EMAIL_FROM"
+            [SMTP_HOST]="$SMTP_HOST"
+            [SMTP_PASSWORD]="$SMTP_PASSWORD"
+            [SMTP_PORT]="$SMTP_PORT"
+            [SMTP_USER]="$SMTP_USER"
+            [CONVERTKIT_API_KEY]="$CONVERTKIT_API_KEY"
+            [CONVERTKIT_FORM_ID]="$CONVERTKIT_FORM_ID"
+            [CONVERTKIT_API_SECRET]="$CONVERTKIT_API_SECRET"
+            [NEXT_PUBLIC_REFREEG_SERVICE_FEE]="$NEXT_PUBLIC_REFREEG_SERVICE_FEE"
+            [PAYSTACK_SECRET_KEY]="$PAYSTACK_SECRET_KEY"
+            [NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY]="$NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY"
+            [NODE_ENV]="production"
+          )
+
+          for key in "${!SECRETS[@]}"; do
+            aws ssm put-parameter \
+              --name "${SSM_PARAM_PATH}/${key}" \
+              --value "${SECRETS[$key]}" \
+              --type SecureString \
+              --overwrite \
+              --output text > /dev/null
+          done
+          echo "Wrote ${#SECRETS[@]} parameters under ${SSM_PARAM_PATH}"
+
+      # ── 6. Upload release tarball and latest deploy script to S3 ───────────
+      - name: Upload artifacts to S3
+        env:
+          RELEASES_BUCKET: ${{ vars.RELEASES_BUCKET }}
+        run: |
+          aws s3 cp "$TARBALL" "s3://${RELEASES_BUCKET}/releases/${{ github.sha }}.tar.gz"
+          aws s3 cp ./scripts/remote-deploy-scaled.sh "s3://${RELEASES_BUCKET}/scripts/remote-deploy.sh"
+          aws s3 cp ./scripts/rollback-scaled.sh "s3://${RELEASES_BUCKET}/scripts/rollback.sh"
+
+      # ── 7. Deploy to every running instance via SSM Run Command ────────────
+      - name: Deploy via SSM Run Command
+        id: deploy
+        env:
+          ASG_NAME: ${{ vars.ASG_NAME }}
+          RELEASES_BUCKET: ${{ vars.RELEASES_BUCKET }}
+          SSM_PARAM_PATH: ${{ vars.SSM_PARAM_PATH }}
+          RELEASE_ID: ${{ github.sha }}
+        run: |
+          echo "Sending deploy command to instances in ASG ${ASG_NAME}..."
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=tag:aws:autoscaling:groupName,Values=${ASG_NAME}" \
+            --parameters "commands=[\"aws s3 cp s3://${RELEASES_BUCKET}/scripts/remote-deploy.sh /tmp/remote-deploy.sh\",\"chmod +x /tmp/remote-deploy.sh\",\"RELEASE_ID=${RELEASE_ID} RELEASES_BUCKET=${RELEASES_BUCKET} SSM_PARAM_PATH=${SSM_PARAM_PATH} bash /tmp/remote-deploy.sh\"]" \
+            --comment "Deploy ${RELEASE_ID}" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "command_id=$COMMAND_ID" >> "$GITHUB_OUTPUT"
+          echo "SSM command: $COMMAND_ID"
+
+          # Give SSM a moment to fan the command out to every target instance.
+          sleep 10
+
+          INSTANCE_IDS=$(aws ssm list-command-invocations --command-id "$COMMAND_ID" --query "CommandInvocations[].InstanceId" --output text)
+          if [[ -z "$INSTANCE_IDS" ]]; then
+            echo "ERROR: No instances picked up the command — is the ASG empty, or are instances missing the SSM Agent/IAM role?"
+            exit 1
+          fi
+
+          FAILED=0
+          for id in $INSTANCE_IDS; do
+            echo "Waiting on instance $id..."
+            for attempt in $(seq 1 30); do
+              STATUS=$(aws ssm get-command-invocation --command-id "$COMMAND_ID" --instance-id "$id" --query "Status" --output text 2>/dev/null || echo "Pending")
+              if [[ "$STATUS" == "Success" ]]; then
+                echo "  $id: Success"
+                break
+              elif [[ "$STATUS" == "Failed" || "$STATUS" == "Cancelled" || "$STATUS" == "TimedOut" ]]; then
+                echo "  $id: $STATUS"
+                aws ssm get-command-invocation --command-id "$COMMAND_ID" --instance-id "$id" --query "StandardErrorContent" --output text
+                FAILED=1
+                break
+              fi
+              sleep 5
+            done
+          done
+
+          if [[ "$FAILED" -eq 1 ]]; then
+            echo "ERROR: Deploy failed on at least one instance."
+            exit 1
+          fi
+
+      # ── 8. Health check — against the ALB directly, by Host header ─────────
+      # Until DNS is manually cut over to the ALB (a deliberate, later step —
+      # see infra rollout plan), www.refreeg.com/apps.refreeg.com still point
+      # at the old EC2 box. Hitting the ALB's own DNS name with an explicit
+      # Host header validates the new ALB routing/target groups correctly
+      # regardless of DNS cutover status. -k skips TLS hostname verification
+      # since the ALB's own DNS name isn't covered by the ACM cert (only the
+      # two real domains are) — acceptable here since we're only testing
+      # routing/connectivity, not treating this as the public-facing check.
+      - name: Health check
+        env:
+          ALB_DNS_NAME: ${{ vars.ALB_DNS_NAME }}
+        run: |
+          echo "Waiting 15 seconds for PM2 processes to fully start..."
+          sleep 15
+
+          check() {
+            host_header="$1"
+            for attempt in 1 2 3; do
+              status=$(curl -s -k -L -o /dev/null -w "%{http_code}" -H "Host: ${host_header}" "https://${ALB_DNS_NAME}/api/health" || echo "000")
+              echo "Attempt $attempt — ${host_header} via ${ALB_DNS_NAME} — HTTP $status"
+              if [ "$status" -eq 200 ]; then
+                echo "✅ ${host_header} passed."
+                return 0
+              fi
+              echo "Retrying in 10 seconds..."
+              sleep 10
+            done
+            echo "❌ ${host_header} failed after 3 attempts."
+            return 1
+          }
+
+          check "www.refreeg.com" && frontend_ok=1 || frontend_ok=0
+          check "apps.refreeg.com" && api_ok=1 || api_ok=0
+
+          if [ "$frontend_ok" -eq 1 ] && [ "$api_ok" -eq 1 ]; then
+            exit 0
+          fi
+          exit 1
+
+      # ── 9. Advance the "latest release" pointer new instances bootstrap from
+      - name: Update release pointer in S3
+        env:
+          RELEASES_BUCKET: ${{ vars.RELEASES_BUCKET }}
+        run: |
+          echo -n "${{ github.sha }}" | aws s3 cp - "s3://${RELEASES_BUCKET}/current/release.txt"
+
+      # ── 10. Status badge note ───────────────────────────────────────────────
+      - name: Status badge
+        if: always()
+        run: |
+          echo "Add this badge to your README.md:"
+          echo "![Deploy](https://github.com/${{ github.repository }}/actions/workflows/deploy-scaled.yml/badge.svg)"
+
+      # ── 11. Rollback on any failure ─────────────────────────────────────────
+      # Note: the release pointer in S3 is only advanced in step 9, which only
+      # runs after a passing health check — so a new instance scaling out
+      # during a broken deploy still bootstraps the last known-good release,
+      # never the broken one, even before this rollback step runs.
+      - name: Rollback on failure
+        if: failure()
+        env:
+          ASG_NAME: ${{ vars.ASG_NAME }}
+        run: |
+          echo "🔄 Deployment failed — triggering rollback on every instance..."
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=tag:aws:autoscaling:groupName,Values=${ASG_NAME}" \
+            --parameters 'commands=["bash /opt/refreeg/rollback.sh"]' \
+            --comment "Rollback ${{ github.sha }}" \
+            --output text

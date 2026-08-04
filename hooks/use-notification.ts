@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/components/ui/use-toast";
 
 export function useNotifications() {
@@ -15,7 +15,7 @@ export function useNotifications() {
     }
   }, []);
 
-  const requestPermission = async () => {
+  const requestPermission = useCallback(async () => {
     if (!isSupported) return false;
 
     try {
@@ -26,41 +26,44 @@ export function useNotifications() {
       console.error("Error requesting notification permission:", error);
       return false;
     }
-  };
+  }, [isSupported]);
 
-  const showNotification = (title: string, options?: NotificationOptions) => {
-    if (!isSupported) {
-      toast({
-        title,
-        description: options?.body,
-      });
-      return;
-    }
+  const showNotification = useCallback(
+    (title: string, options?: NotificationOptions) => {
+      if (!isSupported) {
+        toast({
+          title,
+          description: options?.body,
+        });
+        return;
+      }
 
-    if (permission !== "granted") {
-      requestPermission().then((granted) => {
-        if (granted) {
-          new Notification(title, options);
-        } else {
-          toast({
-            title,
-            description: options?.body,
-          });
-        }
-      });
-      return;
-    }
+      if (permission !== "granted") {
+        requestPermission().then((granted) => {
+          if (granted) {
+            new Notification(title, options);
+          } else {
+            toast({
+              title,
+              description: options?.body,
+            });
+          }
+        });
+        return;
+      }
 
-    try {
-      new Notification(title, options);
-    } catch (error) {
-      console.error("Error showing notification:", error);
-      toast({
-        title,
-        description: options?.body,
-      });
-    }
-  };
+      try {
+        new Notification(title, options);
+      } catch (error) {
+        console.error("Error showing notification:", error);
+        toast({
+          title,
+          description: options?.body,
+        });
+      }
+    },
+    [isSupported, permission, requestPermission],
+  );
 
   return {
     isSupported,

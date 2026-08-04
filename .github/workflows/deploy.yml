@@ -2,7 +2,7 @@ name: Deploy Refreeg v2
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -68,21 +68,21 @@ jobs:
       - name: Build application
         run: pnpm run build
 
-      # ── 3. Prune to production-only node_modules (save disk on EC2) ───────
-      - name: Prune dev dependencies
-        run: pnpm prune --prod --ignore-scripts
-
-      # ── 4. Package the minimal artifact ───────────────────────────────────
+      # ── 3. Package the minimal artifact ────────────────────────────────────
+      # `output: "standalone"` (next.config.mjs) already traces only the
+      # dependencies actually used at runtime into .next/standalone/node_modules
+      # — no need to ship the full node_modules or run `pnpm prune` anymore.
+      # public/ and .next/static are excluded from standalone by default and
+      # must be copied in manually per Next.js docs.
       - name: Create deployment tarball
         run: |
+          cp -r public .next/standalone/public
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+          cp ecosystem.config.js .next/standalone/ecosystem.config.js
+
           TARBALL="deploy-${{ github.sha }}.tar.gz"
-          tar -czf "$TARBALL" \
-            .next \
-            public \
-            package.json \
-            pnpm-lock.yaml \
-            node_modules \
-            ecosystem.config.js
+          tar -czf "$TARBALL" -C .next/standalone .
           echo "Tarball size: $(du -sh "$TARBALL" | cut -f1)"
           echo "TARBALL=$TARBALL" >> "$GITHUB_ENV"
 
@@ -177,7 +177,7 @@ jobs:
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           SSH_USER: ec2-user
-          APP_DIR: /var/www/refreeg
+          APP_DIR: /mnt/data/refreeg
         run: |
           # Ensure APP_DIR exists and is owned by ec2-user (idempotent — relies on
           # ec2-user having passwordless sudo, the AWS EC2 default). scp writes as
@@ -188,13 +188,14 @@ jobs:
              sudo chown ${{ env.SSH_USER }}:${{ env.SSH_USER }} ${{ env.APP_DIR }} && \
              mkdir -p ${{ env.APP_DIR }}/releases ${{ env.APP_DIR }}/shared/logs"
 
-          # Transfer the build tarball, secrets file, and both scripts
+          # Transfer the build tarball, secrets file, and both scripts.
+          # ecosystem.config.js is already baked into the tarball root, no
+          # need to ship it separately.
           scp \
             "$TARBALL" \
             secrets.env \
             ./scripts/remote-deploy.sh \
             ./scripts/rollback.sh \
-            ./ecosystem.config.js \
             ${{ env.SSH_USER }}@${{ env.EC2_HOST }}:${{ env.APP_DIR }}/
 
       # ── 8. Run remote deploy script on EC2 ────────────────────────────────
@@ -204,22 +205,18 @@ jobs:
           SSH_USER: ec2-user
         run: |
           ssh ${{ env.SSH_USER }}@${{ env.EC2_HOST }} \
-            "RELEASE_ID='${{ github.sha }}' TARBALL='$TARBALL' bash /var/www/refreeg/remote-deploy.sh"
+            "RELEASE_ID='${{ github.sha }}' TARBALL='$TARBALL' bash /mnt/data/refreeg/remote-deploy.sh"
 
       # ── 9. Health check ───────────────────────────────────────────────────
       - name: Health check
-        env:
-          HEALTH_CHECK_TOKEN: ${{ secrets.HEALTH_CHECK_TOKEN }}
         run: |
           echo "Waiting 15 seconds for PM2 processes to fully start..."
-          sleep 15
+          sleep 30
 
           check() {
             url="$1"
             for attempt in 1 2 3; do
-              status=$(curl -s -o /dev/null -w "%{http_code}" \
-                -H "x-health-check-token: ${HEALTH_CHECK_TOKEN}" \
-                "$url" || echo "000")
+              status=$(curl -s -L -o /dev/null -w "%{http_code}" "$url" || echo "000")
               echo "Attempt $attempt — $url — HTTP $status"
               if [ "$status" -eq 200 ]; then
                 echo "✅ $url passed."
@@ -232,8 +229,8 @@ jobs:
             return 1
           }
 
-          check "http://www.refreeg.com/api/health" && frontend_ok=1 || frontend_ok=0
-          check "http://apps.refreeg.com/api/health" && api_ok=1 || api_ok=0
+          check "https://refreeg.com/api/health" && frontend_ok=1 || frontend_ok=0
+          check "https://apps.refreeg.com/api/health" && api_ok=1 || api_ok=0
 
           if [ "$frontend_ok" -eq 1 ] && [ "$api_ok" -eq 1 ]; then
             exit 0
@@ -256,7 +253,7 @@ jobs:
         run: |
           echo "🔄 Deployment failed — triggering rollback..."
           ssh ${{ env.SSH_USER }}@${{ env.EC2_HOST }} \
-            "bash /var/www/refreeg/rollback.sh"
+            "bash /mnt/data/refreeg/rollback.sh"
 
       # ── 12. Cleanup local secrets ──────────────────────────────────────────
       - name: Remove local secrets file

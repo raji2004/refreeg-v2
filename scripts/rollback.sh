@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="/var/www/refreeg"
+APP_DIR="/mnt/data/refreeg"
 RELEASES_DIR="${APP_DIR}/releases"
 CURRENT_LINK="${APP_DIR}/current"
 
@@ -30,7 +30,8 @@ ln -sfn "${RELEASES_DIR}/${PREVIOUS_ID}" "${APP_DIR}/current_tmp"
 mv -Tf "${APP_DIR}/current_tmp" "$CURRENT_LINK"
 echo "current -> releases/${PREVIOUS_ID}"
 
-pm2 startOrReload "${CURRENT_LINK}/ecosystem.config.js" --update-env
+pm2 delete frontend api 2>/dev/null || true
+pm2 start "${CURRENT_LINK}/ecosystem.config.js" --update-env
 pm2 save --force
 
 echo "Rollback complete. PM2 process list:"

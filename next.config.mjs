@@ -10,11 +10,18 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Include email HTML templates in the serverless bundle.
-  // Without this, fs.readFileSync cannot find them at runtime on Vercel
-  // because Next.js only traces statically-imported files by default.
+  // Minimal self-contained server bundle (.next/standalone) instead of shipping
+  // the whole node_modules to EC2 — keeps each deploy release small on disk.
+  output: "standalone",
+  // Include email HTML templates and the Prisma query engine binaries in the
+  // standalone/serverless bundle. Without this, fs.readFileSync cannot find
+  // them at runtime because Next.js only traces statically-imported files by
+  // default, and Prisma's engine binaries are loaded dynamically at runtime.
   outputFileTracingIncludes: {
-    "**": ["./services/templates/**/*.html"],
+    "**": [
+      "./services/templates/**/*.html",
+      "./node_modules/.prisma/client/**",
+    ],
   },
   eslint: {
     ignoreDuringBuilds: true,
@@ -49,6 +56,10 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "www.gstatic.com",
+      },
+      {
+        protocol: "https",
+        hostname: "flagcdn.com",
       },
     ],
   },
