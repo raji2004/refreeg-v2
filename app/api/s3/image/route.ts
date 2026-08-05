@@ -1,7 +1,65 @@
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
-import { generatePresignedGetUrl } from "@/lib/s3/s3-utils";
+import sharp from "sharp";
+import { findLegacyNormalizedCenterCrop } from "@/lib/media/legacy-normalized-image";
+import { s3Client } from "@/lib/s3/s3-client";
+import {
+  generatePresignedGetUrl,
+  getBucketName,
+} from "@/lib/s3/s3-utils";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+const CLEAN_PRESENTATION = "clean-v3";
+
+async function presentCauseImage(key: string) {
+  const object = await s3Client.send(
+    new GetObjectCommand({ Bucket: getBucketName(), Key: key }),
+  );
+  if (!object.Body) throw new Error("S3 image has no body");
+
+  const input = Buffer.from(await object.Body.transformToByteArray());
+  const metadata = await sharp(input, { failOn: "none" }).metadata();
+  let output = input;
+  let presentation = "original";
+
+  if (metadata.width && metadata.height) {
+    const analysis = await sharp(input, { failOn: "none" })
+      .resize({ width: 1000, fit: "inside", withoutEnlargement: true })
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const crop = findLegacyNormalizedCenterCrop({
+      data: analysis.data,
+      width: analysis.info.width,
+      height: analysis.info.height,
+      channels: analysis.info.channels,
+    });
+
+    if (crop) {
+      const scale = metadata.width / analysis.info.width;
+      const left = Math.max(0, Math.round(crop.left * scale));
+      const width = Math.min(
+        metadata.width - left,
+        Math.round(crop.width * scale),
+      );
+      output = await sharp(input, { failOn: "none" })
+        .extract({ left, top: 0, width, height: metadata.height })
+        .toBuffer();
+      presentation = "recovered-portrait";
+    }
+  }
+
+  return new Response(new Uint8Array(output), {
+    headers: {
+      "Cache-Control":
+        "public, max-age=3600, s-maxage=604800, stale-while-revalidate=86400",
+      "Content-Type": object.ContentType || "image/jpeg",
+      "X-RefreeG-Media-Presentation": presentation,
+    },
+  });
+}
 
 export async function GET(req: Request) {
   try {
@@ -27,6 +85,14 @@ export async function GET(req: Request) {
       }
     } catch (e) {
       // decoding failed; fall back to original key
+    }
+
+    if (
+      searchParams.get("presentation") === CLEAN_PRESENTATION &&
+      key.startsWith("uploads/causes/") &&
+      key.includes("/images/")
+    ) {
+      return await presentCauseImage(key);
     }
 
     // Generate the presigned URL

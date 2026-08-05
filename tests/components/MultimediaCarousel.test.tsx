@@ -2,6 +2,27 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import MultimediaCarousel from "@/components/MultimediaCarousel";
 
 describe("MultimediaCarousel image lightbox", () => {
+  it("renders a single uncropped image in a fixed neutral frame", () => {
+    const { container } = render(
+      <MultimediaCarousel
+        media={["gallery/portrait.jpg"]}
+        title="Portrait fundraiser"
+      />,
+    );
+
+    expect(screen.getByAltText("Portrait fundraiser - Image 1")).toHaveClass(
+      "object-contain",
+    );
+    expect(
+      container.querySelector("[data-media-backdrop='decorative']"),
+    ).toBeInTheDocument();
+    expect(container.querySelectorAll("img[src*='logo.svg']")).toHaveLength(2);
+    expect(
+      container.querySelector("img[aria-hidden='true'][src*='portrait.jpg']"),
+    ).toBeNull();
+    expect(container.querySelector("[style*='media-ratio']")).toBeNull();
+  });
+
   it("enlarges an image and supports keyboard navigation and closing", () => {
     render(
       <MultimediaCarousel
