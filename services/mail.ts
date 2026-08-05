@@ -277,6 +277,26 @@ export async function sendKycRejectedEmail(
   });
 }
 
+export async function sendKycResubmittedEmail(
+  userEmail: string,
+  userName: string,
+  resubmitReason: string,
+) {
+  const currentYear = new Date().getFullYear();
+  return sendMail({
+    to: userEmail,
+    subject: "Action Required: KYC Verification Update - Refreeg",
+    templateName: "kyc-resubmitted",
+    context: {
+      userName,
+      organizationName: "Refreeg",
+      resubmitReason,
+      kycResubmitLink: "https://www.refreeg.com/dashboard/settings?tab=kyc",
+      currentYear,
+    },
+  });
+}
+
 export async function sendCauseRejectedEmailForUser(
   userId: string,
   context: { causeName: string; rejectionReason?: string; dashboardUrl: string },

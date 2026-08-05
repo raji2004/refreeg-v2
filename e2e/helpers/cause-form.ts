@@ -88,9 +88,7 @@ export async function gotoCreateCauseVisualImpact(
   await page.evaluate(() => localStorage.removeItem("causeDraft"));
   await page.reload({ waitUntil: "domcontentloaded" });
 
-  await expect(
-    page.getByRole("heading", { name: /Launch Your Impact/i }),
-  ).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator("#title")).toBeVisible({ timeout: 30_000 });
 
   await page.locator("#title").click();
   await page.locator("#title").fill("");
@@ -135,9 +133,7 @@ export async function gotoCreateCauseVisualImpact(
   await expect(page.locator("#end-date")).not.toContainText(/Pick a date/i);
 
   await (await expectWizardActionReachable(page, /^Continue$/i)).click();
-  await expect(
-    page.getByRole("heading", { name: /Visual Impact/i }),
-  ).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('input[type="file"]').first()).toBeAttached({ timeout: 20_000 });
   console.log("Step 3 (Timeline) complete — on Visual Impact.");
 }
 

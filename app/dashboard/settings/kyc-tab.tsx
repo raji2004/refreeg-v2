@@ -22,6 +22,7 @@ import {
   Calendar,
   Phone,
   MapPin,
+  AlertCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Profile } from "@/types";
@@ -73,6 +74,8 @@ export function KycTab({ profile, user }: KycTabProps) {
         return <CheckCircle className="h-8 w-8 text-green-500" />;
       case "rejected":
         return <XCircle className="h-8 w-8 text-red-500" />;
+      case "resubmitted":
+        return <AlertCircle className="h-8 w-8 text-orange-500" />;
       case "pending":
         return <Clock className="h-8 w-8 text-yellow-500" />;
       default:
@@ -92,6 +95,12 @@ export function KycTab({ profile, user }: KycTabProps) {
         );
       case "rejected":
         return <Badge variant="destructive">Rejected</Badge>;
+      case "resubmitted":
+        return (
+          <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+            Action Required
+          </Badge>
+        );
       case "pending":
         return (
           <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
@@ -111,6 +120,8 @@ export function KycTab({ profile, user }: KycTabProps) {
         return "Your KYC has been approved! You can now list causes and access all features.";
       case "rejected":
         return "Your KYC was rejected. Please review the requirements and resubmit your application.";
+      case "resubmitted":
+        return "Your KYC requires a few corrections. Please resume your verification to address the specific issues.";
       case "pending":
         return "Your KYC is under review. We'll notify you once it's processed.";
       default:
@@ -196,14 +207,14 @@ export function KycTab({ profile, user }: KycTabProps) {
             )}
 
             <div className="flex flex-col sm:flex-row gap-4 items-center">
-              {kycData?.status === "rejected" && (
+              {(kycData?.status === "rejected" || kycData?.status === "resubmitted") && (
                 <Button
                   onClick={() => router.push("/dashboard/settings/kyc-setup")}
-                  variant="destructive"
-                  className="transition-colors duration-200 px-6"
+                  variant={kycData.status === "rejected" ? "destructive" : "default"}
+                  className={`transition-colors duration-200 px-6 ${kycData.status === "resubmitted" ? "bg-orange-600 hover:bg-orange-700 text-white" : ""}`}
                 >
                   <Shield className="h-4 w-4 mr-2" />
-                  Resubmit Application
+                  {kycData.status === "rejected" ? "Resubmit Application" : "Resume Verification"}
                 </Button>
               )}
 
@@ -366,12 +377,12 @@ export function KycTab({ profile, user }: KycTabProps) {
                 </div>
               )}
 
-              {kycData?.status === "rejected" && kycData?.verification_notes && (
-                <div className="p-4 bg-red-50 border border-red-100 rounded-lg mt-6">
-                  <h3 className="text-sm font-semibold text-red-800 mb-1">
-                    Rejection Reason
+              {(kycData?.status === "rejected" || kycData?.status === "resubmitted") && kycData?.verification_notes && (
+                <div className={`p-4 border rounded-lg mt-6 ${kycData.status === "rejected" ? "bg-red-50 border-red-100" : "bg-orange-50 border-orange-100"}`}>
+                  <h3 className={`text-sm font-semibold mb-1 ${kycData.status === "rejected" ? "text-red-800" : "text-orange-800"}`}>
+                    {kycData.status === "rejected" ? "Rejection Reason" : "Reason for Resubmission"}
                   </h3>
-                  <p className="text-sm text-red-600">
+                  <p className={`text-sm ${kycData.status === "rejected" ? "text-red-600" : "text-orange-600"}`}>
                     {kycData.verification_notes}
                   </p>
                 </div>

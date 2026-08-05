@@ -133,27 +133,51 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        console.error(`[NextAuth] authorize called with email: ${credentials?.email}`);
+        if (!credentials?.email || !credentials?.password) {
+          console.error(`[NextAuth] missing credentials`);
+          return null;
+        }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        });
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email as string },
+            include: { roles: { select: { role: true } } },
+          });
 
-        if (!user?.password) return null;
+        if (!user) {
+          console.error(`[NextAuth] user not found for email: ${credentials.email}`);
+          return null;
+        }
+        if (!user.password) {
+          console.error(`[NextAuth] user has no password for email: ${credentials.email}`);
+          return null;
+        }
 
         const valid = await bcrypt.compare(
           credentials.password as string,
           user.password,
         );
 
-        if (!valid) return null;
+        if (!valid) {
+          console.error(`[NextAuth] password mismatch for email: ${credentials.email}`);
+          return null;
+        }
 
+        console.error(`[NextAuth] user authenticated successfully: ${credentials.email}`);
         return { 
           id: user.id, 
           email: user.email, 
           name: user.fullName,
-          onboarding_completed: user.onboarding_completed
+          onboarding_completed: user.onboarding_completed,
+          roles: user.roles,
+          role: user.roles?.[0]?.role || "user",
+          tier: user.current_tier || "Explorer",
         };
+        } catch (error) {
+          console.error("[NextAuth] ERROR in authorize:", error);
+          return null;
+        }
       },
     }),
   ],
@@ -190,9 +214,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const userId = user?.id;
       if (userId) {
         token.id = userId;
-        // Onboarding status from the database
         token.onboardingCompleted = (user as any).onboarding_completed;
-        token.role = await resolveUserRole(userId);
+        
+        // If the role was already fetched during credentials authorize, use it
+        if ((user as any).role) {
+          token.role = (user as any).role;
+          token.tier = (user as any).tier;
+        } else {
+          try {
+            // Attempt to fetch fresh profile data for OAuth...
+            const dbUser = await prisma.user.findUnique({
+              where: { id: userId },
+              select: { roles: { select: { role: true } }, current_tier: true },
+            });
+            token.role = dbUser?.roles?.[0]?.role || "user";
+            token.tier = dbUser?.current_tier || "Explorer";
+          } catch (error) {
+            console.error("[NextAuth] ERROR in jwt callback fetching dbUser:", error);
+            token.role = "user";
+            token.tier = "Explorer";
+          }
+        }
       }
       // Handle session updates from the client
       if (trigger === "update" && session?.onboardingCompleted !== undefined) {

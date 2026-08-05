@@ -180,7 +180,7 @@ export async function getCauseEdits() {
       const sections = await prisma.$queryRaw<any[]>(Prisma.sql`
         SELECT id, heading, description
         FROM cause_edit_sections
-        WHERE cause_edit_id = ${edit.id}
+        WHERE cause_edit_id = ${edit.id}::uuid
       `);
 
       return {
