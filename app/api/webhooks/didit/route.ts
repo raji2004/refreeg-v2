@@ -87,12 +87,39 @@ export async function POST(request: Request) {
     // Only consider it manual review if status explicitly mentions review or pending
     const requiresManualReview = lowerStatus.includes("review") || lowerStatus === "pending";
 
+    // Extract additional KYC data if Didit provides it in the body or inside a nested data object
+    const webhookData = body.data || body;
+    const dob = webhookData.date_of_birth || webhookData.dob || body.date_of_birth || body.dob;
+    const address = webhookData.address || body.address;
+    const city = webhookData.city || body.city;
+    const state = webhookData.state || webhookData.region || body.state || body.region;
+    const country = webhookData.country || body.country;
+    const postal = webhookData.postal_code || webhookData.zip || body.postal_code || body.zip;
+    const phone = webhookData.phone || body.phone;
+    const firstName = webhookData.first_name || body.first_name;
+    const lastName = webhookData.last_name || body.last_name;
+    
+    let fullName = kyc.full_name;
+    if (firstName && lastName) {
+      fullName = `${firstName} ${lastName}`;
+    } else if (webhookData.full_name || body.full_name) {
+      fullName = webhookData.full_name || body.full_name;
+    }
+
     // Update kyc record
     await prisma.kyc_verifications.update({
       where: { id: kyc.id },
       data: {
         status: newStatus,
-        verification_notes: `Automated Didit result: ${status}${isRejected || isResubmitted ? ` - ${rejectionReason}` : ''}`
+        verification_notes: `Automated Didit result: ${status}${isRejected || isResubmitted ? ` - ${rejectionReason}` : ''}`,
+        ...(fullName && fullName !== "Didit User" && { full_name: fullName }),
+        ...(dob && { dob }),
+        ...(address && { address }),
+        ...(city && { city }),
+        ...(state && { state }),
+        ...(country && { country }),
+        ...(postal && { postal }),
+        ...(phone && { phone }),
       }
     });
 

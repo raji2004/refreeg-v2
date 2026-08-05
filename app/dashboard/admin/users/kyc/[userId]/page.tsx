@@ -354,23 +354,25 @@ export default async function KycReviewPage({
         </CardContent>
       </Card>
 
-      <Card className="shadow-lg">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <form action={approveAction}>
-              <Button
-                type="submit"
-                disabled={kyc?.status === "approved"}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 w-full"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Approve KYC
-              </Button>
-            </form>
-            <KycRejectionDialog kycId={kyc.id} />
-          </div>
-        </CardContent>
-      </Card>
+      {kyc?.document_type !== "didit" && (
+        <Card className="shadow-lg">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <form action={approveAction}>
+                <Button
+                  type="submit"
+                  disabled={kyc?.status === "approved"}
+                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 w-full"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Approve KYC
+                </Button>
+              </form>
+              <KycRejectionDialog kycId={kyc.id} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
