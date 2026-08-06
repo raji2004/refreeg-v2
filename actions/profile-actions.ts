@@ -304,6 +304,23 @@ export async function getCurrentOnboardingStep(
       return 3;
     }
 
+    // For organization accounts, check if org setup is complete (Step 3B)
+    if (profile.accountType === "organization") {
+      const org = await prisma.organization.findFirst({
+        where: { ownerId: userId },
+        select: { logoUrl: true, preferences: true },
+      });
+      // Org setup step: logo is optional, but we use a flag in preferences
+      // to know the user has visited the step. If preferences is still the
+      // default empty object "{}", they haven't been through org setup.
+      const prefs = org?.preferences as Record<string, unknown> | null;
+      const hasVisitedOrgSetup = prefs && Object.keys(prefs).length > 0;
+      if (!hasVisitedOrgSetup) {
+        // Return a special value — the orchestrator maps this to step 3B
+        return 3.5;
+      }
+    }
+
     return 4;
   } catch (error) {
     console.error("Error determining onboarding step:", error);
@@ -428,14 +445,63 @@ export async function checkUsernameAvailability(
   currentUserId?: string,
 ): Promise<boolean> {
   try {
+    // Normalise to lowercase to prevent case-sensitivity false conflicts
+    const normalizedUsername = username.trim().toLowerCase();
+    if (!normalizedUsername || normalizedUsername.length < 3) {
+      return true; // Too short to check — let field validation handle it
+    }
+
     const profile = await prisma.user.findUnique({
-      where: { username },
+      where: { username: normalizedUsername },
       select: { id: true },
     });
-    return !profile || profile.id === currentUserId;
+
+    // No match → available
+    if (!profile) return true;
+
+    // Match is the current user's own row → available for them
+    if (currentUserId && profile.id === currentUserId) return true;
+
+    // Taken by someone else
+    return false;
   } catch (error) {
     console.error("Error checking username availability:", error);
     return false; // Safely return false if an error occurs
+  }
+}
+
+/**
+ * Fetch the organization onboarding data for the owner to pre-fill Step 3B.
+ */
+export async function getOrganizationOnboardingData(userId: string) {
+  try {
+    const org = await prisma.organization.findFirst({
+      where: { ownerId: userId },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        address: true,
+        industry: true,
+        logoUrl: true,
+        preferences: true,
+      },
+    });
+
+    if (!org) return null;
+
+    return {
+      id: org.id,
+      name: org.name,
+      phone: org.phone || "",
+      address: org.address || "",
+      industry: org.industry || "",
+      logoUrl: org.logoUrl || "",
+      preferences: (org.preferences || {}) as Record<string, boolean>,
+    };
+  } catch (error) {
+    console.error("Error fetching organization onboarding data:", error);
+    return null;
   }
 }
 

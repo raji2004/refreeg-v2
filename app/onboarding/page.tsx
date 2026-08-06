@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,6 +14,12 @@ const Step2 = dynamic(() => import("./step2"), {
   loading: () => <Skeleton className="h-[400px] w-full" />,
 });
 const Step3 = dynamic(() => import("./step3"), {
+  loading: () => <Skeleton className="h-[400px] w-full" />,
+});
+const Step3BOrgSetup = dynamic(() => import("./step3b-org-setup"), {
+  loading: () => <Skeleton className="h-[400px] w-full" />,
+});
+const Step3CInviteTeam = dynamic(() => import("./step3c-invite-team"), {
   loading: () => <Skeleton className="h-[400px] w-full" />,
 });
 const Step4 = dynamic(() => import("./step4"), {
@@ -35,9 +41,51 @@ import {
 } from "@/actions/profile-actions";
 import { toast } from "@/components/ui/use-toast";
 
+// ---------------------------------------------------------------------------
+// Step identifiers — each account type uses a different ordered subset.
+// ---------------------------------------------------------------------------
+type StepId =
+  | "account-type"
+  | "gender"
+  | "profile"
+  | "org-setup"
+  | "invite-team"
+  | "kyc"
+  | "complete";
+
+const INDIVIDUAL_STEPS: StepId[] = [
+  "account-type",
+  "gender",
+  "profile",
+  "kyc",
+  "complete",
+];
+
+const ORGANIZATION_STEPS: StepId[] = [
+  "account-type",
+  "profile",
+  "org-setup",
+  "invite-team",
+  "kyc",
+  "complete",
+];
+
+/**
+ * Map the numeric value returned by `getCurrentOnboardingStep` (which may
+ * include 3.5 for org-setup) to the appropriate StepId.
+ */
+function dbStepToStepId(dbStep: number, accountType: string): StepId {
+  if (dbStep <= 1) return "account-type";
+  if (dbStep === 2) return accountType === "organization" ? "profile" : "gender";
+  if (dbStep === 3) return "profile";
+  if (dbStep === 3.5) return "org-setup";
+  // dbStep >= 4 means profile + org-setup are done → KYC
+  return "kyc";
+}
+
 export default function OnboardingPage() {
   // State management for dynamic onboarding flow
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStepId, setCurrentStepId] = useState<StepId>("account-type");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -65,6 +113,37 @@ export default function OnboardingPage() {
   const searchParams = useSearchParams();
   const { data: session, status, update } = useSession();
 
+  // Derive step sequence based on account type
+  const isOrg = onboardingData.accountType === "organization";
+  const stepSequence = useMemo(
+    () => (isOrg ? ORGANIZATION_STEPS : INDIVIDUAL_STEPS),
+    [isOrg],
+  );
+
+  const currentStepIndex = stepSequence.indexOf(currentStepId);
+  const totalSteps = stepSequence.length;
+
+  // Navigation helpers
+  const goToStep = (stepId: StepId, dir: 1 | -1 = 1) => {
+    setDirection(dir);
+    setCurrentStepId(stepId);
+  };
+
+  const goNext = () => {
+    const nextIndex = currentStepIndex + 1;
+    if (nextIndex < totalSteps) {
+      goToStep(stepSequence[nextIndex], 1);
+    }
+  };
+
+  const goBack = () => {
+    const prevIndex = currentStepIndex - 1;
+    if (prevIndex >= 0) {
+      goToStep(stepSequence[prevIndex], -1);
+    }
+  };
+
+  // ──── Auth & resume logic ───────────────────────────────────────────
   useEffect(() => {
     const checkUser = async () => {
       if (status === "loading") return;
@@ -105,9 +184,7 @@ export default function OnboardingPage() {
             getOnboardingData(currentUser.id as string),
           ]);
 
-          // Set the current step based on database state
-          // This automatically skips completed steps ONCE on initial load
-          setCurrentStep(currentStepFromDB);
+          const accountType = existingData.accountType || "";
 
           // Handle Google OAuth name splitting if firstName/lastName are missing
           let firstName = existingData.profile.firstName || "";
@@ -122,7 +199,7 @@ export default function OnboardingPage() {
           // Prefill onboarding data with existing database data or session data
           setOnboardingData((prev) => ({
             ...prev,
-            accountType: existingData.accountType || "",
+            accountType,
             gender: existingData.gender,
             profile: {
               ...prev.profile,
@@ -133,10 +210,14 @@ export default function OnboardingPage() {
             },
           }));
 
+          // Set the current step based on database state
+          const resumeStepId = dbStepToStepId(currentStepFromDB, accountType);
+          setCurrentStepId(resumeStepId);
+
           setIsLoading(false);
         } catch (error) {
           console.error("Error loading onboarding progress:", error);
-          setCurrentStep(1);
+          setCurrentStepId("account-type");
           setIsLoading(false);
         }
       }
@@ -145,55 +226,46 @@ export default function OnboardingPage() {
     checkUser();
   }, [router, session, status, isLoading, update]);
 
-  // Additional protection: Reset to step 1 if user tries to access steps 4-5 without completing step 3
+  // Additional protection: Reset to step 1 if user tries to access late
+  // steps without completing the profile step
   useEffect(() => {
-    if (user && currentStep > 3) {
-      // Check if profile data is complete (step 3 completion)
-      // We need to check if the profile was actually created in the database
-      // This is a fallback check - the main protection is in middleware
-      const profileData = onboardingData.profile;
-      const isStep3Complete = !!(
-        profileData?.firstName &&
-        profileData?.lastName &&
-        profileData?.username &&
-        profileData?.location &&
-        profileData?.phone
-      );
+    if (!user) return;
+    const lateSteps: StepId[] = ["kyc", "complete"];
+    if (!lateSteps.includes(currentStepId)) return;
 
-      if (!isStep3Complete) {
-        setCurrentStep(1);
-        toast({
-          title: "Complete your profile first",
-          description: "Please complete steps 1-3 before proceeding.",
-          variant: "destructive",
-        });
-      }
+    const profileData = onboardingData.profile;
+    const isProfileComplete = !!(
+      profileData?.firstName &&
+      profileData?.lastName &&
+      profileData?.username &&
+      profileData?.location &&
+      profileData?.phone
+    );
+
+    if (!isProfileComplete) {
+      setCurrentStepId("account-type");
+      toast({
+        title: "Complete your profile first",
+        description: "Please complete earlier steps before proceeding.",
+        variant: "destructive",
+      });
     }
-  }, [user, currentStep, onboardingData.profile]);
+  }, [user, currentStepId, onboardingData.profile]);
 
-  // Note: localStorage loading removed - now using database for persistence
+  // ──── Step handlers ─────────────────────────────────────────────────
 
-  const handleNext = async () => {
-    if (currentStep < 5) {
-      setDirection(1);
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  // PROGRESS SAVING HANDLERS:
-  // Each step now saves progress to database immediately upon completion
-  // This ensures users can resume from their last incomplete step
-
-  // Handle step 1 completion with database save
   const handleStep1Next = async (accountType: string) => {
     try {
       await saveStep1Progress(user.id, accountType);
       updateOnboardingData("accountType", accountType);
+
+      // Organization → skip gender, go to profile
       if (accountType === "organization") {
         setDirection(1);
-        setCurrentStep(3);
+        setCurrentStepId("profile");
       } else {
-        handleNext();
+        setDirection(1);
+        setCurrentStepId("gender");
       }
     } catch (error) {
       console.error("Error saving step 1 progress:", error);
@@ -205,12 +277,11 @@ export default function OnboardingPage() {
     }
   };
 
-  // Handle step 2 completion with database save
   const handleStep2Next = async (gender: string) => {
     try {
       await saveStep2Progress(user.id, gender);
       updateOnboardingData("gender", gender);
-      handleNext();
+      goToStep("profile", 1);
     } catch (error) {
       console.error("Error saving step 2 progress:", error);
       toast({
@@ -221,23 +292,9 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setDirection(-1);
-      setCurrentStep(
-        currentStep === 3 && onboardingData.accountType === "organization"
-          ? 1
-          : currentStep - 1,
-      );
-    }
-  };
-
-  // Handle step 3 completion - saves complete profile to database
   const handleStep3Submit = async (profileData: any) => {
     setIsSubmitting(true);
     try {
-      // Create user profile with all collected data
-      // This step saves the complete profile to database
       await createOnboardingProfile(
         user.id,
         {
@@ -254,10 +311,14 @@ export default function OnboardingPage() {
         user.image,
       );
 
-      setCurrentStep(4);
+      // Org → go to org setup. Individual → go to KYC.
+      if (onboardingData.accountType === "organization") {
+        goToStep("org-setup", 1);
+      } else {
+        goToStep("kyc", 1);
+      }
     } catch (error) {
       console.error("Error completing onboarding:", error);
-      // Show error to user
       toast({
         title: "Error creating profile",
         description: error instanceof Error ? error.message : "Unknown error",
@@ -266,6 +327,14 @@ export default function OnboardingPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleOrgSetupNext = () => {
+    goToStep("invite-team", 1);
+  };
+
+  const handleInviteTeamNext = () => {
+    goToStep("kyc", 1);
   };
 
   const handleComplete = async (destination?: string) => {
@@ -296,6 +365,10 @@ export default function OnboardingPage() {
     }
   };
 
+  const handleKycSkipOrSubmit = async () => {
+    goToStep("complete", 1);
+  };
+
   const handleKyc = async () => {
     await handleComplete("/dashboard/settings/kyc-setup");
   };
@@ -308,6 +381,8 @@ export default function OnboardingPage() {
     );
   };
 
+  // ──── Render ────────────────────────────────────────────────────────
+
   if (isLoading) {
     return <NavigationLoader />;
   }
@@ -317,35 +392,38 @@ export default function OnboardingPage() {
   }
 
   const stepVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 300 : -300,
+    enter: (dir: number) => ({
+      x: dir > 0 ? 300 : -300,
       opacity: 0,
     }),
     center: {
       x: 0,
       opacity: 1,
     },
-    exit: (direction: number) => ({
-      x: direction > 0 ? -300 : 300,
+    exit: (dir: number) => ({
+      x: dir > 0 ? -300 : 300,
       opacity: 0,
     }),
   };
 
+  // Progress bar: how many segments are "filled"
+  const filledSteps = currentStepIndex + 1;
+
   return (
     <div className="min-h-screen w-full bg-white flex flex-col items-center justify-start">
       <OnboardingNav
-        currentStep={currentStep}
-        onBack={handleBack}
-        showUserNav={currentStep >= 4}
+        currentStep={currentStepIndex + 1}
+        onBack={goBack}
+        showUserNav={currentStepId === "kyc" || currentStepId === "complete"}
       />
       <div className="w-full flex-1 flex flex-col items-center justify-center px-8 py-12">
-        {/* Progress indicator */}
+        {/* Progress indicator — adapts to total step count */}
         <div className="mb-8 flex justify-center space-x-2">
-          {[...Array(5)].map((_, i) => (
+          {[...Array(totalSteps)].map((_, i) => (
             <div
               key={i}
               className={`h-2 w-12 rounded-full transition-colors duration-300 ${
-                i < currentStep ? "bg-blue-600" : "bg-gray-200"
+                i < filledSteps ? "bg-blue-600" : "bg-gray-200"
               }`}
             ></div>
           ))}
@@ -355,7 +433,7 @@ export default function OnboardingPage() {
         <div className="relative overflow-hidden">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
-              key={currentStep}
+              key={currentStepId}
               custom={direction}
               variants={stepVariants}
               initial="enter"
@@ -367,7 +445,7 @@ export default function OnboardingPage() {
               }}
               className="w-full"
             >
-              {currentStep === 1 && (
+              {currentStepId === "account-type" && (
                 <Step1
                   user={user}
                   onNext={handleStep1Next}
@@ -375,36 +453,53 @@ export default function OnboardingPage() {
                   updateOnboardingData={updateOnboardingData}
                 />
               )}
-              {currentStep === 2 && (
+              {currentStepId === "gender" && (
                 <Step2
                   user={user}
                   onNext={handleStep2Next}
-                  onBack={handleBack}
+                  onBack={goBack}
                   onboardingData={onboardingData}
                   updateOnboardingData={updateOnboardingData}
                 />
               )}
-              {currentStep === 3 && (
+              {currentStepId === "profile" && (
                 <Step3
                   user={user}
                   onNext={handleStep3Submit}
-                  onBack={handleBack}
+                  onBack={goBack}
                   onboardingData={onboardingData}
                   updateOnboardingData={updateOnboardingData}
                   isSubmitting={isSubmitting}
                 />
               )}
-              {currentStep === 4 && (
+              {currentStepId === "org-setup" && (
+                <Step3BOrgSetup
+                  user={user}
+                  onNext={handleOrgSetupNext}
+                  onBack={goBack}
+                  onboardingData={onboardingData}
+                  isSubmitting={isSubmitting}
+                />
+              )}
+              {currentStepId === "invite-team" && (
+                <Step3CInviteTeam
+                  user={user}
+                  onNext={handleInviteTeamNext}
+                  onBack={goBack}
+                  onboardingData={onboardingData}
+                />
+              )}
+              {currentStepId === "kyc" && (
                 <Step4
                   user={user}
-                  onNext={handleNext}
+                  onNext={handleKycSkipOrSubmit}
                   onKyc={handleKyc}
-                  onBack={handleBack}
+                  onBack={goBack}
                   onboardingData={onboardingData}
                   updateOnboardingData={updateOnboardingData}
                 />
               )}
-              {currentStep === 5 && (
+              {currentStepId === "complete" && (
                 <Step5
                   user={user}
                   onComplete={handleComplete}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,12 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
+  AlertCircle,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationSelector } from "@/components/location-selector";
 import { checkUsernameAvailability } from "@/actions/profile-actions";
-import { toast } from "@/components/ui/use-toast";
+import { suggestUsername } from "@/utils/username";
 import {
   Tooltip,
   TooltipContent,
@@ -77,11 +78,16 @@ export default function Step3({
     const oauthLastName = user?.name?.split(" ").slice(1).join(" ") || "";
     const oauthPhone = user?.phone || ""; // NextAuth might not have phone unless we add it
 
+    // Pre-fill username with a smart suggestion if empty
+    const existingUsername = savedData.username || "";
+    const usernameFill =
+      existingUsername || suggestUsername(user?.email, user?.name);
+
     setFormData((prev) => ({
       ...prev,
       firstName: savedData.firstName || oauthFirstName,
       lastName: savedData.lastName || oauthLastName,
-      username: savedData.username || "",
+      username: usernameFill,
       location: savedData.location || "",
       phone: savedData.phone || oauthPhone,
       email: savedData.email || user?.email || prev.email,
@@ -236,13 +242,17 @@ export default function Step3({
     return Object.keys(newErrors).length === 0;
   };
 
+  const errorCount = useMemo(
+    () => Object.values(errors).filter(Boolean).length,
+    [errors],
+  );
+
   const handleSubmit = () => {
     if (!validateForm()) {
-      toast({
-        title: "Please fix the errors below",
-        description: "Some required fields are missing or invalid",
-        variant: "destructive",
-      });
+      // Scroll to the error summary at the top of the form
+      document
+        .getElementById("error-summary")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -256,6 +266,8 @@ export default function Step3({
     });
   };
 
+  const isOrg = onboardingData.accountType === "organization";
+
   return (
     <div className="h-full flex items-center justify-center bg-white px-6">
       <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
@@ -267,15 +279,28 @@ export default function Step3({
           className="w-full"
         >
           <h1 className="text-3xl font-semibold text-gray-900 mb-2">
-            {onboardingData.accountType === "organization"
-              ? "Complete your organization admin profile"
+            {isOrg
+              ? "Set up your admin profile"
               : "Create your RefreeG account"}
           </h1>
           <p className="text-gray-500 mb-8">
-            {onboardingData.accountType === "organization"
-              ? "These details identify the workspace owner. Organization branding can be managed in Settings."
+            {isOrg
+              ? "This identifies you as the workspace owner. Organization branding comes next."
               : "It takes less than a minute to create an account"}
           </p>
+
+          {/* Inline error summary */}
+          {errorCount > 0 && (
+            <div
+              id="error-summary"
+              className="mb-6 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>
+                Please fix {errorCount} issue{errorCount > 1 ? "s" : ""} below
+              </span>
+            </div>
+          )}
 
           <div className="space-y-5">
             {/* Profile Photo + First + Last Name */}
@@ -319,7 +344,8 @@ export default function Step3({
               <div className="flex flex-col md:flex-row md:space-x-4 w-full">
                 <div className="flex flex-col space-y-2 flex-1">
                   <Label htmlFor="firstName">
-                    First Name<span className="text-red-500">*</span>
+                    {isOrg ? "Admin First Name" : "First Name"}
+                    <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-2 w-6 h-6 text-gray-400" />
@@ -342,7 +368,8 @@ export default function Step3({
 
                 <div className="flex flex-col space-y-2 flex-1 mt-4 md:mt-0">
                   <Label htmlFor="lastName">
-                    Last Name<span className="text-red-500">*</span>
+                    {isOrg ? "Admin Last Name" : "Last Name"}
+                    <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-2 w-6 h-6 text-gray-400" />
