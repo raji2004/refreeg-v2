@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import {
   Popover,
   PopoverContent,
@@ -267,20 +266,22 @@ export default function CreateCauseForm() {
       const loadedStartDate = parsedDraft.startDate
         ? new Date(parsedDraft.startDate)
         : undefined;
-      
+
       // Ensure start date is not in the past
-      const startDate = loadedStartDate && !isBefore(loadedStartDate, today)
-        ? loadedStartDate
-        : today;
+      const startDate =
+        loadedStartDate && !isBefore(loadedStartDate, today)
+          ? loadedStartDate
+          : today;
 
       const loadedEndDate = parsedDraft.endDate
         ? new Date(parsedDraft.endDate)
         : undefined;
 
       // Ensure end date is after start date, default to 7 days if invalid
-      const endDate = loadedEndDate && isAfter(loadedEndDate, startDate)
-        ? loadedEndDate
-        : addDays(startDate, 7);
+      const endDate =
+        loadedEndDate && isAfter(loadedEndDate, startDate)
+          ? loadedEndDate
+          : addDays(startDate, 7);
 
       setFormData((prev) => ({
         ...parsedDraft,
@@ -419,8 +420,9 @@ export default function CreateCauseForm() {
       return;
     }
 
-    const existingVideoCount = (formData.multimedia || []).filter(isVideoFile)
-      .length;
+    const existingVideoCount = (formData.multimedia || []).filter(
+      isVideoFile,
+    ).length;
     const incomingVideos = files.filter((f) => f.type.startsWith("video/"));
     if (existingVideoCount + incomingVideos.length > MAX_VIDEOS_PER_CAUSE) {
       setErrors((prev) => ({
@@ -1035,7 +1037,9 @@ export default function CreateCauseForm() {
                         const maxEnd = addDays(start, MAX_DURATION_DAYS);
                         return isBefore(date, start) || isAfter(date, maxEnd);
                       }}
-                      defaultMonth={formData.endDate || formData.startDate || new Date()}
+                      defaultMonth={
+                        formData.endDate || formData.startDate || new Date()
+                      }
                       initialFocus
                     />
                   </PopoverContent>
@@ -1426,7 +1430,10 @@ export default function CreateCauseForm() {
             }}
           >
             <div className="min-h-[320px] sm:min-h-[400px]">
-              <div key={currentStep} className="animate-in fade-in duration-200">
+              <div
+                key={currentStep}
+                className="animate-in fade-in duration-200"
+              >
                 {renderStep()}
               </div>
             </div>
