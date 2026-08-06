@@ -56,6 +56,9 @@ model User {
   petitions             petitions[]
   roles                 Role[]
   sessions              Session[]
+  ownedOrganization     Organization?       @relation("OrganizationOwner")
+  organizationMemberships OrganizationMember[]
+  sentOrganizationInvitations OrganizationInvitation[] @relation("OrganizationInviter")
 
   @@index([isBlocked], map: "idx_profiles_is_blocked")
   @@map("profiles")
@@ -119,8 +122,67 @@ model PendingRegistration {
   referralCode   String?   @map("referral_code")
   failedAttempts Int       @default(0) @map("failed_attempts")
   lastOtpSentAt  DateTime? @map("last_otp_sent_at") @db.Timestamptz(6)
+  accountType    String    @default("individual") @map("account_type")
+  organizationName String? @map("organization_name")
+  organizationPhone String? @map("organization_phone")
+  organizationAddress String? @map("organization_address")
+  organizationIndustry String? @map("organization_industry")
 
   @@map("pending_registrations")
+}
+
+model Organization {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  slug        String   @unique
+  adminEmail  String   @map("admin_email")
+  phone       String?
+  address     String?
+  industry    String?
+  logoUrl     String?  @map("logo_url")
+  preferences Json     @default("{}")
+  ownerId     String   @unique @map("owner_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  owner       User     @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     OrganizationMember[]
+  invitations OrganizationInvitation[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  role           String       @default("member")
+  joinedAt       DateTime     @default(now()) @map("joined_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@map("organization_members")
+}
+
+model OrganizationInvitation {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  email          String
+  role           String       @default("member")
+  token          String       @unique
+  status         String       @default("pending")
+  invitedById    String       @map("invited_by_id") @db.Uuid
+  expiresAt      DateTime     @map("expires_at") @db.Timestamptz(6)
+  acceptedAt     DateTime?    @map("accepted_at") @db.Timestamptz(6)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy      User         @relation("OrganizationInviter", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+  @@index([email])
+  @@map("organization_invitations")
 }
 
 model Role {

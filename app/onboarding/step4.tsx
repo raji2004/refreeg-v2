@@ -10,8 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { Shield, ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { getProfile } from "@/actions/profile-actions";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
@@ -19,6 +18,7 @@ import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 interface Step4Props {
   user: any;
   onNext: () => void;
+  onKyc: () => void | Promise<void>;
   onBack: () => void;
   onboardingData: any;
   updateOnboardingData: (key: string, value: any) => void;
@@ -27,11 +27,11 @@ interface Step4Props {
 export default function Step4({
   user,
   onNext,
+  onKyc,
   onBack,
   onboardingData,
   updateOnboardingData,
 }: Step4Props) {
-  const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -65,16 +65,9 @@ export default function Step4({
     onNext();
   };
 
-  const handleKyc = () => {
+  const handleKyc = async () => {
     updateOnboardingData("kycCompleted", true);
-    // Clear all onboarding data and redirect to KYC setup page
-    localStorage.removeItem("onboarding_account_type");
-    localStorage.removeItem("onboarding_gender");
-    localStorage.removeItem("onboarding_profile");
-    localStorage.removeItem("onboarding_interests");
-    localStorage.removeItem("onboarding_kyc_completed");
-    localStorage.removeItem("onboarding_consent");
-    router.push("/dashboard/settings/kyc-setup");
+    await onKyc();
   };
 
   return (

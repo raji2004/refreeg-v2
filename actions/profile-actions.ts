@@ -195,7 +195,9 @@ export async function createOnboardingProfile(
   }`.trim();
 
   const updateData: any = {
-    onboarding_completed: true,
+    // The wizard is completed explicitly on its final screen. Keeping this
+    // false here prevents the onboarding guard from skipping KYC and success.
+    onboarding_completed: false,
   };
 
   if (profileData.email) updateData.email = profileData.email;
@@ -238,6 +240,7 @@ export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
         username: true,
         location: true,
         createdAt: true,
+        onboarding_completed: true,
       },
     });
 
@@ -245,28 +248,12 @@ export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
       return false;
     }
 
-    const hasBasicProfile = !!(profile.fullName && profile.email);
-
-    const hasOnboardingFields = !!(
-      profile.firstName &&
-      profile.lastName &&
-      profile.username &&
-      profile.location &&
-      profile.phone
-    );
-
-    if (hasBasicProfile && !hasOnboardingFields) {
-      // Check if the user is very old (created before onboarding fields were added)
-      // For new users created by the trigger, this should be false
-      const createdAt = new Date(profile.createdAt);
-      const onboardingcutoff = new Date("2024-12-21"); // Date when onboarding was added
-
-      if (createdAt < onboardingcutoff) {
-        return true;
-      }
+    if (profile.onboarding_completed === true) {
+      return true;
     }
 
-    return hasOnboardingFields;
+    // Preserve access for legacy accounts that predate the onboarding wizard.
+    return new Date(profile.createdAt) < new Date("2024-12-21");
   } catch (error) {
     console.error("Error checking onboarding completion:", error);
     return false;
@@ -300,7 +287,7 @@ export async function getCurrentOnboardingStep(
       return 1;
     }
 
-    if (!profile.gender) {
+    if (profile.accountType !== "organization" && !profile.gender) {
       return 2;
     }
 
@@ -438,17 +425,57 @@ export async function saveStep2Progress(
 
 export async function checkUsernameAvailability(
   username: string,
+  currentUserId?: string,
 ): Promise<boolean> {
   try {
     const profile = await prisma.user.findUnique({
       where: { username },
       select: { id: true },
     });
-    return !profile; // Return true if profile does not exist (username is available)
+    return !profile || profile.id === currentUserId;
   } catch (error) {
     console.error("Error checking username availability:", error);
     return false; // Safely return false if an error occurs
   }
+}
+
+export async function completeOnboarding(userId: string): Promise<void> {
+  const profile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      accountType: true,
+      firstName: true,
+      lastName: true,
+      username: true,
+      location: true,
+      phone: true,
+    },
+  });
+
+  if (!profile) {
+    throw new Error("Profile not found");
+  }
+
+  const missingFields = [
+    !profile.accountType && "account type",
+    !profile.firstName && "first name",
+    !profile.lastName && "last name",
+    !profile.username && "username",
+    !profile.location && "location",
+    !profile.phone && "phone number",
+  ].filter(Boolean);
+
+  if (missingFields.length > 0) {
+    throw new Error(`Complete ${missingFields.join(", ")} before continuing`);
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { onboarding_completed: true },
+  });
+
+  revalidatePath("/onboarding");
+  revalidatePath("/dashboard");
 }
 
 export async function isProfileComplete(

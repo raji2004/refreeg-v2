@@ -3,11 +3,10 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 
 interface Step5Props {
   user: any;
-  onComplete: () => void;
+  onComplete: (destination?: string) => void | Promise<void>;
   onboardingData: any;
 }
 
@@ -16,7 +15,6 @@ export default function Step5({
   onComplete,
   onboardingData,
 }: Step5Props) {
-  const router = useRouter();
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
       {/* Image */}
@@ -58,14 +56,14 @@ export default function Step5({
         className="flex flex-col sm:flex-row items-center justify-center gap-4"
       >
         <Button
-          onClick={() => router.push("/causes")}
+          onClick={() => onComplete("/causes")}
           className="bg-gray-200 text-gray-800 hover:bg-gray-300 px-6 py-6 rounded-lg text-base font-semibold"
         >
           Explore Causes →
         </Button>
 
         <Button
-          onClick={onComplete}
+          onClick={() => onComplete()}
           className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-6 rounded-lg text-base font-semibold"
         >
           Go to Dashboard

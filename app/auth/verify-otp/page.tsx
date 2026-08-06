@@ -12,6 +12,11 @@ export default function VerifyOtpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
+  const requestedRedirect = searchParams.get("redirect");
+  const safeRedirect =
+    requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")
+      ? requestedRedirect
+      : null;
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -110,14 +115,18 @@ export default function VerifyOtpPage() {
         if (loginRes?.error) {
           toast.error("Auto-login failed, please sign in manually.");
           router.push(
-            `/auth/signin?email=${encodeURIComponent(email)}&verified=true`,
+            `/auth/signin?email=${encodeURIComponent(email)}&verified=true${safeRedirect ? `&redirect=${encodeURIComponent(safeRedirect)}` : ""}`,
           );
         } else {
-          router.push("/onboarding");
+          router.push(
+            safeRedirect
+              ? `/onboarding?redirect=${encodeURIComponent(safeRedirect)}`
+              : "/onboarding",
+          );
         }
       } else {
         router.push(
-          `/auth/signin?email=${encodeURIComponent(email)}&verified=true`,
+          `/auth/signin?email=${encodeURIComponent(email)}&verified=true${safeRedirect ? `&redirect=${encodeURIComponent(safeRedirect)}` : ""}`,
         );
       }
     } catch (error) {

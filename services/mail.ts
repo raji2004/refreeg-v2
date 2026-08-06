@@ -85,6 +85,21 @@ export async function sendOtpEmail(context: {
   });
 }
 
+export async function sendOrganizationInvitationEmail(context: {
+  email: string;
+  inviterName: string;
+  organizationName: string;
+  role: string;
+  invitationUrl: string;
+}) {
+  return sendMail({
+    to: context.email,
+    subject: `You're invited to join ${context.organizationName} on RefreeG`,
+    templateName: "organization-invitation",
+    context: { ...context, currentYear: new Date().getFullYear() },
+  });
+}
+
 export async function sendPasswordResetEmail(context: {
   email: string;
   resetUrl: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
@@ -31,6 +31,7 @@ import {
   getOnboardingData,
   saveStep1Progress,
   saveStep2Progress,
+  completeOnboarding,
 } from "@/actions/profile-actions";
 import { toast } from "@/components/ui/use-toast";
 
@@ -61,6 +62,7 @@ export default function OnboardingPage() {
   });
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status, update } = useSession();
 
   useEffect(() => {
@@ -187,7 +189,12 @@ export default function OnboardingPage() {
     try {
       await saveStep1Progress(user.id, accountType);
       updateOnboardingData("accountType", accountType);
-      handleNext();
+      if (accountType === "organization") {
+        setDirection(1);
+        setCurrentStep(3);
+      } else {
+        handleNext();
+      }
     } catch (error) {
       console.error("Error saving step 1 progress:", error);
       toast({
@@ -217,7 +224,11 @@ export default function OnboardingPage() {
   const handleBack = () => {
     if (currentStep > 1) {
       setDirection(-1);
-      setCurrentStep(currentStep - 1);
+      setCurrentStep(
+        currentStep === 3 && onboardingData.accountType === "organization"
+          ? 1
+          : currentStep - 1,
+      );
     }
   };
 
@@ -238,16 +249,12 @@ export default function OnboardingPage() {
           email: user.email || "",
           profilePhoto: profileData.profilePhoto,
           accountType: onboardingData.accountType || "individual",
-          gender: onboardingData.gender || "",
+          gender: onboardingData.gender || undefined,
         },
         user.image,
       );
 
-      // Update session immediately so middleware recognizes user as onboarded
-      await update({ onboardingCompleted: true });
-
-      // Don't clear onboarding data yet, just move to step 4
-      setCurrentStep(4); // Go to KYC step
+      setCurrentStep(4);
     } catch (error) {
       console.error("Error completing onboarding:", error);
       // Show error to user
@@ -261,16 +268,36 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleComplete = () => {
-    // Clear any remaining localStorage data
-    localStorage.removeItem("onboarding_account_type");
-    localStorage.removeItem("onboarding_gender");
-    localStorage.removeItem("onboarding_profile");
-    localStorage.removeItem("onboarding_interests");
-    localStorage.removeItem("onboarding_kyc_completed");
-    localStorage.removeItem("onboarding_consent");
+  const handleComplete = async (destination?: string) => {
+    try {
+      await completeOnboarding(user.id);
+      await update({ onboardingCompleted: true });
 
-    router.push("/dashboard");
+      localStorage.removeItem("onboarding_account_type");
+      localStorage.removeItem("onboarding_gender");
+      localStorage.removeItem("onboarding_profile");
+      localStorage.removeItem("onboarding_interests");
+      localStorage.removeItem("onboarding_kyc_completed");
+      localStorage.removeItem("onboarding_consent");
+
+      const requestedRedirect = searchParams.get("redirect");
+      const safeRedirect =
+        requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")
+          ? requestedRedirect
+          : null;
+      router.push(destination || safeRedirect || "/dashboard");
+    } catch (error) {
+      toast({
+        title: "Could not complete onboarding",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleKyc = async () => {
+    await handleComplete("/dashboard/settings/kyc-setup");
   };
 
   const updateOnboardingData = (key: string, value: any) => {
@@ -371,6 +398,7 @@ export default function OnboardingPage() {
                 <Step4
                   user={user}
                   onNext={handleNext}
+                  onKyc={handleKyc}
                   onBack={handleBack}
                   onboardingData={onboardingData}
                   updateOnboardingData={updateOnboardingData}

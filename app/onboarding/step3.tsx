@@ -104,7 +104,10 @@ export default function Step3({
 
       setIsCheckingUsername(true);
       try {
-        const isAvailable = await checkUsernameAvailability(formData.username);
+        const isAvailable = await checkUsernameAvailability(
+          formData.username,
+          user?.id,
+        );
 
         // If the username equals their current username (if they already had one), it's available for them
         // (NextAuth user objects in onboarding might not have a username assigned yet, but just in case)
@@ -127,7 +130,7 @@ export default function Step3({
 
     const timeoutId = setTimeout(checkUsername, 500);
     return () => clearTimeout(timeoutId);
-  }, [formData.username]);
+  }, [formData.username, user?.id]);
 
   const handleChange = (field: string, value: string) => {
     const newFormData = { ...formData, [field]: value };
@@ -264,10 +267,14 @@ export default function Step3({
           className="w-full"
         >
           <h1 className="text-3xl font-semibold text-gray-900 mb-2">
-            Create your RefreeG account
+            {onboardingData.accountType === "organization"
+              ? "Complete your organization admin profile"
+              : "Create your RefreeG account"}
           </h1>
           <p className="text-gray-500 mb-8">
-            It takes less than a minute to create an account
+            {onboardingData.accountType === "organization"
+              ? "These details identify the workspace owner. Organization branding can be managed in Settings."
+              : "It takes less than a minute to create an account"}
           </p>
 
           <div className="space-y-5">
@@ -486,6 +493,10 @@ export default function Step3({
                   const newChecked = checked as boolean;
                   setIsConsentChecked(newChecked);
                   updateOnboardingData("consent", newChecked);
+                  setErrors((current) => ({
+                    ...current,
+                    consent: "",
+                  }));
                 }}
                 className="border-gray-400 mt-1"
               />

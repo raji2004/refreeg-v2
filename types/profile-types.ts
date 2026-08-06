@@ -55,5 +55,5 @@ export interface OnboardingProfileData {
   email: string;
   profilePhoto?: File | null;
   accountType: string;
-  gender: string;
+  gender?: string;
 }
