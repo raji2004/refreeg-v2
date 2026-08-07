@@ -88,12 +88,20 @@ import {
   validateGalleryVideo,
 } from "@/lib/media/video";
 import { resolveMultimediaForSubmit } from "@/lib/s3/upload-client";
+import {
+  CAUSE_COVER_ACCEPT,
+  CAUSE_COVER_DESCRIPTION,
+  CAUSE_COVER_HEIGHT,
+  CAUSE_COVER_WIDTH,
+  validateCauseCoverImage,
+  validateCauseGalleryImage,
+} from "@/lib/media/cause-cover";
 
 const currencies = [{ id: "NGN", name: "Naira (₦)" }];
 const MAX_DURATION_DAYS = 180;
 
 const GALLERY_ACCEPT = {
-  "image/*": [],
+  ...CAUSE_COVER_ACCEPT,
   "video/mp4": [".mp4"],
   "video/webm": [".webm"],
 };
@@ -401,6 +409,13 @@ export default function CreateCauseForm() {
       return;
     }
 
+    const validationError = await validateCauseCoverImage(file);
+    if (validationError) {
+      setFormData((prev) => ({ ...prev, coverImage: null }));
+      setErrors((prev) => ({ ...prev, coverImage: validationError }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, coverImage: file }));
     if (errors.coverImage) {
       setErrors((prev) => ({ ...prev, coverImage: undefined }));
@@ -452,7 +467,12 @@ export default function CreateCauseForm() {
         }
 
         if (file.type.startsWith("image/")) {
-          processedFiles.push(await compressImage(file, 1000, 0.7));
+          const imageError = await validateCauseGalleryImage(file);
+          if (imageError) {
+            setErrors((prev) => ({ ...prev, multimedia: imageError }));
+            return;
+          }
+          processedFiles.push(await compressImage(file, 1600, 0.8));
         } else {
           setErrors((prev) => ({
             ...prev,
@@ -1085,7 +1105,13 @@ export default function CreateCauseForm() {
                   <ImageUpload
                     onUpload={(files) => handleImageUpload(files)}
                     maxFiles={1}
-                    autoNormalize
+                    accept={CAUSE_COVER_ACCEPT}
+                    enableCrop
+                    cropAspect={16 / 9}
+                    cropRequired
+                    cropOutputWidth={CAUSE_COVER_WIDTH}
+                    cropOutputHeight={CAUSE_COVER_HEIGHT}
+                    description={`${CAUSE_COVER_DESCRIPTION} · up to 100MB`}
                   />
                   {formData.coverImage && (
                     <div className="mt-4 relative group aspect-video rounded-xl overflow-hidden shadow-sm border border-brand/10">
@@ -1095,7 +1121,7 @@ export default function CreateCauseForm() {
                         fill
                         sizes="(max-width: 768px) 100vw, 50vw"
                         unoptimized
-                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <Button
                         type="button"
@@ -1136,9 +1162,11 @@ export default function CreateCauseForm() {
                     onUpload={(files) => handleMultimediaUpload(files)}
                     maxFiles={5 - (formData.multimedia?.length || 0)}
                     accept={GALLERY_ACCEPT}
-                    enableCrop={false}
-                    description="Images or short videos (MP4/WebM, max 50MB / 90s each)"
-                    autoNormalize
+                    enableCrop
+                    cropAspect={16 / 9}
+                    cropOutputWidth={CAUSE_COVER_WIDTH}
+                    cropOutputHeight={CAUSE_COVER_HEIGHT}
+                    description="Select up to 5 images and crop each one, or keep its original framing; videos may be MP4/WebM (max 50MB / 90s each)"
                   />
                   {errors.multimedia && (
                     <p className="mt-2 text-sm text-red-500 font-medium">

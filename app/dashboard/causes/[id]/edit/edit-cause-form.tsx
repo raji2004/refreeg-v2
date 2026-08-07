@@ -58,6 +58,14 @@ import {
   validateGalleryVideo,
 } from "@/lib/media/video";
 import { resolveMultimediaForSubmit } from "@/lib/s3/upload-client";
+import {
+  CAUSE_COVER_ACCEPT,
+  CAUSE_COVER_DESCRIPTION,
+  CAUSE_COVER_HEIGHT,
+  CAUSE_COVER_WIDTH,
+  validateCauseCoverImage,
+  validateCauseGalleryImage,
+} from "@/lib/media/cause-cover";
 
 const Calendar = dynamic(
   () => import("@/components/ui/calendar").then((mod) => mod.Calendar),
@@ -95,7 +103,7 @@ const currencies = [{ id: "NGN", name: "Naira (₦)" }];
 const MAX_DURATION_DAYS = 180;
 
 const GALLERY_ACCEPT = {
-  "image/*": [],
+  ...CAUSE_COVER_ACCEPT,
   "video/mp4": [".mp4"],
   "video/webm": [".webm"],
 };
@@ -196,6 +204,12 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
     }
 
     if (file) {
+      const validationError = await validateCauseCoverImage(file);
+      if (validationError) {
+        setFormData((prev) => ({ ...prev, coverImage: null }));
+        setErrors((prev) => ({ ...prev, coverImage: validationError }));
+        return;
+      }
       setFormData((prev) => ({ ...prev, coverImage: file }));
     }
 
@@ -290,8 +304,13 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
       }
 
       if (file.type.startsWith("image/")) {
+        const imageError = await validateCauseGalleryImage(file);
+        if (imageError) {
+          setErrors((prev) => ({ ...prev, multimedia: imageError }));
+          return;
+        }
         try {
-          processedFiles.push(await compressImage(file, 1000, 0.7));
+          processedFiles.push(await compressImage(file, 1600, 0.8));
         } catch (err) {
           console.error("Compression error:", err);
           processedFiles.push(file);
@@ -890,7 +909,13 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                   <ImageUpload
                     onUpload={handleImageUpload}
                     maxFiles={1}
-                    autoNormalize
+                    accept={CAUSE_COVER_ACCEPT}
+                    enableCrop
+                    cropAspect={16 / 9}
+                    cropRequired
+                    cropOutputWidth={CAUSE_COVER_WIDTH}
+                    cropOutputHeight={CAUSE_COVER_HEIGHT}
+                    description={`${CAUSE_COVER_DESCRIPTION} · up to 100MB`}
                   />
                   {errors.coverImage && (
                     <p className="mt-2 text-sm text-red-500 font-medium">
@@ -914,9 +939,11 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                     onUpload={(files) => handleMultimediaUpload(files)}
                     maxFiles={5 - (formData.multimedia?.length || 0)}
                     accept={GALLERY_ACCEPT}
-                    enableCrop={false}
-                    description="Images or short videos (MP4/WebM, max 50MB / 90s each)"
-                    autoNormalize
+                    enableCrop
+                    cropAspect={16 / 9}
+                    cropOutputWidth={CAUSE_COVER_WIDTH}
+                    cropOutputHeight={CAUSE_COVER_HEIGHT}
+                    description="Select up to 5 images and crop each one, or keep its original framing; videos may be MP4/WebM (max 50MB / 90s each)"
                   />
                   {errors.multimedia && (
                     <p className="mt-2 text-sm text-red-500 font-medium">

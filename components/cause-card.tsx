@@ -106,7 +106,7 @@ export function CauseCard({ cause, action }: CauseCardProps) {
       <AnimatedCard>
         <Card className="overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-2xl shadow-md h-full flex flex-col border border-gray-200/80 bg-white">
           {/* Image Section */}
-          <div className="aspect-[16/10] w-full overflow-hidden relative">
+          <div className="aspect-video w-full overflow-hidden relative">
             <Image
               src={getMediaUrl(cause.image) || "/placeholder.svg"}
               alt={cause.title}

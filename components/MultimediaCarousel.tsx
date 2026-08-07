@@ -296,18 +296,10 @@ export default function MultimediaCarousel({
     } else {
       // Image
       return (
-        <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-slate-950">
-          <Image
-            src={item.url}
-            alt=""
-            fill
-            sizes="(max-width: 768px) 100vw, 80vw"
-            className="pointer-events-none scale-110 object-cover opacity-45 blur-3xl saturate-110"
-            aria-hidden="true"
-            unoptimized={isProxyMediaUrl(item.url)}
-          />
+        <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#F4F7FC]">
           <div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/10 via-slate-950/20 to-slate-950/35"
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,#F8FAFC_0%,#E8F1FF_50%,#F8FAFC_100%)]"
+            data-media-backdrop="decorative"
             aria-hidden="true"
           />
           <Image
@@ -315,7 +307,7 @@ export default function MultimediaCarousel({
             alt={`${title} - Image ${idx + 1}`}
             fill
             sizes="(max-width: 768px) 100vw, 80vw"
-            className="z-10 object-contain drop-shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
+            className={`z-10 ${idx === 0 && coverImage ? "object-cover" : "object-contain"}`}
             unoptimized={isProxyMediaUrl(item.url)}
             onLoad={(event) => {
               const image = event.currentTarget;
@@ -342,7 +334,9 @@ export default function MultimediaCarousel({
 
   const currentSlide = slides[current];
   const currentRatio =
-    currentSlide?.type === "image"
+    current === 0 && coverImage
+      ? 16 / 9
+      : currentSlide?.type === "image"
       ? imageRatios[currentSlide.url]
       : 16 / 9;
   // Keep unusual uploads usable on a phone while closely following the

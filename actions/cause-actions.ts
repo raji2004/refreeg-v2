@@ -16,6 +16,10 @@ import {
   sendCauseRejectedEmailForUser,
 } from "@/services/mail";
 import { cache } from "react";
+import {
+  validateCauseCoverImage,
+  validateCauseGalleryImage,
+} from "@/lib/media/cause-cover";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -132,6 +136,14 @@ async function uploadFileToS3(
     throw new Error(
       "Video files must be uploaded via presigned URL before submit",
     );
+  }
+
+  if (type === "cover") {
+    const validationError = await validateCauseCoverImage(file);
+    if (validationError) throw new Error(validationError);
+  } else if (file.type.startsWith("image/")) {
+    const validationError = await validateCauseGalleryImage(file);
+    if (validationError) throw new Error(validationError);
   }
 
   const ext = file.name.split('.').pop() || 'file';

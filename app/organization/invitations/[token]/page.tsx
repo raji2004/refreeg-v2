@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Building2, Mail, ShieldCheck } from "lucide-react";
-import { auth } from "@/lib/auth/auth";
+import { auth, signOut } from "@/lib/auth/auth";
 import { getOrganizationInvitation } from "@/actions/organization-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { AcceptInvitationButton } from "./accept-invitation-button";
 export default async function OrganizationInvitationPage({
   params,
 }: {
-  params: Promise<{ token: string }> | { token: string };
+  params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
   const [session, result] = await Promise.all([
@@ -70,9 +70,22 @@ export default async function OrganizationInvitationPage({
               ) : session.user.email?.toLowerCase() !== result.invitation.email.toLowerCase() ? (
                 <div className="space-y-3">
                   <p className="text-sm text-rose-700">
-                    You are signed in as {session.user.email}. Sign out and use {result.invitation.email} to accept this invitation.
+                    You are signed in as {session.user.email}. Switch accounts and
+                    use {result.invitation.email} to accept this invitation.
                   </p>
-                  <Button asChild variant="outline"><Link href="/dashboard">Go to dashboard</Link></Button>
+                  <form
+                    action={async () => {
+                      "use server";
+                      await signOut({ redirectTo: redirectPath });
+                    }}
+                  >
+                    <Button type="submit" className="w-full">
+                      Switch to the invited account
+                    </Button>
+                  </form>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href="/dashboard">Stay in my current account</Link>
+                  </Button>
                 </div>
               ) : (
                 <AcceptInvitationButton token={token} />
