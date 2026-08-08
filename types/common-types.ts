@@ -33,11 +33,14 @@ export interface ProfileFormData {
   linkedin_url?: string | null;
   username?: string;
 }
+export type PaymentProviderType = "paystack" | "flutterwave";
+
 export interface BankDetailsFormData {
   accountNumber: string;
   bankName: string;
   accountName: string;
   sub_account_code: string;
+  flutterwave_sub_account_id?: string;
 }
 
 // FormData removed - moved to specialized type files
@@ -67,6 +70,7 @@ export interface TransactionData
   causeId: string;
   message: string;
   isAnonymous: boolean;
+  paymentProvider?: PaymentProviderType;
   plan?: string;
   callbackUrl?: string;
   subaccounts: {

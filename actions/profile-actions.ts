@@ -25,6 +25,7 @@ function mapPrismaToProfile(p: any): Profile {
     bank_name: p.bankName,
     account_name: p.accountName,
     sub_account_code: p.subAccountCode,
+    flutterwave_sub_account_id: p.flutterwaveSubAccountId || null,
     profile_photo: p.profilePhoto,
     is_blocked: p.isBlocked ?? false,
     created_at: p.createdAt.toISOString(),
@@ -144,6 +145,9 @@ export async function updateBankDetails(
         bankName: bankData.bankName,
         accountName: bankData.accountName,
         subAccountCode: bankData.sub_account_code,
+        ...(bankData.flutterwave_sub_account_id
+          ? { flutterwaveSubAccountId: bankData.flutterwave_sub_account_id }
+          : {}),
       },
     });
 

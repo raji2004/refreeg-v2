@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import Paystack from "@/services/paystack";
+import { verifyTransaction } from "@/services/payment-provider";
+import type { PaymentProviderType } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
-    const { reference } = await request.json();
+    const { reference, provider } = await request.json() as {
+      reference?: string;
+      provider?: PaymentProviderType;
+    };
 
     if (!reference) {
       return NextResponse.json(
@@ -12,7 +16,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isSuccessful = await Paystack.verifyTransaction(reference);
+    const isSuccessful = await verifyTransaction(reference, provider);
 
     return NextResponse.json({
       success: true,

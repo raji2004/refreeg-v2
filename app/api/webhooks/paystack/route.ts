@@ -3,7 +3,7 @@ import { createDonation, createSubscription } from "@/actions";
 import {
   processPledgeAuthorizationSuccess,
   processPledgeScheduledChargeSuccess,
-} from "@/lib/pledge-paystack";
+} from "@/lib/pledge-provider";
 import Paystack from "@/services/paystack";
 import crypto from "crypto";
 
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
         const meta = full.metadata || {};
 
         if (String(meta.pledge_flow) === "authorization") {
-          await processPledgeAuthorizationSuccess(reference);
+          await processPledgeAuthorizationSuccess(reference, "paystack");
           return new NextResponse(
             JSON.stringify({ message: "Pledge authorization stored" }),
             { status: 201 },
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
         }
 
         if (String(meta.pledge_flow) === "scheduled_charge") {
-          await processPledgeScheduledChargeSuccess(reference);
+          await processPledgeScheduledChargeSuccess(reference, "paystack");
           return new NextResponse(
             JSON.stringify({ message: "Pledge charge processed" }),
             { status: 201 },
@@ -144,6 +144,7 @@ export async function POST(request: Request) {
           },
           undefined,
           reference,
+          "paystack",
         );
 
         return new NextResponse(

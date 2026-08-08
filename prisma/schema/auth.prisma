@@ -9,6 +9,7 @@ model User {
   updatedAt             DateTime?           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   isBlocked             Boolean?            @map("is_blocked")
   subAccountCode        String?             @map("sub_account_code")
+  flutterwaveSubAccountId String?            @map("flutterwave_sub_account_id")
   bio                   String?
   solana_wallet         String?
   twitter_url           String?

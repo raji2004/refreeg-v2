@@ -208,10 +208,12 @@ export function useBank({ initialData, userId }: UseBankProps) {
         throw new Error(result.error || "Failed to create subaccount");
       }
 
-      const sub_account_code = result.data;
+      // The API now returns both Paystack and Flutterwave subaccount codes
+      const subAccountData = result.data;
       const updatedProfile = await updateBankDetails(userId, {
         ...formData,
-        sub_account_code: sub_account_code.subaccount_code,
+        sub_account_code: subAccountData.subaccount_code || formData.sub_account_code,
+        flutterwave_sub_account_id: subAccountData.flutterwave_sub_account_id || undefined,
       });
 
       queryClient.setQueryData(["profile", userId], updatedProfile);

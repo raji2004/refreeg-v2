@@ -52,6 +52,7 @@ model Donation {
   createdAt          DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   tip_amount         Decimal?  @default(0) @db.Decimal
   paystack_reference String?   @unique(map: "donations_unique") @db.VarChar
+  payment_provider   String?   @default("paystack") @db.VarChar
   cause              Cause     @relation(fields: [causeId], references: [id])
   user               User?     @relation(fields: [userId], references: [id])
 

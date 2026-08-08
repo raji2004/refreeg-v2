@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Paystack from "@/services/paystack";
+import { initializeTransaction } from "@/services/payment-provider";
 import { TransactionData } from "@/types";
 
 const MIN_DONATION_AMOUNT = 100;
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await Paystack.initializeTransaction(data);
+    const response = await initializeTransaction(data, data.paymentProvider);
 
     return NextResponse.json({
       success: true,

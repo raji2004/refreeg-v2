@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,8 +22,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useDonation } from "@/hooks/use-donation";
 import { useProfile } from "@/hooks/use-profile";
 import { calculateServiceFee, cn } from "@/lib/utils";
-import paystack from "@/services/paystack";
-import { usePayment } from "@/hooks/use-payment";
 import { sendUnfinishedDonationEmail } from "@/services/mail";
 
 const MIN_DONATION_AMOUNT = 100;
@@ -35,6 +34,7 @@ interface DonationFormProps {
     id?: string;
   };
   subaccount?: string;
+  flutterwaveSubAccountId?: string;
   status: "pending" | "rejected" | "approved" | "expired";
   causeName?: string; // Add causeName prop
   causeUrl?: string; // Add causeUrl prop for the continue link
@@ -59,6 +59,7 @@ export function DonationForm({
   profile,
   status,
   subaccount,
+  flutterwaveSubAccountId,
   causeName = "this cause", // Default value
   causeUrl = "/causes", // Default value
   recurring = "one_time",
@@ -76,7 +77,8 @@ export function DonationForm({
   optionalFieldsExtra,
   stickySubmit = false,
 }: DonationFormProps) {
-  const { initializePayment, isLoading } = usePayment();
+  const router = useRouter();
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [formData, setFormData] = useState({
     amount: "",
     name: profile?.name || "",
@@ -152,7 +154,7 @@ export function DonationForm({
       const hasStartedFilling =
         formData.amount || formData.name || formData.email;
 
-      if ((savedAttempt || hasStartedFilling) && !isLoading) {
+      if ((savedAttempt || hasStartedFilling)) {
         // Reset timer on any form interaction
         const resetTimer = () => {
           clearTimeout(inactivityTimer);
@@ -181,7 +183,7 @@ export function DonationForm({
     const sendReminder = async () => {
       const currentAttempt = localStorage.getItem("donationAttempt");
 
-      if (!currentAttempt || isLoading) return;
+      if (!currentAttempt) return;
 
       if (profile?.email) {
         try {
@@ -204,7 +206,6 @@ export function DonationForm({
     formData.amount,
     formData.name,
     formData.email,
-    isLoading,
     profile?.email,
     causeName,
     causeUrl,
@@ -236,7 +237,7 @@ export function DonationForm({
     // Clear donation attempt when user successfully submits
     localStorage.removeItem("donationAttempt");
 
-    // Map recurring to Paystack Plan IDs
+    // Map recurring to Plan IDs
     let plan: string | undefined = undefined;
     if (recurring === "weekly") {
       plan = process.env.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY;
@@ -245,7 +246,10 @@ export function DonationForm({
     }
 
     try {
-      await initializePayment({
+      setIsRedirecting(true);
+
+      // Store payment data in sessionStorage for the provider selection page
+      const paymentData = {
         email: formData.email,
         amount: Number(formData.amount),
         causeId: causeId,
@@ -260,14 +264,25 @@ export function DonationForm({
             share: Number(formData.amount) * 100,
           },
         ],
+        // Store flutterwave subaccount as alt subaccount
+        _flutterwaveSubAccountId: flutterwaveSubAccountId || "",
         message: formData.message,
         isAnonymous: formData.isAnonymous,
-      });
+      };
+
+      sessionStorage.setItem(
+        "pending_payment_data",
+        JSON.stringify(paymentData),
+      );
+
+      // Navigate to provider selection page
+      router.push(`/causes/${causeId}/payment/select`);
     } catch (error) {
+      setIsRedirecting(false);
       setSubmitError(
         error instanceof Error
           ? error.message
-          : "Failed to initialize payment. Please try again.",
+          : "Failed to proceed. Please try again.",
       );
     }
   };
@@ -461,11 +476,11 @@ export function DonationForm({
           <Button
             type="submit"
             disabled={
-              isLoading || isDisabled || donationAmount < MIN_DONATION_AMOUNT
+              isRedirecting || isDisabled || donationAmount < MIN_DONATION_AMOUNT
             }
             className={cn("w-full", submitClassName)}
           >
-            {isLoading ? (
+            {isRedirecting ? (
               <>
                 <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                 Processing...

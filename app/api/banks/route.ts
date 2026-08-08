@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import Paystack from "@/services/paystack";
+import { listBanks } from "@/services/payment-provider";
+import type { PaymentProviderType } from "@/types";
 
 export async function GET(request: NextRequest) {
   try {
-    const banks = await Paystack.listBanks();
+    const provider = request.nextUrl.searchParams.get("provider") as PaymentProviderType | null;
+    const banks = await listBanks(provider || undefined);
 
     return NextResponse.json({
       success: true,

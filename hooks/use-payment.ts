@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
-import { TransactionData } from "@/types";
+import { useState, useCallback } from "react";
+import { TransactionData, PaymentProviderType } from "@/types";
 import { toast } from "@/components/ui/use-toast";
 
 interface UsePaymentReturn {
@@ -9,7 +9,7 @@ interface UsePaymentReturn {
     pledgeId: string;
     guestToken?: string | null;
   }) => Promise<void>;
-  verifyPayment: (reference: string) => Promise<boolean>;
+  verifyPayment: (reference: string, provider?: PaymentProviderType) => Promise<boolean>;
   isLoading: boolean;
   error: string | null;
 }
@@ -38,6 +38,7 @@ export const usePayment = (): UsePaymentReturn => {
       }
 
       localStorage.setItem("payment_reference", result.data.reference);
+      localStorage.setItem("payment_provider", data.paymentProvider || "paystack");
 
       window.location.href = result.data.authorization_url;
     } catch (error) {
@@ -78,11 +79,13 @@ export const usePayment = (): UsePaymentReturn => {
         }
 
         localStorage.setItem("payment_reference", result.data.reference);
+        // Pledges default to paystack for now
+        localStorage.setItem("payment_provider", "paystack");
 
         window.location.href = result.data.authorization_url;
       } catch (error) {
         console.error("Pledge checkout initialization failed:", error);
-        setError("Failed to open Paystack. Please try again.");
+        setError("Failed to open payment. Please try again.");
         toast({
           title: "Could not start payment",
           description: "Please try again.",
@@ -97,17 +100,20 @@ export const usePayment = (): UsePaymentReturn => {
   );
 
   const verifyPayment = useCallback(
-    async (reference: string): Promise<boolean> => {
+    async (reference: string, provider?: PaymentProviderType): Promise<boolean> => {
       try {
         setIsLoading(true);
         setError(null);
+
+        // Use the stored provider if not passed explicitly
+        const resolvedProvider = provider || localStorage.getItem("payment_provider") || "paystack";
 
         const response = await fetch("/api/payments/verify", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ reference }),
+          body: JSON.stringify({ reference, provider: resolvedProvider }),
         });
 
         const result = await response.json();
@@ -118,6 +124,7 @@ export const usePayment = (): UsePaymentReturn => {
 
         if (result.verified) {
           localStorage.removeItem("payment_reference");
+          localStorage.removeItem("payment_provider");
           return true;
         } else {
           setError("Payment verification failed");
