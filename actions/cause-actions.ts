@@ -28,11 +28,23 @@ const mapPrismaToCause = (prismaCause: any): Cause => {
     goal: prismaCause.goal ? Number(prismaCause.goal) : 0,
     raised: prismaCause.raised ? Number(prismaCause.raised) : 0,
     shared: prismaCause.shared ? Number(prismaCause.shared) : 0,
-    // Ensure dates are strings to match the interface
-    created_at: prismaCause.createdAt instanceof Date ? prismaCause.createdAt.toISOString() : prismaCause.createdAt,
-    updated_at: prismaCause.updatedAt instanceof Date ? prismaCause.updatedAt.toISOString() : prismaCause.updatedAt,
-    start_date: prismaCause.start_date instanceof Date ? prismaCause.start_date.toISOString() : prismaCause.start_date,
-    end_date: prismaCause.end_date instanceof Date ? prismaCause.end_date.toISOString() : prismaCause.end_date,
+
+    created_at:
+      prismaCause.createdAt instanceof Date
+        ? prismaCause.createdAt.toISOString()
+        : prismaCause.createdAt,
+    updated_at:
+      prismaCause.updatedAt instanceof Date
+        ? prismaCause.updatedAt.toISOString()
+        : prismaCause.updatedAt,
+    start_date:
+      prismaCause.start_date instanceof Date
+        ? prismaCause.start_date.toISOString()
+        : prismaCause.start_date,
+    end_date:
+      prismaCause.end_date instanceof Date
+        ? prismaCause.end_date.toISOString()
+        : prismaCause.end_date,
     rejection_reason: prismaCause.rejectionReason,
     days_active: prismaCause.daysActive,
     video_links: prismaCause.videoLinks,
@@ -134,12 +146,12 @@ async function uploadFileToS3(
     );
   }
 
-  const ext = file.name.split('.').pop() || 'file';
+  const ext = file.name.split(".").pop() || "file";
   const uniqueId = Math.random().toString(36).substring(2, 15);
-  
+
   try {
     const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
-    
+
     const s3Key = generateS3Key({
       entityType: "causes",
       userId,
@@ -304,7 +316,12 @@ export async function updateCause(
   }
 
   let coverImageUrl = causeData.coverImage
-    ? await uploadFileToS3(causeData.coverImage as File, userId, causeId, "cover")
+    ? await uploadFileToS3(
+        causeData.coverImage as File,
+        userId,
+        causeId,
+        "cover",
+      )
     : causeData.image || null;
 
   let daysActive = null;
@@ -337,7 +354,12 @@ export async function updateCause(
       multimediaUrls = await Promise.all(
         causeData.multimedia.map(async (item) => {
           if (typeof item === "string") return item; // Keep existing URL
-          return await uploadFileToS3(item as File, userId, causeId, "additional");
+          return await uploadFileToS3(
+            item as File,
+            userId,
+            causeId,
+            "additional",
+          );
         }),
       );
     } catch (error) {
@@ -451,15 +473,16 @@ export const listCauses = cache(
 
     // Sorting
     let orderByClause: any = { createdAt: "desc" };
+
     switch (options.sortBy) {
-      case "latest":
-        orderByClause = { createdAt: "desc" };
-        break;
       case "most-funded":
-        orderByClause = { raised: "desc" };
+        orderByClause = [{ raised: "desc" }, { createdAt: "desc" }];
         break;
       case "ending-soon":
         orderByClause = { end_date: "asc" };
+        break;
+      case "latest":
+        orderByClause = { createdAt: "desc" };
         break;
       case "recommended":
       default:
