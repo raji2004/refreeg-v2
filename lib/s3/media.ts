@@ -17,8 +17,11 @@ export function getMediaUrl(key: string | null | undefined): string {
     return key;
   }
 
-  // Otherwise assume it's an S3 key and use our proxy
-  return `/api/s3/image?key=${encodeURIComponent(key)}`;
+  const isCauseImage =
+    key.startsWith("uploads/causes/") && key.includes("/images/");
+  return `/api/s3/image?key=${encodeURIComponent(key)}${
+    isCauseImage ? "&presentation=clean-v3" : ""
+  }`;
 }
 
 /**

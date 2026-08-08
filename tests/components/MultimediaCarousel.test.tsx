@@ -16,6 +16,7 @@ describe("MultimediaCarousel image lightbox", () => {
     expect(
       container.querySelector("[data-media-backdrop='decorative']"),
     ).toBeInTheDocument();
+    expect(container.querySelectorAll("img[src*='logo.svg']")).toHaveLength(2);
     expect(
       container.querySelector("img[aria-hidden='true'][src*='portrait.jpg']"),
     ).toBeNull();

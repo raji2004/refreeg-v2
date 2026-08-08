@@ -7,6 +7,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { listCauses } from "@/actions";
+import { sortCausesByFunding } from "@/lib/causes/funding-rank";
 import {
   ChevronRight,
   ChevronLeft,
@@ -41,7 +42,11 @@ export default function LiveCampaigns() {
     async function fetchCampaigns() {
       try {
         const allCauses = await listCauses();
-        const transformedCampaigns = allCauses.map((cause) => ({
+
+        // ↓↓↓ THE ALGORITHM: most-funded first, ₦0 last, ties → % of goal → newest
+        const rankedCauses = sortCausesByFunding(allCauses);
+
+        const transformedCampaigns = rankedCauses.map((cause) => ({
           id: cause.id,
           title: cause.title,
           image: cause.image ?? undefined,

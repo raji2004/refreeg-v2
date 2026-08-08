@@ -298,8 +298,28 @@ export default function MultimediaCarousel({
       return (
         <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#F4F7FC]">
           <div
-            className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,#F8FAFC_0%,#E8F1FF_50%,#F8FAFC_100%)]"
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,#F8FAFC_0%,#E8F1FF_45%,#F3F8FF_70%,#F8FAFC_100%)]"
             data-media-backdrop="decorative"
+            aria-hidden="true"
+          />
+          <div
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(37,99,235,0.035)_1px,transparent_1px)] opacity-30 [background-size:34px_34px]"
+            aria-hidden="true"
+          />
+          <Image
+            src="/logo.svg"
+            alt=""
+            width={202}
+            height={62}
+            className="pointer-events-none absolute bottom-[7%] left-[7%] hidden w-24 opacity-[0.055] mix-blend-multiply sm:block"
+            aria-hidden="true"
+          />
+          <Image
+            src="/logo.svg"
+            alt=""
+            width={202}
+            height={62}
+            className="pointer-events-none absolute bottom-[7%] right-[7%] hidden w-24 opacity-[0.055] mix-blend-multiply sm:block"
             aria-hidden="true"
           />
           <Image
@@ -364,7 +384,7 @@ export default function MultimediaCarousel({
     <>
       <div className="rounded-[22px] border border-slate-200/80 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3">
       <div
-        className="relative mx-auto aspect-[var(--mobile-media-ratio)] max-h-[68svh] w-full touch-pan-y overflow-hidden rounded-[14px] bg-slate-950 transition-[aspect-ratio] duration-200 sm:aspect-video sm:max-h-none sm:rounded-[18px]"
+        className="relative mx-auto aspect-[var(--mobile-media-ratio)] max-h-[68svh] w-full touch-pan-y overflow-hidden rounded-[14px] bg-slate-100 transition-[aspect-ratio] duration-200 sm:aspect-video sm:max-h-none sm:rounded-[18px]"
         style={
           {
             "--mobile-media-ratio": String(mobileRatio),
