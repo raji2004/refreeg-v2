@@ -23,7 +23,7 @@ export default async function CausesPage({
     userId?: string;
     action?: string;
     search?: string;
-    sortBy?: string; 
+    sortBy?: string;
   }>;
 }) {
 

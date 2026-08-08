@@ -68,7 +68,7 @@ export interface CauseFormData {
   multimedia: (File | string)[];
   video_links?: string[];
   summary?: string | null;
-  location?: string | null;
+  location: string;
 }
 export interface CauseFilterOptions {
   category?: string;

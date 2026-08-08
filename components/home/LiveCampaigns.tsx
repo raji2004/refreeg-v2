@@ -53,7 +53,7 @@ export default function LiveCampaigns() {
           goal: cause.goal ?? 0,
           raised: cause.raised ?? 0,
           category: cause.category || "CAUSE",
-          location: cause.location || "GLOBAL",
+          location: cause.location || "",
         }));
         setCampaigns(transformedCampaigns);
       } catch (error) {
@@ -307,7 +307,8 @@ export default function LiveCampaigns() {
 
                       <div className="p-5">
                         <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                          {campaign.category} · {campaign.location}
+                          {campaign.category}
+                          {campaign.location ? ` · ${campaign.location}` : ""}
                         </div>
 
                         <h3 className="font-semibold text-gray-900 text-base leading-tight mb-4 line-clamp-2">

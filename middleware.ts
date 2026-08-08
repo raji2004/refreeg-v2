@@ -28,6 +28,7 @@ const APP_ROUTE_PREFIXES = [
   "/campaign",
   "/petitions",
   "/referrals",
+  "/organization",
   "/api",
   "/s",
 ];

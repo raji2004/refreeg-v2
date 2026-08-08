@@ -21,7 +21,7 @@ async function presentCauseImage(key: string) {
 
   const input = Buffer.from(await object.Body.transformToByteArray());
   const metadata = await sharp(input, { failOn: "none" }).metadata();
-  let output = input;
+  let output: Buffer<ArrayBufferLike> = input;
   let presentation = "original";
 
   if (metadata.width && metadata.height) {

@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import MultimediaCarousel from "@/components/MultimediaCarousel";
 
 describe("MultimediaCarousel image lightbox", () => {
-  it("renders a single uncropped image in a fixed neutral frame", () => {
+  it("shows an original image once against a neutral backdrop", () => {
     const { container } = render(
       <MultimediaCarousel
         media={["gallery/portrait.jpg"]}
@@ -20,7 +20,23 @@ describe("MultimediaCarousel image lightbox", () => {
     expect(
       container.querySelector("img[aria-hidden='true'][src*='portrait.jpg']"),
     ).toBeNull();
-    expect(container.querySelector("[style*='media-ratio']")).toBeNull();
+  });
+
+  it("fills the campaign frame with the cover image", () => {
+    render(
+      <MultimediaCarousel
+        media={["gallery/photo.jpg"]}
+        coverImage="cover/landscape.jpg"
+        title="Landscape fundraiser"
+      />,
+    );
+
+    expect(screen.getByAltText("Landscape fundraiser - Image 1")).toHaveClass(
+      "object-cover",
+    );
+    expect(screen.getByAltText("Landscape fundraiser - Image 2")).toHaveClass(
+      "object-contain",
+    );
   });
 
   it("enlarges an image and supports keyboard navigation and closing", () => {

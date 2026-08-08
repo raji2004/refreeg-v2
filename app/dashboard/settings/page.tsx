@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SettingsItem } from "./components/settings-item";
-import { User, CreditCard, Shield, Bell, Trash2 } from "lucide-react";
+import { User, CreditCard, Shield, Bell, Trash2, Building2 } from "lucide-react";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -62,6 +62,14 @@ export default function SettingsPage() {
           href="/dashboard/settings/profile"
           icon={<User className="h-5 w-5" />}
         />
+        {profile?.account_type === "organization" && (
+          <SettingsItem
+            title="Organization"
+            description="Manage workspace details, branding, preferences, and team access"
+            href="/dashboard/settings/organization"
+            icon={<Building2 className="h-5 w-5" />}
+          />
+        )}
         <SettingsItem
           title="Bank Details"
           description="Manage your bank account for receiving donations"

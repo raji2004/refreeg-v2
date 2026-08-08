@@ -28,6 +28,7 @@ export default function MultimediaCarousel({
 }) {
   const [current, setCurrent] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [imageRatios, setImageRatios] = useState<Record<string, number>>({});
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const didSwipe = useRef(false);
 
@@ -326,8 +327,17 @@ export default function MultimediaCarousel({
             alt={`${title} - Image ${idx + 1}`}
             fill
             sizes="(max-width: 768px) 100vw, 80vw"
-            className="z-10 object-contain"
+            className={`z-10 ${idx === 0 && coverImage ? "object-cover" : "object-contain"}`}
             unoptimized={isProxyMediaUrl(item.url)}
+            onLoad={(event) => {
+              const image = event.currentTarget;
+              const ratio = image.naturalWidth / image.naturalHeight;
+              setImageRatios((currentRatios) =>
+                currentRatios[item.url] === ratio
+                  ? currentRatios
+                  : { ...currentRatios, [item.url]: ratio },
+              );
+            }}
           />
           <button
             type="button"
@@ -343,6 +353,17 @@ export default function MultimediaCarousel({
   };
 
   const currentSlide = slides[current];
+  const currentRatio =
+    current === 0 && coverImage
+      ? 16 / 9
+      : currentSlide?.type === "image"
+      ? imageRatios[currentSlide.url]
+      : 16 / 9;
+  // Keep unusual uploads usable on a phone while closely following the
+  // source image's actual shape.
+  const mobileRatio = currentRatio
+    ? Math.min(Math.max(currentRatio, 0.8), 2)
+    : 4 / 3;
   const lightboxSlide =
     lightboxIndex === null ? undefined : slides[lightboxIndex];
   const lightboxPosition =
@@ -363,7 +384,12 @@ export default function MultimediaCarousel({
     <>
       <div className="rounded-[22px] border border-slate-200/80 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3">
       <div
-        className="relative mx-auto h-[60svh] w-full touch-pan-y overflow-hidden rounded-[14px] bg-slate-100 sm:h-[80vh] sm:rounded-[18px]"
+        className="relative mx-auto aspect-[var(--mobile-media-ratio)] max-h-[68svh] w-full touch-pan-y overflow-hidden rounded-[14px] bg-slate-100 transition-[aspect-ratio] duration-200 sm:aspect-video sm:max-h-none sm:rounded-[18px]"
+        style={
+          {
+            "--mobile-media-ratio": String(mobileRatio),
+          } as React.CSSProperties
+        }
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -382,19 +408,19 @@ export default function MultimediaCarousel({
           <>
             <button
               onClick={previous}
-              className="absolute left-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-slate-950/45 text-white shadow-lg backdrop-blur-md transition hover:bg-slate-950/65 sm:flex"
+              className="absolute left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/25 text-white opacity-60 shadow-sm backdrop-blur-sm transition-all hover:bg-slate-950/50 hover:opacity-100 focus-visible:opacity-100 sm:flex"
               aria-label="Show previous media"
               type="button"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={next}
-              className="absolute right-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-slate-950/45 text-white shadow-lg backdrop-blur-md transition hover:bg-slate-950/65 sm:flex"
+              className="absolute right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/25 text-white opacity-60 shadow-sm backdrop-blur-sm transition-all hover:bg-slate-950/50 hover:opacity-100 focus-visible:opacity-100 sm:flex"
               aria-label="Show next media"
               type="button"
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-4 w-4" />
             </button>
             <div className="absolute right-3 top-3 z-20 hidden rounded-full bg-slate-950/70 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md sm:block">
               {current + 1} / {slides.length}
