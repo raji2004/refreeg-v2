@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Check } from "lucide-react";
 
 const Step1 = dynamic(() => import("./step1"), {
   loading: () => <Skeleton className="h-[400px] w-full" />,
@@ -14,6 +15,12 @@ const Step2 = dynamic(() => import("./step2"), {
   loading: () => <Skeleton className="h-[400px] w-full" />,
 });
 const Step3 = dynamic(() => import("./step3"), {
+  loading: () => <Skeleton className="h-[400px] w-full" />,
+});
+const Step3BOrgSetup = dynamic(() => import("./step3b-org-setup"), {
+  loading: () => <Skeleton className="h-[400px] w-full" />,
+});
+const Step3CInviteTeam = dynamic(() => import("./step3c-invite-team"), {
   loading: () => <Skeleton className="h-[400px] w-full" />,
 });
 const Step4 = dynamic(() => import("./step4"), {
@@ -31,12 +38,82 @@ import {
   getOnboardingData,
   saveStep1Progress,
   saveStep2Progress,
+  completeOnboarding,
 } from "@/actions/profile-actions";
 import { toast } from "@/components/ui/use-toast";
 
+// ---------------------------------------------------------------------------
+// Step identifiers — each account type uses a different ordered subset.
+// ---------------------------------------------------------------------------
+type StepId =
+  | "account-type"
+  | "gender"
+  | "profile"
+  | "org-setup"
+  | "invite-team"
+  | "kyc"
+  | "complete";
+
+const INDIVIDUAL_STEPS: StepId[] = [
+  "account-type",
+  "gender",
+  "profile",
+  "kyc",
+  "complete",
+];
+
+const ORGANIZATION_STEPS: StepId[] = [
+  "account-type",
+  "profile",
+  "org-setup",
+  "invite-team",
+  "kyc",
+  "complete",
+];
+
+const ORGANIZATION_STEP_DETAILS = [
+  {
+    id: "account-type" as const,
+    label: "Account type",
+  },
+  {
+    id: "profile" as const,
+    label: "Owner profile",
+  },
+  {
+    id: "org-setup" as const,
+    label: "Organisation",
+  },
+  {
+    id: "invite-team" as const,
+    label: "Team",
+  },
+  {
+    id: "kyc" as const,
+    label: "Verification",
+  },
+  {
+    id: "complete" as const,
+    label: "Complete",
+  },
+];
+
+/**
+ * Map the numeric value returned by `getCurrentOnboardingStep` (which may
+ * include 3.5 for org-setup) to the appropriate StepId.
+ */
+function dbStepToStepId(dbStep: number, accountType: string): StepId {
+  if (dbStep <= 1) return "account-type";
+  if (dbStep === 2) return accountType === "organization" ? "profile" : "gender";
+  if (dbStep === 3) return "profile";
+  if (dbStep === 3.5) return "org-setup";
+  // dbStep >= 4 means profile + org-setup are done → KYC
+  return "kyc";
+}
+
 export default function OnboardingPage() {
   // State management for dynamic onboarding flow
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStepId, setCurrentStepId] = useState<StepId>("account-type");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -61,8 +138,41 @@ export default function OnboardingPage() {
   });
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status, update } = useSession();
+  const completionDestinationRef = useRef<string | null>(null);
 
+  // Derive step sequence based on account type
+  const isOrg = onboardingData.accountType === "organization";
+  const stepSequence = useMemo(
+    () => (isOrg ? ORGANIZATION_STEPS : INDIVIDUAL_STEPS),
+    [isOrg],
+  );
+
+  const currentStepIndex = stepSequence.indexOf(currentStepId);
+  const totalSteps = stepSequence.length;
+
+  // Navigation helpers
+  const goToStep = (stepId: StepId, dir: 1 | -1 = 1) => {
+    setDirection(dir);
+    setCurrentStepId(stepId);
+  };
+
+  const goNext = () => {
+    const nextIndex = currentStepIndex + 1;
+    if (nextIndex < totalSteps) {
+      goToStep(stepSequence[nextIndex], 1);
+    }
+  };
+
+  const goBack = () => {
+    const prevIndex = currentStepIndex - 1;
+    if (prevIndex >= 0) {
+      goToStep(stepSequence[prevIndex], -1);
+    }
+  };
+
+  // ──── Auth & resume logic ───────────────────────────────────────────
   useEffect(() => {
     const checkUser = async () => {
       if (status === "loading") return;
@@ -78,6 +188,9 @@ export default function OnboardingPage() {
       const isCompletedInSession = (currentUser as any).onboardingCompleted;
       
       if (isCompletedInSession === true) {
+        // handleComplete owns navigation while it refreshes the session. Without
+        // this guard, this effect can race it and send KYC users to /dashboard.
+        if (completionDestinationRef.current) return;
         router.push("/dashboard");
         return;
       }
@@ -103,9 +216,7 @@ export default function OnboardingPage() {
             getOnboardingData(currentUser.id as string),
           ]);
 
-          // Set the current step based on database state
-          // This automatically skips completed steps ONCE on initial load
-          setCurrentStep(currentStepFromDB);
+          const accountType = existingData.accountType || "";
 
           // Handle Google OAuth name splitting if firstName/lastName are missing
           let firstName = existingData.profile.firstName || "";
@@ -120,7 +231,7 @@ export default function OnboardingPage() {
           // Prefill onboarding data with existing database data or session data
           setOnboardingData((prev) => ({
             ...prev,
-            accountType: existingData.accountType || "",
+            accountType,
             gender: existingData.gender,
             profile: {
               ...prev.profile,
@@ -131,10 +242,14 @@ export default function OnboardingPage() {
             },
           }));
 
+          // Set the current step based on database state
+          const resumeStepId = dbStepToStepId(currentStepFromDB, accountType);
+          setCurrentStepId(resumeStepId);
+
           setIsLoading(false);
         } catch (error) {
           console.error("Error loading onboarding progress:", error);
-          setCurrentStep(1);
+          setCurrentStepId("account-type");
           setIsLoading(false);
         }
       }
@@ -143,51 +258,47 @@ export default function OnboardingPage() {
     checkUser();
   }, [router, session, status, isLoading, update]);
 
-  // Additional protection: Reset to step 1 if user tries to access steps 4-5 without completing step 3
+  // Additional protection: Reset to step 1 if user tries to access late
+  // steps without completing the profile step
   useEffect(() => {
-    if (user && currentStep > 3) {
-      // Check if profile data is complete (step 3 completion)
-      // We need to check if the profile was actually created in the database
-      // This is a fallback check - the main protection is in middleware
-      const profileData = onboardingData.profile;
-      const isStep3Complete = !!(
-        profileData?.firstName &&
-        profileData?.lastName &&
-        profileData?.username &&
-        profileData?.location &&
-        profileData?.phone
-      );
+    if (!user) return;
+    const lateSteps: StepId[] = ["kyc", "complete"];
+    if (!lateSteps.includes(currentStepId)) return;
 
-      if (!isStep3Complete) {
-        setCurrentStep(1);
-        toast({
-          title: "Complete your profile first",
-          description: "Please complete steps 1-3 before proceeding.",
-          variant: "destructive",
-        });
-      }
+    const profileData = onboardingData.profile;
+    const isProfileComplete = !!(
+      profileData?.firstName &&
+      profileData?.lastName &&
+      profileData?.username &&
+      profileData?.location &&
+      profileData?.phone
+    );
+
+    if (!isProfileComplete) {
+      setCurrentStepId("account-type");
+      toast({
+        title: "Complete your profile first",
+        description: "Please complete earlier steps before proceeding.",
+        variant: "destructive",
+      });
     }
-  }, [user, currentStep, onboardingData.profile]);
+  }, [user, currentStepId, onboardingData.profile]);
 
-  // Note: localStorage loading removed - now using database for persistence
+  // ──── Step handlers ─────────────────────────────────────────────────
 
-  const handleNext = async () => {
-    if (currentStep < 5) {
-      setDirection(1);
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  // PROGRESS SAVING HANDLERS:
-  // Each step now saves progress to database immediately upon completion
-  // This ensures users can resume from their last incomplete step
-
-  // Handle step 1 completion with database save
   const handleStep1Next = async (accountType: string) => {
     try {
       await saveStep1Progress(user.id, accountType);
       updateOnboardingData("accountType", accountType);
-      handleNext();
+
+      // Organization → skip gender, go to profile
+      if (accountType === "organization") {
+        setDirection(1);
+        setCurrentStepId("profile");
+      } else {
+        setDirection(1);
+        setCurrentStepId("gender");
+      }
     } catch (error) {
       console.error("Error saving step 1 progress:", error);
       toast({
@@ -198,12 +309,11 @@ export default function OnboardingPage() {
     }
   };
 
-  // Handle step 2 completion with database save
   const handleStep2Next = async (gender: string) => {
     try {
       await saveStep2Progress(user.id, gender);
       updateOnboardingData("gender", gender);
-      handleNext();
+      goToStep("profile", 1);
     } catch (error) {
       console.error("Error saving step 2 progress:", error);
       toast({
@@ -214,19 +324,9 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setDirection(-1);
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  // Handle step 3 completion - saves complete profile to database
   const handleStep3Submit = async (profileData: any) => {
     setIsSubmitting(true);
     try {
-      // Create user profile with all collected data
-      // This step saves the complete profile to database
       await createOnboardingProfile(
         user.id,
         {
@@ -238,19 +338,19 @@ export default function OnboardingPage() {
           email: user.email || "",
           profilePhoto: profileData.profilePhoto,
           accountType: onboardingData.accountType || "individual",
-          gender: onboardingData.gender || "",
+          gender: onboardingData.gender || undefined,
         },
         user.image,
       );
 
-      // Update session immediately so middleware recognizes user as onboarded
-      await update({ onboardingCompleted: true });
-
-      // Don't clear onboarding data yet, just move to step 4
-      setCurrentStep(4); // Go to KYC step
+      // Org → go to org setup. Individual → go to KYC.
+      if (onboardingData.accountType === "organization") {
+        goToStep("org-setup", 1);
+      } else {
+        goToStep("kyc", 1);
+      }
     } catch (error) {
       console.error("Error completing onboarding:", error);
-      // Show error to user
       toast({
         title: "Error creating profile",
         description: error instanceof Error ? error.message : "Unknown error",
@@ -261,16 +361,57 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleComplete = () => {
-    // Clear any remaining localStorage data
-    localStorage.removeItem("onboarding_account_type");
-    localStorage.removeItem("onboarding_gender");
-    localStorage.removeItem("onboarding_profile");
-    localStorage.removeItem("onboarding_interests");
-    localStorage.removeItem("onboarding_kyc_completed");
-    localStorage.removeItem("onboarding_consent");
+  const handleOrgSetupNext = () => {
+    goToStep("invite-team", 1);
+  };
 
-    router.push("/dashboard");
+  const handleInviteTeamNext = () => {
+    goToStep("kyc", 1);
+  };
+
+  const handleComplete = async (destination?: string) => {
+    const requestedRedirect = searchParams.get("redirect");
+    const safeRedirect =
+      requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")
+        ? requestedRedirect
+        : null;
+    const target = destination || safeRedirect || "/dashboard";
+
+    completionDestinationRef.current = target;
+    setIsSubmitting(true);
+
+    try {
+      await completeOnboarding(user.id);
+      await update({ onboardingCompleted: true });
+
+      localStorage.removeItem("onboarding_account_type");
+      localStorage.removeItem("onboarding_gender");
+      localStorage.removeItem("onboarding_profile");
+      localStorage.removeItem("onboarding_interests");
+      localStorage.removeItem("onboarding_kyc_completed");
+      localStorage.removeItem("onboarding_consent");
+
+      // A full navigation guarantees the refreshed auth cookie is used by the
+      // dashboard route guard before the KYC page is rendered.
+      window.location.assign(target);
+    } catch (error) {
+      completionDestinationRef.current = null;
+      setIsSubmitting(false);
+      toast({
+        title: "Could not complete onboarding",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleKycSkipOrSubmit = async () => {
+    goToStep("complete", 1);
+  };
+
+  const handleKyc = async () => {
+    await handleComplete("/dashboard/settings/kyc-setup");
   };
 
   const updateOnboardingData = (key: string, value: any) => {
@@ -281,6 +422,8 @@ export default function OnboardingPage() {
     );
   };
 
+  // ──── Render ────────────────────────────────────────────────────────
+
   if (isLoading) {
     return <NavigationLoader />;
   }
@@ -290,103 +433,197 @@ export default function OnboardingPage() {
   }
 
   const stepVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 300 : -300,
+    enter: (dir: number) => ({
+      x: dir > 0 ? 300 : -300,
       opacity: 0,
     }),
     center: {
       x: 0,
       opacity: 1,
     },
-    exit: (direction: number) => ({
-      x: direction > 0 ? -300 : 300,
+    exit: (dir: number) => ({
+      x: dir > 0 ? -300 : 300,
       opacity: 0,
     }),
   };
 
-  return (
-    <div className="min-h-screen w-full bg-white flex flex-col items-center justify-start">
-      <OnboardingNav
-        currentStep={currentStep}
-        onBack={handleBack}
-        showUserNav={currentStep >= 4}
-      />
-      <div className="w-full flex-1 flex flex-col items-center justify-center px-8 py-12">
-        {/* Progress indicator */}
-        <div className="mb-8 flex justify-center space-x-2">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className={`h-2 w-12 rounded-full transition-colors duration-300 ${
-                i < currentStep ? "bg-blue-600" : "bg-gray-200"
-              }`}
-            ></div>
-          ))}
-        </div>
+  // Progress bar: how many segments are "filled"
+  const filledSteps = currentStepIndex + 1;
 
-        {/* Step content with smooth transitions */}
-        <div className="relative overflow-hidden">
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={currentStep}
-              custom={direction}
-              variants={stepVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                x: { type: "spring", stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 },
-              }}
-              className="w-full"
-            >
-              {currentStep === 1 && (
-                <Step1
-                  user={user}
-                  onNext={handleStep1Next}
-                  onboardingData={onboardingData}
-                  updateOnboardingData={updateOnboardingData}
+  const stepContent = (
+    <AnimatePresence mode="wait" custom={direction}>
+      <motion.div
+        key={currentStepId}
+        custom={direction}
+        variants={stepVariants}
+        initial="enter"
+        animate="center"
+        exit="exit"
+        transition={{
+          x: { type: "spring", stiffness: 300, damping: 30 },
+          opacity: { duration: 0.2 },
+        }}
+        className="w-full"
+      >
+        {currentStepId === "account-type" && (
+          <Step1
+            user={user}
+            onNext={handleStep1Next}
+            onboardingData={onboardingData}
+            updateOnboardingData={updateOnboardingData}
+          />
+        )}
+        {currentStepId === "gender" && (
+          <Step2
+            user={user}
+            onNext={handleStep2Next}
+            onBack={goBack}
+            onboardingData={onboardingData}
+            updateOnboardingData={updateOnboardingData}
+          />
+        )}
+        {currentStepId === "profile" && (
+          <Step3
+            user={user}
+            onNext={handleStep3Submit}
+            onBack={goBack}
+            onboardingData={onboardingData}
+            updateOnboardingData={updateOnboardingData}
+            isSubmitting={isSubmitting}
+          />
+        )}
+        {currentStepId === "org-setup" && (
+          <Step3BOrgSetup
+            user={user}
+            onNext={handleOrgSetupNext}
+            onBack={goBack}
+            onboardingData={onboardingData}
+            isSubmitting={isSubmitting}
+          />
+        )}
+        {currentStepId === "invite-team" && (
+          <Step3CInviteTeam
+            user={user}
+            onNext={handleInviteTeamNext}
+            onBack={goBack}
+            onboardingData={onboardingData}
+          />
+        )}
+        {currentStepId === "kyc" && (
+          <Step4
+            user={user}
+            onNext={handleKycSkipOrSubmit}
+            onKyc={handleKyc}
+            onBack={goBack}
+            onboardingData={onboardingData}
+            updateOnboardingData={updateOnboardingData}
+          />
+        )}
+        {currentStepId === "complete" && (
+          <Step5
+            user={user}
+            onComplete={handleComplete}
+            onboardingData={onboardingData}
+          />
+        )}
+      </motion.div>
+    </AnimatePresence>
+  );
+
+  return (
+    <div
+      className={`flex min-h-screen w-full flex-col items-center justify-start ${
+        isOrg ? "bg-slate-50" : "bg-white"
+      }`}
+    >
+      <OnboardingNav
+        currentStep={currentStepIndex + 1}
+        onBack={goBack}
+        showUserNav={currentStepId === "kyc" || currentStepId === "complete"}
+        organizationMode={isOrg}
+      />
+      {isOrg ? (
+        <main className="flex w-full max-w-7xl flex-1 px-3 py-4 sm:px-6 sm:py-7">
+          <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <header className="border-b border-slate-200 px-5 py-5 sm:px-8">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
+                    Organisation onboarding
+                  </p>
+                  <h1 className="mt-1 text-base font-semibold text-slate-950">
+                    {ORGANIZATION_STEP_DETAILS[currentStepIndex]?.label}
+                  </h1>
+                </div>
+                <p className="text-sm text-slate-500">
+                  Step {currentStepIndex + 1} of {totalSteps}
+                </p>
+              </div>
+
+              <div className="mt-4 h-1 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-blue-700 transition-all duration-300"
+                  style={{
+                    width: `${((currentStepIndex + 1) / totalSteps) * 100}%`,
+                  }}
                 />
-              )}
-              {currentStep === 2 && (
-                <Step2
-                  user={user}
-                  onNext={handleStep2Next}
-                  onBack={handleBack}
-                  onboardingData={onboardingData}
-                  updateOnboardingData={updateOnboardingData}
-                />
-              )}
-              {currentStep === 3 && (
-                <Step3
-                  user={user}
-                  onNext={handleStep3Submit}
-                  onBack={handleBack}
-                  onboardingData={onboardingData}
-                  updateOnboardingData={updateOnboardingData}
-                  isSubmitting={isSubmitting}
-                />
-              )}
-              {currentStep === 4 && (
-                <Step4
-                  user={user}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                  onboardingData={onboardingData}
-                  updateOnboardingData={updateOnboardingData}
-                />
-              )}
-              {currentStep === 5 && (
-                <Step5
-                  user={user}
-                  onComplete={handleComplete}
-                  onboardingData={onboardingData}
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
+              </div>
+
+              <ol className="mt-4 hidden grid-cols-6 gap-3 sm:grid">
+                {ORGANIZATION_STEP_DETAILS.map((step, index) => {
+                  const isCurrent = step.id === currentStepId;
+                  const isComplete = index < currentStepIndex;
+
+                  return (
+                    <li
+                      key={step.id}
+                      aria-current={isCurrent ? "step" : undefined}
+                      className={`flex items-center gap-2 text-xs font-medium ${
+                        isCurrent
+                          ? "text-slate-950"
+                          : isComplete
+                            ? "text-blue-700"
+                            : "text-slate-400"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] ${
+                          isCurrent
+                            ? "border-blue-700 bg-blue-700 text-white"
+                            : isComplete
+                              ? "border-blue-200 bg-blue-50 text-blue-700"
+                              : "border-slate-200 text-slate-400"
+                        }`}
+                      >
+                        {isComplete ? <Check className="h-3 w-3" /> : index + 1}
+                      </span>
+                      <span className="truncate">{step.label}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </header>
+
+            <section className="min-w-0 px-5 py-7 sm:px-8 sm:py-10">
+              <div className="relative overflow-hidden">{stepContent}</div>
+            </section>
+          </div>
+        </main>
+      ) : (
+        <div className="flex w-full flex-1 flex-col items-center justify-center px-8 py-12">
+          <div className="mb-8 flex justify-center space-x-2">
+            {[...Array(totalSteps)].map((_, i) => (
+              <div
+                key={i}
+                className={`h-2 w-12 rounded-full transition-colors duration-300 ${
+                  i < filledSteps ? "bg-blue-600" : "bg-gray-200"
+                }`}
+              />
+            ))}
+          </div>
+          <div className="relative overflow-hidden">{stepContent}</div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

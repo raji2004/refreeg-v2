@@ -55,5 +55,21 @@ export interface OnboardingProfileData {
   email: string;
   profilePhoto?: File | null;
   accountType: string;
-  gender: string;
+  gender?: string;
+}
+
+export interface OrganizationPreferences {
+  donationNotifications: boolean;
+  teamDigest: boolean;
+  publicProfile: boolean;
+  [key: string]: boolean;
+}
+
+export interface OrganizationOnboardingData {
+  name: string;
+  phone?: string;
+  address?: string;
+  industry?: string;
+  logoUrl?: string;
+  preferences: OrganizationPreferences;
 }

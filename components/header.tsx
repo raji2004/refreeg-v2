@@ -423,27 +423,33 @@ export function Header() {
               </div>
 
               {!isLoading && !user ? (
-                <Link href="/auth/signin" className="lg:hidden">
+                <Link href="/auth/signup" className="lg:hidden">
                   <Button
-                    variant="outline"
                     size="sm"
-                    className={`h-10 rounded-full border px-3 text-xs ${activeTheme.outline} bg-white transition-colors hover:text-white sm:px-4 sm:text-sm`}
+                    className={`h-10 rounded-full px-3 text-xs text-white ${activeTheme.solid} sm:px-4 sm:text-sm`}
                   >
-                    Sign In
+                    Sign Up
                   </Button>
                 </Link>
               ) : null}
 
               {!isLoading && !user ? (
-                <Link href="/auth/signin" className="hidden lg:block">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={`rounded-full border ${activeTheme.outline} bg-white transition-colors hover:text-white`}
-                  >
-                    Sign In
-                  </Button>
-                </Link>
+                <div className="hidden items-center gap-2 lg:flex">
+                  <Link href="/auth/signin">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`rounded-full border ${activeTheme.outline} bg-white transition-colors hover:text-white`}
+                    >
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/auth/signup">
+                    <Button size="sm" className={`rounded-full text-white ${activeTheme.solid}`}>
+                      Sign Up
+                    </Button>
+                  </Link>
+                </div>
               ) : null}
 
               {!isLoading && user ? <UserNav /> : null}
@@ -666,14 +672,21 @@ export function Header() {
 
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 {!isLoading && !user ? (
-                  <Link href="/auth/signin" className="w-full sm:flex-1">
-                    <Button
-                      variant="outline"
-                      className={`h-11 w-full rounded-2xl border ${activeTheme.outline} bg-white transition-colors hover:text-white`}
-                    >
-                      Sign In
-                    </Button>
-                  </Link>
+                  <>
+                    <Link href="/auth/signin" className="w-full sm:flex-1">
+                      <Button
+                        variant="outline"
+                        className={`h-11 w-full rounded-2xl border ${activeTheme.outline} bg-white transition-colors hover:text-white`}
+                      >
+                        Sign In
+                      </Button>
+                    </Link>
+                    <Link href="/auth/signup" className="w-full sm:flex-1">
+                      <Button className={`h-11 w-full rounded-2xl text-white ${activeTheme.solid}`}>
+                        Sign Up
+                      </Button>
+                    </Link>
+                  </>
                 ) : null}
 
                 {user && !isDashboardRoute ? (

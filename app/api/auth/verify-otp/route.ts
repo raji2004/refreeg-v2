@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+function createOrganizationSlug(name: string) {
+  const base = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+
+  return `${base || "organization"}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -65,21 +77,55 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Create Profile and delete pending registration in transaction
+    // 5. Create the user/workspace and delete pending registration atomically.
     const newProfile = await prisma.$transaction(async (tx) => {
-      const baseUsername = pending.fullName.replace(/\s+/g, "").toLowerCase() || normalizedEmail.split("@")[0];
-      const uniqueSuffix = Math.floor(1000 + Math.random() * 9000).toString();
-      
+      const nameParts = pending.fullName.trim().split(/\s+/).filter(Boolean);
+      const firstName = nameParts[0] || null;
+      const lastName = nameParts.slice(1).join(" ") || null;
+
       const profile = await tx.user.create({
         data: {
           email: pending.email,
           password: pending.password,
           fullName: pending.fullName,
-          username: `${baseUsername}${uniqueSuffix}`,
+          firstName,
+          lastName,
+          phone:
+            pending.accountType === "organization"
+              ? pending.organizationPhone
+              : null,
+          accountType: pending.accountType,
           emailVerified: new Date(),
-          isVerified: true,
+          isVerified: false,
+          onboarding_completed: false,
         },
       });
+
+      if (pending.accountType === "organization" && pending.organizationName) {
+        const organization = await tx.organization.create({
+          data: {
+            name: pending.organizationName,
+            slug: createOrganizationSlug(pending.organizationName),
+            adminEmail: pending.email,
+            phone: pending.organizationPhone,
+            address: pending.organizationAddress,
+            industry: pending.organizationIndustry,
+            ownerId: profile.id,
+            preferences: {
+              memberActivityEmails: true,
+              campaignUpdateEmails: true,
+            },
+          },
+        });
+
+        await tx.organizationMember.create({
+          data: {
+            organizationId: organization.id,
+            userId: profile.id,
+            role: "owner",
+          },
+        });
+      }
 
       // --- Referral Integration ---
       if (pending.referralCode) {

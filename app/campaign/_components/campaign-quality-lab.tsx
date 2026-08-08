@@ -26,7 +26,8 @@ import {
 import type { Cause } from "@/types";
 import dynamic from "next/dynamic";
 import { Progress } from "@/components/ui/progress";
-import { getBaseURL, calculateServiceFee } from "@/lib/utils";
+import { getBaseURL, calculateServiceFee, cn } from "@/lib/utils";
+import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -294,6 +295,8 @@ function HeroSummary({
   donorsCount: number;
 }) {
   const verified = cause.status === "approved";
+  const categoryStyle = getCampaignCategoryStyle(cause.category);
+  const CategoryIcon = categoryStyle.icon;
 
   return (
     <motion.div
@@ -311,9 +314,14 @@ function HeroSummary({
           <BadgeCheck className="h-3.5 w-3.5" />
           {verified ? "Verified" : "In review"}
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#D9FF5B]/40 px-3 py-1.5 text-[11px] font-extrabold text-[#596817]">
-          <Users className="h-3.5 w-3.5" strokeWidth={2.5} />
-          A community-powered cause
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-extrabold",
+            categoryStyle.badgeClassName,
+          )}
+        >
+          <CategoryIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
+          {categoryStyle.name} cause
         </span>
       </div>
 
@@ -326,10 +334,12 @@ function HeroSummary({
             "Verified, milestone-based relief with evidence-locked releases and transparent updates."}
         </p>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-[#33445A] sm:text-[13px]">
-          <span className="inline-flex items-center gap-1.5">
-            <MapPin className="h-4 w-4 text-[#235DA7]" />
-            {cause.location || "Location on request"}
-          </span>
+          {cause.location ? (
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin className="h-4 w-4 text-[#235DA7]" />
+              {cause.location}
+            </span>
+          ) : null}
           <span className="inline-flex items-center gap-1.5">
             <Users className="h-4 w-4 text-[#235DA7]" />
             {donorsCount} supporters
@@ -512,7 +522,9 @@ function ImpactCard({ cause }: { cause: CauseDetail }) {
       ?.map((section) => section.heading || section.description)
       .filter(Boolean) || [];
   const fallbackImpact = [
-    `Direct support for the campaign in ${cause.location || "the target community"}`,
+    ...(cause.location
+      ? [`Direct support for the campaign in ${cause.location}`]
+      : []),
     "Funds released against reviewed campaign milestones",
     "Progress and evidence shared with supporters",
   ];

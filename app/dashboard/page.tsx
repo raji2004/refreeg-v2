@@ -23,7 +23,9 @@ import {
   getUserPetitionsWithStats,
 } from "@/actions/dashboard-actions";
 import { getProfile } from "@/actions/profile-actions";
+import { getOrganizationWorkspace } from "@/actions/organization-actions";
 import { getMediaUrl } from "@/lib/s3/media";
+import { OrganizationDashboard } from "@/components/organization-dashboard";
 
 import { Metadata } from "next";
 
@@ -72,6 +74,24 @@ export default async function DashboardPage({
     ]);
 
   const profile = await getProfile(user.id as string);
+
+  if (profile?.account_type === "organization") {
+    const organizationResult = await getOrganizationWorkspace();
+
+    if (organizationResult.success) {
+      return (
+        <OrganizationDashboard
+          workspace={organizationResult.workspace}
+          profile={profile}
+          stats={stats}
+          petitionStats={petitionStats}
+          donationTrends={donationTrends}
+          causes={userCauses}
+          petitions={userPetitions}
+        />
+      );
+    }
+  }
 
   const firstName =
     profile?.full_name?.split(" ")?.[0] ||

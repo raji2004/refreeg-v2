@@ -296,18 +296,30 @@ export default function MultimediaCarousel({
     } else {
       // Image
       return (
-        <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-slate-950">
-          <Image
-            src={item.url}
-            alt=""
-            fill
-            sizes="(max-width: 768px) 100vw, 80vw"
-            className="pointer-events-none scale-110 object-cover opacity-45 blur-3xl saturate-110"
+        <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#F4F7FC]">
+          <div
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,#F8FAFC_0%,#E8F1FF_45%,#F3F8FF_70%,#F8FAFC_100%)]"
+            data-media-backdrop="decorative"
             aria-hidden="true"
-            unoptimized={isProxyMediaUrl(item.url)}
           />
           <div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/10 via-slate-950/20 to-slate-950/35"
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(37,99,235,0.035)_1px,transparent_1px)] opacity-30 [background-size:34px_34px]"
+            aria-hidden="true"
+          />
+          <Image
+            src="/logo.svg"
+            alt=""
+            width={202}
+            height={62}
+            className="pointer-events-none absolute bottom-[7%] left-[7%] hidden w-24 opacity-[0.055] mix-blend-multiply sm:block"
+            aria-hidden="true"
+          />
+          <Image
+            src="/logo.svg"
+            alt=""
+            width={202}
+            height={62}
+            className="pointer-events-none absolute bottom-[7%] right-[7%] hidden w-24 opacity-[0.055] mix-blend-multiply sm:block"
             aria-hidden="true"
           />
           <Image
@@ -315,7 +327,7 @@ export default function MultimediaCarousel({
             alt={`${title} - Image ${idx + 1}`}
             fill
             sizes="(max-width: 768px) 100vw, 80vw"
-            className="z-10 object-contain drop-shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
+            className={`z-10 ${idx === 0 && coverImage ? "object-cover" : "object-contain"}`}
             unoptimized={isProxyMediaUrl(item.url)}
             onLoad={(event) => {
               const image = event.currentTarget;
@@ -342,7 +354,9 @@ export default function MultimediaCarousel({
 
   const currentSlide = slides[current];
   const currentRatio =
-    currentSlide?.type === "image"
+    current === 0 && coverImage
+      ? 16 / 9
+      : currentSlide?.type === "image"
       ? imageRatios[currentSlide.url]
       : 16 / 9;
   // Keep unusual uploads usable on a phone while closely following the
@@ -370,7 +384,7 @@ export default function MultimediaCarousel({
     <>
       <div className="rounded-[22px] border border-slate-200/80 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3">
       <div
-        className="relative mx-auto aspect-[var(--mobile-media-ratio)] max-h-[68svh] w-full touch-pan-y overflow-hidden rounded-[14px] bg-slate-950 transition-[aspect-ratio] duration-200 sm:aspect-video sm:max-h-none sm:rounded-[18px]"
+        className="relative mx-auto aspect-[var(--mobile-media-ratio)] max-h-[68svh] w-full touch-pan-y overflow-hidden rounded-[14px] bg-slate-100 transition-[aspect-ratio] duration-200 sm:aspect-video sm:max-h-none sm:rounded-[18px]"
         style={
           {
             "--mobile-media-ratio": String(mobileRatio),
@@ -394,19 +408,19 @@ export default function MultimediaCarousel({
           <>
             <button
               onClick={previous}
-              className="absolute left-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-slate-950/45 text-white shadow-lg backdrop-blur-md transition hover:bg-slate-950/65 sm:flex"
+              className="absolute left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/25 text-white opacity-60 shadow-sm backdrop-blur-sm transition-all hover:bg-slate-950/50 hover:opacity-100 focus-visible:opacity-100 sm:flex"
               aria-label="Show previous media"
               type="button"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={next}
-              className="absolute right-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-slate-950/45 text-white shadow-lg backdrop-blur-md transition hover:bg-slate-950/65 sm:flex"
+              className="absolute right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/25 text-white opacity-60 shadow-sm backdrop-blur-sm transition-all hover:bg-slate-950/50 hover:opacity-100 focus-visible:opacity-100 sm:flex"
               aria-label="Show next media"
               type="button"
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-4 w-4" />
             </button>
             <div className="absolute right-3 top-3 z-20 hidden rounded-full bg-slate-950/70 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md sm:block">
               {current + 1} / {slides.length}

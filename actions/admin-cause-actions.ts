@@ -9,6 +9,14 @@ import { sendCauseRejectedEmailForUser } from "@/services/mail";
 
 export type CauseStatus = "pending" | "approved" | "rejected" | "expired";
 
+const requireApprovalLocation = (location?: string | null) => {
+  const normalizedLocation = location?.trim();
+  if (!normalizedLocation) {
+    throw new Error("A campaign location is required before approval");
+  }
+  return normalizedLocation;
+};
+
 type AdminCauseRow = {
   id: string;
   title: string;
@@ -180,7 +188,7 @@ export async function getCauseEdits() {
       const sections = await prisma.$queryRaw<any[]>(Prisma.sql`
         SELECT id, heading, description
         FROM cause_edit_sections
-        WHERE cause_edit_id = ${edit.id}
+        WHERE cause_edit_id = ${edit.id}::uuid
       `);
 
       return {
@@ -242,6 +250,7 @@ export async function updateCauseStatus(
     });
 
     if (pendingEdit) {
+      const location = requireApprovalLocation(pendingEdit.location);
       await prisma.$transaction(async (tx) => {
         await tx.cause.update({
           where: { id: causeId },
@@ -254,7 +263,7 @@ export async function updateCauseStatus(
             multimedia: pendingEdit.multimedia,
             videoLinks: pendingEdit.video_links,
             summary: pendingEdit.summary,
-            location: pendingEdit.location,
+            location,
             status: "approved",
             updatedAt: new Date(),
           },
@@ -287,6 +296,12 @@ export async function updateCauseStatus(
         });
       });
     } else {
+      const cause = await prisma.cause.findUnique({
+        where: { id: causeId },
+        select: { location: true },
+      });
+      requireApprovalLocation(cause?.location);
+
       await prisma.cause.update({
         where: { id: causeId },
         data: {

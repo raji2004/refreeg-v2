@@ -27,7 +27,8 @@ export async function CausesList({
     limit: pageSize,
     offset: (page - 1) * pageSize,
     search: search || undefined,
-    sortBy: sortBy || "recommended",
+    // ↓↓↓ DEFAULT CHANGED HERE
+    sortBy: sortBy || "most-funded",
   };
 
   if (userId) {
@@ -96,7 +97,8 @@ export async function CausesList({
       {/* Results count */}
       {search && (
         <p className="text-sm text-muted-foreground">
-          Showing {filteredCauses.length} of {totalCount} results for &ldquo;{search}&rdquo;
+          Showing {filteredCauses.length} of {totalCount} results for &ldquo;
+          {search}&rdquo;
         </p>
       )}
 

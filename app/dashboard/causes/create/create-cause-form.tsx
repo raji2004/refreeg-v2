@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CampaignLocationAutocomplete } from "@/components/campaign-location-autocomplete";
+import { CampaignCategorySelect } from "@/components/campaign-category-select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -19,7 +21,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import {
   Popover,
   PopoverContent,
@@ -89,12 +90,20 @@ import {
   validateGalleryVideo,
 } from "@/lib/media/video";
 import { resolveMultimediaForSubmit } from "@/lib/s3/upload-client";
+import {
+  CAUSE_COVER_ACCEPT,
+  CAUSE_COVER_DESCRIPTION,
+  CAUSE_COVER_HEIGHT,
+  CAUSE_COVER_WIDTH,
+  validateCauseCoverImage,
+  validateCauseGalleryImage,
+} from "@/lib/media/cause-cover";
 
 const currencies = [{ id: "NGN", name: "Naira (₦)" }];
 const MAX_DURATION_DAYS = 180;
 
 const GALLERY_ACCEPT = {
-  "image/*": [],
+  ...CAUSE_COVER_ACCEPT,
   "video/mp4": [".mp4"],
   "video/webm": [".webm"],
 };
@@ -159,7 +168,9 @@ const validateForm = (formData: FormData): FormErrors => {
     errors.summary = "Summary must be less than 200 characters";
   }
 
-  if (formData.location && formData.location.length > 100) {
+  if (!formData.location.trim()) {
+    errors.location = "Select a valid location from the suggestions";
+  } else if (formData.location.trim().length > 100) {
     errors.location = "Location must be less than 100 characters";
   }
 
@@ -267,23 +278,28 @@ export default function CreateCauseForm() {
       const loadedStartDate = parsedDraft.startDate
         ? new Date(parsedDraft.startDate)
         : undefined;
-      
+
       // Ensure start date is not in the past
-      const startDate = loadedStartDate && !isBefore(loadedStartDate, today)
-        ? loadedStartDate
-        : today;
+      const startDate =
+        loadedStartDate && !isBefore(loadedStartDate, today)
+          ? loadedStartDate
+          : today;
 
       const loadedEndDate = parsedDraft.endDate
         ? new Date(parsedDraft.endDate)
         : undefined;
 
       // Ensure end date is after start date, default to 7 days if invalid
-      const endDate = loadedEndDate && isAfter(loadedEndDate, startDate)
-        ? loadedEndDate
-        : addDays(startDate, 7);
+      const endDate =
+        loadedEndDate && isAfter(loadedEndDate, startDate)
+          ? loadedEndDate
+          : addDays(startDate, 7);
 
       setFormData((prev) => ({
         ...parsedDraft,
+        location: parsedDraft.locationVerified
+          ? parsedDraft.location || ""
+          : "",
         coverImage: prev.coverImage,
         startDate,
         endDate,
@@ -298,6 +314,7 @@ export default function CreateCauseForm() {
       const { coverImage, multimedia, ...dataToSave } = formData;
       const serializedData = {
         ...dataToSave,
+        locationVerified: Boolean(dataToSave.location),
         startDate: dataToSave.startDate
           ? dataToSave.startDate.toISOString()
           : null,
@@ -400,6 +417,13 @@ export default function CreateCauseForm() {
       return;
     }
 
+    const validationError = await validateCauseCoverImage(file);
+    if (validationError) {
+      setFormData((prev) => ({ ...prev, coverImage: null }));
+      setErrors((prev) => ({ ...prev, coverImage: validationError }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, coverImage: file }));
     if (errors.coverImage) {
       setErrors((prev) => ({ ...prev, coverImage: undefined }));
@@ -419,8 +443,9 @@ export default function CreateCauseForm() {
       return;
     }
 
-    const existingVideoCount = (formData.multimedia || []).filter(isVideoFile)
-      .length;
+    const existingVideoCount = (formData.multimedia || []).filter(
+      isVideoFile,
+    ).length;
     const incomingVideos = files.filter((f) => f.type.startsWith("video/"));
     if (existingVideoCount + incomingVideos.length > MAX_VIDEOS_PER_CAUSE) {
       setErrors((prev) => ({
@@ -450,7 +475,12 @@ export default function CreateCauseForm() {
         }
 
         if (file.type.startsWith("image/")) {
-          processedFiles.push(await compressImage(file, 1000, 0.7));
+          const imageError = await validateCauseGalleryImage(file);
+          if (imageError) {
+            setErrors((prev) => ({ ...prev, multimedia: imageError }));
+            return;
+          }
+          processedFiles.push(await compressImage(file, 1600, 0.8));
         } else {
           setErrors((prev) => ({
             ...prev,
@@ -515,7 +545,10 @@ export default function CreateCauseForm() {
     switch (step) {
       case 1:
         return (
-          !currentErrors.title && !currentErrors.category && !currentErrors.goal
+          !currentErrors.title &&
+          !currentErrors.location &&
+          !currentErrors.category &&
+          !currentErrors.goal
         );
       case 2:
         if (currentErrors.sections) {
@@ -724,22 +757,25 @@ export default function CreateCauseForm() {
                     htmlFor="location"
                     className="text-sm font-semibold text-gray-700 sm:text-base"
                   >
-                    Location{" "}
-                    <span className="text-gray-400 font-normal">
-                      (optional)
-                    </span>
+                    Location <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    id="location"
-                    name="location"
-                    placeholder="e.g., Lagos, Nigeria"
+                  <CampaignLocationAutocomplete
                     value={formData.location}
-                    onChange={handleChange}
-                    className={cn(
-                      "h-11 premium-input sm:h-12",
-                      errors.location ? "border-red-500" : "",
-                    )}
+                    invalid={Boolean(errors.location)}
+                    onChange={(location) => {
+                      setFormData((current) => ({ ...current, location }));
+                      if (location) {
+                        setErrors((current) => ({
+                          ...current,
+                          location: undefined,
+                        }));
+                      }
+                    }}
+                    className="h-11 premium-input sm:h-12"
                   />
+                  <p className="text-xs text-slate-500">
+                    Type at least two letters, then select a place from the list.
+                  </p>
                   {errors.location && (
                     <p className="text-sm text-red-500 font-medium">
                       {errors.location}
@@ -756,28 +792,13 @@ export default function CreateCauseForm() {
                   >
                     Category
                   </Label>
-                  <Select
+                  <CampaignCategorySelect
                     value={formData.category}
                     onValueChange={(value) =>
                       handleSelectChange("category", value)
                     }
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        "h-11 premium-input sm:h-12",
-                        errors.category ? "border-red-500" : "",
-                      )}
-                    >
-                      <SelectValue placeholder="What's this about?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    invalid={Boolean(errors.category)}
+                  />
                   {errors.category && (
                     <p className="text-sm text-red-500 font-medium">
                       {errors.category}
@@ -1035,7 +1056,9 @@ export default function CreateCauseForm() {
                         const maxEnd = addDays(start, MAX_DURATION_DAYS);
                         return isBefore(date, start) || isAfter(date, maxEnd);
                       }}
-                      defaultMonth={formData.endDate || formData.startDate || new Date()}
+                      defaultMonth={
+                        formData.endDate || formData.startDate || new Date()
+                      }
                       initialFocus
                     />
                   </PopoverContent>
@@ -1081,7 +1104,13 @@ export default function CreateCauseForm() {
                   <ImageUpload
                     onUpload={(files) => handleImageUpload(files)}
                     maxFiles={1}
-                    autoNormalize
+                    accept={CAUSE_COVER_ACCEPT}
+                    enableCrop
+                    cropAspect={16 / 9}
+                    cropRequired
+                    cropOutputWidth={CAUSE_COVER_WIDTH}
+                    cropOutputHeight={CAUSE_COVER_HEIGHT}
+                    description={`${CAUSE_COVER_DESCRIPTION} · up to 100MB`}
                   />
                   {formData.coverImage && (
                     <div className="mt-4 relative group aspect-video rounded-xl overflow-hidden shadow-sm border border-brand/10">
@@ -1091,7 +1120,7 @@ export default function CreateCauseForm() {
                         fill
                         sizes="(max-width: 768px) 100vw, 50vw"
                         unoptimized
-                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <Button
                         type="button"
@@ -1132,9 +1161,11 @@ export default function CreateCauseForm() {
                     onUpload={(files) => handleMultimediaUpload(files)}
                     maxFiles={5 - (formData.multimedia?.length || 0)}
                     accept={GALLERY_ACCEPT}
-                    enableCrop={false}
-                    description="Images or short videos (MP4/WebM, max 50MB / 90s each)"
-                    autoNormalize
+                    enableCrop
+                    cropAspect={16 / 9}
+                    cropOutputWidth={CAUSE_COVER_WIDTH}
+                    cropOutputHeight={CAUSE_COVER_HEIGHT}
+                    description="Select up to 5 images and crop each one, or keep its original framing; videos may be MP4/WebM (max 50MB / 90s each)"
                   />
                   {errors.multimedia && (
                     <p className="mt-2 text-sm text-red-500 font-medium">
@@ -1426,7 +1457,10 @@ export default function CreateCauseForm() {
             }}
           >
             <div className="min-h-[320px] sm:min-h-[400px]">
-              <div key={currentStep} className="animate-in fade-in duration-200">
+              <div
+                key={currentStep}
+                className="animate-in fade-in duration-200"
+              >
                 {renderStep()}
               </div>
             </div>
