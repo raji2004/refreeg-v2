@@ -388,19 +388,19 @@ export default function MultimediaCarousel({
           <>
             <button
               onClick={previous}
-              className="absolute left-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-slate-950/45 text-white shadow-lg backdrop-blur-md transition hover:bg-slate-950/65 sm:flex"
+              className="absolute left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/25 text-white opacity-60 shadow-sm backdrop-blur-sm transition-all hover:bg-slate-950/50 hover:opacity-100 focus-visible:opacity-100 sm:flex"
               aria-label="Show previous media"
               type="button"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={next}
-              className="absolute right-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-slate-950/45 text-white shadow-lg backdrop-blur-md transition hover:bg-slate-950/65 sm:flex"
+              className="absolute right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/25 text-white opacity-60 shadow-sm backdrop-blur-sm transition-all hover:bg-slate-950/50 hover:opacity-100 focus-visible:opacity-100 sm:flex"
               aria-label="Show next media"
               type="button"
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-4 w-4" />
             </button>
             <div className="absolute right-3 top-3 z-20 hidden rounded-full bg-slate-950/70 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md sm:block">
               {current + 1} / {slides.length}

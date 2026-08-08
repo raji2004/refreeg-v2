@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CampaignLocationAutocomplete } from "@/components/campaign-location-autocomplete";
+import { CampaignCategorySelect } from "@/components/campaign-category-select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -166,7 +168,9 @@ const validateForm = (formData: FormData): FormErrors => {
     errors.summary = "Summary must be less than 200 characters";
   }
 
-  if (formData.location && formData.location.length > 100) {
+  if (!formData.location.trim()) {
+    errors.location = "Select a valid location from the suggestions";
+  } else if (formData.location.trim().length > 100) {
     errors.location = "Location must be less than 100 characters";
   }
 
@@ -293,6 +297,9 @@ export default function CreateCauseForm() {
 
       setFormData((prev) => ({
         ...parsedDraft,
+        location: parsedDraft.locationVerified
+          ? parsedDraft.location || ""
+          : "",
         coverImage: prev.coverImage,
         startDate,
         endDate,
@@ -307,6 +314,7 @@ export default function CreateCauseForm() {
       const { coverImage, multimedia, ...dataToSave } = formData;
       const serializedData = {
         ...dataToSave,
+        locationVerified: Boolean(dataToSave.location),
         startDate: dataToSave.startDate
           ? dataToSave.startDate.toISOString()
           : null,
@@ -537,7 +545,10 @@ export default function CreateCauseForm() {
     switch (step) {
       case 1:
         return (
-          !currentErrors.title && !currentErrors.category && !currentErrors.goal
+          !currentErrors.title &&
+          !currentErrors.location &&
+          !currentErrors.category &&
+          !currentErrors.goal
         );
       case 2:
         if (currentErrors.sections) {
@@ -746,22 +757,25 @@ export default function CreateCauseForm() {
                     htmlFor="location"
                     className="text-sm font-semibold text-gray-700 sm:text-base"
                   >
-                    Location{" "}
-                    <span className="text-gray-400 font-normal">
-                      (optional)
-                    </span>
+                    Location <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    id="location"
-                    name="location"
-                    placeholder="e.g., Lagos, Nigeria"
+                  <CampaignLocationAutocomplete
                     value={formData.location}
-                    onChange={handleChange}
-                    className={cn(
-                      "h-11 premium-input sm:h-12",
-                      errors.location ? "border-red-500" : "",
-                    )}
+                    invalid={Boolean(errors.location)}
+                    onChange={(location) => {
+                      setFormData((current) => ({ ...current, location }));
+                      if (location) {
+                        setErrors((current) => ({
+                          ...current,
+                          location: undefined,
+                        }));
+                      }
+                    }}
+                    className="h-11 premium-input sm:h-12"
                   />
+                  <p className="text-xs text-slate-500">
+                    Type at least two letters, then select a place from the list.
+                  </p>
                   {errors.location && (
                     <p className="text-sm text-red-500 font-medium">
                       {errors.location}
@@ -778,28 +792,13 @@ export default function CreateCauseForm() {
                   >
                     Category
                   </Label>
-                  <Select
+                  <CampaignCategorySelect
                     value={formData.category}
                     onValueChange={(value) =>
                       handleSelectChange("category", value)
                     }
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        "h-11 premium-input sm:h-12",
-                        errors.category ? "border-red-500" : "",
-                      )}
-                    >
-                      <SelectValue placeholder="What's this about?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    invalid={Boolean(errors.category)}
+                  />
                   {errors.category && (
                     <p className="text-sm text-red-500 font-medium">
                       {errors.category}

@@ -1,6 +1,7 @@
 "use server";
 
 import crypto from "crypto";
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
@@ -32,6 +33,39 @@ function mapPreferences(value: unknown): OrganizationPreferences {
     teamDigest: stored.teamDigest !== false,
     publicProfile: stored.publicProfile !== false,
   };
+}
+
+function normalizeOptionalUrl(value: string | undefined, label: string) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  const candidate = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+
+  try {
+    const url = new URL(candidate);
+    if (!url.hostname || !["http:", "https:"].includes(url.protocol)) {
+      throw new Error();
+    }
+    return url.toString();
+  } catch {
+    throw new Error(`Enter a valid ${label} URL.`);
+  }
+}
+
+function normalizeOptionalWhatsAppNumber(value: string | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  const normalized = `${trimmed.startsWith("+") ? "+" : ""}${trimmed.replace(/\D/g, "")}`;
+  const digits = normalized.replace(/\D/g, "");
+
+  if (digits.length < 7 || digits.length > 15) {
+    throw new Error("Enter a valid WhatsApp number with country code.");
+  }
+
+  return normalized;
 }
 
 async function requireUser() {
@@ -103,6 +137,13 @@ export async function getOrganizationWorkspace() {
         address: organization.address || "",
         industry: organization.industry || "",
         logoUrl: organization.logoUrl || "",
+        bio: organization.bio || "",
+        websiteUrl: organization.websiteUrl || "",
+        instagramUrl: organization.instagramUrl || "",
+        twitterUrl: organization.twitterUrl || "",
+        tiktokUrl: organization.tiktokUrl || "",
+        facebookUrl: organization.facebookUrl || "",
+        whatsappNumber: organization.whatsappNumber || "",
         preferences: mapPreferences(organization.preferences),
         currentUserRole: membership.role,
         canManage,
@@ -128,12 +169,76 @@ export async function getOrganizationWorkspace() {
   }
 }
 
+/**
+ * Public, read-only organization identity for an owner's profile page.
+ * Sensitive workspace data such as invitations and admin permissions is
+ * intentionally excluded.
+ */
+export async function getOrganizationPublicProfile(ownerId: string) {
+  try {
+    const organization = await prisma.organization.findUnique({
+      where: { ownerId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        phone: true,
+        address: true,
+        industry: true,
+        logoUrl: true,
+        bio: true,
+        websiteUrl: true,
+        instagramUrl: true,
+        twitterUrl: true,
+        tiktokUrl: true,
+        facebookUrl: true,
+        whatsappNumber: true,
+        preferences: true,
+        createdAt: true,
+        _count: { select: { members: true } },
+      },
+    });
+
+    if (!organization) return null;
+
+    return {
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+      phone: organization.phone || "",
+      address: organization.address || "",
+      industry: organization.industry || "",
+      logoUrl: organization.logoUrl || "",
+      bio: organization.bio || "",
+      websiteUrl: organization.websiteUrl || "",
+      instagramUrl: organization.instagramUrl || "",
+      twitterUrl: organization.twitterUrl || "",
+      tiktokUrl: organization.tiktokUrl || "",
+      facebookUrl: organization.facebookUrl || "",
+      whatsappNumber: organization.whatsappNumber || "",
+      memberCount: organization._count.members,
+      publicProfile: mapPreferences(organization.preferences).publicProfile,
+      createdAt: organization.createdAt.toISOString(),
+    };
+  } catch (error) {
+    console.error("Unable to load public organization profile:", error);
+    return null;
+  }
+}
+
 export async function updateOrganization(input: {
   name: string;
   adminEmail: string;
   phone?: string;
   address?: string;
   industry?: string;
+  bio?: string;
+  websiteUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
+  tiktokUrl?: string;
+  facebookUrl?: string;
+  whatsappNumber?: string;
   preferences: OrganizationPreferences;
 }) {
   try {
@@ -147,6 +252,35 @@ export async function updateOrganization(input: {
     if (!/^\S+@\S+\.\S+$/.test(adminEmail)) {
       throw new Error("Enter a valid admin email address.");
     }
+    const bio =
+      input.bio === undefined ? undefined : input.bio.trim() || null;
+    if (bio && bio.length > 600) {
+      throw new Error("Organization bio must be 600 characters or fewer.");
+    }
+    const websiteUrl =
+      input.websiteUrl === undefined
+        ? undefined
+        : normalizeOptionalUrl(input.websiteUrl, "website");
+    const instagramUrl =
+      input.instagramUrl === undefined
+        ? undefined
+        : normalizeOptionalUrl(input.instagramUrl, "Instagram");
+    const twitterUrl =
+      input.twitterUrl === undefined
+        ? undefined
+        : normalizeOptionalUrl(input.twitterUrl, "Twitter/X");
+    const tiktokUrl =
+      input.tiktokUrl === undefined
+        ? undefined
+        : normalizeOptionalUrl(input.tiktokUrl, "TikTok");
+    const facebookUrl =
+      input.facebookUrl === undefined
+        ? undefined
+        : normalizeOptionalUrl(input.facebookUrl, "Facebook");
+    const whatsappNumber =
+      input.whatsappNumber === undefined
+        ? undefined
+        : normalizeOptionalWhatsAppNumber(input.whatsappNumber);
 
     await prisma.organization.update({
       where: { id: organization.id },
@@ -156,17 +290,35 @@ export async function updateOrganization(input: {
         phone: input.phone?.trim() || null,
         address: input.address?.trim() || null,
         industry: input.industry?.trim() || null,
+        ...(bio !== undefined ? { bio } : {}),
+        ...(websiteUrl !== undefined ? { websiteUrl } : {}),
+        ...(instagramUrl !== undefined ? { instagramUrl } : {}),
+        ...(twitterUrl !== undefined ? { twitterUrl } : {}),
+        ...(tiktokUrl !== undefined ? { tiktokUrl } : {}),
+        ...(facebookUrl !== undefined ? { facebookUrl } : {}),
+        ...(whatsappNumber !== undefined ? { whatsappNumber } : {}),
         preferences: mapPreferences(input.preferences),
       },
     });
 
     revalidatePath("/dashboard/settings");
     revalidatePath("/dashboard/settings/organization");
+    revalidatePath("/dashboard");
+    revalidatePath("/[username]", "page");
     return { success: true as const };
   } catch (error) {
+    const isDatabaseError =
+      error instanceof Prisma.PrismaClientKnownRequestError ||
+      error instanceof Prisma.PrismaClientUnknownRequestError ||
+      error instanceof Prisma.PrismaClientValidationError;
+
     return {
       success: false as const,
-      error: error instanceof Error ? error.message : "Unable to save organization.",
+      error: isDatabaseError
+        ? "Unable to save the organisation right now. Please try again."
+        : error instanceof Error
+          ? error.message
+          : "Unable to save organization.",
     };
   }
 }
@@ -192,6 +344,7 @@ export async function updateOrganizationLogo(file: File) {
     });
 
     revalidatePath("/dashboard/settings/organization");
+    revalidatePath("/dashboard");
     return { success: true as const, logoUrl: key };
   } catch (error) {
     return {

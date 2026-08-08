@@ -20,6 +20,7 @@ import {
   validateCauseCoverImage,
   validateCauseGalleryImage,
 } from "@/lib/media/cause-cover";
+import { resolveCampaignLocation } from "@/lib/locations/campaign-location";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -176,6 +177,7 @@ export async function createCause(
   userId: string,
   causeData: CauseFormData,
 ): Promise<Cause> {
+  const location = await resolveCampaignLocation(causeData.location);
   const causeId = crypto.randomUUID();
   let coverImageUrl = null;
   if (causeData.coverImage) {
@@ -248,7 +250,7 @@ export async function createCause(
           multimedia: multimediaUrls,
           videoLinks: causeData.video_links || [],
           summary: causeData.summary || null,
-          location: causeData.location || null,
+          location,
         },
       });
 
@@ -303,6 +305,8 @@ export async function updateCause(
   userId: string,
   causeData: Partial<CauseFormData>,
 ): Promise<any> {
+  const location = await resolveCampaignLocation(causeData.location);
+
   // Check for existing pending edit for this cause
   const existingEdit = await prisma.cause_edits.findFirst({
     where: { original_cause_id: causeId, status: "pending" },
@@ -379,7 +383,7 @@ export async function updateCause(
           multimedia: multimediaUrls.length > 0 ? multimediaUrls : [],
           video_links: causeData.video_links || [],
           summary: causeData.summary || null,
-          location: causeData.location || null,
+          location,
           status: "pending",
         },
       });
@@ -587,6 +591,7 @@ export async function updateCauseStatus(
     });
 
     if (edit) {
+      const location = await resolveCampaignLocation(edit.location);
       try {
         const updated = await prisma.$transaction(async (tx: any) => {
           const c = await tx.cause.update({
@@ -602,7 +607,7 @@ export async function updateCauseStatus(
               multimedia: edit.multimedia,
               videoLinks: edit.video_links,
               summary: edit.summary,
-              location: edit.location,
+              location,
               status: "approved",
               updatedAt: new Date(),
             },
@@ -637,6 +642,12 @@ export async function updateCauseStatus(
       }
     } else {
       try {
+        const cause = await prisma.cause.findUnique({
+          where: { id: causeId },
+          select: { location: true },
+        });
+        await resolveCampaignLocation(cause?.location);
+
         const updated = await prisma.cause.update({
           where: { id: causeId },
           data: { status: "approved", updatedAt: new Date() },

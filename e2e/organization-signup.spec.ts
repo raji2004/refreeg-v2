@@ -36,7 +36,7 @@ test.describe("organization signup", () => {
     await page.getByRole("button", { name: /^Sign Up$/ }).click();
 
     await expect(page.getByText("Enter a valid email address")).toBeVisible();
-    await expect(page.getByText("At least 10 characters").last()).toHaveClass(/text-red-500/);
+    await expect(page.getByText("At least 10 characters").last()).toHaveClass(/text-red-600/);
   });
 
   test("submits valid details and preserves an invitation redirect", async ({ page }) => {

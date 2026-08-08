@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
@@ -13,8 +14,13 @@ import {
   Phone,
   MapPin,
   Briefcase,
+  Globe2,
+  Instagram,
   Loader2,
+  AtSign,
 } from "lucide-react";
+import { FaFacebookF, FaTiktok } from "react-icons/fa6";
+import { FaWhatsapp } from "react-icons/fa";
 import { Switch } from "@/components/ui/switch";
 import {
   getOrganizationOnboardingData,
@@ -38,6 +44,13 @@ interface OrgFormData {
   phone: string;
   address: string;
   industry: string;
+  bio: string;
+  websiteUrl: string;
+  instagramUrl: string;
+  twitterUrl: string;
+  tiktokUrl: string;
+  facebookUrl: string;
+  whatsappNumber: string;
 }
 
 interface OrgPreferences {
@@ -64,6 +77,13 @@ export default function Step3BOrgSetup({
     phone: "",
     address: "",
     industry: "",
+    bio: "",
+    websiteUrl: "",
+    instagramUrl: "",
+    twitterUrl: "",
+    tiktokUrl: "",
+    facebookUrl: "",
+    whatsappNumber: "",
   });
   const [preferences, setPreferences] =
     useState<OrgPreferences>(DEFAULT_PREFERENCES);
@@ -85,6 +105,13 @@ export default function Step3BOrgSetup({
             phone: orgData.phone || "",
             address: orgData.address || "",
             industry: orgData.industry || "",
+            bio: orgData.bio || "",
+            websiteUrl: orgData.websiteUrl || "",
+            instagramUrl: orgData.instagramUrl || "",
+            twitterUrl: orgData.twitterUrl || "",
+            tiktokUrl: orgData.tiktokUrl || "",
+            facebookUrl: orgData.facebookUrl || "",
+            whatsappNumber: orgData.whatsappNumber || "",
           });
           if (orgData.logoUrl) {
             setLogoPreviewUrl(orgData.logoUrl);
@@ -159,7 +186,7 @@ export default function Step3BOrgSetup({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (includePublicProfile: boolean) => {
     if (!validateForm()) return;
 
     setIsSaving(true);
@@ -184,6 +211,17 @@ export default function Step3BOrgSetup({
         phone: formData.phone.trim() || undefined,
         address: formData.address.trim() || undefined,
         industry: formData.industry.trim() || undefined,
+        ...(includePublicProfile
+          ? {
+              bio: formData.bio.trim(),
+              websiteUrl: formData.websiteUrl.trim(),
+              instagramUrl: formData.instagramUrl.trim(),
+              twitterUrl: formData.twitterUrl.trim(),
+              tiktokUrl: formData.tiktokUrl.trim(),
+              facebookUrl: formData.facebookUrl.trim(),
+              whatsappNumber: formData.whatsappNumber.trim(),
+            }
+          : {}),
         preferences,
       });
 
@@ -214,8 +252,8 @@ export default function Step3BOrgSetup({
   }
 
   return (
-    <div className="h-full flex items-center justify-center bg-white px-6">
-      <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+    <div className="flex h-full items-center justify-center bg-transparent px-0">
+      <div className="w-full max-w-3xl">
         {/* Left Section: Form */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -223,17 +261,17 @@ export default function Step3BOrgSetup({
           transition={{ duration: 0.4 }}
           className="w-full"
         >
-          <h1 className="text-3xl font-semibold text-gray-900 mb-2">
-            Set up your organization
+          <h1 className="mb-2 text-3xl font-semibold text-gray-900">
+            Organisation details
           </h1>
           <p className="text-gray-500 mb-8">
-            Add your branding and customize how your workspace works.
+            Confirm your public identity and choose the notifications your team needs.
           </p>
 
           <div className="space-y-6">
             {/* Organization Logo */}
             <div className="flex flex-col items-start space-y-2">
-              <Label>Organization Logo <span className="text-gray-400 text-xs font-normal">(optional)</span></Label>
+              <Label>Organisation Logo <span className="text-gray-400 text-xs font-normal">(optional)</span></Label>
               <div className="flex items-center gap-4">
                 <label
                   htmlFor="logo-upload"
@@ -249,7 +287,7 @@ export default function Step3BOrgSetup({
                       alt="Org logo preview"
                       width={80}
                       height={80}
-                      className="w-full h-full object-cover rounded-2xl"
+                      className="h-full w-full rounded-2xl object-cover"
                       unoptimized={
                         logoPreviewUrl.startsWith("blob:")
                           ? false
@@ -282,7 +320,7 @@ export default function Step3BOrgSetup({
             {/* Organization Name */}
             <div className="flex flex-col space-y-2">
               <Label htmlFor="orgName">
-                Organization Name<span className="text-red-500">*</span>
+                Organisation Name<span className="text-red-500">*</span>
               </Label>
               <div className="relative">
                 <Building2 className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
@@ -345,8 +383,148 @@ export default function Step3BOrgSetup({
               </div>
             </div>
 
+            {/* Optional public profile */}
+            <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-900">
+                    Public profile
+                  </h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Help supporters understand your mission and find your organisation online. Add only the channels you use.
+                  </p>
+                </div>
+                <span className="mt-1 w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                  Optional
+                </span>
+              </div>
+
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <Label htmlFor="orgBio">Organisation bio</Label>
+                  <span className="text-xs text-slate-400">
+                    {formData.bio.length}/600
+                  </span>
+                </div>
+                <Textarea
+                  id="orgBio"
+                  value={formData.bio}
+                  maxLength={600}
+                  rows={4}
+                  placeholder="Describe your mission, who you serve, and the impact you create."
+                  onChange={(event) => handleChange("bio", event.target.value)}
+                  className="resize-none"
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="orgWebsite">Website</Label>
+                  <div className="relative">
+                    <Globe2 className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                    <Input
+                      id="orgWebsite"
+                      value={formData.websiteUrl}
+                      inputMode="url"
+                      placeholder="yourorganisation.org"
+                      onChange={(event) =>
+                        handleChange("websiteUrl", event.target.value)
+                      }
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="orgInstagram">Instagram</Label>
+                  <div className="relative">
+                    <Instagram className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                    <Input
+                      id="orgInstagram"
+                      value={formData.instagramUrl}
+                      inputMode="url"
+                      placeholder="instagram.com/yourorganisation"
+                      onChange={(event) =>
+                        handleChange("instagramUrl", event.target.value)
+                      }
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="orgTwitter">X / Twitter</Label>
+                  <div className="relative">
+                    <AtSign className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                    <Input
+                      id="orgTwitter"
+                      value={formData.twitterUrl}
+                      inputMode="url"
+                      placeholder="x.com/yourorganisation"
+                      onChange={(event) =>
+                        handleChange("twitterUrl", event.target.value)
+                      }
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="orgTiktok">TikTok</Label>
+                  <div className="relative">
+                    <FaTiktok className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                    <Input
+                      id="orgTiktok"
+                      value={formData.tiktokUrl}
+                      inputMode="url"
+                      placeholder="tiktok.com/@yourorganisation"
+                      onChange={(event) =>
+                        handleChange("tiktokUrl", event.target.value)
+                      }
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="orgFacebook">Facebook</Label>
+                  <div className="relative">
+                    <FaFacebookF className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                    <Input
+                      id="orgFacebook"
+                      value={formData.facebookUrl}
+                      inputMode="url"
+                      placeholder="facebook.com/yourorganisation"
+                      onChange={(event) =>
+                        handleChange("facebookUrl", event.target.value)
+                      }
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="orgWhatsapp">WhatsApp number</Label>
+                  <div className="relative">
+                    <FaWhatsapp className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                    <Input
+                      id="orgWhatsapp"
+                      type="tel"
+                      value={formData.whatsappNumber}
+                      inputMode="tel"
+                      placeholder="+234 801 234 5678"
+                      onChange={(event) =>
+                        handleChange("whatsappNumber", event.target.value)
+                      }
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Preferences */}
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <h3 className="text-sm font-semibold text-gray-700">
                 Notification Preferences
               </h3>
@@ -402,34 +580,34 @@ export default function Step3BOrgSetup({
             </div>
 
             {/* Submit */}
-            <Button
-              onClick={handleSubmit}
-              disabled={isSaving || externalSubmitting}
-              className="w-full mt-4 bg-blue-600 text-white py-6 text-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isSaving ? "Saving..." : "Continue"}
-            </Button>
+            <div className="grid gap-3 pt-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => handleSubmit(false)}
+                disabled={isSaving || externalSubmitting}
+                className="inline-flex h-12 items-center justify-center rounded-md border border-slate-300 bg-white text-sm font-medium text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              >
+                Skip for now
+              </button>
+              <Button
+                type="button"
+                onClick={() => handleSubmit(true)}
+                disabled={isSaving || externalSubmitting}
+                className="h-12 bg-blue-700 text-white hover:bg-blue-800 disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save & continue"
+                )}
+              </Button>
+            </div>
           </div>
         </motion.div>
 
-        {/* Right Section: Illustration */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="hidden md:flex flex-col items-center justify-center relative"
-        >
-          <div className="w-[350px] h-[350px] bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl flex flex-col items-center justify-center p-8 border border-blue-100">
-            <Building2 className="w-24 h-24 text-blue-600 mb-6" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">
-              Your workspace is ready
-            </h3>
-            <p className="text-sm text-gray-500 text-center">
-              Add your branding and preferences to make it yours. You can always
-              update these in Settings.
-            </p>
-          </div>
-        </motion.div>
       </div>
     </div>
   );

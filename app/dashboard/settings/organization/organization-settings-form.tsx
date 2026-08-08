@@ -67,6 +67,13 @@ export function OrganizationSettingsForm({
       phone: workspace.phone,
       address: workspace.address,
       industry: workspace.industry,
+      bio: workspace.bio,
+      websiteUrl: workspace.websiteUrl,
+      instagramUrl: workspace.instagramUrl,
+      twitterUrl: workspace.twitterUrl,
+      tiktokUrl: workspace.tiktokUrl,
+      facebookUrl: workspace.facebookUrl,
+      whatsappNumber: workspace.whatsappNumber,
       preferences: workspace.preferences,
     });
     setIsSaving(false);
@@ -149,7 +156,7 @@ export function OrganizationSettingsForm({
                       alt={`${workspace.name} logo`}
                       width={80}
                       height={80}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain p-1"
                       unoptimized={isProxyMediaUrl(logoSrc)}
                     />
                   ) : (
@@ -216,6 +223,122 @@ export function OrganizationSettingsForm({
                   onChange={(event) => setWorkspace((current) => ({ ...current, address: event.target.value }))}
                 />
               </Field>
+
+              <div className="space-y-5 rounded-xl border border-slate-200 p-4 sm:p-5">
+                <div>
+                  <h3 className="font-semibold text-slate-950">Public profile</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Tell supporters about the organisation and where they can find it online.
+                  </p>
+                </div>
+
+                <Field label="Organisation bio">
+                  <Textarea
+                    value={workspace.bio}
+                    disabled={!workspace.canManage}
+                    maxLength={600}
+                    rows={5}
+                    placeholder="Describe your mission, the communities you serve, and the impact you create."
+                    onChange={(event) =>
+                      setWorkspace((current) => ({
+                        ...current,
+                        bio: event.target.value,
+                      }))
+                    }
+                  />
+                  <p className="text-right text-xs text-muted-foreground">
+                    {workspace.bio.length}/600
+                  </p>
+                </Field>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Website">
+                    <Input
+                      value={workspace.websiteUrl}
+                      disabled={!workspace.canManage}
+                      inputMode="url"
+                      placeholder="https://yourorganisation.org"
+                      onChange={(event) =>
+                        setWorkspace((current) => ({
+                          ...current,
+                          websiteUrl: event.target.value,
+                        }))
+                      }
+                    />
+                  </Field>
+                  <Field label="Instagram">
+                    <Input
+                      value={workspace.instagramUrl}
+                      disabled={!workspace.canManage}
+                      inputMode="url"
+                      placeholder="https://instagram.com/yourorganisation"
+                      onChange={(event) =>
+                        setWorkspace((current) => ({
+                          ...current,
+                          instagramUrl: event.target.value,
+                        }))
+                      }
+                    />
+                  </Field>
+                  <Field label="Twitter / X">
+                    <Input
+                      value={workspace.twitterUrl}
+                      disabled={!workspace.canManage}
+                      inputMode="url"
+                      placeholder="https://x.com/yourorganisation"
+                      onChange={(event) =>
+                        setWorkspace((current) => ({
+                          ...current,
+                          twitterUrl: event.target.value,
+                        }))
+                      }
+                    />
+                  </Field>
+                  <Field label="TikTok">
+                    <Input
+                      value={workspace.tiktokUrl}
+                      disabled={!workspace.canManage}
+                      inputMode="url"
+                      placeholder="https://tiktok.com/@yourorganisation"
+                      onChange={(event) =>
+                        setWorkspace((current) => ({
+                          ...current,
+                          tiktokUrl: event.target.value,
+                        }))
+                      }
+                    />
+                  </Field>
+                  <Field label="Facebook">
+                    <Input
+                      value={workspace.facebookUrl}
+                      disabled={!workspace.canManage}
+                      inputMode="url"
+                      placeholder="https://facebook.com/yourorganisation"
+                      onChange={(event) =>
+                        setWorkspace((current) => ({
+                          ...current,
+                          facebookUrl: event.target.value,
+                        }))
+                      }
+                    />
+                  </Field>
+                  <Field label="WhatsApp number">
+                    <Input
+                      value={workspace.whatsappNumber}
+                      disabled={!workspace.canManage}
+                      type="tel"
+                      inputMode="tel"
+                      placeholder="+234 801 234 5678"
+                      onChange={(event) =>
+                        setWorkspace((current) => ({
+                          ...current,
+                          whatsappNumber: event.target.value,
+                        }))
+                      }
+                    />
+                  </Field>
+                </div>
+              </div>
 
               <div className="space-y-4 rounded-xl border p-4">
                 <h3 className="font-semibold">Preferences</h3>

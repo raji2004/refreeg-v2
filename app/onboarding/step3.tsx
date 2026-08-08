@@ -12,7 +12,6 @@ import {
   MailIcon,
   PhoneIcon,
   User,
-  MapPin,
   Loader2,
   CheckCircle,
   XCircle,
@@ -269,8 +268,18 @@ export default function Step3({
   const isOrg = onboardingData.accountType === "organization";
 
   return (
-    <div className="h-full flex items-center justify-center bg-white px-6">
-      <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+    <div
+      className={`flex h-full items-center justify-center ${
+        isOrg ? "bg-transparent px-0" : "bg-white px-6"
+      }`}
+    >
+      <div
+        className={`grid w-full grid-cols-1 items-center ${
+          isOrg
+            ? "max-w-3xl"
+            : "max-w-6xl gap-12 md:grid-cols-2"
+        }`}
+      >
         {/* Left Section: Form */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -278,16 +287,22 @@ export default function Step3({
           transition={{ duration: 0.4 }}
           className="w-full"
         >
-          <h1 className="text-3xl font-semibold text-gray-900 mb-2">
+          <h1 className="mb-2 text-3xl font-semibold text-gray-900">
             {isOrg
-              ? "Set up your admin profile"
+              ? "Set up your workspace owner"
               : "Create your RefreeG account"}
           </h1>
           <p className="text-gray-500 mb-8">
             {isOrg
-              ? "This identifies you as the workspace owner. Organization branding comes next."
+              ? "Enter the details of the primary administrator for this organisation."
               : "It takes less than a minute to create an account"}
           </p>
+
+          {isOrg && (
+            <div className="mb-7 border-l-2 border-blue-700 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+              The workspace owner can manage organisation settings, invite team members, and access verification and payout controls.
+            </div>
+          )}
 
           {/* Inline error summary */}
           {errorCount > 0 && (
@@ -344,7 +359,7 @@ export default function Step3({
               <div className="flex flex-col md:flex-row md:space-x-4 w-full">
                 <div className="flex flex-col space-y-2 flex-1">
                   <Label htmlFor="firstName">
-                    {isOrg ? "Admin First Name" : "First Name"}
+                    {isOrg ? "Owner First Name" : "First Name"}
                     <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
@@ -368,7 +383,7 @@ export default function Step3({
 
                 <div className="flex flex-col space-y-2 flex-1 mt-4 md:mt-0">
                   <Label htmlFor="lastName">
-                    {isOrg ? "Admin Last Name" : "Last Name"}
+                    {isOrg ? "Owner Last Name" : "Last Name"}
                     <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
@@ -545,26 +560,32 @@ export default function Step3({
               disabled={isSubmitting}
               className="w-full mt-4 bg-blue-600 text-white py-6 text-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {isSubmitting ? "Creating Account..." : "Proceed"}
+              {isSubmitting
+                ? "Saving owner profile..."
+                : isOrg
+                  ? "Continue to organisation details"
+                  : "Proceed"}
             </Button>
           </div>
         </motion.div>
 
         {/* Right Section: Image + Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="hidden md:flex flex-col items-center justify-center relative"
-        >
-          <Image
-            src="/onboardingform.svg"
-            alt="Sign up illustration"
-            width={400}
-            height={400}
-            className="rounded-lg object-contain"
-          />
-        </motion.div>
+        {!isOrg && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="relative hidden flex-col items-center justify-center md:flex"
+          >
+            <Image
+              src="/onboardingform.svg"
+              alt="Sign up illustration"
+              width={400}
+              height={400}
+              className="rounded-lg object-contain"
+            />
+          </motion.div>
+        )}
       </div>
     </div>
   );

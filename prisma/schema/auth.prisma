@@ -1,63 +1,63 @@
 model User {
-  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  phone                 String?
-  accountNumber         String?             @map("account_number")
-  bankName              String?             @map("bank_name")
-  accountName           String?             @map("account_name")
-  profilePhoto          String?             @map("profile_photo")
-  createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime?           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  isBlocked             Boolean?            @map("is_blocked")
-  subAccountCode        String?             @map("sub_account_code")
-  bio                   String?
-  solana_wallet         String?
-  twitter_url           String?
-  facebook_url          String?
-  instagram_url         String?
-  linkedin_url          String?
-  crypto_wallets        Json?
-  accountType           String?             @map("account_type")
-  isVerified            Boolean?            @default(false) @map("is_verified")
-  gender                String?
-  website               String?
-  referralCode          String?             @unique @map("referral_code")
-  firstName             String?             @map("first_name")
-  lastName              String?             @map("last_name")
-  username              String?             @unique
-  location              String?
-  email                 String?             @unique
-  onboarding_completed  Boolean?            @default(false)
-  fullName              String?             @map("full_name")
-  total_points          Int?                @default(0)
-  current_tier          String?             @default("Tier 1")
-  Total_Engagements     Int?                @map("Total Engagements")
-  eiza_balance          Decimal?            @db.Decimal
-  total_eiza_earned     Decimal?            @db.Decimal
-  upvotes_received      Int?
-  content_quality_score Decimal?            @db.Decimal
-  spam_flags            Int?                @db.SmallInt
-  login_streak          Int?                @db.SmallInt
-  last_login_date       DateTime?           @db.Date
-  weekly_streak_count   Int?                @default(0) @db.SmallInt
-  monthly_streak_count  Int?                @default(0) @db.SmallInt
-  emailVerified         DateTime?           @map("email_verified")
-  password              String?
-  lastLoginUserAgent    String?             @map("last_login_user_agent")
-  accounts              Account[]
-  campaign_follows      campaign_follows[]
-  cause_edits           cause_edits[]
-  cause_shares          cause_shares[]
-  causes                Cause[]
-  comments              comments[]
-  crypto_donations      crypto_donations[]
-  donations             Donation[]
-  petition_comments     petition_comments[]
-  petition_edits        petition_edits[]
-  petitions             petitions[]
-  roles                 Role[]
-  sessions              Session[]
-  ownedOrganization     Organization?       @relation("OrganizationOwner")
-  organizationMemberships OrganizationMember[]
+  id                          String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phone                       String?
+  accountNumber               String?                  @map("account_number")
+  bankName                    String?                  @map("bank_name")
+  accountName                 String?                  @map("account_name")
+  profilePhoto                String?                  @map("profile_photo")
+  createdAt                   DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                   DateTime?                @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  isBlocked                   Boolean?                 @map("is_blocked")
+  subAccountCode              String?                  @map("sub_account_code")
+  bio                         String?
+  solana_wallet               String?
+  twitter_url                 String?
+  facebook_url                String?
+  instagram_url               String?
+  linkedin_url                String?
+  crypto_wallets              Json?
+  accountType                 String?                  @map("account_type")
+  isVerified                  Boolean?                 @default(false) @map("is_verified")
+  gender                      String?
+  website                     String?
+  referralCode                String?                  @unique @map("referral_code")
+  firstName                   String?                  @map("first_name")
+  lastName                    String?                  @map("last_name")
+  username                    String?                  @unique
+  location                    String?
+  email                       String?                  @unique
+  onboarding_completed        Boolean?                 @default(false)
+  fullName                    String?                  @map("full_name")
+  total_points                Int?                     @default(0)
+  current_tier                String?                  @default("Tier 1")
+  Total_Engagements           Int?                     @map("Total Engagements")
+  eiza_balance                Decimal?                 @db.Decimal
+  total_eiza_earned           Decimal?                 @db.Decimal
+  upvotes_received            Int?
+  content_quality_score       Decimal?                 @db.Decimal
+  spam_flags                  Int?                     @db.SmallInt
+  login_streak                Int?                     @db.SmallInt
+  last_login_date             DateTime?                @db.Date
+  weekly_streak_count         Int?                     @default(0) @db.SmallInt
+  monthly_streak_count        Int?                     @default(0) @db.SmallInt
+  emailVerified               DateTime?                @map("email_verified")
+  password                    String?
+  lastLoginUserAgent          String?                  @map("last_login_user_agent")
+  accounts                    Account[]
+  campaign_follows            campaign_follows[]
+  cause_edits                 cause_edits[]
+  cause_shares                cause_shares[]
+  causes                      Cause[]
+  comments                    comments[]
+  crypto_donations            crypto_donations[]
+  donations                   Donation[]
+  petition_comments           petition_comments[]
+  petition_edits              petition_edits[]
+  petitions                   petitions[]
+  roles                       Role[]
+  sessions                    Session[]
+  ownedOrganization           Organization?            @relation("OrganizationOwner")
+  organizationMemberships     OrganizationMember[]
   sentOrganizationInvitations OrganizationInvitation[] @relation("OrganizationInviter")
 
   @@index([isBlocked], map: "idx_profiles_is_blocked")
@@ -112,41 +112,48 @@ model PasswordResetToken {
 }
 
 model PendingRegistration {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email          String    @unique
-  password       String
-  fullName       String
-  otpCode        String
-  expiresAt      DateTime
-  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
-  referralCode   String?   @map("referral_code")
-  failedAttempts Int       @default(0) @map("failed_attempts")
-  lastOtpSentAt  DateTime? @map("last_otp_sent_at") @db.Timestamptz(6)
-  accountType    String    @default("individual") @map("account_type")
-  organizationName String? @map("organization_name")
-  organizationPhone String? @map("organization_phone")
-  organizationAddress String? @map("organization_address")
-  organizationIndustry String? @map("organization_industry")
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                String    @unique
+  password             String
+  fullName             String
+  otpCode              String
+  expiresAt            DateTime
+  createdAt            DateTime  @default(now()) @db.Timestamptz(6)
+  referralCode         String?   @map("referral_code")
+  failedAttempts       Int       @default(0) @map("failed_attempts")
+  lastOtpSentAt        DateTime? @map("last_otp_sent_at") @db.Timestamptz(6)
+  accountType          String    @default("individual") @map("account_type")
+  organizationName     String?   @map("organization_name")
+  organizationPhone    String?   @map("organization_phone")
+  organizationAddress  String?   @map("organization_address")
+  organizationIndustry String?   @map("organization_industry")
 
   @@map("pending_registrations")
 }
 
 model Organization {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  slug        String   @unique
-  adminEmail  String   @map("admin_email")
-  phone       String?
-  address     String?
-  industry    String?
-  logoUrl     String?  @map("logo_url")
-  preferences Json     @default("{}")
-  ownerId     String   @unique @map("owner_id") @db.Uuid
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  owner       User     @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members     OrganizationMember[]
-  invitations OrganizationInvitation[]
+  id           String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  slug         String                   @unique
+  adminEmail   String                   @map("admin_email")
+  phone        String?
+  address      String?
+  industry     String?
+  logoUrl      String?                  @map("logo_url")
+  bio          String?
+  websiteUrl   String?                  @map("website_url")
+  instagramUrl String?                  @map("instagram_url")
+  twitterUrl   String?                  @map("twitter_url")
+  tiktokUrl    String?                  @map("tiktok_url")
+  facebookUrl  String?                  @map("facebook_url")
+  whatsappNumber String?                @map("whatsapp_number")
+  preferences  Json                     @default("{}")
+  ownerId      String                   @unique @map("owner_id") @db.Uuid
+  createdAt    DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  owner        User                     @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members      OrganizationMember[]
+  invitations  OrganizationInvitation[]
 
   @@map("organizations")
 }

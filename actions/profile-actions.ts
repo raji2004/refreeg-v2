@@ -484,6 +484,13 @@ export async function getOrganizationOnboardingData(userId: string) {
         address: true,
         industry: true,
         logoUrl: true,
+        bio: true,
+        websiteUrl: true,
+        instagramUrl: true,
+        twitterUrl: true,
+        tiktokUrl: true,
+        facebookUrl: true,
+        whatsappNumber: true,
         preferences: true,
       },
     });
@@ -497,6 +504,13 @@ export async function getOrganizationOnboardingData(userId: string) {
       address: org.address || "",
       industry: org.industry || "",
       logoUrl: org.logoUrl || "",
+      bio: org.bio || "",
+      websiteUrl: org.websiteUrl || "",
+      instagramUrl: org.instagramUrl || "",
+      twitterUrl: org.twitterUrl || "",
+      tiktokUrl: org.tiktokUrl || "",
+      facebookUrl: org.facebookUrl || "",
+      whatsappNumber: org.whatsappNumber || "",
       preferences: (org.preferences || {}) as Record<string, boolean>,
     };
   } catch (error) {

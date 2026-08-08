@@ -5,16 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import {
-  Users,
-  Mail,
-  Loader2,
-  Send,
-  X,
-  UserPlus,
-  Clock,
-  CheckCircle2,
-} from "lucide-react";
+import { Mail, Loader2, Send, X, UserPlus, Clock } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -167,8 +158,8 @@ export default function Step3CInviteTeam({
   ).length;
 
   return (
-    <div className="h-full flex items-center justify-center bg-white px-6">
-      <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+    <div className="flex h-full items-center justify-center bg-transparent px-0">
+      <div className="w-full max-w-3xl">
         {/* Left Section: Form */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -176,7 +167,7 @@ export default function Step3CInviteTeam({
           transition={{ duration: 0.4 }}
           className="w-full"
         >
-          <h1 className="text-3xl font-semibold text-gray-900 mb-2">
+          <h1 className="mb-2 text-3xl font-semibold text-gray-900">
             Invite your team
           </h1>
           <p className="text-gray-500 mb-8">
@@ -298,36 +289,27 @@ export default function Step3CInviteTeam({
             </div>
           )}
 
+          <div className="mt-7 grid gap-3 border-l-2 border-blue-700 bg-slate-50 px-4 py-3 text-sm text-slate-600 sm:grid-cols-2">
+            <p><span className="font-semibold text-slate-900">Admins</span> can manage workspace settings and members.</p>
+            <p><span className="font-semibold text-slate-900">Members</span> can collaborate on organisation activity.</p>
+          </div>
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 mt-10">
-            <Button
+            <button
+              type="button"
               onClick={onNext}
-              variant="outline"
-              className="flex-1 h-12 text-gray-700 border-gray-300 hover:bg-gray-50"
+              className={`inline-flex h-12 flex-1 items-center justify-center rounded-md border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${
+                sentInvitations.length === 0
+                  ? "border-slate-300 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-800"
+                  : "border-blue-600 bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+              }`}
             >
               {sentInvitations.length === 0 ? "Skip for now" : "Continue"}
-            </Button>
+            </button>
           </div>
         </motion.div>
 
-        {/* Right Section: Illustration */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="hidden md:flex flex-col items-center justify-center relative"
-        >
-          <div className="w-[350px] h-[350px] bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl flex flex-col items-center justify-center p-8 border border-blue-100">
-            <Users className="w-24 h-24 text-blue-600 mb-6" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">
-              Build your team
-            </h3>
-            <p className="text-sm text-gray-500 text-center">
-              Invite members to manage campaigns, review donations, and
-              collaborate on causes together.
-            </p>
-          </div>
-        </motion.div>
       </div>
     </div>
   );
