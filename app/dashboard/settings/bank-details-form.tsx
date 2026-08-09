@@ -47,7 +47,7 @@ interface BankDetailsFormProps {
 export function BankDetailsForm({ profile, user }: BankDetailsFormProps) {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
-  
+
   const {
     isSubmitting,
     isVerifying,
@@ -116,13 +116,11 @@ export function BankDetailsForm({ profile, user }: BankDetailsFormProps) {
                   className="w-full justify-between"
                   disabled={isLoadingBanks}
                 >
-                  {isLoadingBanks ? (
-                    "Loading banks..."
-                  ) : formData.bankName ? (
-                    formData.bankName
-                  ) : (
-                    "Select your bank"
-                  )}
+                  {isLoadingBanks
+                    ? "Loading banks..."
+                    : formData.bankName
+                      ? formData.bankName
+                      : "Select your bank"}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -138,8 +136,10 @@ export function BankDetailsForm({ profile, user }: BankDetailsFormProps) {
                           value={bank.name}
                           onSelect={(currentValue) => {
                             handleBankChange(
-                              currentValue === formData.bankName ? "" : currentValue,
-                              "bankName"
+                              currentValue === formData.bankName
+                                ? ""
+                                : currentValue,
+                              "bankName",
                             );
                             setOpen(false);
                           }}
@@ -149,7 +149,7 @@ export function BankDetailsForm({ profile, user }: BankDetailsFormProps) {
                               "mr-2 h-4 w-4",
                               formData.bankName === bank.name
                                 ? "opacity-100"
-                                : "opacity-0"
+                                : "opacity-0",
                             )}
                           />
                           {bank.name}
@@ -176,10 +176,14 @@ export function BankDetailsForm({ profile, user }: BankDetailsFormProps) {
                       : "Name on your bank account"
                 }
                 value={isVerifying ? "" : formData.accountName}
-                onChange={(e) => handleBankChange(e.target.value, "accountName")}
-                readOnly={isVerifying || (!!formData.accountName && !verificationFailed)}
+                onChange={(e) =>
+                  handleBankChange(e.target.value, "accountName")
+                }
+                readOnly={
+                  isVerifying || (!!formData.accountName && !verificationFailed)
+                }
                 className={cn(
-                  isVerifying && "bg-muted/50 text-muted-foreground italic"
+                  isVerifying && "bg-muted/50 text-muted-foreground italic",
                 )}
                 required
               />
@@ -191,12 +195,13 @@ export function BankDetailsForm({ profile, user }: BankDetailsFormProps) {
             </div>
             {verificationFailed && (
               <p className="text-xs text-destructive">
-                We couldn&apos;t verify this account. Please enter the name exactly as it appears on your bank statement.
+                We couldn&apos;t verify this account. Please enter the name
+                exactly as it appears on your bank statement.
               </p>
             )}
           </div>
 
-          <div className="rounded-md bg-blue-50 p-4 dark:bg-blue-900/20">
+          <div className="rounded-md bg-blue-50 p-4 ">
             <div className="flex">
               <div className="flex-shrink-0">
                 <Icons.help
@@ -205,10 +210,10 @@ export function BankDetailsForm({ profile, user }: BankDetailsFormProps) {
                 />
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-400">
+                <h3 className="text-sm font-medium text-blue-800 ">
                   About Bank Details
                 </h3>
-                <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                <div className="mt-2 text-sm text-blue-700 ">
                   <p>
                     Your bank details are used to receive donations from your
                     causes. Funds will be automatically transferred to this

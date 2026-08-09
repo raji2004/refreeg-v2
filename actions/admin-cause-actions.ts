@@ -70,7 +70,7 @@ export async function listAdminCauses(
       p.email,
       p.profile_photo as "profile_photo"
     FROM causes c
-    LEFT JOIN profiles p ON c.user_id = p.id
+    LEFT JOIN "User" p ON c.user_id = p.id
   `;
 
   // ✅ FIXED (no string interpolation)
@@ -93,7 +93,7 @@ export async function listAdminCauses(
           p.email,
           p.profile_photo as "profile_photo"
         FROM causes c
-        LEFT JOIN profiles p ON c.user_id = p.id
+        LEFT JOIN "User" p ON c.user_id = p.id
         WHERE c.status = ${status}
         ORDER BY c.created_at DESC
       `
@@ -114,7 +114,7 @@ export async function listAdminCauses(
           p.email,
           p.profile_photo as "profile_photo"
         FROM causes c
-        LEFT JOIN profiles p ON c.user_id = p.id
+        LEFT JOIN "User" p ON c.user_id = p.id
         ORDER BY c.created_at DESC
       `
 );
@@ -177,7 +177,7 @@ export async function getCauseEdits() {
       p.email as "user_email",
       p.profile_photo as "user_profilePhoto"
     FROM cause_edits ce
-    LEFT JOIN profiles p ON ce.user_id = p.id
+    LEFT JOIN "User" p ON ce.user_id = p.id
     WHERE ce.status = 'pending'
     ORDER BY ce.created_at DESC
   `);

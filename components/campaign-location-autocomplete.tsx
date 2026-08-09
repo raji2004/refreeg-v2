@@ -93,10 +93,8 @@ export function CampaignLocationAutocomplete({
     setInputValue(nextValue);
     setSuggestions([]);
     setActiveIndex(-1);
-    if (nextValue !== selectedValueRef.current) {
-      selectedValueRef.current = "";
-      onChange("");
-    }
+    selectedValueRef.current = nextValue;
+    onChange(nextValue);
     setIsOpen(nextValue.trim().length >= 2);
   };
 

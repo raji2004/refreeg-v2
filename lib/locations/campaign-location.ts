@@ -137,5 +137,5 @@ export async function resolveCampaignLocation(input?: string | null) {
     if (country?.name) return country.name;
   }
 
-  throw new Error("Select a valid location from the suggestions");
+  return normalizedLocation;
 }

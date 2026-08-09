@@ -169,7 +169,7 @@ const validateForm = (formData: FormData): FormErrors => {
   }
 
   if (!formData.location.trim()) {
-    errors.location = "Select a valid location from the suggestions";
+    errors.location = "Location is required";
   } else if (formData.location.trim().length > 100) {
     errors.location = "Location must be less than 100 characters";
   }
