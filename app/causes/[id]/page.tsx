@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth/auth";
 import { getProfile } from "@/actions/profile-actions";
 import { listDonationsForCause } from "@/actions/donation-actions";
 import { listCommentsForCause } from "@/actions/comment-actions";
+import { getApprovedProofUpdates } from "@/actions/proof-update-actions";
 import CampaignQualityLab from "@/app/campaign/_components/campaign-quality-lab";
 
 import { Metadata } from "next";
@@ -40,12 +41,12 @@ export default async function CauseDetailPage({
 }) {
   const { id } = await params;
 
-  // Fetch initial independent data in parallel
-  const [cause, donors, comments, session] = await Promise.all([
+  const [cause, donors, comments, session, proofUpdates] = await Promise.all([
     getCause(id),
     listDonationsForCause(id),
     listCommentsForCause(id),
-    auth()
+    auth(),
+    getApprovedProofUpdates(id), 
   ]);
 
   const user = session?.user;
@@ -54,10 +55,10 @@ export default async function CauseDetailPage({
     notFound();
   }
 
-  // Fetch profiles in parallel based on cause and user availability
+
   const [myprofile, creatorProfile] = await Promise.all([
     user ? getProfile(user.id as string) : Promise.resolve(undefined),
-    getProfile(cause.user_id)
+    getProfile(cause.user_id),
   ]);
 
   const profile = {
@@ -75,6 +76,7 @@ export default async function CauseDetailPage({
       profile={profile}
       creatorHasWallet={!!creatorProfile?.solana_wallet}
       currentUserId={user?.id}
+      proofUpdates={proofUpdates} 
     />
   );
 }

@@ -19,6 +19,7 @@ import {
   FileText,
   PencilLine,
   Plus,
+  PauseCircle, // 👈 Added for Suspended state
 } from "lucide-react";
 import { getUserCausesWithStatus } from "@/actions/cause-actions";
 import { CauseDropdown } from "./cause-dropdown";
@@ -47,7 +48,17 @@ const formatDate = (value: string | Date | null | undefined) => {
   }).format(date);
 };
 
-const getStatusDetails = (status: string) => {
+// 👇 Updated to accept isPaused and return Amber/Yellow for suspended
+const getStatusDetails = (status: string, isPaused: boolean) => {
+  if (isPaused) {
+    return {
+      label: "Suspended",
+      icon: PauseCircle,
+      badge: "border-amber-200 bg-amber-50 text-amber-700",
+      accent: "bg-amber-500",
+    };
+  }
+
   switch (status) {
     case "approved":
       return {
@@ -74,13 +85,19 @@ const getStatusDetails = (status: string) => {
 };
 
 export async function MyCausesList({ status, userId }: MyCausesListProps) {
-  const causes = await getUserCausesWithStatus(userId, status);
+  const causes = await getUserCausesWithStatus(
+    userId,
+    status === "suspended" ? "approved" : status,
+  );
 
   const filteredCauses =
     status === "all"
       ? causes
-      : causes.filter((cause) => cause.status === status);
-
+      : status === "suspended"
+        ? causes.filter((cause) => cause.compliance_paused)
+        : causes.filter(
+            (cause) => cause.status === status && !cause.compliance_paused,
+          );
   if (filteredCauses.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 px-5 py-14 text-center">
@@ -97,6 +114,11 @@ export async function MyCausesList({ status, userId }: MyCausesListProps) {
         ) : status === "approved" ? (
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
             You don&apos;t have any active causes.
+          </p>
+        ) : status === "suspended" ? ( 
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+            You don&apos;t have any suspended causes. Great job keeping your
+            campaigns compliant!
           </p>
         ) : status === "pending" ? (
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
@@ -124,7 +146,12 @@ export async function MyCausesList({ status, userId }: MyCausesListProps) {
         const goal = Number(cause.goal) || 0;
         const progress =
           goal > 0 ? Math.min(Math.max((raised / goal) * 100, 0), 100) : 0;
-        const statusDetails = getStatusDetails(cause.status);
+
+        // 👇 Pass compliance_paused to the status helper
+        const statusDetails = getStatusDetails(
+          cause.status,
+          !!cause.compliance_paused,
+        );
         const StatusIcon = statusDetails.icon;
 
         return (
@@ -193,7 +220,10 @@ export async function MyCausesList({ status, userId }: MyCausesListProps) {
                     </p>
                   </div>
                 </div>
-                <Progress value={progress} className="mt-3 h-2.5 bg-slate-200" />
+                <Progress
+                  value={progress}
+                  className="mt-3 h-2.5 bg-slate-200"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -229,7 +259,16 @@ export async function MyCausesList({ status, userId }: MyCausesListProps) {
             </CardContent>
 
             <CardFooter className="border-t border-slate-100 bg-slate-50/50 px-6 py-4">
-              {cause.status === "approved" ? (
+              {/* 👇 Updated Footer Logic for Paused State */}
+              {cause.compliance_paused ? (
+                <Badge
+                  variant="outline"
+                  className="flex h-11 w-full justify-center rounded-xl border-amber-200 bg-amber-50 text-sm font-medium text-amber-700"
+                >
+                  <PauseCircle className="mr-2 h-4 w-4" />
+                  Campaign Suspended — Check banner above
+                </Badge>
+              ) : cause.status === "approved" ? (
                 <Link
                   href={`/dashboard/causes/${cause.id}/analytics`}
                   className="w-full"

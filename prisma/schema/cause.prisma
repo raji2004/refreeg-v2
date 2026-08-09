@@ -1,35 +1,39 @@
 model Cause {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId           String             @map("user_id") @db.Uuid
-  title            String
-  description      String?
-  category         String
-  goal             Decimal            @db.Decimal
-  raised           Decimal?           @default(0) @db.Decimal
-  status           String?            @default("pending")
-  rejectionReason  String?            @map("rejection_reason")
-  createdAt        DateTime?          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime?          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  image            String?
-  shared           Decimal?           @default(0) @db.Decimal
-  daysActive       Int?               @map("days_active")
-  videoLinks       String[]           @default([]) @map("video_links")
-  multimedia       Json?
-  trust_score      Json?              @default("{\"impact\": \"B+\", \"readability\": \"A\", \"transparency\": \"High\"}")
-  verified_status  String?            @default("pending")
-  summary          String?
-  location         String?
-  faqs             Json?              @default("[]")
-  start_date       DateTime?          @db.Timestamptz(6)
-  end_date         DateTime?          @db.Timestamptz(6)
-  follows          campaign_follows[]
-  edits            cause_edits[]
-  sections         cause_sections[]
-  shares           cause_shares[]
-  user             User               @relation(fields: [userId], references: [id])
-  comments         comments[]
-  crypto_donations crypto_donations[]
-  donations        Donation[]
+  id                   String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String                        @map("user_id") @db.Uuid
+  title                String
+  description          String?
+  category             String
+  goal                 Decimal                       @db.Decimal
+  raised               Decimal?                      @default(0) @db.Decimal
+  status               String?                       @default("pending")
+  rejectionReason      String?                       @map("rejection_reason")
+  createdAt            DateTime?                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime?                     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  image                String?
+  shared               Decimal?                      @default(0) @db.Decimal
+  daysActive           Int?                          @map("days_active")
+  videoLinks           String[]                      @default([]) @map("video_links")
+  multimedia           Json?
+  trust_score          Json?                         @default("{\"impact\": \"B+\", \"readability\": \"A\", \"transparency\": \"High\"}")
+  verified_status      String?                       @default("pending")
+  summary              String?
+  location             String?
+  faqs                 Json?                         @default("[]")
+  start_date           DateTime?                     @db.Timestamptz(6)
+  end_date             DateTime?                     @db.Timestamptz(6)
+  compliance_paused    Boolean                       @default(false)
+  compliance_paused_at DateTime?                     @db.Timestamptz(6)
+  follows              campaign_follows[]
+  edits                cause_edits[]
+  sections             cause_sections[]
+  shares               cause_shares[]
+  user                 User                          @relation(fields: [userId], references: [id])
+  comments             comments[]
+  crypto_donations     crypto_donations[]
+  donations            Donation[]
+  proof_requirements   campaign_proof_requirements[]
+  proof_updates        campaign_proof_updates[]
 
   @@index([daysActive], map: "idx_causes_days_active")
   @@index([status], map: "idx_causes_status")
@@ -72,6 +76,42 @@ model campaign_follows {
   @@unique([cause_id, email])
   @@index([cause_id], map: "idx_campaign_follows_cause_id")
   @@index([email], map: "idx_campaign_follows_email")
+}
+
+/// A mandated fund-use update slot, created when a cause crosses a 25% threshold.
+model campaign_proof_requirements {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cause_id            String    @db.Uuid
+  milestone           Int
+  status              String    @default("pending")
+  crossed_at          DateTime  @default(now()) @db.Timestamptz(6)
+  deadline            DateTime  @db.Timestamptz(6)
+  last_reminder_at    DateTime? @db.Timestamptz(6)
+  submitted_update_id String?   @db.Uuid
+  satisfied_at        DateTime? @db.Timestamptz(6)
+  cause               Cause     @relation(fields: [cause_id], references: [id], onDelete: Cascade)
+
+  @@unique([cause_id, milestone], map: "uniq_proof_req_cause_milestone")
+  @@index([status, deadline], map: "idx_proof_req_status_deadline")
+}
+
+/// A creator-submitted proof update (milestone-tagged or voluntary).
+model campaign_proof_updates {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cause_id         String    @db.Uuid
+  user_id          String    @db.Uuid
+  milestone        Int?
+  description      String
+  media            Json      @default("[]")
+  status           String    @default("pending")
+  rejection_reason String?
+  reviewed_at      DateTime? @db.Timestamptz(6)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  cause            Cause     @relation(fields: [cause_id], references: [id], onDelete: Cascade)
+  user             User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([cause_id, status], map: "idx_proof_updates_cause_status")
+  @@index([status, created_at], map: "idx_proof_updates_status_created")
 }
 
 model cause_edit_sections {

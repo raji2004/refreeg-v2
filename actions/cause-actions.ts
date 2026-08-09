@@ -53,6 +53,7 @@ const mapPrismaToCause = (prismaCause: any): Cause => {
     rejection_reason: prismaCause.rejectionReason,
     days_active: prismaCause.daysActive,
     video_links: prismaCause.videoLinks,
+    compliance_paused: prismaCause.compliance_paused || false,
   } as unknown as Cause;
 };
 
@@ -90,8 +91,11 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
 
   const isAdmin = user?.id ? await isAdminOrManager(user.id) : false;
 
+  // Block access if pending, rejected, OR compliance_paused (unless owner or admin)
   if (
-    (data.status === "pending" || data.status === "rejected") &&
+    (data.status === "pending" ||
+      data.status === "rejected" ||
+      data.compliance_paused) &&
     user?.id !== data.userId &&
     !isAdmin
   ) {
@@ -477,6 +481,9 @@ export const listCauses = cache(
     // User filter
     if (options.userId) {
       whereClause.userId = options.userId;
+    } else {
+      // Hide compliance-paused causes from public listings
+      whereClause.compliance_paused = false;
     }
 
     // Search filter
@@ -563,6 +570,8 @@ export async function countCauses(
     } else {
       whereClause.status = options.status;
     }
+    // Hide compliance-paused causes from public counts
+    whereClause.compliance_paused = false;
   } else {
     if (options.status) {
       whereClause.status = options.status;

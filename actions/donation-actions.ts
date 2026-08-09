@@ -5,12 +5,14 @@ import { revalidatePath } from "next/cache";
 import type { Donation, DonationWithCause, DonationFormData } from "@/types";
 import { recordEvent } from "@/actions/event-reward-actions";
 import { sendDonationReceivedEmail } from "@/services/mail";
+import { syncMilestoneRequirements } from "@/lib/proof-milestones";
 
 const mapPrismaToDonation = (d: any): Donation => ({
   ...d,
   amount: Number(d.amount),
   tip_amount: d.tip_amount ? Number(d.tip_amount) : 0,
-  created_at: d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt,
+  created_at:
+    d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt,
 });
 
 export async function createDonation(
@@ -69,6 +71,11 @@ export async function createDonation(
       where: { id: causeId },
       data: { raised: { increment: donationAmount } },
     });
+    try {
+      await syncMilestoneRequirements(causeId);
+    } catch (e) {
+      console.error("Error syncing proof milestones:", e);
+    }
   } catch (error) {
     console.error("Error creating donation:", error);
     throw error;
