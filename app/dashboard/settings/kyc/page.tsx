@@ -123,7 +123,13 @@ function KycSettingsContent() {
 
   return (
     <SettingsShell>
-      {profile && user && <KycTab profile={profile} user={user} />}
+      {user ? (
+        <KycTab profile={profile as any} user={user} />
+      ) : (
+        <div className="text-sm text-muted-foreground">
+          Please log in to view KYC status.
+        </div>
+      )}
     </SettingsShell>
   );
 }
