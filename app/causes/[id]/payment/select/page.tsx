@@ -35,17 +35,19 @@ export default function PaymentProviderSelectPage() {
     try {
       const data = { ...txData, paymentProvider: provider };
 
-      // If Flutterwave, swap the subaccount to the Flutterwave subaccount ID
-      if (
-        provider === "flutterwave" &&
-        (txData as any)._flutterwaveSubAccountId
-      ) {
-        data.subaccounts = [
-          {
-            subaccount: (txData as any)._flutterwaveSubAccountId,
-            share: data.subaccounts?.[0]?.share || data.amount * 100,
-          },
-        ];
+      // If Flutterwave, swap the subaccount to the Flutterwave subaccount ID, or clear it if none
+      if (provider === "flutterwave") {
+        if ((txData as any)._flutterwaveSubAccountId) {
+          data.subaccounts = [
+            {
+              subaccount: (txData as any)._flutterwaveSubAccountId,
+              share: data.subaccounts?.[0]?.share || data.amount * 100,
+            },
+          ];
+        } else {
+          // DO NOT send Paystack subaccount IDs to Flutterwave!
+          data.subaccounts = [];
+        }
       }
 
       await initializePayment(data);

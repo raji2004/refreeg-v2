@@ -48,19 +48,19 @@ const Flutterwave = {
         meta: {
           amount: data.amount,
           tip_amount: data.tipAmount || 0,
-          customer_name: data.full_name,
+          customer_name: data.full_name || "",
           cause_id: data.causeId,
           email: data.email,
-          message: data.message,
-          is_anonymous: data.isAnonymous,
+          message: data.message || "",
+          is_anonymous: String(data.isAnonymous),
           ...(data.id ? { user_id: data.id } : {}),
           ...(data.plan ? { plan: data.plan } : {}),
           ...(data.pledgeFlow
             ? {
-                pledge_flow: data.pledgeFlow,
-                pledge_id: data.pledgeId,
-                future_pledge_amount: data.pledgeFutureAmount,
-                reminder_date: data.reminderDate,
+                pledge_flow: String(data.pledgeFlow),
+                pledge_id: data.pledgeId || "",
+                future_pledge_amount: data.pledgeFutureAmount || 0,
+                reminder_date: data.reminderDate || "",
               }
             : {}),
         },
