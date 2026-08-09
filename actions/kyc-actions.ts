@@ -20,10 +20,54 @@ export async function getVerificationStatus(
   userId: string,
 ): Promise<{ status: KycVerification | null; error: string | null }> {
   try {
-    const data = await prisma.kyc_verifications.findFirst({
+    let data = await prisma.kyc_verifications.findFirst({
       where: { user_id: userId },
       orderBy: { created_at: "desc" },
     });
+
+    // Automatically sync pending Didit sessions to handle missed webhooks (e.g. local dev)
+    if (data?.status === "pending" && data?.document_type === "didit" && data?.document_url?.startsWith("https://verification.didit.me/v3/session/")) {
+      try {
+        const sessionId = data.document_url.split('/').pop();
+        if (sessionId) {
+          const apiKey = process.env.DIDIT_API_KEY || process.env.DIDIT_CLIENT_SECRET || "";
+          // The Didit API may not require the trailing slash depending on version, try without first
+          const diditRes = await fetch(`https://verification.didit.me/v3/session/${sessionId}`, {
+            headers: { "x-api-key": apiKey },
+            cache: "no-store"
+          });
+          
+          if (diditRes.ok) {
+            const sessionData = await diditRes.json();
+            const sessionStatus = sessionData.status?.toLowerCase();
+            
+            // If the session has progressed past the initial states, forward it to our webhook
+            if (sessionStatus && !["not started", "in progress", "pending"].includes(sessionStatus)) {
+              console.log(`[KYC Sync] Found updated Didit session ${sessionId} with status ${sessionStatus}, forwarding to webhook...`);
+              const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+              
+              // Simulate the webhook
+              const webhookRes = await fetch(`${appUrl}/api/webhooks/didit`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(sessionData)
+              });
+
+              if (webhookRes.ok) {
+                // Give it a moment to commit, then re-fetch the updated KYC record
+                await new Promise(r => setTimeout(r, 500));
+                const updated = await prisma.kyc_verifications.findUnique({ where: { id: data.id } });
+                if (updated) {
+                  data = updated;
+                }
+              }
+            }
+          }
+        }
+      } catch (syncError) {
+        console.error("[KYC Sync] Error syncing Didit session:", syncError);
+      }
+    }
 
     if (data?.document_url) {
       // Use S3 proxy for generating the URL

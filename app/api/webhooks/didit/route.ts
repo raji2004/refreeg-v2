@@ -74,7 +74,17 @@ export async function POST(request: Request) {
     const isApproved = lowerStatus === "approved" || lowerStatus === "verified";
     const isRejected = lowerStatus === "declined" || lowerStatus === "rejected";
     const isResubmitted = lowerStatus === "resubmitted";
+    const isExpired = lowerStatus === "expired" || lowerStatus === "abandoned";
     
+    // Clear Expired Links: If the session has expired or was abandoned, delete the pending record
+    if (isExpired && kyc.status === "pending") {
+      console.log(`[Didit] Deleting expired/abandoned session for user ${kyc.user_id}`);
+      await prisma.kyc_verifications.delete({
+        where: { id: kyc.id }
+      });
+      return NextResponse.json({ success: true, message: "Expired session cleared" });
+    }
+
     // Extract rejection reason if available
     const rejectionReason = body.decision_reason || body.reason || body.message || "Your document or selfie did not meet our verification requirements.";
 
