@@ -142,7 +142,10 @@ export default function Step3({
     setFormData(newFormData);
 
     // Update onboarding data immediately
-    updateOnboardingData("profile", newFormData);
+    updateOnboardingData("profile", {
+      ...onboardingData.profile,
+      ...newFormData,
+    });
 
     // Clear error when user starts typing
     if (errors[field]) {
@@ -182,6 +185,7 @@ export default function Step3({
 
         // Update onboarding data with photo info
         updateOnboardingData("profile", {
+          ...onboardingData.profile,
           ...formData,
           profilePhoto: photoUrl,
         });
@@ -256,7 +260,10 @@ export default function Step3({
     }
 
     // Save form data to onboarding data
-    updateOnboardingData("profile", formData);
+    updateOnboardingData("profile", {
+      ...onboardingData.profile,
+      ...formData,
+    });
 
     // Call the parent's submit handler
     onNext({
