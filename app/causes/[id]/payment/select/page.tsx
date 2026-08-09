@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { usePayment } from "@/hooks/use-payment";
 import { Icons } from "@/components/icons";
+import Image from "next/image";
 import type { PaymentProviderType, TransactionData } from "@/types";
 
 export default function PaymentProviderSelectPage() {
@@ -83,27 +84,18 @@ export default function PaymentProviderSelectPage() {
           <button
             onClick={() => handleSelectProvider("paystack")}
             disabled={isLoading}
-            className="group relative flex h-32 w-32 flex-col items-center justify-center rounded-full border-2 border-gray-200 bg-white shadow-sm transition-all hover:border-[#00C3F7] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#00C3F7] focus:ring-offset-2 disabled:opacity-50 sm:h-36 sm:w-36"
+            className="group relative flex h-32 w-48 flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-[#00C3F7] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#00C3F7] focus:ring-offset-2 disabled:opacity-50 sm:h-36 sm:w-56 lg:h-48 lg:w-72"
           >
             {selectedProvider === "paystack" && isLoading ? (
               <Icons.spinner className="h-8 w-8 animate-spin text-[#00C3F7]" />
             ) : (
-              <>
-                <svg
-                  viewBox="0 0 80 80"
-                  className="mb-2 h-10 w-10 sm:h-12 sm:w-12"
-                  fill="none"
-                >
-                  <rect width="80" height="80" rx="16" fill="#00C3F7" />
-                  <path
-                    d="M20 24h40v6H20v-6zm0 12h32v6H20v-6zm0 12h40v6H20v-6zm0 12h24v6H20v-6z"
-                    fill="white"
-                  />
-                </svg>
-                <span className="text-sm font-medium text-gray-700 group-hover:text-[#00C3F7]">
-                  Paystack
-                </span>
-              </>
+              <Image
+                src="/paystack.png"
+                alt="Paystack"
+                width={160}
+                height={60}
+                className="h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
+              />
             )}
           </button>
 
@@ -111,28 +103,18 @@ export default function PaymentProviderSelectPage() {
           <button
             onClick={() => handleSelectProvider("flutterwave")}
             disabled={isLoading}
-            className="group relative flex h-32 w-32 flex-col items-center justify-center rounded-full border-2 border-gray-200 bg-white shadow-sm transition-all hover:border-[#F5A623] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:ring-offset-2 disabled:opacity-50 sm:h-36 sm:w-36"
+            className="group relative flex h-32 w-48 flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-[#F5A623] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:ring-offset-2 disabled:opacity-50 sm:h-36 sm:w-56 lg:h-48 lg:w-72"
           >
             {selectedProvider === "flutterwave" && isLoading ? (
               <Icons.spinner className="h-8 w-8 animate-spin text-[#F5A623]" />
             ) : (
-              <>
-                <svg
-                  viewBox="0 0 80 80"
-                  className="mb-2 h-10 w-10 sm:h-12 sm:w-12"
-                  fill="none"
-                >
-                  <rect width="80" height="80" rx="16" fill="#F5A623" />
-                  <path
-                    d="M24 56c0-17.673 14.327-32 32-32v8c-13.255 0-24 10.745-24 24h-8z"
-                    fill="white"
-                  />
-                  <circle cx="52" cy="28" r="6" fill="white" />
-                </svg>
-                <span className="text-sm font-medium text-gray-700 group-hover:text-[#F5A623]">
-                  Flutterwave
-                </span>
-              </>
+              <Image
+                src="/flutterwave.png"
+                alt="Flutterwave"
+                width={160}
+                height={60}
+                className="h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
+              />
             )}
           </button>
         </div>
