@@ -18,6 +18,7 @@ const PUBLIC_API_PREFIXES = [
   "/api/states", // Public lookup data
   "/api/mail", // Donor-facing email endpoints (no auth required)
   "/api/s3", // S3 image proxy (public images)
+  "/api/dev", // Temporary local dev/testing routes
 ];
 
 const APP_ROUTE_PREFIXES = [

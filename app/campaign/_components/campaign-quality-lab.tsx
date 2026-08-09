@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/dialog";
 import { BreetCryptoDonationModal } from "@/components/crypto-details/BreetCryptoDonationModal";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { ProofTimeline } from "@/components/causes/proof-timeline"; 
 
 const DonationForm = dynamic(
   () => import("@/components/donation-form").then((mod) => mod.DonationForm),
@@ -87,7 +88,7 @@ const CommentsSection = dynamic(
   },
 );
 
-const tabs = ["Updates", "Comments", "FAQ"] as const;
+const tabs = ["Comments", "FAQ"] as const;
 const donationPresets = [1000, 10000, 100000, 1000000];
 const tipPresets = [100, 500, 1000];
 
@@ -197,6 +198,7 @@ type CampaignQualityLabProps = {
   profile: ProfileSummary;
   creatorHasWallet: boolean;
   currentUserId?: string;
+  proofUpdates?: any[];
 };
 
 function StatItem({
@@ -422,94 +424,94 @@ function TrustPanel({
             />
           </div>
 
-      <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-        {tiles.map((tile: any) => (
-          <div
-            key={tile.title}
-            className="rounded-2xl border border-white/15 bg-white/[0.055] p-4"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-white/60">
-                {tile.title}
-              </p>
-              <span
-                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${tile.badgeClass} ${tile.badgeTextClass}`}
+          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+            {tiles.map((tile: any) => (
+              <div
+                key={tile.title}
+                className="rounded-2xl border border-white/15 bg-white/[0.055] p-4"
               >
-                {tile.status}
-              </span>
-            </div>
-            <p className="mt-2 text-[13px] leading-5 text-white/80">
-              {tile.body}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {visibleProofMedia.length > 0 && (
-        <div className="mt-6 border-t border-white/10 pt-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-white/60">
-              Campaign evidence
-            </p>
-            <span className="text-[11px] text-white/45">
-              {visibleProofMedia.length}{" "}
-              {visibleProofMedia.length === 1 ? "image" : "images"}
-            </span>
-          </div>
-          <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
-            {visibleProofMedia.map((item: any, index: any) => (
-              <button
-                key={`${item}-${index}`}
-                type="button"
-                onClick={() => setLightboxIndex(index)}
-                aria-label="View evidence image full size"
-                className="group relative aspect-[4/3] w-[78%] shrink-0 snap-center overflow-hidden rounded-xl border border-white/15 bg-[#08162B] sm:aspect-video sm:w-auto"
-              >
-                <Image
-                  src={getMediaUrl(item)}
-                  alt=""
-                  fill
-                  className="scale-110 object-cover opacity-35 blur-xl"
-                  loading="lazy"
-                  unoptimized={isProxyMediaUrl(getMediaUrl(item))}
-                  aria-hidden="true"
-                />
-                <Image
-                  src={getMediaUrl(item)}
-                  alt=""
-                  fill
-                  className="object-contain transition-transform duration-200 group-hover:scale-[1.03]"
-                  loading="lazy"
-                  unoptimized={isProxyMediaUrl(getMediaUrl(item))}
-                  onError={() =>
-                    setFailedEvidence((current) => {
-                      const next = new Set(current);
-                      next.add(item);
-                      return next;
-                    })
-                  }
-                />
-                <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/30 group-hover:opacity-100">
-                  <span className="rounded-full bg-black/60 px-3 py-1 text-[11px] font-medium text-white">
-                    View full size
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-white/60">
+                    {tile.title}
+                  </p>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${tile.badgeClass} ${tile.badgeTextClass}`}
+                  >
+                    {tile.status}
                   </span>
-                </span>
-              </button>
+                </div>
+                <p className="mt-2 text-[13px] leading-5 text-white/80">
+                  {tile.body}
+                </p>
+              </div>
             ))}
           </div>
 
-          <ImageLightbox
-            images={visibleProofMedia.map((item, mediaIndex) => ({
-              src: getMediaUrl(item),
-              alt: `${cause.title} evidence ${mediaIndex + 1}`,
-            }))}
-            currentIndex={lightboxIndex}
-            onIndexChange={setLightboxIndex}
-            onClose={() => setLightboxIndex(null)}
-            label={`${cause.title} campaign evidence`}
-          />
-        </div>
-      )}
+          {visibleProofMedia.length > 0 && (
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-white/60">
+                  Campaign evidence
+                </p>
+                <span className="text-[11px] text-white/45">
+                  {visibleProofMedia.length}{" "}
+                  {visibleProofMedia.length === 1 ? "image" : "images"}
+                </span>
+              </div>
+              <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
+                {visibleProofMedia.map((item: any, index: any) => (
+                  <button
+                    key={`${item}-${index}`}
+                    type="button"
+                    onClick={() => setLightboxIndex(index)}
+                    aria-label="View evidence image full size"
+                    className="group relative aspect-[4/3] w-[78%] shrink-0 snap-center overflow-hidden rounded-xl border border-white/15 bg-[#08162B] sm:aspect-video sm:w-auto"
+                  >
+                    <Image
+                      src={getMediaUrl(item)}
+                      alt=""
+                      fill
+                      className="scale-110 object-cover opacity-35 blur-xl"
+                      loading="lazy"
+                      unoptimized={isProxyMediaUrl(getMediaUrl(item))}
+                      aria-hidden="true"
+                    />
+                    <Image
+                      src={getMediaUrl(item)}
+                      alt=""
+                      fill
+                      className="object-contain transition-transform duration-200 group-hover:scale-[1.03]"
+                      loading="lazy"
+                      unoptimized={isProxyMediaUrl(getMediaUrl(item))}
+                      onError={() =>
+                        setFailedEvidence((current) => {
+                          const next = new Set(current);
+                          next.add(item);
+                          return next;
+                        })
+                      }
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/30 group-hover:opacity-100">
+                      <span className="rounded-full bg-black/60 px-3 py-1 text-[11px] font-medium text-white">
+                        View full size
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <ImageLightbox
+                images={visibleProofMedia.map((item, mediaIndex) => ({
+                  src: getMediaUrl(item),
+                  alt: `${cause.title} evidence ${mediaIndex + 1}`,
+                }))}
+                currentIndex={lightboxIndex}
+                onIndexChange={setLightboxIndex}
+                onClose={() => setLightboxIndex(null)}
+                label={`${cause.title} campaign evidence`}
+              />
+            </div>
+          )}
         </div>
       </details>
     </motion.div>
@@ -634,10 +636,7 @@ function PledgesCard({
 
 function MediaCard({ media, cause }: { media: string[]; cause: CauseDetail }) {
   return (
-    <motion.div
-      className="overflow-hidden"
-      variants={fadeUp}
-    >
+    <motion.div className="overflow-hidden" variants={fadeUp}>
       {media.length > 0 || cause.image ? (
         <MultimediaCarousel
           media={media}
@@ -752,12 +751,6 @@ function TabsCard({
       </div>
 
       <div className="p-5 sm:p-7">
-        {activeTab === "Updates" && (
-          <div className="rounded-2xl border border-dashed border-[#CCD6E0] bg-[#F8FAFC] p-6 text-sm leading-6 text-[#53647A]">
-            No updates yet. The organiser will post timeline updates here.
-          </div>
-        )}
-
         {activeTab === "Comments" && (
           <div className="rounded-2xl bg-[#F8FAFC] p-4 sm:p-5">
             <div className="flex items-center gap-2 text-sm text-slate-600">
@@ -904,9 +897,7 @@ function DonateCard({
                     type="text"
                     inputMode="numeric"
                     maxLength={16}
-                    value={
-                      donation ? donation.toLocaleString("en-US") : ""
-                    }
+                    value={donation ? donation.toLocaleString("en-US") : ""}
                     onChange={(event) => {
                       const next = event.target.value.replace(/\D/g, "");
                       const capped = next.slice(0, 12);
@@ -1076,9 +1067,9 @@ function CampaignHealthCard({
   const recentDonors = useMemo(
     () =>
       donors.map((donor) => ({
-      id: donor.id,
-      name: donor.name || "Anonymous",
-      amount: donor.amount || 0,
+        id: donor.id,
+        name: donor.name || "Anonymous",
+        amount: donor.amount || 0,
       })),
     [donors],
   );
@@ -1337,6 +1328,7 @@ export default function CampaignQualityLab({
   comments,
   profile,
   currentUserId,
+  proofUpdates = [],
 }: CampaignQualityLabProps) {
   const [donation, setDonation] = useState(0);
   const [activeTab, setActiveTab] = useState<TabKey>("Comments");
@@ -1396,10 +1388,7 @@ export default function CampaignQualityLab({
           initial="hidden"
           animate="show"
         >
-          <HeroSummary
-            cause={cause}
-            donorsCount={donors.length}
-          />
+          <HeroSummary cause={cause} donorsCount={donors.length} />
         </motion.div>
 
         <aside className="contents lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:block lg:self-start">
@@ -1487,6 +1476,7 @@ export default function CampaignQualityLab({
               </div>
             </motion.div>
             <TrustPanel baseUrl={baseUrl} cause={cause} />
+            <ProofTimeline updates={proofUpdates} />
           </section>
 
           <section>
@@ -1503,26 +1493,30 @@ export default function CampaignQualityLab({
       </main>
 
       {!isDonateVisible && (
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#D8E0E8] bg-white/95 px-4 py-3 shadow-[0_-16px_40px_rgba(16,35,63,0.14)] backdrop-blur-xl sm:hidden">
-        <div className="mx-auto flex max-w-md items-center gap-4">
-          <div className="min-w-0">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#65758B]">Raised</p>
-            <p className="truncate text-sm font-bold text-[#10233F]">₦{cause.raised.toLocaleString()}</p>
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#D8E0E8] bg-white/95 px-4 py-3 shadow-[0_-16px_40px_rgba(16,35,63,0.14)] backdrop-blur-xl sm:hidden">
+          <div className="mx-auto flex max-w-md items-center gap-4">
+            <div className="min-w-0">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#65758B]">
+                Raised
+              </p>
+              <p className="truncate text-sm font-bold text-[#10233F]">
+                ₦{cause.raised.toLocaleString()}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                donateRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }}
+              className="flex-1 rounded-xl bg-[#235DA7] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_-12px_rgba(35,93,167,0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7]"
+            >
+              Donate now
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              donateRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              });
-            }}
-            className="flex-1 rounded-xl bg-[#235DA7] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_-12px_rgba(35,93,167,0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7]"
-          >
-            Donate now
-          </button>
         </div>
-      </div>
       )}
     </div>
   );

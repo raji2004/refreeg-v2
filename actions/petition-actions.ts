@@ -70,7 +70,7 @@ export async function getPetition(
   } as unknown as PetitionWithUser;
 }
 
-async function uploadFileToS3(
+export async function uploadFileToS3(
   file: File,
   userId: string,
   petitionId: string,
