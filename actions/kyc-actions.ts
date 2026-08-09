@@ -26,10 +26,11 @@ export async function getVerificationStatus(
     });
 
     // Automatically sync pending Didit sessions to handle missed webhooks (e.g. local dev)
-    if (data?.status === "pending" && data?.document_type === "didit" && data?.document_url?.startsWith("https://verification.didit.me/v3/session/")) {
-      try {
-        const sessionId = data.document_url.split('/').pop();
-        if (sessionId) {
+    if (data?.status === "pending" && data?.document_type === "didit") {
+      if (data.document_url?.includes(":::")) {
+        try {
+          const sessionId = data.document_url.split(':::')[0];
+          if (sessionId) {
           const apiKey = process.env.DIDIT_API_KEY || process.env.DIDIT_CLIENT_SECRET || "";
           // The Didit API may not require the trailing slash depending on version, try without first
           const diditRes = await fetch(`https://verification.didit.me/v3/session/${sessionId}`, {
@@ -46,11 +47,18 @@ export async function getVerificationStatus(
               console.log(`[KYC Sync] Found updated Didit session ${sessionId} with status ${sessionStatus}, forwarding to webhook...`);
               const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
               
+              // Normalize the GET session API response to match the webhook payload shape
+              const webhookPayload = {
+                ...sessionData,
+                session_id: sessionData.session_id || sessionData.id || sessionId,
+                vendor_data: sessionData.vendor_data || sessionData.vendorData || data.user_id,
+              };
+              
               // Simulate the webhook
               const webhookRes = await fetch(`${appUrl}/api/webhooks/didit`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(sessionData)
+                body: JSON.stringify(webhookPayload)
               });
 
               if (webhookRes.ok) {
@@ -61,15 +69,28 @@ export async function getVerificationStatus(
                   data = updated;
                 }
               }
+            } else if (sessionStatus && ["not started", "in progress", "pending"].includes(sessionStatus)) {
+              // The user started the session but closed the window before finishing.
+              data.status = "in_progress" as any;
             }
           }
         }
       } catch (syncError) {
         console.error("[KYC Sync] Error syncing Didit session:", syncError);
       }
+    } else {
+      // Backward compatibility: If the session was saved before we added the UUID format, 
+      // we can't sync it. Just treat it as in_progress so the user isn't permanently stuck.
+      data.status = "in_progress" as any;
     }
+  }
 
     if (data?.document_url) {
+      // Clean up the URL if it contains the Didit session UUID
+      if (data.document_type === "didit" && data.document_url.includes(":::")) {
+        data.document_url = data.document_url.split(':::')[1] || data.document_url;
+      }
+      
       // Use S3 proxy for generating the URL
       if (!data.document_url.startsWith("http") && !data.document_url.startsWith("/api/s3/image")) {
         (data as any).document_url = `/api/s3/image?key=${encodeURIComponent(data.document_url)}`;

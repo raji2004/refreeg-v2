@@ -22,13 +22,27 @@ export async function POST(request: Request) {
       orderBy: { created_at: "desc" }
     });
 
-    if (existingPendingKyc && existingPendingKyc.document_url?.startsWith("https://verification.didit.me")) {
-      console.log(`[Didit] Resuming existing session for user ${user.id}`);
-      // Return the saved session URL directly
-      return NextResponse.json({ 
-        session_id: "resumed-session", // We don't have the clean session ID but the frontend only uses the URL
-        url: existingPendingKyc.document_url 
-      });
+    if (existingPendingKyc) {
+      if (existingPendingKyc.document_url?.includes(":::")) {
+        console.log(`[Didit] Resuming existing session for user ${user.id}`);
+        
+        const parts = existingPendingKyc.document_url.split(":::");
+        const sid = parts[0];
+        const sessionUrl = parts[1];
+        
+        // Return the saved session URL directly
+        return NextResponse.json({ 
+          session_id: sid,
+          url: sessionUrl
+        });
+      } else {
+        // This is a legacy session that doesn't have a UUID saved. We can't sync it.
+        // Delete it so we can generate a fresh, properly tracked session.
+        console.log(`[Didit] Deleting legacy unsyncable session for user ${user.id}`);
+        await prisma.kyc_verifications.delete({
+          where: { id: existingPendingKyc.id }
+        });
+      }
     }
 
     // 2. Call Didit API to create a new session
@@ -55,12 +69,12 @@ export async function POST(request: Request) {
     const sessionId = data.session_id;
     const sessionUrl = data.url || `https://verification.didit.me/v3/session/${sessionId}`;
 
-    // 3. Save the newly generated link to the database
+    // 3. Save the newly generated link to the database along with its UUID session_id
     await prisma.kyc_verifications.create({
       data: {
         user_id: user.id,
         document_type: "didit",
-        document_url: sessionUrl,
+        document_url: `${sessionId}:::${sessionUrl}`,
         status: "pending",
         verification_notes: "Session initialized via Didit",
         full_name: (user as any).full_name || (user as any).fullName || "Didit User",

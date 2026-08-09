@@ -15,12 +15,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log("Didit webhook received:", body);
 
-    const sessionId = body.session_id;
-    const status = body.status; // e.g. "Approved" or "Declined"
+    // Make extraction robust for Didit V3 payloads which might use camelCase or different keys
+    const sessionId = body.session_id || body.id || body.session || (body.data && body.data.id) || (body.data && body.data.session_id);
+    const status = body.status || (body.data && body.data.status); // e.g. "Approved" or "Declined"
 
-    const vendorData = body.vendor_data; // This is the user.id we sent!
+    const vendorData = body.vendor_data || body.vendorData || (body.data && body.data.vendor_data) || (body.data && body.data.vendorData); // This is the user.id we sent!
 
     if (!sessionId) {
+      console.error("[Didit Webhook] Missing session_id in payload:", body);
       return NextResponse.json({ error: "Missing session_id" }, { status: 400 });
     }
 
@@ -144,26 +146,30 @@ export async function POST(request: Request) {
     if (userProfile?.email) {
       const userName = kyc.full_name || "User";
       
-      if (isApproved) {
-        await sendKycApprovedEmail(userProfile.email, userName);
-        try {
-          await issueReferralRewardOnKycApproval(kyc.user_id);
-        } catch (err) {
-          console.error("Referral reward error:", err);
+      try {
+        if (isApproved) {
+          await sendKycApprovedEmail(userProfile.email, userName);
+          try {
+            await issueReferralRewardOnKycApproval(kyc.user_id);
+          } catch (err) {
+            console.error("Referral reward error:", err);
+          }
+        } else if (isRejected) {
+          await sendKycRejectedEmail(userProfile.email, userName, rejectionReason);
+        } else if (isResubmitted) {
+          await sendKycResubmittedEmail(userProfile.email, userName, rejectionReason);
+        } else if (newStatus === "pending" && requiresManualReview) {
+          // Didit is explicitly in manual review
+          await sendKycSubmittedEmail(userProfile.email, userName);
+          await sendKycSubmissionAdminNotification(
+            userProfile.email,
+            userName,
+            kyc.user_id,
+            "https://verification.didit.me/admin" // Or wherever admins check Didit
+          );
         }
-      } else if (isRejected) {
-        await sendKycRejectedEmail(userProfile.email, userName, rejectionReason);
-      } else if (isResubmitted) {
-        await sendKycResubmittedEmail(userProfile.email, userName, rejectionReason);
-      } else if (newStatus === "pending" && requiresManualReview) {
-        // Didit is explicitly in manual review
-        await sendKycSubmittedEmail(userProfile.email, userName);
-        await sendKycSubmissionAdminNotification(
-          userProfile.email,
-          userName,
-          kyc.user_id,
-          "https://verification.didit.me/admin" // Or wherever admins check Didit
-        );
+      } catch (emailError) {
+        console.error("Failed to send KYC emails, but DB was updated:", emailError);
       }
     }
 
