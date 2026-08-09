@@ -243,8 +243,6 @@ export async function approveProofUpdate(updateId: string) {
     return { pauseLifted };
   });
 
-  // TODO: Wire up your sendMail functions here (e.g., sendProofUpdateApprovedEmail)
-
   revalidatePath(`/causes/${update.cause_id}`);
   revalidatePath("/causes");
   revalidatePath("/dashboard/admin/proof-updates");
@@ -254,8 +252,12 @@ export async function approveProofUpdate(updateId: string) {
       where: { id: update.cause_id },
       include: { user: { select: { email: true, fullName: true } } },
     });
+
     if (causeWithUser?.user?.email) {
-      const { sendProofUpdateApprovedEmail } = await import("@/services/mail");
+      const { sendProofUpdateApprovedEmail, sendProofUpdatePublishedEmail } =
+        await import("@/services/mail");
+
+      // 1. Email the creator
       await sendProofUpdateApprovedEmail({
         to: causeWithUser.user.email,
         userName: causeWithUser.user.fullName || "there",
@@ -263,10 +265,41 @@ export async function approveProofUpdate(updateId: string) {
         causeUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/causes/${update.cause_id}`,
         pauseLifted: result.pauseLifted,
       });
+
+      const followers = await prisma.campaign_follows.findMany({
+        where: { cause_id: update.cause_id },
+        select: { email: true },
+      });
+      const donors = await prisma.donation.findMany({
+        where: { causeId: update.cause_id },
+        select: { email: true },
+        distinct: ["email"],
+      });
+
+      const allEmails = new Set<string>();
+      followers.forEach((f) => f.email && allEmails.add(f.email));
+      donors.forEach((d) => d.email && allEmails.add(d.email));
+
+  
+      allEmails.delete(causeWithUser.user.email);
+
+      const causeUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/causes/${update.cause_id}`;
+
+      // Fire and forget - don't await all of them to avoid slowing down the admin action
+      Array.from(allEmails).forEach((email) => {
+        sendProofUpdatePublishedEmail({
+          to: email,
+          causeTitle: causeWithUser.title,
+          causeUrl,
+        }).catch((err) =>
+          console.error(`Failed to send published email to ${email}:`, err),
+        );
+      });
     }
   } catch (emailError) {
-    console.error("Failed to send approval email:", emailError);
+    console.error("Failed to send approval/published emails:", emailError);
   }
+
   return { success: true, pauseLifted: result.pauseLifted };
 }
 
@@ -297,8 +330,6 @@ export async function rejectProofUpdate(updateId: string, reason: string) {
       data: { status: "pending", submitted_update_id: null },
     });
   });
-
-  // TODO: Wire up your sendMail functions here (e.g., sendProofUpdateRejectedEmail)
 
   revalidatePath("/dashboard/admin/proof-updates");
 
