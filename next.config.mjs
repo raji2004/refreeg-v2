@@ -13,6 +13,7 @@ const nextConfig = {
   // Minimal self-contained server bundle (.next/standalone) instead of shipping
   // the whole node_modules to EC2 — keeps each deploy release small on disk.
   output: "standalone",
+  serverExternalPackages: ["sharp"],
   // Include email HTML templates and the Prisma query engine binaries in the
   // standalone/serverless bundle. Without this, fs.readFileSync cannot find
   // them at runtime because Next.js only traces statically-imported files by
@@ -68,7 +69,7 @@ const nextConfig = {
     // Fix Handlebars require.extensions error
     config.resolve.alias = {
       ...config.resolve.alias,
-      handlebars: 'handlebars/dist/handlebars.js'
+      handlebars: "handlebars/dist/handlebars.js",
     };
 
     // Aceternity UI may import CSS that requires MiniCssExtractPlugin in prod
@@ -101,12 +102,21 @@ const nextConfig = {
     return [
       {
         // apply to all routes including static assets
-        source: '/:path*',
+        source: "/:path*",
         headers: [
-          { key: 'Access-Control-Allow-Origin', value: 'https://apps.refreeg.com' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,PATCH,DELETE,OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-Requested-With, Content-Type, Accept, Authorization' },
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          {
+            key: "Access-Control-Allow-Origin",
+            value: "https://apps.refreeg.com",
+          },
+          {
+            key: "Access-Control-Allow-Methods",
+            value: "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+          },
+          {
+            key: "Access-Control-Allow-Headers",
+            value: "X-Requested-With, Content-Type, Accept, Authorization",
+          },
+          { key: "Access-Control-Allow-Credentials", value: "true" },
         ],
       },
     ];

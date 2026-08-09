@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createCryptoDonation } from "@/actions/crypto-actions";
+import { syncMilestoneRequirements } from "@/lib/proof-milestones";
 
 export const dynamic = "force-dynamic";
 
@@ -135,6 +136,12 @@ export async function POST(req: Request) {
       network: verifiedNetwork,
       currency: "USDT",
     });
+
+    try {
+      await syncMilestoneRequirements(causeId);
+    } catch (e) {
+      console.error("Error syncing proof milestones for crypto:", e);
+    }
 
     try {
       const creatorProfile = await prisma.user.findFirst({

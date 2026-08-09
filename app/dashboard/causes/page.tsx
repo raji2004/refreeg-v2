@@ -2,11 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Plus, Sparkles } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { MyCausesList } from "@/components/my-causes-list";
 import { getCurrentUser } from "@/actions/auth-actions";
+import { ProofComplianceBanner } from "@/components/proof/proof-compliance-banner";
 
-const validStatuses = ["all", "approved", "pending", "rejected"];
+
+const validStatuses = ["all", "approved", "pending", "rejected", "suspended"];
 
 export default async function MyCausesPage({
   searchParams,
@@ -49,6 +51,10 @@ export default async function MyCausesPage({
         </Link>
       </div>
 
+      <div className="mt-5">
+        <ProofComplianceBanner userId={user.id} />
+      </div>
+
       <Tabs defaultValue={status} className="mt-5 space-y-5">
         <TabsList className="h-auto max-w-full justify-start gap-1 overflow-x-auto rounded-2xl bg-slate-100/80 p-1.5">
           <TabsTrigger
@@ -64,6 +70,14 @@ export default async function MyCausesPage({
             className="h-9 rounded-xl px-4 text-slate-600 data-[state=active]:text-emerald-700"
           >
             <Link href="/dashboard/causes?status=approved">Active</Link>
+          </TabsTrigger>
+          {/* 👇 ADDED SUSPENDED TAB 👇 */}
+          <TabsTrigger
+            value="suspended"
+            asChild
+            className="h-9 rounded-xl px-4 text-slate-600 data-[state=active]:text-amber-700"
+          >
+            <Link href="/dashboard/causes?status=suspended">Suspended</Link>
           </TabsTrigger>
           <TabsTrigger
             value="pending"

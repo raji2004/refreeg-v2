@@ -38,6 +38,8 @@ export interface Cause {
     email: string;
     profile_photo: string | null;
   };
+  compliance_paused?: boolean;
+  compliance_paused_at?: string;
 }
 export interface CauseWithSubHeading extends Cause {
   sub_heading: subHeadingWithSubDescription[];
