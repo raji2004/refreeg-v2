@@ -5,6 +5,13 @@ import type {
   subHeadingWithSubDescription,
 } from "./common-types";
 
+export type DeviceLocation = {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  capturedAt: number;
+};
+
 export interface Cause {
   id: string;
   user_id: string;
@@ -71,6 +78,7 @@ export interface CauseFormData {
   video_links?: string[];
   summary?: string | null;
   location: string;
+  deviceLocation?: DeviceLocation | null;
 }
 export interface CauseFilterOptions {
   category?: string;

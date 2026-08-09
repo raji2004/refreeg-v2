@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { minimalJpeg, shortWebm } from "./files";
+import { formatFundingGoalInput } from "../../lib/funding-goal";
 
 export async function pickCalendarDay(
   page: Page,
@@ -96,10 +97,33 @@ export async function gotoCreateCauseVisualImpact(
   await expect(page.locator("#title")).toHaveValue(title);
 
   await page.locator("#summary").fill(summary);
-  await page.locator("#location").fill(location);
+  const useCurrentLocation = page.getByRole("button", {
+    name: /Use my location/i,
+  });
+  if (
+    await useCurrentLocation.isVisible({ timeout: 2_000 }).catch(() => false)
+  ) {
+    await page.context().grantPermissions(["geolocation"], {
+      origin: new URL(page.url()).origin,
+    });
+    await page.context().setGeolocation({
+      latitude: 6.5244,
+      longitude: 3.3792,
+      accuracy: 50,
+    });
+    await useCurrentLocation.click();
+    await expect(page.locator("#location")).not.toHaveValue("", {
+      timeout: 20_000,
+    });
+  } else {
+    // Backward-compatible path for production runs during a rolling deploy.
+    await page.locator("#location").fill(location);
+  }
   await selectCategory(page, category);
   await page.locator("#goal").fill(goal);
-  await expect(page.locator("#goal")).toHaveValue(goal);
+  await expect(page.locator("#goal")).toHaveValue(
+    formatFundingGoalInput(goal),
+  );
 
   await page.keyboard.press("Escape").catch(() => undefined);
   await advanceFromStep1(page);
