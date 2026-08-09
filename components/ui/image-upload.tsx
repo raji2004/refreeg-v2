@@ -25,6 +25,9 @@ interface ImageUploadProps {
   description?: string;
   enableCrop?: boolean;
   cropAspect?: number;
+  cropRequired?: boolean;
+  cropOutputWidth?: number;
+  cropOutputHeight?: number;
   autoNormalize?: boolean;
 }
 
@@ -52,8 +55,6 @@ function acceptAllowsImages(accept: AcceptProp): boolean {
 }
 
 const DEFAULT_CROP_ASPECT = 16 / 9;
-const MIN_CROP_WIDTH = 18;
-const MIN_CROP_HEIGHT = 18;
 
 type CropRect = {
   x: number;
@@ -62,16 +63,12 @@ type CropRect = {
   height: number;
 };
 
-type DragMode =
-  | "move"
-  | "n"
-  | "s"
-  | "e"
-  | "w"
-  | "nw"
-  | "ne"
-  | "sw"
-  | "se";
+type CropBatch = {
+  files: File[];
+  imageIndexes: number[];
+  position: number;
+  results: Array<File | undefined>;
+};
 
 const readFileAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -157,11 +154,48 @@ const normalizeImageToAspect = async (
 };
 
 const getInitialCropRect = (): CropRect => ({
-  x: 20,
-  y: 18,
-  width: 60,
-  height: 48,
+  x: 10,
+  y: 10,
+  width: 80,
+  height: 80,
 });
+
+function getCropSetup(imageAspect: number, cropAspect: number) {
+  const safeImageAspect =
+    Number.isFinite(imageAspect) && imageAspect > 0 ? imageAspect : cropAspect;
+  const safeCropAspect =
+    Number.isFinite(cropAspect) && cropAspect > 0
+      ? cropAspect
+      : DEFAULT_CROP_ASPECT;
+
+  const bounds: CropRect =
+    safeImageAspect >= safeCropAspect
+      ? {
+          x: 0,
+          y: (100 - (safeCropAspect / safeImageAspect) * 100) / 2,
+          width: 100,
+          height: (safeCropAspect / safeImageAspect) * 100,
+        }
+      : {
+          x: (100 - (safeImageAspect / safeCropAspect) * 100) / 2,
+          y: 0,
+          width: (safeImageAspect / safeCropAspect) * 100,
+          height: 100,
+        };
+
+  // The preview frame uses the requested output aspect ratio, so equal
+  // percentage width and height produces an exact crop of that ratio.
+  const size = Math.min(bounds.width, bounds.height);
+  return {
+    bounds,
+    cropRect: {
+      x: bounds.x + (bounds.width - size) / 2,
+      y: bounds.y + (bounds.height - size) / 2,
+      width: size,
+      height: size,
+    },
+  };
+}
 
 const createCroppedImage = async ({
   file,
@@ -170,6 +204,8 @@ const createCroppedImage = async ({
   cropRect,
   frameWidth,
   frameHeight,
+  targetWidth,
+  targetHeight,
 }: {
   file: File;
   src: string;
@@ -177,6 +213,8 @@ const createCroppedImage = async ({
   cropRect: { x: number; y: number; width: number; height: number };
   frameWidth: number;
   frameHeight: number;
+  targetWidth?: number;
+  targetHeight?: number;
 }) => {
   const image = await loadImage(src);
   const baseScale = Math.min(frameWidth / image.width, frameHeight / image.height);
@@ -202,15 +240,15 @@ const createCroppedImage = async ({
     Math.min(image.height - sourceY, cropRect.height / (baseScale * zoom)),
   );
 
-  const outputWidth = Math.round(sourceWidth);
-  const outputHeight = Math.round(sourceHeight);
+  const outputWidth = targetWidth ?? Math.round(sourceWidth);
+  const outputHeight = targetHeight ?? Math.round(sourceHeight);
   const canvas = document.createElement("canvas");
   canvas.width = outputWidth;
   canvas.height = outputHeight;
 
   const context = canvas.getContext("2d");
   if (!context) {
-    return file;
+    throw new Error("Canvas is unavailable");
   }
 
   context.drawImage(
@@ -233,7 +271,7 @@ const createCroppedImage = async ({
   });
 
   if (!blob) {
-    return file;
+    throw new Error("Could not create the cropped image");
   }
 
   return new File(
@@ -253,18 +291,35 @@ export function ImageUpload({
   description,
   enableCrop = true,
   cropAspect = DEFAULT_CROP_ASPECT,
+  cropRequired = false,
+  cropOutputWidth,
+  cropOutputHeight,
   autoNormalize = false,
 }: ImageUploadProps) {
   const [pendingFile, setPendingFile] = React.useState<File | null>(null);
   const [cropSource, setCropSource] = React.useState<string | null>(null);
   const [zoom, setZoom] = React.useState([1]);
   const [cropRect, setCropRect] = React.useState<CropRect>(getInitialCropRect);
+  const [cropBounds, setCropBounds] = React.useState<CropRect>({
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+  });
+  const [cropError, setCropError] = React.useState<string | null>(null);
+  const [preparationError, setPreparationError] = React.useState<string | null>(
+    null,
+  );
   const [isCropping, setIsCropping] = React.useState(false);
   const [isNormalizing, setIsNormalizing] = React.useState(false);
   const [isDragging, setIsDragging] = React.useState(false);
+  const [cropProgress, setCropProgress] = React.useState({
+    current: 1,
+    total: 1,
+  });
   const previewFrameRef = React.useRef<HTMLDivElement | null>(null);
+  const cropBatchRef = React.useRef<CropBatch | null>(null);
   const dragStateRef = React.useRef<{
-    mode: DragMode;
     startX: number;
     startY: number;
     startRect: CropRect;
@@ -273,10 +328,9 @@ export function ImageUpload({
   const shouldCropFile = React.useCallback(
     (file: File) =>
       enableCrop &&
-      maxFiles === 1 &&
       acceptAllowsImages(accept) &&
       file.type.startsWith("image/"),
-    [accept, enableCrop, maxFiles],
+    [accept, enableCrop],
   );
 
   const resetCropState = React.useCallback(() => {
@@ -284,18 +338,94 @@ export function ImageUpload({
     setCropSource(null);
     setZoom([1]);
     setCropRect(getInitialCropRect());
+    setCropBounds({ x: 0, y: 0, width: 100, height: 100 });
+    setCropError(null);
+    setPreparationError(null);
     setIsCropping(false);
     setIsDragging(false);
+    setCropProgress({ current: 1, total: 1 });
+    cropBatchRef.current = null;
     dragStateRef.current = null;
   }, []);
+
+  const prepareCropFile = React.useCallback(
+    async (file: File) => {
+      try {
+        const preview = await readFileAsDataUrl(file);
+        const image = await loadImage(preview);
+        const setup = getCropSetup(
+          image.naturalWidth / image.naturalHeight,
+          cropAspect,
+        );
+        setPendingFile(file);
+        setCropSource(preview);
+        setZoom([1]);
+        setCropBounds(setup.bounds);
+        setCropRect(setup.cropRect);
+        setCropError(null);
+        return true;
+      } catch (error) {
+        console.error("Failed to prepare image crop preview:", error);
+        return false;
+      }
+    },
+    [cropAspect],
+  );
+
+  const completeCropFile = React.useCallback(
+    async (completedFile: File) => {
+      const batch = cropBatchRef.current;
+      if (!batch) {
+        onUpload([completedFile]);
+        resetCropState();
+        return;
+      }
+
+      const currentIndex = batch.imageIndexes[batch.position];
+      batch.results[currentIndex] = completedFile;
+      let nextPosition = batch.position + 1;
+
+      while (nextPosition < batch.imageIndexes.length) {
+        batch.position = nextPosition;
+        const nextIndex = batch.imageIndexes[nextPosition];
+        const nextFile = batch.files[nextIndex];
+        if (await prepareCropFile(nextFile)) {
+          setCropProgress({
+            current: nextPosition + 1,
+            total: batch.imageIndexes.length,
+          });
+          return;
+        }
+
+        if (cropRequired) {
+          cropBatchRef.current = null;
+          setPendingFile(null);
+          setCropSource(null);
+          setPreparationError(
+            "Could not open the crop editor for one of these images. Try another JPG, PNG, or WebP file.",
+          );
+          return;
+        }
+
+        batch.results[nextIndex] = nextFile;
+        nextPosition += 1;
+      }
+
+      const completedBatch = batch.results.filter(
+        (file): file is File => Boolean(file),
+      );
+      resetCropState();
+      onUpload(completedBatch);
+    },
+    [cropRequired, onUpload, prepareCropFile, resetCropState],
+  );
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
       const [firstFile] = acceptedFiles;
 
-      if (!firstFile) {
-        return;
-      }
+      if (!firstFile) return;
+      setPreparationError(null);
 
       if (autoNormalize) {
         setIsNormalizing(true);
@@ -317,22 +447,49 @@ export function ImageUpload({
         return;
       }
 
-      if (shouldCropFile(firstFile)) {
-        try {
-          const preview = await readFileAsDataUrl(firstFile);
-          setPendingFile(firstFile);
-          setCropSource(preview);
-          setZoom([1]);
-          setCropRect(getInitialCropRect());
-          return;
-        } catch (error) {
-          console.error("Failed to prepare image crop preview:", error);
-        }
+      const imageIndexes = acceptedFiles.reduce<number[]>((indexes, file, index) => {
+        if (shouldCropFile(file)) indexes.push(index);
+        return indexes;
+      }, []);
+
+      if (imageIndexes.length === 0) {
+        onUpload(acceptedFiles);
+        return;
       }
 
-      onUpload(acceptedFiles);
+      const batch: CropBatch = {
+        files: acceptedFiles,
+        imageIndexes,
+        position: 0,
+        results: acceptedFiles.map((file) =>
+          shouldCropFile(file) ? undefined : file,
+        ),
+      };
+      cropBatchRef.current = batch;
+      setCropProgress({ current: 1, total: imageIndexes.length });
+
+      const firstImage = acceptedFiles[imageIndexes[0]];
+      if (await prepareCropFile(firstImage)) return;
+
+      if (cropRequired) {
+        cropBatchRef.current = null;
+        setPreparationError(
+          "Could not open the crop editor for this image. Try another JPG, PNG, or WebP file.",
+        );
+        return;
+      }
+
+      await completeCropFile(firstImage);
     },
-    [autoNormalize, cropAspect, onUpload, shouldCropFile],
+    [
+      autoNormalize,
+      completeCropFile,
+      cropAspect,
+      cropRequired,
+      onUpload,
+      prepareCropFile,
+      shouldCropFile,
+    ],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -365,31 +522,38 @@ export function ImageUpload({
         },
         frameWidth,
         frameHeight,
+        targetWidth: cropOutputWidth,
+        targetHeight: cropOutputHeight,
       });
-      onUpload([croppedFile]);
-      resetCropState();
+      await completeCropFile(croppedFile);
     } catch (error) {
       console.error("Failed to crop image:", error);
-      onUpload([pendingFile]);
-      resetCropState();
+      if (cropRequired) {
+        setCropError(
+          "Could not crop this image. Try another JPG, PNG, or WebP file.",
+        );
+      } else {
+        await completeCropFile(pendingFile);
+      }
+    } finally {
+      setIsCropping(false);
     }
   }, [
     cropRect,
     cropSource,
-    onUpload,
+    cropOutputHeight,
+    cropOutputWidth,
+    cropRequired,
+    completeCropFile,
     pendingFile,
-    resetCropState,
     zoom,
   ]);
 
   const handlePointerDown = React.useCallback(
-    (mode: DragMode) => (event: React.PointerEvent<HTMLDivElement>) => {
-      if (!cropSource) {
-        return;
-      }
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!cropSource) return;
 
       dragStateRef.current = {
-        mode,
         startX: event.clientX,
         startY: event.clientY,
         startRect: cropRect,
@@ -414,58 +578,28 @@ export function ImageUpload({
       const deltaY = event.clientY - dragState.startY;
       const deltaXPct = (deltaX / frame.clientWidth) * 100;
       const deltaYPct = (deltaY / frame.clientHeight) * 100;
-      const { mode, startRect } = dragState;
+      const { startRect } = dragState;
+      const currentZoom = zoom[0] ?? 1;
+      const zoomedBounds = {
+        x: 50 + (cropBounds.x - 50) * currentZoom,
+        y: 50 + (cropBounds.y - 50) * currentZoom,
+        width: cropBounds.width * currentZoom,
+        height: cropBounds.height * currentZoom,
+      };
+      const minX = Math.max(0, zoomedBounds.x);
+      const minY = Math.max(0, zoomedBounds.y);
+      const maxX =
+        Math.min(100, zoomedBounds.x + zoomedBounds.width) - startRect.width;
+      const maxY =
+        Math.min(100, zoomedBounds.y + zoomedBounds.height) - startRect.height;
 
-      let nextRect: CropRect = { ...startRect };
-
-      if (mode === "move") {
-        nextRect.x = Math.max(
-          0,
-          Math.min(100 - startRect.width, startRect.x + deltaXPct),
-        );
-        nextRect.y = Math.max(
-          0,
-          Math.min(100 - startRect.height, startRect.y + deltaYPct),
-        );
-      } else {
-        if (mode.includes("w")) {
-          const nextX = Math.max(
-            0,
-            Math.min(startRect.x + startRect.width - MIN_CROP_WIDTH, startRect.x + deltaXPct),
-          );
-          nextRect.width = startRect.width + (startRect.x - nextX);
-          nextRect.x = nextX;
-        }
-
-        if (mode.includes("e")) {
-          const nextWidth = Math.max(
-            MIN_CROP_WIDTH,
-            Math.min(100 - startRect.x, startRect.width + deltaXPct),
-          );
-          nextRect.width = nextWidth;
-        }
-
-        if (mode.includes("n")) {
-          const nextY = Math.max(
-            0,
-            Math.min(startRect.y + startRect.height - MIN_CROP_HEIGHT, startRect.y + deltaYPct),
-          );
-          nextRect.height = startRect.height + (startRect.y - nextY);
-          nextRect.y = nextY;
-        }
-
-        if (mode.includes("s")) {
-          const nextHeight = Math.max(
-            MIN_CROP_HEIGHT,
-            Math.min(100 - startRect.y, startRect.height + deltaYPct),
-          );
-          nextRect.height = nextHeight;
-        }
-      }
-
-      setCropRect(nextRect);
+      setCropRect({
+        ...startRect,
+        x: Math.max(minX, Math.min(maxX, startRect.x + deltaXPct)),
+        y: Math.max(minY, Math.min(maxY, startRect.y + deltaYPct)),
+      });
     },
-    [],
+    [cropBounds, zoom],
   );
 
   const handlePointerUp = React.useCallback(
@@ -517,13 +651,22 @@ export function ImageUpload({
               Images are automatically formatted to 16:9 without cropping out
               content.
             </p>
-          ) : enableCrop && maxFiles === 1 && acceptAllowsImages(accept) ? (
+          ) : enableCrop && acceptAllowsImages(accept) ? (
             <p className="text-[11px] text-muted-foreground/80">
-              You can crop the image before it is added.
+              {cropRequired
+                ? "A crop step opens after you select an image."
+                : maxFiles === 1
+                  ? "You can crop the image before it is added."
+                  : "A crop step opens for each selected image."}
             </p>
           ) : null}
         </div>
       </div>
+      {preparationError && (
+        <p className="mt-2 text-sm font-medium text-red-600" role="alert">
+          {preparationError}
+        </p>
+      )}
       <Dialog
         open={Boolean(pendingFile && cropSource)}
         onOpenChange={(open) => {
@@ -534,16 +677,25 @@ export function ImageUpload({
       >
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Crop Image</DialogTitle>
+            <DialogTitle>
+              Crop Image
+              {cropProgress.total > 1
+                ? ` ${cropProgress.current} of ${cropProgress.total}`
+                : ""}
+            </DialogTitle>
             <DialogDescription>
               Adjust the framing before adding the image. The crop uses a{" "}
-              {cropAspect === DEFAULT_CROP_ASPECT ? "16:9" : "custom"} frame.
+              {cropAspect === DEFAULT_CROP_ASPECT ? "16:9" : "custom"} frame
+              {cropOutputWidth && cropOutputHeight
+                ? ` with a recommended ${cropOutputWidth} × ${cropOutputHeight} px output.`
+                : "."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             <div
               ref={previewFrameRef}
-              className="relative aspect-video overflow-hidden rounded-2xl border border-slate-200 bg-slate-950"
+              className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-950"
+              style={{ aspectRatio: cropAspect }}
             >
               {cropSource && (
                 <Image
@@ -561,6 +713,7 @@ export function ImageUpload({
               )}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div
+                  data-crop-selection="fixed-aspect"
                   className={`pointer-events-auto absolute border-2 border-white bg-transparent shadow-[0_0_0_9999px_rgba(15,23,42,0.5)] ${
                     isDragging ? "cursor-grabbing" : "cursor-grab"
                   }`}
@@ -570,67 +723,20 @@ export function ImageUpload({
                     width: `${cropRect.width}%`,
                     height: `${cropRect.height}%`,
                   }}
-                  onPointerDown={handlePointerDown("move")}
+                  onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
                   onPointerCancel={handlePointerUp}
                 >
                   <div className="absolute inset-0 bg-transparent" />
-                  <div
-                    className="absolute inset-x-0 top-0 h-3 -translate-y-1/2 cursor-n-resize"
-                    onPointerDown={handlePointerDown("n")}
-                  />
-                  <div
-                    className="absolute inset-x-0 bottom-0 h-3 translate-y-1/2 cursor-s-resize"
-                    onPointerDown={handlePointerDown("s")}
-                  />
-                  <div
-                    className="absolute inset-y-0 left-0 w-3 -translate-x-1/2 cursor-w-resize"
-                    onPointerDown={handlePointerDown("w")}
-                  />
-                  <div
-                    className="absolute inset-y-0 right-0 w-3 translate-x-1/2 cursor-e-resize"
-                    onPointerDown={handlePointerDown("e")}
-                  />
-                  <div
-                    className="absolute left-0 top-0 h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize rounded-full border border-white bg-slate-950"
-                    onPointerDown={handlePointerDown("nw")}
-                  />
-                  <div
-                    className="absolute right-0 top-0 h-4 w-4 translate-x-1/2 -translate-y-1/2 cursor-ne-resize rounded-full border border-white bg-slate-950"
-                    onPointerDown={handlePointerDown("ne")}
-                  />
-                  <div
-                    className="absolute left-0 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-w-resize rounded-full border border-white bg-slate-950"
-                    onPointerDown={handlePointerDown("w")}
-                  />
-                  <div
-                    className="absolute right-0 top-1/2 h-4 w-4 translate-x-1/2 -translate-y-1/2 cursor-e-resize rounded-full border border-white bg-slate-950"
-                    onPointerDown={handlePointerDown("e")}
-                  />
-                  <div
-                    className="absolute bottom-0 left-0 h-4 w-4 -translate-x-1/2 translate-y-1/2 cursor-sw-resize rounded-full border border-white bg-slate-950"
-                    onPointerDown={handlePointerDown("sw")}
-                  />
-                  <div
-                    className="absolute bottom-0 right-0 h-4 w-4 translate-x-1/2 translate-y-1/2 cursor-se-resize rounded-full border border-white bg-slate-950"
-                    onPointerDown={handlePointerDown("se")}
-                  />
-                  <div
-                    className="absolute bottom-0 left-1/2 h-4 w-4 -translate-x-1/2 translate-y-1/2 cursor-s-resize rounded-full border border-white bg-slate-950"
-                    onPointerDown={handlePointerDown("s")}
-                  />
-                  <div
-                    className="absolute left-1/2 top-0 h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-n-resize rounded-full border border-white bg-slate-950"
-                    onPointerDown={handlePointerDown("n")}
-                  />
                 </div>
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-4">
                 <p className="text-xs text-slate-500">
-                  Drag the box, edges, or corners to choose the crop.
+                  Drag the frame to position the crop, then use zoom for a
+                  tighter shot.
                 </p>
                 <span className="text-xs text-slate-500">Zoom</span>
               </div>
@@ -645,6 +751,11 @@ export function ImageUpload({
                 thumbClassName="h-6 w-6 border-0 bg-slate-950 shadow-[0_6px_18px_rgba(15,23,42,0.32)] focus-visible:ring-2 focus-visible:ring-slate-900/20 focus-visible:ring-offset-2"
               />
             </div>
+            {cropError && (
+              <p className="text-sm font-medium text-red-600" role="alert">
+                {cropError}
+              </p>
+            )}
           </div>
           <DialogFooter className="gap-2 pt-2 sm:gap-0">
             <Button
@@ -656,27 +767,28 @@ export function ImageUpload({
             >
               Cancel
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                if (pendingFile) {
-                  onUpload([pendingFile]);
-                  resetCropState();
-                }
-              }}
-              disabled={isCropping}
-              className="w-full bg-slate-100 text-slate-800 hover:bg-slate-200 sm:w-auto"
-            >
-              Use Original
-            </Button>
+            {!cropRequired && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  if (pendingFile) {
+                    void completeCropFile(pendingFile);
+                  }
+                }}
+                disabled={isCropping}
+                className="w-full bg-slate-100 text-slate-800 hover:bg-slate-200 sm:w-auto"
+              >
+                Use Original
+              </Button>
+            )}
             <Button
               type="button"
               onClick={handleCropConfirm}
               disabled={isCropping}
               className="w-full bg-slate-900 text-white hover:bg-slate-800 sm:w-auto"
             >
-              {isCropping ? "Cropping..." : "Apply Crop"}
+              {isCropping ? "Cropping..." : "Apply"}
             </Button>
           </DialogFooter>
         </DialogContent>

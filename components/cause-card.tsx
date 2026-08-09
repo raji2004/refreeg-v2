@@ -14,72 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { DonateButton } from "@/components/donate-button";
 import { H4, P } from "./typograpy";
 import AnimatedCard from "./home/components/AnimatedCard";
-import {
-  MapPin,
-  Clock,
-  GraduationCap,
-  HeartPulse,
-  Leaf,
-  Users,
-  AlertTriangle,
-  PawPrint,
-  Sparkles,
-  Briefcase,
-  FolderHeart,
-} from "lucide-react";
+import { MapPin, Clock } from "lucide-react";
 import type { Cause } from "@/types";
-
-const categoryConfig: Record<
-  string,
-  { icon: React.ElementType; color: string; bg: string }
-> = {
-  education: {
-    icon: GraduationCap,
-    color: "text-blue-700",
-    bg: "bg-blue-50 border-blue-200",
-  },
-  health: {
-    icon: HeartPulse,
-    color: "text-rose-700",
-    bg: "bg-rose-50 border-rose-200",
-  },
-  environment: {
-    icon: Leaf,
-    color: "text-emerald-700",
-    bg: "bg-emerald-50 border-emerald-200",
-  },
-  community: {
-    icon: Users,
-    color: "text-violet-700",
-    bg: "bg-violet-50 border-violet-200",
-  },
-  disaster: {
-    icon: AlertTriangle,
-    color: "text-amber-700",
-    bg: "bg-amber-50 border-amber-200",
-  },
-  animals: {
-    icon: PawPrint,
-    color: "text-orange-700",
-    bg: "bg-orange-50 border-orange-200",
-  },
-  creative: {
-    icon: Sparkles,
-    color: "text-pink-700",
-    bg: "bg-pink-50 border-pink-200",
-  },
-  business: {
-    icon: Briefcase,
-    color: "text-slate-700",
-    bg: "bg-slate-50 border-slate-200",
-  },
-};
-
-const defaultCategoryConfig = {
-  icon: FolderHeart,
-  color: "text-gray-700",
-  bg: "bg-gray-50 border-gray-200",
-};
+import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
 
 import { calculateDaysLeft, isCauseExpired } from "@/utils/cause/cause-utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
@@ -94,8 +31,7 @@ export function CauseCard({ cause, action }: CauseCardProps) {
     ? Math.min(Math.round((cause.raised / cause.goal) * 100), 100)
     : 0;
 
-  const catKey = cause.category?.toLowerCase() || "";
-  const catConfig = categoryConfig[catKey] || defaultCategoryConfig;
+  const catConfig = getCampaignCategoryStyle(cause.category);
   const CategoryIcon = catConfig.icon;
 
   const daysLeft = calculateDaysLeft(cause);
@@ -106,7 +42,7 @@ export function CauseCard({ cause, action }: CauseCardProps) {
       <AnimatedCard>
         <Card className="overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-2xl shadow-md h-full flex flex-col border border-gray-200/80 bg-white">
           {/* Image Section */}
-          <div className="aspect-[16/10] w-full overflow-hidden relative">
+          <div className="aspect-video w-full overflow-hidden relative">
             <Image
               src={getMediaUrl(cause.image) || "/placeholder.svg"}
               alt={cause.title}
@@ -119,10 +55,10 @@ export function CauseCard({ cause, action }: CauseCardProps) {
             <div className="absolute top-3 left-3">
               <Badge
                 variant="secondary"
-                className={`${catConfig.bg} ${catConfig.color} border text-xs font-medium px-2.5 py-1 rounded-full backdrop-blur-sm flex items-center gap-1.5 shadow-sm`}
+                className={`${catConfig.badgeClassName} border text-xs font-medium px-2.5 py-1 rounded-full backdrop-blur-sm flex items-center gap-1.5 shadow-sm`}
               >
                 <CategoryIcon className="h-3 w-3" />
-                <span className="capitalize">{cause.category}</span>
+                <span>{catConfig.name}</span>
               </Badge>
             </div>
             {/* Days Left / Expired Overlay */}

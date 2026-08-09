@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -12,15 +12,15 @@ import {
   MailIcon,
   PhoneIcon,
   User,
-  MapPin,
   Loader2,
   CheckCircle,
   XCircle,
+  AlertCircle,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationSelector } from "@/components/location-selector";
 import { checkUsernameAvailability } from "@/actions/profile-actions";
-import { toast } from "@/components/ui/use-toast";
+import { suggestUsername } from "@/utils/username";
 import {
   Tooltip,
   TooltipContent,
@@ -77,11 +77,16 @@ export default function Step3({
     const oauthLastName = user?.name?.split(" ").slice(1).join(" ") || "";
     const oauthPhone = user?.phone || ""; // NextAuth might not have phone unless we add it
 
+    // Pre-fill username with a smart suggestion if empty
+    const existingUsername = savedData.username || "";
+    const usernameFill =
+      existingUsername || suggestUsername(user?.email, user?.name);
+
     setFormData((prev) => ({
       ...prev,
       firstName: savedData.firstName || oauthFirstName,
       lastName: savedData.lastName || oauthLastName,
-      username: savedData.username || "",
+      username: usernameFill,
       location: savedData.location || "",
       phone: savedData.phone || oauthPhone,
       email: savedData.email || user?.email || prev.email,
@@ -104,7 +109,10 @@ export default function Step3({
 
       setIsCheckingUsername(true);
       try {
-        const isAvailable = await checkUsernameAvailability(formData.username);
+        const isAvailable = await checkUsernameAvailability(
+          formData.username,
+          user?.id,
+        );
 
         // If the username equals their current username (if they already had one), it's available for them
         // (NextAuth user objects in onboarding might not have a username assigned yet, but just in case)
@@ -127,7 +135,7 @@ export default function Step3({
 
     const timeoutId = setTimeout(checkUsername, 500);
     return () => clearTimeout(timeoutId);
-  }, [formData.username]);
+  }, [formData.username, user?.id]);
 
   const handleChange = (field: string, value: string) => {
     const newFormData = { ...formData, [field]: value };
@@ -233,13 +241,17 @@ export default function Step3({
     return Object.keys(newErrors).length === 0;
   };
 
+  const errorCount = useMemo(
+    () => Object.values(errors).filter(Boolean).length,
+    [errors],
+  );
+
   const handleSubmit = () => {
     if (!validateForm()) {
-      toast({
-        title: "Please fix the errors below",
-        description: "Some required fields are missing or invalid",
-        variant: "destructive",
-      });
+      // Scroll to the error summary at the top of the form
+      document
+        .getElementById("error-summary")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -253,9 +265,21 @@ export default function Step3({
     });
   };
 
+  const isOrg = onboardingData.accountType === "organization";
+
   return (
-    <div className="h-full flex items-center justify-center bg-white px-6">
-      <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+    <div
+      className={`flex h-full items-center justify-center ${
+        isOrg ? "bg-transparent px-0" : "bg-white px-6"
+      }`}
+    >
+      <div
+        className={`grid w-full grid-cols-1 items-center ${
+          isOrg
+            ? "max-w-3xl"
+            : "max-w-6xl gap-12 md:grid-cols-2"
+        }`}
+      >
         {/* Left Section: Form */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -263,12 +287,35 @@ export default function Step3({
           transition={{ duration: 0.4 }}
           className="w-full"
         >
-          <h1 className="text-3xl font-semibold text-gray-900 mb-2">
-            Create your RefreeG account
+          <h1 className="mb-2 text-3xl font-semibold text-gray-900">
+            {isOrg
+              ? "Set up your workspace owner"
+              : "Create your RefreeG account"}
           </h1>
           <p className="text-gray-500 mb-8">
-            It takes less than a minute to create an account
+            {isOrg
+              ? "Enter the details of the primary administrator for this organisation."
+              : "It takes less than a minute to create an account"}
           </p>
+
+          {isOrg && (
+            <div className="mb-7 border-l-2 border-blue-700 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+              The workspace owner can manage organisation settings, invite team members, and access verification and payout controls.
+            </div>
+          )}
+
+          {/* Inline error summary */}
+          {errorCount > 0 && (
+            <div
+              id="error-summary"
+              className="mb-6 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>
+                Please fix {errorCount} issue{errorCount > 1 ? "s" : ""} below
+              </span>
+            </div>
+          )}
 
           <div className="space-y-5">
             {/* Profile Photo + First + Last Name */}
@@ -312,7 +359,8 @@ export default function Step3({
               <div className="flex flex-col md:flex-row md:space-x-4 w-full">
                 <div className="flex flex-col space-y-2 flex-1">
                   <Label htmlFor="firstName">
-                    First Name<span className="text-red-500">*</span>
+                    {isOrg ? "Owner First Name" : "First Name"}
+                    <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-2 w-6 h-6 text-gray-400" />
@@ -335,7 +383,8 @@ export default function Step3({
 
                 <div className="flex flex-col space-y-2 flex-1 mt-4 md:mt-0">
                   <Label htmlFor="lastName">
-                    Last Name<span className="text-red-500">*</span>
+                    {isOrg ? "Owner Last Name" : "Last Name"}
+                    <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-2 w-6 h-6 text-gray-400" />
@@ -486,6 +535,10 @@ export default function Step3({
                   const newChecked = checked as boolean;
                   setIsConsentChecked(newChecked);
                   updateOnboardingData("consent", newChecked);
+                  setErrors((current) => ({
+                    ...current,
+                    consent: "",
+                  }));
                 }}
                 className="border-gray-400 mt-1"
               />
@@ -507,26 +560,32 @@ export default function Step3({
               disabled={isSubmitting}
               className="w-full mt-4 bg-blue-600 text-white py-6 text-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {isSubmitting ? "Creating Account..." : "Proceed"}
+              {isSubmitting
+                ? "Saving owner profile..."
+                : isOrg
+                  ? "Continue to organisation details"
+                  : "Proceed"}
             </Button>
           </div>
         </motion.div>
 
         {/* Right Section: Image + Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="hidden md:flex flex-col items-center justify-center relative"
-        >
-          <Image
-            src="/onboardingform.svg"
-            alt="Sign up illustration"
-            width={400}
-            height={400}
-            className="rounded-lg object-contain"
-          />
-        </motion.div>
+        {!isOrg && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="relative hidden flex-col items-center justify-center md:flex"
+          >
+            <Image
+              src="/onboardingform.svg"
+              alt="Sign up illustration"
+              width={400}
+              height={400}
+              className="rounded-lg object-contain"
+            />
+          </motion.div>
+        )}
       </div>
     </div>
   );

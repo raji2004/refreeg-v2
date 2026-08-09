@@ -7,6 +7,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { listCauses } from "@/actions";
+import { sortCausesByFunding } from "@/lib/causes/funding-rank";
 import {
   ChevronRight,
   ChevronLeft,
@@ -41,14 +42,18 @@ export default function LiveCampaigns() {
     async function fetchCampaigns() {
       try {
         const allCauses = await listCauses();
-        const transformedCampaigns = allCauses.map((cause) => ({
+
+        // ↓↓↓ THE ALGORITHM: most-funded first, ₦0 last, ties → % of goal → newest
+        const rankedCauses = sortCausesByFunding(allCauses);
+
+        const transformedCampaigns = rankedCauses.map((cause) => ({
           id: cause.id,
           title: cause.title,
           image: cause.image ?? undefined,
           goal: cause.goal ?? 0,
           raised: cause.raised ?? 0,
           category: cause.category || "CAUSE",
-          location: cause.location || "GLOBAL",
+          location: cause.location || "",
         }));
         setCampaigns(transformedCampaigns);
       } catch (error) {
@@ -302,7 +307,8 @@ export default function LiveCampaigns() {
 
                       <div className="p-5">
                         <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                          {campaign.category} · {campaign.location}
+                          {campaign.category}
+                          {campaign.location ? ` · ${campaign.location}` : ""}
                         </div>
 
                         <h3 className="font-semibold text-gray-900 text-base leading-tight mb-4 line-clamp-2">
