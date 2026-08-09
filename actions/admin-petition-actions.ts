@@ -67,7 +67,7 @@ export async function listAdminPetitions(
             pr.email,
             pr.profile_photo
           FROM petitions p
-          LEFT JOIN "User" pr ON p.user_id = pr.id
+          LEFT JOIN profiles pr ON p.user_id = pr.id
           WHERE p.status = ${status}
           ORDER BY p.created_at DESC
         `
@@ -88,7 +88,7 @@ export async function listAdminPetitions(
             pr.email,
             pr.profile_photo
           FROM petitions p
-          LEFT JOIN "User" pr ON p.user_id = pr.id
+          LEFT JOIN profiles pr ON p.user_id = pr.id
           ORDER BY p.created_at DESC
         `,
   );
@@ -149,7 +149,7 @@ export async function getPetitionEdits() {
       pr.email as "user_email",
       pr.profile_photo as "user_profilePhoto"
     FROM petition_edits pe
-    LEFT JOIN "User" pr ON pe.user_id = pr.id
+    LEFT JOIN profiles pr ON pe.user_id = pr.id
     WHERE pe.status = 'pending'
     ORDER BY pe.created_at DESC
   `);
