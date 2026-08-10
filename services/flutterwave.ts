@@ -27,7 +27,7 @@ const Flutterwave = {
         );
       }
       const baseUrl = await getBaseURL();
-      const totalCharge = data.amount + data.serviceFee + (data.tipAmount || 0);
+      const totalCharge = data.amount + data.serviceFee + (data.providerFee || 0) + (data.tipAmount || 0);
       const primarySubaccount = data.subaccounts?.find(
         (entry) => entry?.subaccount?.trim().length,
       )?.subaccount;
@@ -141,6 +141,9 @@ const Flutterwave = {
       account_bank: data.bank_code,
       account_number: data.account_number,
       business_name: data.business_name,
+      business_email: data.business_email,
+      business_contact_mobile: data.business_mobile || "08000000000",
+      business_mobile: data.business_mobile || "08000000000",
       split_type: "percentage",
       split_value: 0, // RefreeG controls the fee via transaction_charge
       country: "NG",
@@ -164,6 +167,33 @@ const Flutterwave = {
       console.error("Error fetching banks from Flutterwave:", error);
       return [];
     }
+  },
+
+  getBankCode: async function (bankName: string) {
+    const banks = await this.listBanks();
+    const nameLower = bankName.toLowerCase();
+    
+    const exact = banks.find((b: any) => b.name.toLowerCase() === nameLower);
+    if (exact) return exact.code;
+
+    if (nameLower.includes("opay") || nameLower.includes("paycom")) {
+      return banks.find((b: any) => b.name.toLowerCase() === "opay")?.code || "100004";
+    }
+    if (nameLower.includes("moniepoint")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("moniepoint"))?.code || "50515";
+    }
+    if (nameLower.includes("kuda")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("kuda"))?.code || "50211";
+    }
+    if (nameLower.includes("palmpay")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("palmpay"))?.code || "100033";
+    }
+
+    const partial = banks.find((b: any) => 
+      b.name.toLowerCase().includes(nameLower) || nameLower.includes(b.name.toLowerCase())
+    );
+    
+    return partial?.code || null;
   },
 
   verifyAccountNumber: async function (

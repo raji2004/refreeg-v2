@@ -39,9 +39,8 @@ export function ShareModal({
   const [activeTab, setActiveTab] = useState<Tab>("share");
   const qrRef = useRef<HTMLDivElement>(null);
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
   const qrUrl =
-    entityType === "cause" ? `${appUrl}/causes/${entityId}/donate` : url;
+    entityType === "cause" ? `${url.replace(/\/+$/, "")}/donate` : url;
 
   // Generate short URL on mount
   useEffect(() => {

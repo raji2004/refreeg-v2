@@ -76,6 +76,7 @@ export default function PaymentProviderSelectPage() {
           {(
             txData.amount +
             txData.serviceFee +
+            (txData.providerFee || 0) +
             (txData.tipAmount || 0)
           ).toLocaleString()}{" "}
           donation

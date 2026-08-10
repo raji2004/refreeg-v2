@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,9 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { usePayment } from "@/hooks/use-payment";
 import { useQueryState } from "nuqs";
 
-export default function PaymentVerification() {
+export default function PaymentVerification({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const { id } = use(params);
   const [reference] = useQueryState("reference");
   const [txRef] = useQueryState("tx_ref"); // Flutterwave uses tx_ref
   const [providerQuery] = useQueryState("provider");
@@ -93,10 +94,10 @@ export default function PaymentVerification() {
               </p>
               <div className="mt-6 space-y-3">
                 <Button
-                  onClick={() => router.push("/")}
+                  onClick={() => router.push(`/causes/${id}`)}
                   className="w-full bg-brand hover:bg-secondary"
                 >
-                  Return to Home
+                  Return to Cause
                 </Button>
                 <Button
                   variant="outline"
@@ -123,10 +124,10 @@ export default function PaymentVerification() {
               <p className="text-muted-foreground mt-2">{errorMessage}</p>
               <div className="mt-6 space-y-3">
                 <Button
-                  onClick={() => router.push("/")}
+                  onClick={() => router.push(`/causes/${id}`)}
                   className="w-full bg-brand hover:bg-secondary"
                 >
-                  Return to Home
+                  Return to Cause
                 </Button>
                 <Button
                   variant="outline"

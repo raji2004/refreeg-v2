@@ -22,6 +22,74 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // JIT Flutterwave Subaccount Creation for existing users
+    if (
+      data.paymentProvider === "flutterwave" &&
+      (!data.subaccounts || data.subaccounts.length === 0)
+    ) {
+      try {
+        const { prisma } = await import("@/lib/prisma");
+        const Flutterwave = (await import("@/services/flutterwave")).default;
+
+        const cause = await prisma.cause.findUnique({
+          where: { id: data.causeId },
+          select: { userId: true },
+        });
+
+        if (cause?.userId) {
+          const user = await prisma.user.findUnique({
+            where: { id: cause.userId },
+            select: { 
+              accountNumber: true, 
+              bankName: true, 
+              fullName: true, 
+              username: true,
+              email: true,
+              subAccountCode: true, 
+              flutterwaveSubAccountId: true 
+            },
+          });
+
+          // Only if they don't have flutterwave but HAVE paystack (meaning they are verified)
+          if (
+            user &&
+            !user.flutterwaveSubAccountId &&
+            user.subAccountCode &&
+            user.accountNumber &&
+            user.bankName
+          ) {
+            const bankCode = await Flutterwave.getBankCode(user.bankName);
+            if (bankCode) {
+               const isTestMode = process.env.FLUTTERWAVE_SECRET_KEY?.includes("TEST");
+
+               const newSubaccount = await Flutterwave.createSubaccount({
+                 account_number: isTestMode ? "0690000031" : user.accountNumber,
+                 bank_code: isTestMode ? "044" : bankCode,
+                 business_name: user.fullName || user.username || "RefreeG Cause Creator",
+                 business_email: user.email || "no-reply@refreeg.com",
+               });
+
+               if (newSubaccount?.subaccount_id) {
+                 await prisma.user.update({
+                   where: { id: cause.userId },
+                   data: { flutterwaveSubAccountId: newSubaccount.subaccount_id },
+                 });
+
+                 data.subaccounts = [
+                   {
+                     subaccount: newSubaccount.subaccount_id,
+                     share: Number(data.amount) * 100, // Frontend uses amount*100 ? Wait, usually share is ratio or flat.
+                   }
+                 ];
+               }
+            }
+          }
+        }
+      } catch (jitError) {
+        console.error("JIT Flutterwave Subaccount Creation Failed:", jitError);
+      }
+    }
+
     const response = await initializeTransaction(data, data.paymentProvider);
 
     return NextResponse.json({

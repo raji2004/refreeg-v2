@@ -21,7 +21,7 @@ import { Icons } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
 import { useDonation } from "@/hooks/use-donation";
 import { useProfile } from "@/hooks/use-profile";
-import { calculateServiceFee, cn } from "@/lib/utils";
+import { calculateServiceFee, calculateProviderFee, cn } from "@/lib/utils";
 import { sendUnfinishedDonationEmail } from "@/services/mail";
 
 const MIN_DONATION_AMOUNT = 100;
@@ -63,7 +63,7 @@ export function DonationForm({
   causeName = "this cause", // Default value
   causeUrl = "/causes", // Default value
   recurring = "one_time",
-  tip = 0,
+  tip = 10,
   initialAmount = 0,
   hideHeader = false,
   hideAmountField = false,
@@ -86,6 +86,7 @@ export function DonationForm({
     message: "",
     isAnonymous: false,
   });
+  const [tipAmount, setTipAmount] = useState(tip > 0 ? tip : 10);
   const [amountError, setAmountError] = useState("");
   const [submitError, setSubmitError] = useState("");
 
@@ -154,7 +155,7 @@ export function DonationForm({
       const hasStartedFilling =
         formData.amount || formData.name || formData.email;
 
-      if ((savedAttempt || hasStartedFilling)) {
+      if (savedAttempt || hasStartedFilling) {
         // Reset timer on any form interaction
         const resetTimer = () => {
           clearTimeout(inactivityTimer);
@@ -256,7 +257,8 @@ export function DonationForm({
         id: profile.id || undefined,
         full_name: formData.name,
         serviceFee: serviceFee,
-        tipAmount: tip,
+        providerFee: providerFee,
+        tipAmount: tipAmount,
         plan: plan,
         subaccounts: [
           {
@@ -289,7 +291,11 @@ export function DonationForm({
 
   const donationAmount = Number(formData.amount) || 0;
   const serviceFee = calculateServiceFee(donationAmount);
-  const totalAmount = donationAmount + serviceFee + tip;
+  // Use the higher of the two provider fees (Paystack) as the default shown,
+  // since we don't know which provider the donor will pick yet.
+  const providerFee =
+    donationAmount > 0 ? calculateProviderFee(donationAmount, "paystack") : 0;
+  const totalAmount = donationAmount + serviceFee + tipAmount + providerFee;
 
   return (
     <Card
@@ -360,60 +366,51 @@ export function DonationForm({
             />
           </div>
 
-          {compactOptionalFields ? (
-            <details className="group rounded-xl border border-slate-200 bg-slate-50 sm:rounded-2xl">
-              <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-sm font-semibold text-slate-700 sm:px-4 sm:py-3">
-                More options
-                <span className="text-lg font-normal text-slate-400 transition-transform group-open:rotate-45">
-                  +
-                </span>
-              </summary>
-              <div className="space-y-3 border-t border-slate-200 px-3 py-3 sm:space-y-4 sm:px-4 sm:py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="message">Message (Optional)</Label>
-                  <Textarea
-                    id="message"
-                    name="message"
-                    placeholder="Leave a message of support"
-                    value={formData.message}
-                    onChange={handleChange}
-                  />
-                </div>
+          {/* Platform tip — always visible below email */}
+          <div className="space-y-1.5 sm:space-y-2">
+            <Label htmlFor="tip">Platform tip (optional)</Label>
+            <div className="flex items-stretch overflow-hidden rounded-xl border border-input">
+              <span className="flex items-center justify-center bg-muted px-3 text-sm font-semibold text-muted-foreground">
+                ₦
+              </span>
+              <Input
+                id="tip"
+                name="tip"
+                type="number"
+                min={0}
+                placeholder="10"
+                value={tipAmount}
+                onChange={(e) =>
+                  setTipAmount(Math.max(0, Number(e.target.value) || 0))
+                }
+                className="rounded-none border-0 shadow-none focus-visible:ring-0"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Help us keep the platform running. Tip goes 100% to RefreeG.
+            </p>
+          </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="anonymous"
-                    checked={formData.isAnonymous}
-                    onCheckedChange={handleSwitchChange}
-                  />
-                  <Label htmlFor="anonymous">Donate anonymously</Label>
-                </div>
-                {optionalFieldsExtra}
-              </div>
-            </details>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="message">Message (Optional)</Label>
-                <Textarea
-                  id="message"
-                  name="message"
-                  placeholder="Leave a message of support"
-                  value={formData.message}
-                  onChange={handleChange}
-                />
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="message">Message (Optional)</Label>
+            <Textarea
+              id="message"
+              name="message"
+              placeholder="Leave a message of support"
+              value={formData.message}
+              onChange={handleChange}
+            />
+          </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="anonymous"
-                  checked={formData.isAnonymous}
-                  onCheckedChange={handleSwitchChange}
-                />
-                <Label htmlFor="anonymous">Donate anonymously</Label>
-              </div>
-            </>
-          )}
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="anonymous"
+              checked={formData.isAnonymous}
+              onCheckedChange={handleSwitchChange}
+            />
+            <Label htmlFor="anonymous">Donate anonymously</Label>
+          </div>
+          {optionalFieldsExtra}
 
           {submitError ? (
             <p className="text-sm font-medium text-rose-600">{submitError}</p>
@@ -433,13 +430,16 @@ export function DonationForm({
                 <span>Checkout total</span>
                 <span>₦{totalAmount.toLocaleString()}</span>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-2">
                 Includes ₦{donationAmount.toLocaleString()} donation
                 {serviceFee > 0
                   ? `, ₦${serviceFee.toLocaleString()} service fee`
                   : ""}
-                {tip > 0
-                  ? `, and ₦${tip.toLocaleString()} optional platform tip`
+                {providerFee > 0
+                  ? `, ₦${providerFee.toLocaleString()} payment processing fee`
+                  : ""}
+                {tipAmount > 0
+                  ? `, and ₦${tipAmount.toLocaleString()} platform tip`
                   : ""}
                 .
               </p>
@@ -476,7 +476,9 @@ export function DonationForm({
           <Button
             type="submit"
             disabled={
-              isRedirecting || isDisabled || donationAmount < MIN_DONATION_AMOUNT
+              isRedirecting ||
+              isDisabled ||
+              donationAmount < MIN_DONATION_AMOUNT
             }
             className={cn("w-full", submitClassName)}
           >
