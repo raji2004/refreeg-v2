@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { SupportErrorCta } from "@/components/support-error-cta";
 import { reportClientError } from "@/lib/client-error-reporter";
 
+
 export default function Error({
   error,
   reset,
