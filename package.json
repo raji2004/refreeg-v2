@@ -145,6 +145,10 @@
       "bufferutil",
       "utf-8-validate",
       "sharp"
-    ]
+    ],
+    "supportedArchitectures": {
+      "os": ["linux", "win32", "darwin", "current"],
+      "cpu": ["x64", "arm64"]
+    }
   }
 }
