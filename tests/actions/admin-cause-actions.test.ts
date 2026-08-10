@@ -19,6 +19,7 @@ jest.mock("@/lib/prisma", () => ({
     },
     cause: {
       update: jest.fn(),
+      findUnique: jest.fn(),
     },
     $transaction: jest.fn(),
   },
@@ -43,7 +44,7 @@ const mockAuth = auth as jest.Mock;
 const mockPrisma = prisma as unknown as {
   $queryRaw: jest.Mock;
   cause_edits: { findFirst: jest.Mock; update: jest.Mock; delete: jest.Mock };
-  cause: { update: jest.Mock };
+  cause: { update: jest.Mock; findUnique: jest.Mock };
   $transaction: jest.Mock;
 };
 
@@ -52,6 +53,7 @@ describe("admin-cause-actions", () => {
     jest.clearAllMocks();
     mockAuth.mockResolvedValue({ user: { id: "admin-1" } });
     (isAdminOrManager as jest.Mock).mockResolvedValue(true);
+    mockPrisma.cause.findUnique.mockResolvedValue({ location: "Lagos" });
   });
 
   describe("listAdminCauses", () => {
