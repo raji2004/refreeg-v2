@@ -44,6 +44,10 @@ jest.mock("@/lib/s3/s3-utils", () => ({
   generateS3Key: jest.fn(() => "causes/user/cause/image.jpg"),
 }));
 
+jest.mock("@/lib/locations/campaign-location", () => ({
+  resolveCampaignLocation: jest.fn().mockResolvedValue("Lagos, Nigeria"),
+}));
+
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/actions/auth-actions";
 import { isAdminOrManager } from "@/actions/role-actions";
