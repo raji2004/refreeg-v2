@@ -76,7 +76,7 @@ describe("ImageUpload required crop", () => {
       screen.getByText(/drag the frame to position the crop/i),
     ).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Apply recommended crop" }),
+      screen.getByRole("button", { name: "Apply" }),
     ).toBeVisible();
     expect(
       screen.queryByRole("button", { name: "Use Original" }),
