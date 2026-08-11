@@ -25,8 +25,11 @@ const nextConfig = {
     "**": [
       "./services/templates/**/*.html",
       "./node_modules/.prisma/client/**",
-      "./node_modules/@img/sharp-linux-arm64/**",
-      "./node_modules/@img/sharp-libvips-linux-arm64/**",
+      "./node_modules/sharp/**",
+      "./node_modules/@img/**",
+      "./node_modules/.pnpm/sharp@*/**",
+      "./node_modules/.pnpm/@img+sharp-linux-arm64@*/**",
+      "./node_modules/.pnpm/@img+sharp-libvips-linux-arm64@*/**",
     ],
   },
   eslint: {
@@ -42,6 +45,16 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.amazonaws.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**.cloudfront.net",
+        pathname: "/**",
+      },
       {
         protocol: "https",
         hostname: "refreeg-media.s3.us-east-1.amazonaws.com",

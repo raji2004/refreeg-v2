@@ -345,6 +345,13 @@ importers:
       typescript:
         specifier: ^5
         version: 5.8.2
+    optionalDependencies:
+      '@img/sharp-libvips-linux-arm64':
+        specifier: 1.0.4
+        version: 1.0.4
+      '@img/sharp-linux-arm64':
+        specifier: 0.33.5
+        version: 0.33.5
 
   sdks/javascript: {}
 
