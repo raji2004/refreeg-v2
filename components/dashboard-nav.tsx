@@ -23,6 +23,7 @@ import {
   Sparkles,
   Building2,
   CircleUserRound,
+  ShieldCheck
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useAuth } from "@/hooks/use-auth";
@@ -124,6 +125,11 @@ const adminNavItems = [
     title: "Manage Users",
     href: "/dashboard/admin/users",
     icon: UserCog,
+  },
+  {
+    title: "Manage Proof Updates",
+    href: "/dashboard/admin/proof-updates",
+    icon: ShieldCheck,
   },
   {
     title: "Analytics",
@@ -365,13 +371,20 @@ export function DashboardNav() {
                 Role Access
               </div>
               {adminNavItems.map((item) => (
-                <Skeleton key={item.href} className="h-[62px] w-full rounded-2xl" />
+                <Skeleton
+                  key={item.href}
+                  className="h-[62px] w-full rounded-2xl"
+                />
               ))}
             </div>
           ) : null}
 
           {mounted && isAdminOrManager ? (
-            <NavSection title="Admin" icon={Shield} accentClassName="text-rose-600">
+            <NavSection
+              title="Admin"
+              icon={Shield}
+              accentClassName="text-rose-600"
+            >
               {adminNavItems.map((item) => {
                 const active = isNavItemActive(pathname, item.href);
                 return (

@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { listCauses } from "@/actions/cause-actions";
 import { DonateButton } from "@/components/donate-button";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { causePublicPath } from "@/lib/causes/slug";
 import {
   GraduationCap,
   HeartPulse,
@@ -141,7 +142,7 @@ export async function FeaturedCauses() {
         );
 
         return (
-          <Link key={cause.id} href={`/causes/${cause.id}`} className="group">
+          <Link key={cause.id} href={causePublicPath(cause)} className="group">
             <Card className="overflow-hidden cursor-pointer transition hover:shadow-lg h-full flex flex-col">
               <div className="aspect-video w-full overflow-hidden relative">
                 <Image

@@ -13,14 +13,23 @@ const nextConfig = {
   // Minimal self-contained server bundle (.next/standalone) instead of shipping
   // the whole node_modules to EC2 — keeps each deploy release small on disk.
   output: "standalone",
-  // Include email HTML templates and the Prisma query engine binaries in the
-  // standalone/serverless bundle. Without this, fs.readFileSync cannot find
-  // them at runtime because Next.js only traces statically-imported files by
-  // default, and Prisma's engine binaries are loaded dynamically at runtime.
+  serverExternalPackages: ["sharp"],
+  // Include email HTML templates, the Prisma query engine binaries, and
+  // sharp's linux-arm64 native binding in the standalone/serverless bundle.
+  // Without this, fs.readFileSync/require cannot find them at runtime
+  // because Next.js only traces files reachable from the build machine's
+  // own platform/arch by default — Prisma's engine and sharp's native
+  // addon are both resolved dynamically, and the EC2 target (linux-arm64)
+  // differs from the x64 GitHub Actions runner that builds the release.
   outputFileTracingIncludes: {
     "**": [
       "./services/templates/**/*.html",
       "./node_modules/.prisma/client/**",
+      "./node_modules/sharp/**",
+      "./node_modules/@img/**",
+      "./node_modules/.pnpm/sharp@*/**",
+      "./node_modules/.pnpm/@img+sharp-linux-arm64@*/**",
+      "./node_modules/.pnpm/@img+sharp-libvips-linux-arm64@*/**",
     ],
   },
   eslint: {
@@ -36,6 +45,16 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.amazonaws.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**.cloudfront.net",
+        pathname: "/**",
+      },
       {
         protocol: "https",
         hostname: "refreeg-media.s3.us-east-1.amazonaws.com",
@@ -68,7 +87,7 @@ const nextConfig = {
     // Fix Handlebars require.extensions error
     config.resolve.alias = {
       ...config.resolve.alias,
-      handlebars: 'handlebars/dist/handlebars.js'
+      handlebars: "handlebars/dist/handlebars.js",
     };
 
     // Aceternity UI may import CSS that requires MiniCssExtractPlugin in prod
@@ -101,12 +120,21 @@ const nextConfig = {
     return [
       {
         // apply to all routes including static assets
-        source: '/:path*',
+        source: "/:path*",
         headers: [
-          { key: 'Access-Control-Allow-Origin', value: 'https://apps.refreeg.com' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,PATCH,DELETE,OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-Requested-With, Content-Type, Accept, Authorization' },
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          {
+            key: "Access-Control-Allow-Origin",
+            value: "https://apps.refreeg.com",
+          },
+          {
+            key: "Access-Control-Allow-Methods",
+            value: "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+          },
+          {
+            key: "Access-Control-Allow-Headers",
+            value: "X-Requested-With, Content-Type, Accept, Authorization",
+          },
+          { key: "Access-Control-Allow-Credentials", value: "true" },
         ],
       },
     ];

@@ -5,6 +5,7 @@ jest.mock("@/lib/prisma", () => ({
   prisma: {
     cause: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -44,6 +45,15 @@ jest.mock("@/lib/s3/s3-utils", () => ({
   generateS3Key: jest.fn(() => "causes/user/cause/image.jpg"),
 }));
 
+jest.mock("@/lib/locations/campaign-location", () => ({
+  resolveCampaignLocation: jest.fn(async (location?: string) =>
+    location?.trim() ? location.trim() : "Lagos, Lagos, Nigeria",
+  ),
+  resolveDeviceCampaignLocation: jest.fn(
+    async () => "Lagos, Lagos, Nigeria",
+  ),
+}));
+
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/actions/auth-actions";
 import { isAdminOrManager } from "@/actions/role-actions";
@@ -64,6 +74,7 @@ import {
   deleteCause,
   updateCauseTrustMetrics,
 } from "@/actions/cause-actions";
+import { resolveDeviceCampaignLocation } from "@/lib/locations/campaign-location";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
 const mockGetCurrentUser = getCurrentUser as jest.Mock;
@@ -71,6 +82,7 @@ const mockIsAdminOrManager = isAdminOrManager as jest.Mock;
 const mockPrisma = prisma as unknown as {
   cause: {
     findUnique: jest.Mock;
+    findFirst: jest.Mock;
     findMany: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
@@ -124,11 +136,17 @@ describe("cause-actions", () => {
   });
 
   describe("getCause", () => {
-    it("returns null for invalid UUID", async () => {
-      const result = await getCause("not-a-uuid");
+    it("looks up by slug when id is not a UUID", async () => {
+      mockPrisma.cause.findUnique.mockResolvedValue(null);
+
+      const result = await getCause("help-flood-victims");
 
       expect(result).toBeNull();
-      expect(mockPrisma.cause.findUnique).not.toHaveBeenCalled();
+      expect(mockPrisma.cause.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { slug: "help-flood-victims" },
+        }),
+      );
     });
 
     it("returns null when cause does not exist", async () => {
@@ -137,6 +155,11 @@ describe("cause-actions", () => {
       const result = await getCause(VALID_UUID);
 
       expect(result).toBeNull();
+      expect(mockPrisma.cause.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: VALID_UUID },
+        }),
+      );
     });
 
     it("redirects when pending cause is viewed by non-owner non-admin", async () => {
@@ -152,7 +175,10 @@ describe("cause-actions", () => {
     });
 
     it("returns cause with user details for approved cause", async () => {
-      mockPrisma.cause.findUnique.mockResolvedValue(basePrismaCause);
+      mockPrisma.cause.findUnique.mockResolvedValue({
+        ...basePrismaCause,
+        slug: "test-cause",
+      });
       mockGetCurrentUser.mockResolvedValue({ id: "viewer-1" });
       mockPrisma.campaign_follows.findFirst.mockResolvedValue(null);
 
@@ -162,11 +188,30 @@ describe("cause-actions", () => {
         expect.objectContaining({
           id: VALID_UUID,
           title: "Test Cause",
+          slug: "test-cause",
           user: expect.objectContaining({
             name: "Owner",
             email: "owner@example.com",
           }),
           isFollowing: false,
+        }),
+      );
+    });
+
+    it("resolves an approved cause by slug", async () => {
+      mockPrisma.cause.findUnique.mockResolvedValue({
+        ...basePrismaCause,
+        slug: "test-cause",
+      });
+      mockGetCurrentUser.mockResolvedValue({ id: "viewer-1" });
+      mockPrisma.campaign_follows.findFirst.mockResolvedValue(null);
+
+      const result = await getCause("test-cause");
+
+      expect(result?.id).toBe(VALID_UUID);
+      expect(mockPrisma.cause.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { slug: "test-cause" },
         }),
       );
     });
@@ -178,7 +223,9 @@ describe("cause-actions", () => {
         ...basePrismaCause,
         status: "pending",
         goal: 5000,
+        slug: "new-cause",
       };
+      mockPrisma.cause.findFirst.mockResolvedValue(null);
       mockPrisma.$transaction.mockImplementation(async (callback) =>
         callback({
           cause: {
@@ -197,6 +244,12 @@ describe("cause-actions", () => {
         category: "health",
         goal: 5000,
         sections: [],
+        deviceLocation: {
+          latitude: 6.5244,
+          longitude: 3.3792,
+          accuracy: 50,
+          capturedAt: Date.now(),
+        },
       } as any);
 
       expect(result).toEqual(
@@ -207,6 +260,9 @@ describe("cause-actions", () => {
         }),
       );
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard/causes");
+      expect(resolveDeviceCampaignLocation).toHaveBeenCalledWith(
+        expect.objectContaining({ latitude: 6.5244, longitude: 3.3792 }),
+      );
     });
   });
 

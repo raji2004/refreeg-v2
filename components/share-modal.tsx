@@ -39,12 +39,25 @@ export function ShareModal({
   const [activeTab, setActiveTab] = useState<Tab>("share");
   const qrRef = useRef<HTMLDivElement>(null);
 
+  // Prefer the neat campaign URL (slug-based) for sharing; QR donate links off of it.
   const qrUrl =
-    entityType === "cause" ? `${url.replace(/\/+$/, "")}/donate` : url;
+    entityType === "cause"
+      ? url.includes("/donate")
+        ? url
+        : `${url.replace(/\/$/, "")}/donate`
+      : url;
 
-  // Generate short URL on mount
+  // Causes share the contextual slug URL directly. Petitions still use /s/ short codes.
   useEffect(() => {
     const generateUrl = async () => {
+      if (entityType === "cause") {
+        setShortUrl(url);
+        setIsLoadingShortUrl(false);
+        // Keep short_urls analytics in sync with the slug destination.
+        createShortUrl(entityId, entityType, url).catch(() => undefined);
+        return;
+      }
+
       try {
         const shortened = await createShortUrl(entityId, entityType, url);
         setShortUrl(shortened);

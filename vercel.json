@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/pledge-reminders",
       "schedule": "15 6 * * *"
+    },
+    {
+      "path": "/api/cron/proof-enforcement",
+      "schedule": "0 0 * * *"
     }
   ]
 }

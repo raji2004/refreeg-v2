@@ -53,6 +53,7 @@ describe("admin-cause-actions", () => {
     jest.clearAllMocks();
     mockAuth.mockResolvedValue({ user: { id: "admin-1" } });
     (isAdminOrManager as jest.Mock).mockResolvedValue(true);
+    mockPrisma.cause.findUnique.mockResolvedValue({ location: "Lagos" });
   });
 
   describe("listAdminCauses", () => {

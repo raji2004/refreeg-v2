@@ -182,7 +182,7 @@ describe("profile-actions", () => {
   });
 
   describe("hasCompletedOnboarding", () => {
-    it("returns true when all onboarding fields are present", async () => {
+    it("returns true when onboarding_completed is true", async () => {
       mockPrisma.user.findUnique.mockResolvedValue({
         fullName: "Test User",
         phone: "08012345678",
@@ -192,6 +192,43 @@ describe("profile-actions", () => {
         username: "testuser",
         location: "Lagos",
         createdAt: new Date("2026-01-01"),
+        onboarding_completed: true,
+      });
+
+      const result = await hasCompletedOnboarding("user-1");
+
+      expect(result).toBe(true);
+    });
+
+    it("returns false when onboarding_completed is false for a recent account", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        fullName: "Test User",
+        phone: "08012345678",
+        email: "user@test.com",
+        firstName: "Test",
+        lastName: "User",
+        username: "testuser",
+        location: "Lagos",
+        createdAt: new Date("2026-01-01"),
+        onboarding_completed: false,
+      });
+
+      const result = await hasCompletedOnboarding("user-1");
+
+      expect(result).toBe(false);
+    });
+
+    it("returns true for legacy accounts predating the onboarding wizard", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        fullName: "Test User",
+        phone: "08012345678",
+        email: "user@test.com",
+        firstName: "Test",
+        lastName: "User",
+        username: "testuser",
+        location: "Lagos",
+        createdAt: new Date("2024-01-01"),
+        onboarding_completed: false,
       });
 
       const result = await hasCompletedOnboarding("user-1");

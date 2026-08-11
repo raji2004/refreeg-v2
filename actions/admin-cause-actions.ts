@@ -6,6 +6,10 @@ import { auth } from "@/lib/auth/auth";
 import { isAdminOrManager } from "./role-actions";
 import { revalidatePath } from "next/cache";
 import { sendCauseRejectedEmailForUser } from "@/services/mail";
+import {
+  allocateUniqueCauseSlug,
+  shouldRefreshCauseSlug,
+} from "@/lib/causes/slug";
 
 export type CauseStatus = "pending" | "approved" | "rejected" | "expired";
 
@@ -15,6 +19,20 @@ const requireApprovalLocation = (location?: string | null) => {
     throw new Error("A campaign location is required before approval");
   }
   return normalizedLocation;
+};
+
+async function isCauseSlugTaken(
+  slug: string,
+  excludeCauseId?: string,
+): Promise<boolean> {
+  const existing = await prisma.cause.findFirst({
+    where: {
+      slug,
+      ...(excludeCauseId ? { id: { not: excludeCauseId } } : {}),
+    },
+    select: { id: true },
+  });
+  return !!existing;
 };
 
 type AdminCauseRow = {
@@ -251,11 +269,39 @@ export async function updateCauseStatus(
 
     if (pendingEdit) {
       const location = requireApprovalLocation(pendingEdit.location);
+      const existingCause = await prisma.cause.findUnique({
+        where: { id: causeId },
+        select: { title: true, slug: true },
+      });
+
+      let nextSlug: string | undefined;
+      if (
+        existingCause &&
+        pendingEdit.title !== existingCause.title &&
+        shouldRefreshCauseSlug(existingCause.slug, existingCause.title)
+      ) {
+        nextSlug = await allocateUniqueCauseSlug(pendingEdit.title, {
+          excludeCauseId: causeId,
+          shortId: causeId,
+          isTaken: (candidate) => isCauseSlugTaken(candidate, causeId),
+        });
+      } else if (existingCause && !existingCause.slug) {
+        nextSlug = await allocateUniqueCauseSlug(
+          pendingEdit.title || existingCause.title,
+          {
+            excludeCauseId: causeId,
+            shortId: causeId,
+            isTaken: (candidate) => isCauseSlugTaken(candidate, causeId),
+          },
+        );
+      }
+
       await prisma.$transaction(async (tx) => {
         await tx.cause.update({
           where: { id: causeId },
           data: {
             title: pendingEdit.title,
+            ...(nextSlug ? { slug: nextSlug } : {}),
             category: pendingEdit.category,
             goal: pendingEdit.goal,
             image: pendingEdit.image,
@@ -298,14 +344,24 @@ export async function updateCauseStatus(
     } else {
       const cause = await prisma.cause.findUnique({
         where: { id: causeId },
-        select: { location: true },
+        select: { location: true, title: true, slug: true },
       });
       requireApprovalLocation(cause?.location);
+
+      let nextSlug: string | undefined;
+      if (cause && !cause.slug) {
+        nextSlug = await allocateUniqueCauseSlug(cause.title, {
+          excludeCauseId: causeId,
+          shortId: causeId,
+          isTaken: (candidate) => isCauseSlugTaken(candidate, causeId),
+        });
+      }
 
       await prisma.cause.update({
         where: { id: causeId },
         data: {
           status: "approved",
+          ...(nextSlug ? { slug: nextSlug } : {}),
           updatedAt: new Date(),
         },
       });

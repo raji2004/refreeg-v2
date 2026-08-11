@@ -46,6 +46,7 @@ model User {
   lastLoginUserAgent          String?                  @map("last_login_user_agent")
   accounts                    Account[]
   campaign_follows            campaign_follows[]
+  campaign_proof_updates campaign_proof_updates[]
   cause_edits                 cause_edits[]
   cause_shares                cause_shares[]
   causes                      Cause[]

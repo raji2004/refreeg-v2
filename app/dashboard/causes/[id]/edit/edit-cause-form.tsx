@@ -68,6 +68,10 @@ import {
   validateCauseCoverImage,
   validateCauseGalleryImage,
 } from "@/lib/media/cause-cover";
+import {
+  formatFundingGoalInput,
+  normalizeFundingGoalInput,
+} from "@/lib/funding-goal";
 
 const Calendar = dynamic(
   () => import("@/components/ui/calendar").then((mod) => mod.Calendar),
@@ -182,6 +186,16 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
 
     if (errors[name as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const goal = normalizeFundingGoalInput(e.target.value);
+    if (goal === null) return;
+
+    setFormData((prev) => ({ ...prev, goal }));
+    if (errors.goal) {
+      setErrors((prev) => ({ ...prev, goal: undefined }));
     }
   };
 
@@ -593,10 +607,11 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                       <Input
                         id="goal"
                         name="goal"
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="0.00"
-                        value={formData.goal}
-                        onChange={handleChange}
+                        value={formatFundingGoalInput(formData.goal)}
+                        onChange={handleGoalChange}
                         className={cn(
                           "h-12 pl-12 premium-input text-lg font-mono",
                           errors.goal ? "border-red-500" : "",
