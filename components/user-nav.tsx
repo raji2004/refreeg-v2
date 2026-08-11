@@ -23,6 +23,7 @@ import {
   FileText,
   Building2,
   BadgeCheck,
+  CheckCircle,
   ChevronRight,
   LayoutDashboard,
   LogOut,
@@ -124,6 +125,17 @@ export function UserNav() {
                 {personalInitials}
               </AvatarFallback>
             </Avatar>
+            {isVerified && (
+              <span
+                className="pointer-events-none absolute -bottom-1 -right-1 z-10 rounded-full border border-slate-300 bg-white p-0.5 shadow-sm"
+                title="Verified account"
+              >
+                <CheckCircle
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 fill-blue-100 text-blue-500"
+                />
+              </span>
+            )}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent

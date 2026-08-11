@@ -280,7 +280,7 @@ export async function approveProofUpdate(updateId: string) {
       followers.forEach((f) => f.email && allEmails.add(f.email));
       donors.forEach((d) => d.email && allEmails.add(d.email));
 
-  
+
       allEmails.delete(causeWithUser.user.email);
 
       const causeUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/causes/${update.cause_id}`;

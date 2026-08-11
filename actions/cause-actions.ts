@@ -20,10 +20,11 @@ import {
   validateCauseCoverImage,
   validateCauseGalleryImage,
 } from "@/lib/media/cause-cover";
-import { resolveCampaignLocation } from "@/lib/locations/campaign-location";
 import {
-  allocateUniqueCauseSlug,
-} from "@/lib/causes/slug";
+  resolveCampaignLocation,
+  resolveDeviceCampaignLocation,
+} from "@/lib/locations/campaign-location";
+import { allocateUniqueCauseSlug } from "@/lib/causes/slug";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -233,7 +234,11 @@ export async function createCause(
   userId: string,
   causeData: CauseFormData,
 ): Promise<Cause> {
-  const location = await resolveCampaignLocation(causeData.location);
+  // The display label is always derived again on the server. Do not trust a
+  // location string supplied by the browser.
+  const location = await resolveDeviceCampaignLocation(
+    causeData.deviceLocation,
+  );
   const causeId = crypto.randomUUID();
   let coverImageUrl = null;
   if (causeData.coverImage) {

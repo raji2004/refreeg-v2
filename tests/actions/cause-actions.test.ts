@@ -46,7 +46,12 @@ jest.mock("@/lib/s3/s3-utils", () => ({
 }));
 
 jest.mock("@/lib/locations/campaign-location", () => ({
-  resolveCampaignLocation: jest.fn().mockResolvedValue("Lagos, Nigeria"),
+  resolveCampaignLocation: jest.fn(async (location?: string) =>
+    location?.trim() ? location.trim() : "Lagos, Lagos, Nigeria",
+  ),
+  resolveDeviceCampaignLocation: jest.fn(
+    async () => "Lagos, Lagos, Nigeria",
+  ),
 }));
 
 import { prisma } from "@/lib/prisma";
@@ -69,6 +74,7 @@ import {
   deleteCause,
   updateCauseTrustMetrics,
 } from "@/actions/cause-actions";
+import { resolveDeviceCampaignLocation } from "@/lib/locations/campaign-location";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
 const mockGetCurrentUser = getCurrentUser as jest.Mock;
@@ -238,6 +244,12 @@ describe("cause-actions", () => {
         category: "health",
         goal: 5000,
         sections: [],
+        deviceLocation: {
+          latitude: 6.5244,
+          longitude: 3.3792,
+          accuracy: 50,
+          capturedAt: Date.now(),
+        },
       } as any);
 
       expect(result).toEqual(
@@ -248,6 +260,9 @@ describe("cause-actions", () => {
         }),
       );
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard/causes");
+      expect(resolveDeviceCampaignLocation).toHaveBeenCalledWith(
+        expect.objectContaining({ latitude: 6.5244, longitude: 3.3792 }),
+      );
     });
   });
 
