@@ -33,7 +33,6 @@ import {
   cn,
 } from "@/lib/utils";
 import { causePublicPath } from "@/lib/causes/slug";
-import { ShareModal } from "@/components/share-modal";
 import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import Link from "next/link";
