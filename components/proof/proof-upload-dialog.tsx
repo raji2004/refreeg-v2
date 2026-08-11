@@ -12,14 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import {
-  Loader2,
-  Upload,
-  X,
-  FileText,
-  Image as ImageIcon,
-  Video,
-} from "lucide-react";
+import { Loader2, Upload, X, FileText } from "lucide-react";
 
 const MAX_FILES = 10;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -158,13 +151,20 @@ export function ProofUploadDialog({
           )}
 
           <div>
-            <label className="text-sm font-medium text-slate-700">
-              How were the funds used?
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-slate-700">
+                How were the funds used?
+              </label>
+              <span
+                className={`text-xs ${description.trim().length < 20 ? "text-slate-400" : "text-emerald-600"}`}
+              >
+                {description.trim().length}/20 min
+              </span>
+            </div>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. We purchased 40 bags of cement and paid the masons for week 2. Receipts attached."
+              placeholder="e.g. We purchased 40 bags of cement and paid the masons for week 2."
               rows={4}
               className="mt-1"
             />
@@ -191,31 +191,66 @@ export function ProofUploadDialog({
               className="hidden"
               onChange={(e) => addFiles(e.target.files)}
             />
+
             {files.length > 0 && (
-              <ul className="mt-2 space-y-1">
-                {files.map((f, i) => (
-                  <li
-                    key={`${f.name}-${i}`}
-                    className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-sm"
-                  >
-                    {f.type.startsWith("image/") ? (
-                      <ImageIcon className="h-4 w-4 text-slate-400" />
-                    ) : f.type.startsWith("video/") ? (
-                      <Video className="h-4 w-4 text-slate-400" />
-                    ) : (
-                      <FileText className="h-4 w-4 text-slate-400" />
-                    )}
-                    <span className="flex-1 truncate">{f.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setFiles(files.filter((_, j) => j !== i))}
-                      aria-label={`Remove ${f.name}`}
+              <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {files.map((f, i) => {
+                  const isImage = f.type.startsWith("image/");
+                  const isVideo = f.type.startsWith("video/");
+                  const isDoc = f.type === "application/pdf";
+
+                  const previewUrl =
+                    isImage || isVideo ? URL.createObjectURL(f) : null;
+
+                  return (
+                    <div
+                      key={`${f.name}-${i}`}
+                      className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
                     >
-                      <X className="h-4 w-4 text-slate-400 hover:text-red-500" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                      {previewUrl ? (
+                        isImage ? (
+                          <img
+                            src={previewUrl}
+                            alt={f.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <video
+                            src={previewUrl}
+                            className="h-full w-full object-cover"
+                            muted
+                            autoPlay
+                            loop
+                          />
+                        )
+                      ) : (
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-2 text-center bg-white">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                            <FileText className="h-5 w-5" />
+                          </div>
+                          <span className="line-clamp-2 text-[10px] font-medium text-slate-600 break-all">
+                            {f.name}
+                          </span>
+                          <span className="text-[9px] text-slate-400">
+                            {(f.size / 1024 / 1024).toFixed(1)} MB
+                          </span>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFiles(files.filter((_, j) => j !== i))
+                        }
+                        aria-label={`Remove ${f.name}`}
+                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100 z-10"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
 
