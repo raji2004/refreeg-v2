@@ -33,7 +33,10 @@ export async function POST(request: NextRequest) {
     // Force recalculate fees on the server to prevent spoofing
     // and correctly apply Flutterwave vs Paystack logic
     data.serviceFee = calculateServiceFee(Number(data.amount));
-    data.providerFee = calculateProviderFee(Number(data.amount), data.paymentProvider as "paystack" | "flutterwave");
+    data.providerFee = calculateProviderFee(
+      Number(data.amount),
+      data.paymentProvider as "paystack" | "flutterwave",
+    );
 
     // JIT Flutterwave Subaccount Creation for existing users
     if (
@@ -52,14 +55,14 @@ export async function POST(request: NextRequest) {
         if (cause?.userId) {
           const user = await prisma.user.findUnique({
             where: { id: cause.userId },
-            select: { 
-              accountNumber: true, 
-              bankName: true, 
-              fullName: true, 
+            select: {
+              accountNumber: true,
+              bankName: true,
+              fullName: true,
               username: true,
               email: true,
-              subAccountCode: true, 
-              flutterwaveSubAccountId: true 
+              subAccountCode: true,
+              flutterwaveSubAccountId: true,
             },
           });
 
@@ -73,39 +76,50 @@ export async function POST(request: NextRequest) {
           ) {
             const bankCode = await Flutterwave.getBankCode(user.bankName);
             if (bankCode) {
-               const isTestMode = process.env.FLUTTERWAVE_SECRET_KEY?.includes("TEST");
+              const isTestMode =
+                process.env.FLUTTERWAVE_SECRET_KEY?.includes("TEST");
 
-               let subaccountId: string | null = null;
+              let subaccountId: string | null = null;
 
-               try {
-                 const newSubaccount = await Flutterwave.createSubaccount({
-                   account_number: isTestMode ? "0690000031" : user.accountNumber,
-                   bank_code: isTestMode ? "044" : bankCode,
-                   business_name: user.fullName || user.username || "RefreeG Cause Creator",
-                   business_email: user.email || "no-reply@refreeg.com",
-                 });
-                 subaccountId = newSubaccount?.subaccount_id || null;
-               } catch (createErr: any) {
-                 const msg = createErr.response?.data?.message || createErr.message || "";
-                 if (msg.toLowerCase().includes("already exists") && user.accountNumber) {
-                   // Recover the existing Flutterwave subaccount ID
-                   subaccountId = await Flutterwave.findSubaccountByAccountNumber(user.accountNumber);
-                 }
-               }
+              try {
+                const newSubaccount = await Flutterwave.createSubaccount({
+                  account_number: isTestMode
+                    ? "0690000031"
+                    : user.accountNumber,
+                  bank_code: isTestMode ? "044" : bankCode,
+                  business_name:
+                    user.fullName || user.username || "RefreeG Cause Creator",
+                  business_email: user.email || "no-reply@refreeg.com",
+                });
+                subaccountId = newSubaccount?.subaccount_id || null;
+              } catch (createErr: any) {
+                const msg =
+                  createErr.response?.data?.message || createErr.message || "";
+                if (
+                  msg.toLowerCase().includes("already exists") &&
+                  user.accountNumber
+                ) {
+                  // Recover the existing Flutterwave subaccount ID
+                  subaccountId =
+                    await Flutterwave.findSubaccountByAccountNumber(
+                      user.accountNumber,
+                    );
+                }
+              }
 
-               if (subaccountId) {
-                 await prisma.user.update({
-                   where: { id: cause.userId },
-                   data: { flutterwaveSubAccountId: subaccountId },
-                 });
+              if (subaccountId) {
+                await prisma.user.update({
+                  where: { id: cause.userId },
+                  data: { flutterwaveSubAccountId: subaccountId },
+                });
 
-                 data.subaccounts = [
-                   {
-                     subaccount: subaccountId,
-                     share: Number(data.amount) * 100,
-                   }
-                 ];
-               }
+                data.subaccounts = [
+                  {
+                    subaccount: subaccountId,
+                    share: Number(data.amount) * 100,
+                  },
+                ];
+              }
             }
           }
         }
