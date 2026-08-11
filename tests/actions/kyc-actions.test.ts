@@ -56,7 +56,6 @@ import {
   sendKycReminderEmail,
 } from "@/services/mail";
 import {
-  uploadKycDocument,
   getVerificationStatus,
   updateVerificationStatus,
   sendKycReminderToUnverifiedUsers,
@@ -97,71 +96,6 @@ describe("kyc-actions", () => {
   });
 
   // Skipped: uploadKycDocument is not implemented in actions/kyc-actions.ts.
-  // Re-enable once the function is actually built.
-  describe.skip("uploadKycDocument", () => {
-    it("returns error when user is already verified", async () => {
-      mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
-        id: "kyc-1",
-        status: "approved",
-      });
-
-      const file = new File(["content"], "id.pdf", {
-        type: "application/pdf",
-      });
-
-      const result = await uploadKycDocument(
-        "user-1",
-        file,
-        "passport",
-        personalData,
-      );
-
-      expect(result).toEqual({
-        documentUrl: "",
-        error: "You are already verified.",
-      });
-    });
-
-    it("returns error for invalid file type on new submission", async () => {
-      mockPrisma.kyc_verifications.findFirst.mockResolvedValue(null);
-
-      const file = new File(["content"], "id.txt", { type: "text/plain" });
-
-      const result = await uploadKycDocument(
-        "user-1",
-        file,
-        "passport",
-        personalData,
-      );
-
-      expect(result.error).toContain("Invalid file type");
-    });
-
-    it("creates new KYC record for first-time submission", async () => {
-      mockPrisma.kyc_verifications.findFirst.mockResolvedValue(null);
-      mockPrisma.kyc_verifications.create.mockResolvedValue({ id: "kyc-new" });
-      mockPrisma.user.findUnique.mockResolvedValue({
-        email: "user@test.com",
-      });
-
-      const file = new File(["content"], "id.pdf", {
-        type: "application/pdf",
-      });
-
-      const result = await uploadKycDocument(
-        "user-1",
-        file,
-        "passport",
-        personalData,
-      );
-
-      expect(result.error).toBeNull();
-      expect(result.documentUrl).toBe("kyc/user-1/doc.pdf");
-      expect(mockPrisma.kyc_verifications.create).toHaveBeenCalled();
-      expect(revalidatePath).toHaveBeenCalledWith("/dashboard/settings/kyc");
-    });
-  });
-
   describe("getVerificationStatus", () => {
     it("returns verification with proxied document URL", async () => {
       mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
@@ -185,6 +119,62 @@ describe("kyc-actions", () => {
       const result = await getVerificationStatus("user-1");
 
       expect(result).toEqual({ status: null, error: null });
+    });
+
+    it("falls back to in_progress for legacy Didit sessions without UUID", async () => {
+      mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+        id: "kyc-1",
+        user_id: "user-1",
+        status: "pending",
+        document_type: "didit",
+        document_url: "https://verify.didit.me/session/shortURL",
+      });
+
+      const result = await getVerificationStatus("user-1");
+
+      expect(result.error).toBeNull();
+      expect(result.status?.status).toBe("in_progress");
+      expect(result.status?.document_url).toBe("https://verify.didit.me/session/shortURL");
+    });
+
+    it("fetches Didit API and webhook for valid Didit sessions with UUID", async () => {
+      mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+        id: "kyc-1",
+        user_id: "user-1",
+        status: "pending",
+        document_type: "didit",
+        document_url: "uuid-123:::https://verify.didit.me/session/shortURL",
+      });
+
+      // Mock Didit GET session and Webhook simulate
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url.includes("verification.didit.me")) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ session_id: "uuid-123", status: "Approved" }),
+          });
+        }
+        if (url.includes("/api/webhooks/didit")) {
+          return Promise.resolve({ ok: true });
+        }
+        return Promise.reject(new Error("Unknown URL"));
+      }) as jest.Mock;
+
+      mockPrisma.kyc_verifications.findUnique.mockResolvedValue({
+        id: "kyc-1",
+        status: "approved",
+        document_url: "https://verify.didit.me/session/shortURL",
+      });
+
+      const result = await getVerificationStatus("user-1");
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(result.status?.status).toBe("approved");
+      expect(result.status?.document_url).toBe("https://verify.didit.me/session/shortURL");
+
+      // Restore fetch
+      global.fetch = originalFetch;
     });
   });
 

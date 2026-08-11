@@ -33,11 +33,14 @@ export interface ProfileFormData {
   linkedin_url?: string | null;
   username?: string;
 }
+export type PaymentProviderType = "paystack" | "flutterwave";
+
 export interface BankDetailsFormData {
   accountNumber: string;
   bankName: string;
   accountName: string;
   sub_account_code: string;
+  flutterwave_sub_account_id?: string;
 }
 
 // FormData removed - moved to specialized type files
@@ -63,10 +66,12 @@ export interface TransactionData
   extends Partial<Pick<Profile, "email" | "full_name" | "id">> {
   amount: number;
   serviceFee: number;
+  providerFee?: number;
   tipAmount?: number;
   causeId: string;
   message: string;
   isAnonymous: boolean;
+  paymentProvider?: PaymentProviderType;
   plan?: string;
   callbackUrl?: string;
   subaccounts: {
@@ -85,6 +90,8 @@ export interface ICreateSubaccount {
   account_number: string;
   percentage_charge?: number;
   business_name: string;
+  business_email: string;
+  business_mobile?: string;
 }
 
 // CauseFilterOptions removed - moved to cause-types.ts

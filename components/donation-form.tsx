@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,9 +21,7 @@ import { Icons } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
 import { useDonation } from "@/hooks/use-donation";
 import { useProfile } from "@/hooks/use-profile";
-import { calculateServiceFee, cn } from "@/lib/utils";
-import paystack from "@/services/paystack";
-import { usePayment } from "@/hooks/use-payment";
+import { calculateServiceFee, calculateProviderFee, cn } from "@/lib/utils";
 import { sendUnfinishedDonationEmail } from "@/services/mail";
 
 const MIN_DONATION_AMOUNT = 100;
@@ -35,6 +34,7 @@ interface DonationFormProps {
     id?: string;
   };
   subaccount?: string;
+  flutterwaveSubAccountId?: string;
   status: "pending" | "rejected" | "approved" | "expired";
   causeName?: string; // Add causeName prop
   causeUrl?: string; // Add causeUrl prop for the continue link
@@ -59,10 +59,11 @@ export function DonationForm({
   profile,
   status,
   subaccount,
+  flutterwaveSubAccountId,
   causeName = "this cause", // Default value
   causeUrl = "/causes", // Default value
   recurring = "one_time",
-  tip = 0,
+  tip = 10,
   initialAmount = 0,
   hideHeader = false,
   hideAmountField = false,
@@ -76,7 +77,8 @@ export function DonationForm({
   optionalFieldsExtra,
   stickySubmit = false,
 }: DonationFormProps) {
-  const { initializePayment, isLoading } = usePayment();
+  const router = useRouter();
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [formData, setFormData] = useState({
     amount: "",
     name: profile?.name || "",
@@ -84,6 +86,7 @@ export function DonationForm({
     message: "",
     isAnonymous: false,
   });
+  const [tipAmount, setTipAmount] = useState(tip > 0 ? tip : 10);
   const [amountError, setAmountError] = useState("");
   const [submitError, setSubmitError] = useState("");
 
@@ -152,7 +155,7 @@ export function DonationForm({
       const hasStartedFilling =
         formData.amount || formData.name || formData.email;
 
-      if ((savedAttempt || hasStartedFilling) && !isLoading) {
+      if (savedAttempt || hasStartedFilling) {
         // Reset timer on any form interaction
         const resetTimer = () => {
           clearTimeout(inactivityTimer);
@@ -181,7 +184,7 @@ export function DonationForm({
     const sendReminder = async () => {
       const currentAttempt = localStorage.getItem("donationAttempt");
 
-      if (!currentAttempt || isLoading) return;
+      if (!currentAttempt) return;
 
       if (profile?.email) {
         try {
@@ -204,7 +207,6 @@ export function DonationForm({
     formData.amount,
     formData.name,
     formData.email,
-    isLoading,
     profile?.email,
     causeName,
     causeUrl,
@@ -236,7 +238,7 @@ export function DonationForm({
     // Clear donation attempt when user successfully submits
     localStorage.removeItem("donationAttempt");
 
-    // Map recurring to Paystack Plan IDs
+    // Map recurring to Plan IDs
     let plan: string | undefined = undefined;
     if (recurring === "weekly") {
       plan = process.env.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY;
@@ -245,14 +247,18 @@ export function DonationForm({
     }
 
     try {
-      await initializePayment({
+      setIsRedirecting(true);
+
+      // Store payment data in sessionStorage for the provider selection page
+      const paymentData = {
         email: formData.email,
         amount: Number(formData.amount),
         causeId: causeId,
         id: profile.id || undefined,
         full_name: formData.name,
         serviceFee: serviceFee,
-        tipAmount: tip,
+        providerFee: providerFee,
+        tipAmount: tipAmount,
         plan: plan,
         subaccounts: [
           {
@@ -260,21 +266,36 @@ export function DonationForm({
             share: Number(formData.amount) * 100,
           },
         ],
+        // Store flutterwave subaccount as alt subaccount
+        _flutterwaveSubAccountId: flutterwaveSubAccountId || "",
         message: formData.message,
         isAnonymous: formData.isAnonymous,
-      });
+      };
+
+      sessionStorage.setItem(
+        "pending_payment_data",
+        JSON.stringify(paymentData),
+      );
+
+      // Navigate to provider selection page
+      router.push(`/causes/${causeId}/payment/select`);
     } catch (error) {
+      setIsRedirecting(false);
       setSubmitError(
         error instanceof Error
           ? error.message
-          : "Failed to initialize payment. Please try again.",
+          : "Failed to proceed. Please try again.",
       );
     }
   };
 
   const donationAmount = Number(formData.amount) || 0;
   const serviceFee = calculateServiceFee(donationAmount);
-  const totalAmount = donationAmount + serviceFee + tip;
+  // Use the higher of the two provider fees (Paystack) as the default shown,
+  // since we don't know which provider the donor will pick yet.
+  const providerFee =
+    donationAmount > 0 ? calculateProviderFee(donationAmount, "paystack") : 0;
+  const totalAmount = donationAmount + serviceFee + tipAmount + providerFee;
 
   return (
     <Card
@@ -345,60 +366,51 @@ export function DonationForm({
             />
           </div>
 
-          {compactOptionalFields ? (
-            <details className="group rounded-xl border border-slate-200 bg-slate-50 sm:rounded-2xl">
-              <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-sm font-semibold text-slate-700 sm:px-4 sm:py-3">
-                More options
-                <span className="text-lg font-normal text-slate-400 transition-transform group-open:rotate-45">
-                  +
-                </span>
-              </summary>
-              <div className="space-y-3 border-t border-slate-200 px-3 py-3 sm:space-y-4 sm:px-4 sm:py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="message">Message (Optional)</Label>
-                  <Textarea
-                    id="message"
-                    name="message"
-                    placeholder="Leave a message of support"
-                    value={formData.message}
-                    onChange={handleChange}
-                  />
-                </div>
+          {/* Platform tip — always visible below email */}
+          <div className="space-y-1.5 sm:space-y-2">
+            <Label htmlFor="tip">Platform tip (optional)</Label>
+            <div className="flex items-stretch overflow-hidden rounded-xl border border-input">
+              <span className="flex items-center justify-center bg-muted px-3 text-sm font-semibold text-muted-foreground">
+                ₦
+              </span>
+              <Input
+                id="tip"
+                name="tip"
+                type="number"
+                min={0}
+                placeholder="10"
+                value={tipAmount}
+                onChange={(e) =>
+                  setTipAmount(Math.max(0, Number(e.target.value) || 0))
+                }
+                className="rounded-none border-0 shadow-none focus-visible:ring-0"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Help us keep the platform running. Tip goes 100% to RefreeG.
+            </p>
+          </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="anonymous"
-                    checked={formData.isAnonymous}
-                    onCheckedChange={handleSwitchChange}
-                  />
-                  <Label htmlFor="anonymous">Donate anonymously</Label>
-                </div>
-                {optionalFieldsExtra}
-              </div>
-            </details>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="message">Message (Optional)</Label>
-                <Textarea
-                  id="message"
-                  name="message"
-                  placeholder="Leave a message of support"
-                  value={formData.message}
-                  onChange={handleChange}
-                />
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="message">Message (Optional)</Label>
+            <Textarea
+              id="message"
+              name="message"
+              placeholder="Leave a message of support"
+              value={formData.message}
+              onChange={handleChange}
+            />
+          </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="anonymous"
-                  checked={formData.isAnonymous}
-                  onCheckedChange={handleSwitchChange}
-                />
-                <Label htmlFor="anonymous">Donate anonymously</Label>
-              </div>
-            </>
-          )}
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="anonymous"
+              checked={formData.isAnonymous}
+              onCheckedChange={handleSwitchChange}
+            />
+            <Label htmlFor="anonymous">Donate anonymously</Label>
+          </div>
+          {optionalFieldsExtra}
 
           {submitError ? (
             <p className="text-sm font-medium text-rose-600">{submitError}</p>
@@ -418,13 +430,16 @@ export function DonationForm({
                 <span>Checkout total</span>
                 <span>₦{totalAmount.toLocaleString()}</span>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-2">
                 Includes ₦{donationAmount.toLocaleString()} donation
                 {serviceFee > 0
                   ? `, ₦${serviceFee.toLocaleString()} service fee`
                   : ""}
-                {tip > 0
-                  ? `, and ₦${tip.toLocaleString()} optional platform tip`
+                {providerFee > 0
+                  ? `, ₦${providerFee.toLocaleString()} payment processing fee`
+                  : ""}
+                {tipAmount > 0
+                  ? `, and ₦${tipAmount.toLocaleString()} platform tip`
                   : ""}
                 .
               </p>
@@ -461,11 +476,13 @@ export function DonationForm({
           <Button
             type="submit"
             disabled={
-              isLoading || isDisabled || donationAmount < MIN_DONATION_AMOUNT
+              isRedirecting ||
+              isDisabled ||
+              donationAmount < MIN_DONATION_AMOUNT
             }
             className={cn("w-full", submitClassName)}
           >
-            {isLoading ? (
+            {isRedirecting ? (
               <>
                 <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                 Processing...
