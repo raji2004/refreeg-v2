@@ -147,6 +147,7 @@ describe("admin-cause-actions", () => {
   describe("updateCauseStatus", () => {
     it("approves cause without pending edit", async () => {
       mockPrisma.cause_edits.findFirst.mockResolvedValue(null);
+      mockPrisma.cause.findUnique.mockResolvedValue({ location: "Abuja" });
       mockPrisma.cause.update.mockResolvedValue({});
 
       const result = await updateCauseStatus("cause-1", "approved");

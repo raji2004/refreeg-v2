@@ -26,7 +26,12 @@ import {
 import type { Cause } from "@/types";
 import dynamic from "next/dynamic";
 import { Progress } from "@/components/ui/progress";
-import { getBaseURL, calculateServiceFee, cn } from "@/lib/utils";
+import {
+  getBaseURL,
+  calculateServiceFee,
+  calculateProviderFee,
+  cn,
+} from "@/lib/utils";
 import { causePublicPath } from "@/lib/causes/slug";
 import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
@@ -91,7 +96,7 @@ const CommentsSection = dynamic(
 
 const tabs = ["Comments", "FAQ"] as const;
 const donationPresets = [1000, 10000, 100000, 1000000];
-const tipPresets = [100, 500, 1000];
+const tipPresets = [10, 100, 500];
 
 const trustTiles = (cause: CauseDetail) => [
   {
@@ -174,6 +179,7 @@ type CauseDetail = Cause & {
     name: string;
     email: string;
     sub_account_code?: string | null;
+    flutterwave_sub_account_id?: string | null;
     username: string;
     profile_photo?: string | null;
   };
@@ -353,13 +359,7 @@ function HeroSummary({
   );
 }
 
-function TrustPanel({
-  baseUrl,
-  cause,
-}: {
-  baseUrl: string;
-  cause: CauseDetail;
-}) {
+function TrustPanel({ cause, baseUrl }: { cause: CauseDetail; baseUrl?: string }) {
   const proofMedia = useMemo(() => {
     const allMedia =
       cause.multimedia && cause.multimedia.length > 0
@@ -424,7 +424,6 @@ function TrustPanel({
               entityType="cause"
             />
           </div>
-
           <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             {tiles.map((tile: any) => (
               <div
@@ -656,22 +655,32 @@ function MediaCard({ media, cause }: { media: string[]; cause: CauseDetail }) {
 function ProgressCard({
   cause,
   percentRaised,
+  shareUrl,
 }: {
   cause: CauseDetail;
   percentRaised: number;
+  shareUrl: string;
 }) {
   return (
     <motion.div
       className="rounded-2xl border border-[#DDE3EA] bg-white p-4 sm:rounded-[20px] sm:p-7"
       variants={fadeUp}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-[#235DA7]">
           Funding progress
         </p>
-        <span className="rounded-full bg-[#E6F6D2] px-3 py-1.5 text-xs font-bold text-[#31551A]">
-          {percentRaised}% funded
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-[#E6F6D2] px-3 py-1.5 text-xs font-bold text-[#31551A]">
+            {percentRaised}% funded
+          </span>
+          <ShareModal
+            url={shareUrl}
+            title={cause.title}
+            entityId={cause.id}
+            entityType="cause"
+          />
+        </div>
       </div>
       <div className="mt-4 flex flex-wrap items-end gap-x-3 gap-y-1 sm:mt-5">
         <p className="text-[28px] font-extrabold tabular-nums tracking-tight text-[#10233F] sm:text-[32px]">
@@ -813,6 +822,7 @@ function DonateCard({
   tip,
   setTip,
   serviceFee,
+  providerFee,
   totalWithTip,
   profile,
 }: {
@@ -824,6 +834,7 @@ function DonateCard({
   tip: number;
   setTip: (value: number) => void;
   serviceFee: number;
+  providerFee: number;
   totalWithTip: number;
   profile: ProfileSummary;
 }) {
@@ -855,6 +866,9 @@ function DonateCard({
           profile={profile}
           status={cause.status}
           subaccount={cause?.user.sub_account_code ?? undefined}
+          flutterwaveSubAccountId={
+            cause?.user.flutterwave_sub_account_id ?? undefined
+          }
           causeName={cause.title}
           causeUrl={causePublicPath(cause)}
           recurring={recurring}
@@ -915,70 +929,28 @@ function DonateCard({
               </label>
             </>
           }
-          optionalFieldsExtra={
-            <div className="grid gap-5 border-t border-slate-200 pt-4">
-              <label className="grid gap-2 text-sm text-[#53647A]">
-                <span className="font-semibold text-[#33445A]">
-                  Contribution schedule
-                </span>
-                <select
-                  value={recurring}
-                  onChange={(event) =>
-                    setRecurring(
-                      event.target.value as "one_time" | "weekly" | "monthly",
-                    )
-                  }
-                  className="rounded-xl border border-[#D8E0E8] bg-white px-3 py-3 text-sm font-semibold text-[#33445A] outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7]"
-                >
-                  <option value="one_time">One-time</option>
-                  <option value="weekly">Every week</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-              </label>
-
-              <div className="grid gap-2 text-sm text-[#53647A]">
-                <span className="font-semibold text-[#33445A]">
-                  Optional platform tip
-                </span>
-                <div className="grid grid-cols-3 gap-2">
-                  {tipPresets.map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setTip(tip === value ? 0 : value)}
-                      className={`rounded-xl px-2 py-2.5 text-xs font-semibold transition ${
-                        tip === value
-                          ? "bg-[#10233F] text-white"
-                          : "border border-[#D8E0E8] bg-white text-[#53647A]"
-                      }`}
-                    >
-                      ₦{value.toLocaleString()}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-stretch overflow-hidden rounded-xl border border-[#D8E0E8] bg-white">
-                  <span className="flex items-center justify-center bg-[#10233F] px-3 text-sm font-semibold text-white">
-                    ₦
-                  </span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={16}
-                    value={tip ? tip.toLocaleString("en-US") : ""}
-                    onChange={(event) => {
-                      const digits = event.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 12);
-                      setTip(digits ? Number(digits) : 0);
-                    }}
-                    className="min-w-0 flex-1 bg-transparent px-3 py-2 text-right text-sm font-semibold tabular-nums text-[#10233F] outline-none"
-                    placeholder="Enter custom tip"
-                    aria-label="Custom platform tip amount"
-                  />
-                </div>
-              </div>
-            </div>
-          }
+          // optionalFieldsExtra={
+          //   <div className="grid gap-5 border-t border-slate-200 pt-4">
+          //     <label className="grid gap-2 text-sm text-[#53647A]">
+          //       <span className="font-semibold text-[#33445A]">
+          //         Contribution schedule
+          //       </span>
+          //       <select
+          //         value={recurring}
+          //         onChange={(event) =>
+          //           setRecurring(
+          //             event.target.value as "one_time" | "weekly" | "monthly",
+          //           )
+          //         }
+          //         className="rounded-xl border border-[#D8E0E8] bg-white px-3 py-3 text-sm font-semibold text-[#33445A] outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7]"
+          //       >
+          //         <option value="one_time">One-time</option>
+          //         <option value="weekly">Every week</option>
+          //         <option value="monthly">Monthly</option>
+          //       </select>
+          //     </label>
+          //   </div>
+          // }
           afterFields={
             <div className="rounded-2xl bg-[#ECF5FF] p-3 sm:p-4">
               <div className="flex items-center justify-between text-sm font-semibold text-[#10233F]">
@@ -1004,9 +976,15 @@ function DonateCard({
                       <span>Service fee</span>
                       <span>₦{serviceFee.toLocaleString()}</span>
                     </div>
+                    {providerFee > 0 && (
+                      <div className="flex justify-between">
+                        <span>Payment processing</span>
+                        <span>₦{providerFee.toLocaleString()}</span>
+                      </div>
+                    )}
                     {tip > 0 && (
                       <div className="flex justify-between">
-                        <span>Optional platform tip</span>
+                        <span>Platform tip</span>
                         <span>₦{tip.toLocaleString()}</span>
                       </div>
                     )}
@@ -1338,7 +1316,7 @@ export default function CampaignQualityLab({
   const [recurring, setRecurring] = useState<"one_time" | "weekly" | "monthly">(
     "one_time",
   );
-  const [tip, setTip] = useState(0);
+  const [tip, setTip] = useState(10);
   const [isDonateVisible, setIsDonateVisible] = useState(false);
   const donateRef = useRef<HTMLDivElement | null>(null);
 
@@ -1371,9 +1349,13 @@ export default function CampaignQualityLab({
   );
 
   const serviceFee = useMemo(() => calculateServiceFee(donation), [donation]);
+  const providerFee = useMemo(
+    () => (donation > 0 ? calculateProviderFee(donation, "paystack") : 0),
+    [donation],
+  );
   const totalWithTip = useMemo(
-    () => donation + tip + serviceFee,
-    [donation, tip, serviceFee],
+    () => donation + tip + serviceFee + providerFee,
+    [donation, tip, serviceFee, providerFee],
   );
 
   const media = useMemo(() => {
@@ -1381,10 +1363,17 @@ export default function CampaignQualityLab({
   }, [cause.multimedia, cause.video_links]);
 
   const baseUrl = getBaseURL();
+  const [shareUrl, setShareUrl] = useState(`${baseUrl}/causes/${cause.id}`);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setShareUrl(window.location.href);
+    }
+  }, []);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#10233F]">
-      <main className="mx-auto grid max-w-[1280px] items-start gap-4 px-3 pb-24 pt-4 sm:gap-6 sm:px-6 sm:pb-28 sm:pt-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)] lg:gap-8 lg:px-5">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#10233F] overflow-x-hidden">
+      <main className="mx-auto w-full flex flex-col lg:grid max-w-[1280px] gap-4 px-4 pb-24 pt-4 sm:gap-6 sm:px-6 sm:pb-28 sm:pt-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)] lg:gap-8 lg:px-8 lg:items-start">
         <motion.div
           className="order-1 lg:col-start-1 lg:row-start-1"
           variants={stagger}
@@ -1396,7 +1385,7 @@ export default function CampaignQualityLab({
 
         <aside className="contents lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:block lg:self-start">
           <div className="contents lg:sticky lg:top-24 lg:block">
-            <div className="order-3" ref={donateRef}>
+            <div className="order-4" ref={donateRef}>
               <DonateCard
                 cause={cause}
                 donation={donation}
@@ -1406,6 +1395,7 @@ export default function CampaignQualityLab({
                 tip={tip}
                 setTip={setTip}
                 serviceFee={serviceFee}
+                providerFee={providerFee}
                 totalWithTip={totalWithTip}
                 profile={profile}
               />
@@ -1425,11 +1415,15 @@ export default function CampaignQualityLab({
         <div className="order-2 lg:col-start-1 lg:row-start-2">
           <section className="space-y-4 sm:space-y-6">
             <MediaCard media={media} cause={cause} />
-            <ProgressCard cause={cause} percentRaised={percentRaised} />
+            <ProgressCard
+              cause={cause}
+              percentRaised={percentRaised}
+              shareUrl={shareUrl}
+            />
           </section>
         </div>
 
-        <div className="order-4 space-y-4 sm:space-y-6 lg:col-start-1 lg:row-start-3">
+        <div className="order-3 lg:col-start-1 lg:row-start-3">
           <section className="space-y-4 sm:space-y-6">
             <motion.div
               className="rounded-2xl border border-[#DDE3EA] bg-white p-4 text-sm text-[#53647A] sm:rounded-[20px] sm:p-7"
@@ -1479,6 +1473,11 @@ export default function CampaignQualityLab({
                 )}
               </div>
             </motion.div>
+          </section>
+        </div>
+
+        <div className="order-5 space-y-4 sm:space-y-6 lg:col-start-1 lg:row-start-4">
+          <section className="space-y-4 sm:space-y-6">
             <TrustPanel baseUrl={baseUrl} cause={cause} />
             <ProofTimeline updates={proofUpdates} />
           </section>

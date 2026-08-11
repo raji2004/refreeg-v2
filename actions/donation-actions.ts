@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import type { Donation, DonationWithCause, DonationFormData } from "@/types";
+import type { Donation, DonationWithCause, DonationFormData, PaymentProviderType } from "@/types";
 import { recordEvent } from "@/actions/event-reward-actions";
 import { sendDonationReceivedEmail } from "@/services/mail";
 import { syncMilestoneRequirements } from "@/lib/proof-milestones";
@@ -21,6 +21,7 @@ export async function createDonation(
   donationData: DonationFormData,
   tipAmount: number = 0,
   paystackReference?: string | null,
+  paymentProvider: PaymentProviderType = "paystack",
 ): Promise<Donation> {
   const donationAmount =
     typeof donationData.amount === "string"
@@ -53,6 +54,7 @@ export async function createDonation(
         causeId: causeId,
         ...(userId ? { userId: userId } : {}),
         ...(paystackReference ? { paystack_reference: paystackReference } : {}),
+        payment_provider: paymentProvider,
         amount: donationAmount,
         tip_amount: finalTipAmount,
         name:

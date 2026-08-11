@@ -78,6 +78,8 @@ export function KycTab({ profile, user }: KycTabProps) {
         return <AlertCircle className="h-8 w-8 text-orange-500" />;
       case "pending":
         return <Clock className="h-8 w-8 text-yellow-500" />;
+      case "in_progress":
+        return <Clock className="h-8 w-8 text-blue-500" />;
       default:
         return <Shield className="h-8 w-8 text-gray-400" />;
     }
@@ -107,6 +109,12 @@ export function KycTab({ profile, user }: KycTabProps) {
             Pending Review
           </Badge>
         );
+      case "in_progress":
+        return (
+          <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+            In Progress
+          </Badge>
+        );
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
@@ -124,6 +132,8 @@ export function KycTab({ profile, user }: KycTabProps) {
         return "Your KYC requires a few corrections. Please resume your verification to address the specific issues.";
       case "pending":
         return "Your KYC is under review. We'll notify you once it's processed.";
+      case "in_progress":
+        return "You started the verification process but haven't finished. Please resume it.";
       default:
         return "Unknown status.";
     }
@@ -207,7 +217,7 @@ export function KycTab({ profile, user }: KycTabProps) {
             )}
 
             <div className="flex flex-col sm:flex-row gap-4 items-center">
-              {(kycData?.status === "rejected" || kycData?.status === "resubmitted") && (
+              {(kycData?.status === "rejected" || kycData?.status === "resubmitted" || kycData?.status === "in_progress") && (
                 <Button
                   onClick={() => router.push("/dashboard/settings/kyc-setup")}
                   variant={kycData.status === "rejected" ? "destructive" : "default"}

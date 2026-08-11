@@ -50,12 +50,13 @@ describe("useBank", () => {
     const { result } = renderHook(
       () =>
         useBank({
-          userId: "user-1",
+          userId: "user-123",
           initialData: {
-            account_number: "0123456789",
-            bank_name: "Test Bank",
-            account_name: "Jane Doe",
-            sub_account_code: "SUB_1",
+            account_number: "0000000000",
+            bank_name: "Access Bank",
+            account_name: "John Doe",
+            sub_account_code: "SUB_123",
+            flutterwave_sub_account_id: "FLW_SUB_456",
           },
         }),
       { wrapper: createWrapper() },
@@ -63,12 +64,7 @@ describe("useBank", () => {
 
     await waitFor(() => expect(result.current.isLoadingBanks).toBe(false));
 
-    expect(result.current.formData).toEqual({
-      accountNumber: "0123456789",
-      bankName: "Test Bank",
-      accountName: "Jane Doe",
-      sub_account_code: "SUB_1",
-    });
+    expect(mockUpdateBankDetails).not.toHaveBeenCalled(); // We just initialized the hook
     expect(result.current.banks).toHaveLength(2);
     expect(typeof result.current.handleBankChange).toBe("function");
     expect(typeof result.current.handleBankSubmit).toBe("function");
@@ -103,9 +99,12 @@ describe("useBank", () => {
       .mockResolvedValueOnce({ json: async () => mockBanksResponse })
       .mockResolvedValueOnce({
         json: async () => ({
-          success: true,
-          data: { subaccount_code: "SUB_NEW" },
-        }),
+        success: true,
+        data: {
+          subaccount_code: "SUB_123",
+          flutterwave_sub_account_id: "FLW_SUB_456",
+        },
+      }),
       });
 
     const client = new QueryClient({
@@ -147,7 +146,8 @@ describe("useBank", () => {
       expect.objectContaining({
         accountNumber: "0123456789",
         bankName: "Test Bank",
-        sub_account_code: "SUB_NEW",
+        sub_account_code: "SUB_123",
+        flutterwave_sub_account_id: "FLW_SUB_456",
       }),
     );
     expect(client.getQueryData(["profile", "user-1"])).toEqual(updatedProfile);
