@@ -945,6 +945,44 @@ export async function sendDonationReceivedEmail({
   });
 }
 
+const COMMENT_EXCERPT_MAX_LENGTH = 200;
+
+export async function sendNewCommentEmail({
+  to,
+  ownerName,
+  commenterName,
+  causeTitle,
+  commentText,
+  causeUrl,
+}: {
+  to: string;
+  ownerName: string;
+  commenterName: string;
+  causeTitle: string;
+  commentText: string;
+  causeUrl: string;
+}) {
+  const currentYear = new Date().getFullYear();
+  const commentExcerpt =
+    commentText.length > COMMENT_EXCERPT_MAX_LENGTH
+      ? `${commentText.slice(0, COMMENT_EXCERPT_MAX_LENGTH)}…`
+      : commentText;
+
+  return sendMail({
+    to,
+    subject: `💬 New comment on "${causeTitle}"`,
+    templateName: "new-comment",
+    context: {
+      ownerName,
+      commenterName,
+      causeTitle,
+      commentExcerpt,
+      causeUrl,
+      currentYear,
+    },
+  });
+}
+
 function formatMilestones(milestones: number[]): string {
   return [...new Set(milestones)]
     .sort((a, b) => a - b)

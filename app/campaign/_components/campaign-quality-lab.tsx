@@ -27,6 +27,7 @@ import type { Cause } from "@/types";
 import dynamic from "next/dynamic";
 import { Progress } from "@/components/ui/progress";
 import { getBaseURL, calculateServiceFee, cn } from "@/lib/utils";
+import { causePublicPath } from "@/lib/causes/slug";
 import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import Link from "next/link";
@@ -276,7 +277,7 @@ function HeaderMeta({
         {/* RIGHT: Pledge button hidden for now
         <div className="w-full sm:w-auto">
           <Button
-            onClick={() => router.push(`/causes/${cause.id}/pledge`)}
+            onClick={() => router.push(`${causePublicPath(cause)}/pledge`)}
             className="w-full gap-x-1 sm:w-auto rounded-full bg-[#0F172A] px-6 py-3 text-sm font-semibold text-white shadow-lg hover:bg-[#1E293B]"
           >
             <HandHeart className="h-4 w-4 text-white" />
@@ -417,7 +418,7 @@ function TrustPanel({
         <div className="border-t border-white/10 px-4 pb-5 pt-4 sm:px-6 sm:pb-6 sm:pt-5">
           <div className="flex justify-end">
             <ShareModal
-              url={`${baseUrl}/causes/${cause.id}`}
+              url={`${baseUrl}${causePublicPath(cause)}`}
               title={cause.title}
               entityId={cause.id}
               entityType="cause"
@@ -625,7 +626,7 @@ function PledgesCard({
       </p>
 
       <Button
-        onClick={() => router.push(`/causes/${cause.id}/pledge`)}
+        onClick={() => router.push(`${causePublicPath(cause)}/pledge`)}
         className="mt-6 w-full rounded-full bg-[#0F172A] py-6 text-base font-semibold text-white shadow-lg hover:bg-[#1E293B]"
       >
         Make a Pledge
@@ -855,7 +856,7 @@ function DonateCard({
           status={cause.status}
           subaccount={cause?.user.sub_account_code ?? undefined}
           causeName={cause.title}
-          causeUrl={`/causes/${cause.id}`}
+          causeUrl={causePublicPath(cause)}
           recurring={recurring}
           tip={tip}
           initialAmount={donation}
@@ -1030,7 +1031,7 @@ function DonateCard({
           triggerClassName="h-11 w-full gap-x-2 rounded-xl border-[#CBD7E4] bg-white text-sm font-bold text-[#33445A] shadow-none hover:border-[#235DA7] hover:bg-[#ECF5FF] hover:text-[#235DA7] sm:h-12"
         />
         {/* <Link
-          href={`/causes/${cause.id}/pledge`}
+          href={`${causePublicPath(cause)}/pledge`}
           className="inline-flex w-full items-center justify-center rounded-xl bg-[#2563EB] px-4 py-3 text-base font-semibold text-white shadow-[0_12px_24px_rgba(37,99,235,0.25)] transition hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
         >
           Pledge to donate later
@@ -1056,11 +1057,13 @@ function DonateCard({
 function CampaignHealthCard({
   donors,
   causeId,
+  causePath,
   currentUserId,
   isFollowing,
 }: {
   donors: Donor[];
   causeId: string;
+  causePath: string;
   currentUserId?: string;
   isFollowing?: boolean;
 }) {
@@ -1184,7 +1187,7 @@ function CampaignHealthCard({
               className="w-full rounded-full bg-[#0F172A] text-white hover:bg-[#1E293B]"
               onClick={() => {
                 setShowLoginModal(false);
-                window.location.href = `/login?redirect=/causes/${causeId}`;
+                window.location.href = `/login?redirect=${encodeURIComponent(causePath)}`;
               }}
             >
               Sign in
@@ -1194,7 +1197,7 @@ function CampaignHealthCard({
               className="w-full rounded-full"
               onClick={() => {
                 setShowLoginModal(false);
-                window.location.href = `/register?redirect=/causes/${causeId}`;
+                window.location.href = `/register?redirect=${encodeURIComponent(causePath)}`;
               }}
             >
               Create account
@@ -1411,6 +1414,7 @@ export default function CampaignQualityLab({
               <CampaignHealthCard
                 donors={donors}
                 causeId={cause.id}
+                causePath={causePublicPath(cause)}
                 currentUserId={currentUserId}
                 isFollowing={cause.isFollowing}
               />

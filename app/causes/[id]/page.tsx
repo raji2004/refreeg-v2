@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getCause } from "@/actions/cause-actions";
 import { auth } from "@/lib/auth/auth";
 import { getProfile } from "@/actions/profile-actions";
@@ -6,8 +6,12 @@ import { listDonationsForCause } from "@/actions/donation-actions";
 import { listCommentsForCause } from "@/actions/comment-actions";
 import { getApprovedProofUpdates } from "@/actions/proof-update-actions";
 import CampaignQualityLab from "@/app/campaign/_components/campaign-quality-lab";
+import { causePublicPath } from "@/lib/causes/slug";
 
 import { Metadata } from "next";
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function generateMetadata({
   params,
@@ -40,21 +44,24 @@ export default async function CauseDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-
-  const [cause, donors, comments, session, proofUpdates] = await Promise.all([
-    getCause(id),
-    listDonationsForCause(id),
-    listCommentsForCause(id),
-    auth(),
-    getApprovedProofUpdates(id), 
-  ]);
-
-  const user = session?.user;
+  const cause = await getCause(id);
 
   if (!cause) {
     notFound();
   }
 
+  if (UUID_REGEX.test(id) && cause.slug) {
+    redirect(causePublicPath(cause));
+  }
+
+  const [donors, comments, session, proofUpdates] = await Promise.all([
+    listDonationsForCause(cause.id),
+    listCommentsForCause(cause.id),
+    auth(),
+    getApprovedProofUpdates(cause.id),
+  ]);
+
+  const user = session?.user;
 
   const [myprofile, creatorProfile] = await Promise.all([
     user ? getProfile(user.id as string) : Promise.resolve(undefined),
@@ -76,7 +83,7 @@ export default async function CauseDetailPage({
       profile={profile}
       creatorHasWallet={!!creatorProfile?.solana_wallet}
       currentUserId={user?.id}
-      proofUpdates={proofUpdates} 
+      proofUpdates={proofUpdates}
     />
   );
 }

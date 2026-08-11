@@ -92,7 +92,11 @@ export async function GET(req: Request) {
       key.startsWith("uploads/causes/") &&
       key.includes("/images/")
     ) {
-      return await presentCauseImage(key);
+      try {
+        return await presentCauseImage(key);
+      } catch (error) {
+        console.error("Cause image presentation failed, serving original:", error);
+      }
     }
 
     // Generate the presigned URL

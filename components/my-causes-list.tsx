@@ -192,7 +192,7 @@ export async function MyCausesList({ status, userId }: MyCausesListProps) {
                   )}
                 </div>
                 <div className="shrink-0">
-                  <CauseDropdown causeId={cause.id} />
+                  <CauseDropdown causeId={cause.id} causeSlug={cause.slug} />
                 </div>
               </div>
             </CardHeader>

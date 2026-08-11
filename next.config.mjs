@@ -14,14 +14,22 @@ const nextConfig = {
   // the whole node_modules to EC2 — keeps each deploy release small on disk.
   output: "standalone",
   serverExternalPackages: ["sharp"],
-  // Include email HTML templates and the Prisma query engine binaries in the
-  // standalone/serverless bundle. Without this, fs.readFileSync cannot find
-  // them at runtime because Next.js only traces statically-imported files by
-  // default, and Prisma's engine binaries are loaded dynamically at runtime.
+  // Include email HTML templates, the Prisma query engine binaries, and
+  // sharp's linux-arm64 native binding in the standalone/serverless bundle.
+  // Without this, fs.readFileSync/require cannot find them at runtime
+  // because Next.js only traces files reachable from the build machine's
+  // own platform/arch by default — Prisma's engine and sharp's native
+  // addon are both resolved dynamically, and the EC2 target (linux-arm64)
+  // differs from the x64 GitHub Actions runner that builds the release.
   outputFileTracingIncludes: {
     "**": [
       "./services/templates/**/*.html",
       "./node_modules/.prisma/client/**",
+      "./node_modules/sharp/**",
+      "./node_modules/@img/**",
+      "./node_modules/.pnpm/sharp@*/**",
+      "./node_modules/.pnpm/@img+sharp-linux-arm64@*/**",
+      "./node_modules/.pnpm/@img+sharp-libvips-linux-arm64@*/**",
     ],
   },
   eslint: {
@@ -37,6 +45,16 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.amazonaws.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**.cloudfront.net",
+        pathname: "/**",
+      },
       {
         protocol: "https",
         hostname: "refreeg-media.s3.us-east-1.amazonaws.com",

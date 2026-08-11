@@ -47,6 +47,7 @@ export interface Cause {
   };
   compliance_paused?: boolean;
   compliance_paused_at?: string;
+  slug?: string | null;
 }
 export interface CauseWithSubHeading extends Cause {
   sub_heading: subHeadingWithSubDescription[];

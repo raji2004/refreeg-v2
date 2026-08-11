@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowRight, BarChart3, Eye, Plus } from "lucide-react";
 import { getCurrentUser } from "@/actions";
 import { getUserCausesWithStats } from "@/actions/dashboard-actions";
+import { causePublicPath } from "@/lib/causes/slug";
 
 const formatNaira = (value: number) =>
   new Intl.NumberFormat("en-NG", {
@@ -183,7 +184,7 @@ export async function DashboardCauses({
                       Analytics
                     </Button>
                   </Link>
-                  <Link href={`/causes/${cause.id}`} className="w-full sm:w-auto">
+                  <Link href={causePublicPath(cause)} className="w-full sm:w-auto">
                     <Button
                       variant="ghost"
                       className="h-11 w-full rounded-2xl px-5 text-slate-700 hover:bg-slate-100 hover:text-slate-950"

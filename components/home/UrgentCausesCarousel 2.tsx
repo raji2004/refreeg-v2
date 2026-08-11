@@ -25,6 +25,7 @@ import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
 import { H4, P } from "../typograpy";
 import AnimatedCard from "./components/AnimatedCard";
+import { causePublicPath } from "@/lib/causes/slug";
 
 export default function UrgentCausesCarousel({ causes }: { causes: any[] }) {
   const [api, setApi] = useState<any>(null);
@@ -68,7 +69,7 @@ export default function UrgentCausesCarousel({ causes }: { causes: any[] }) {
               key={cause.id}
               className="md:pl-4 basis-[85%] sm:basis-[50%] md:basis-[33.33%]"
             >
-              <Link href={`/causes/${cause.id}`} className="group block h-full">
+              <Link href={causePublicPath(cause)} className="group block h-full">
                 <AnimatedCard>
                   <Card className="overflow-hidden cursor-pointer transition h-full flex flex-col border border-gray-300">
                     <div className="relative aspect-video w-full overflow-hidden rounded-t-lg">

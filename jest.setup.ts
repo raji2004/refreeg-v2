@@ -14,7 +14,8 @@ beforeAll(() => {
     const message = String(args[0] ?? "");
     if (
       message.includes("Warning: ReactDOM.render") ||
-      message.includes("Not implemented: HTMLFormElement.prototype.requestSubmit")
+      message.includes("Not implemented: HTMLFormElement.prototype.requestSubmit") ||
+      message.includes("Not implemented: navigation")
     ) {
       return;
     }
