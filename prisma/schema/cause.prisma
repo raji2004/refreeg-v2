@@ -2,6 +2,7 @@ model Cause {
   id                   String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId               String                        @map("user_id") @db.Uuid
   title                String
+  slug                 String?                       @unique @db.VarChar(80)
   description          String?
   category             String
   goal                 Decimal                       @db.Decimal

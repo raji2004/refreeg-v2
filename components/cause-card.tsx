@@ -20,6 +20,7 @@ import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
 
 import { calculateDaysLeft, isCauseExpired } from "@/utils/cause/cause-utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { causePublicPath } from "@/lib/causes/slug";
 
 interface CauseCardProps {
   cause: Cause;
@@ -38,7 +39,7 @@ export function CauseCard({ cause, action }: CauseCardProps) {
   const isExpired = isCauseExpired(cause);
 
   return (
-    <Link href={`/causes/${cause.id}`} className="group block h-full">
+    <Link href={causePublicPath(cause)} className="group block h-full">
       <AnimatedCard>
         <Card className="overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-2xl shadow-md h-full flex flex-col border border-gray-200/80 bg-white">
           {/* Image Section */}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { causePublicPath } from "@/lib/causes/slug";
 
 // Component for empty states
 export function EmptyState({
@@ -54,7 +55,7 @@ export function CauseCard({ cause }: { cause: any }) {
 
   return (
     <div className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-      <Link href={`/causes/${cause.id}`}>
+      <Link href={causePublicPath(cause)}>
         <div className="aspect-video relative bg-gray-100">
           <Image
             src={getMediaUrl(cause.image) || "/placeholder-cause.jpg"}
@@ -108,7 +109,10 @@ export function DonationCard({ donation }: { donation: any }) {
         </div>
         {donation.cause_id && (
           <Link
-            href={`/causes/${donation.cause_id}`}
+            href={causePublicPath({
+              id: donation.cause_id,
+              slug: donation.cause?.slug,
+            })}
             className="text-blue-600 hover:underline text-sm"
           >
             View Cause
