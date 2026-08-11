@@ -26,9 +26,11 @@ import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
 import { H4, P } from "../typograpy";
 import AnimatedCard from "./components/AnimatedCard";
+import { causePublicPath } from "@/lib/causes/slug";
 
 type Cause = {
   id: string;
+  slug?: string | null;
   title: string;
   image?: string;
   goal: number;
@@ -67,7 +69,7 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
       cause.goal > 0 ? Math.round((cause.raised / cause.goal) * 100) : 0;
 
     return (
-      <Link href={`/causes/${cause.id}`} className="group block h-full">
+      <Link href={causePublicPath(cause)} className="group block h-full">
         <AnimatedCard>
           <Card className="overflow-hidden cursor-pointer transition h-full flex flex-col border border-gray-300">
             <div className="aspect-video w-full overflow-hidden rounded-t-lg relative">

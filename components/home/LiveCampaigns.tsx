@@ -8,6 +8,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { listCauses } from "@/actions";
 import { sortCausesByFunding } from "@/lib/causes/funding-rank";
+import { causePublicPath } from "@/lib/causes/slug";
 import {
   ChevronRight,
   ChevronLeft,
@@ -19,6 +20,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 type Campaign = {
   id: string;
+  slug?: string | null;
   title: string;
   image?: string;
   goal: number;
@@ -48,6 +50,7 @@ export default function LiveCampaigns() {
 
         const transformedCampaigns = rankedCauses.map((cause) => ({
           id: cause.id,
+          slug: cause.slug,
           title: cause.title,
           image: cause.image ?? undefined,
           goal: cause.goal ?? 0,
@@ -273,7 +276,7 @@ export default function LiveCampaigns() {
                   : 0;
 
               return (
-                <Link href={`/causes/${campaign.id}`} key={campaign.id}>
+                <Link href={causePublicPath(campaign)} key={campaign.id}>
                   <div
                     ref={(el) => {
                       cardsRef.current[index] = el;

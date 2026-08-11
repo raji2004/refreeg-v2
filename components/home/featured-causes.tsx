@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/carousel";
 
 import { calculateDaysLeft, isCauseExpired } from "@/utils/cause/cause-utils";
+import { causePublicPath } from "@/lib/causes/slug";
 
 export async function FeaturedCauses() {
   const allCauses = await listCauses({ limit: 12, status: "approved" });
@@ -93,7 +94,7 @@ export async function FeaturedCauses() {
                 className="md:pl-4 basis-[88%] sm:basis-[68%] md:basis-[44%]"
               >
                 <Link
-                  href={`/causes/${cause.id}`}
+                  href={causePublicPath(cause)}
                   className="group block h-full"
                 >
                   <AnimatedCard>

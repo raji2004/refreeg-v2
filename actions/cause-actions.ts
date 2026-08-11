@@ -21,9 +21,26 @@ import {
   validateCauseGalleryImage,
 } from "@/lib/media/cause-cover";
 import { resolveCampaignLocation } from "@/lib/locations/campaign-location";
+import {
+  allocateUniqueCauseSlug,
+} from "@/lib/causes/slug";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function isCauseSlugTaken(
+  slug: string,
+  excludeCauseId?: string,
+): Promise<boolean> {
+  const existing = await prisma.cause.findFirst({
+    where: {
+      slug,
+      ...(excludeCauseId ? { id: { not: excludeCauseId } } : {}),
+    },
+    select: { id: true },
+  });
+  return !!existing;
+}
 
 const mapPrismaToCause = (prismaCause: any): Cause => {
   return {
@@ -58,34 +75,57 @@ const mapPrismaToCause = (prismaCause: any): Cause => {
 };
 
 /**
- * Get a cause by ID
+ * Get a cause by ID or public slug
  */
 export async function getCause(causeId: string): Promise<CauseWithUser | null> {
-  if (!UUID_REGEX.test(causeId)) return null;
+  if (!causeId?.trim()) return null;
   const user = await getCurrentUser();
 
-  const data = await prisma.cause.findUnique({
-    where: { id: causeId },
-    include: {
-      user: {
-        select: {
-          fullName: true,
-          email: true,
-          username: true,
-          subAccountCode: true,
-          profilePhoto: true,
+  const data = UUID_REGEX.test(causeId)
+    ? await prisma.cause.findUnique({
+        where: { id: causeId },
+        include: {
+          user: {
+            select: {
+              fullName: true,
+              email: true,
+              username: true,
+              subAccountCode: true,
+              profilePhoto: true,
+            },
+          },
+          sections: {
+            select: {
+              id: true,
+              heading: true,
+              description: true,
+            },
+            orderBy: { id: "asc" },
+          },
         },
-      },
-      sections: {
-        select: {
-          id: true,
-          heading: true,
-          description: true,
+      })
+    : await prisma.cause.findUnique({
+        where: { slug: causeId },
+        include: {
+          user: {
+            select: {
+              fullName: true,
+              email: true,
+              username: true,
+              subAccountCode: true,
+              profilePhoto: true,
+            },
+          },
+          sections: {
+            select: {
+              id: true,
+              heading: true,
+              description: true,
+            },
+            orderBy: { id: "asc" },
+          },
         },
-        orderBy: { id: "asc" },
-      },
-    },
-  });
+      });
 
   if (!data) return null;
 
@@ -107,7 +147,7 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
   let isFollowing = false;
   if (user?.id) {
     const followData = await prisma.campaign_follows.findFirst({
-      where: { cause_id: causeId, user_id: user.id },
+      where: { cause_id: data.id, user_id: user.id },
       select: { id: true },
     });
     isFollowing = !!followData;
@@ -245,12 +285,18 @@ export async function createCause(
   }
 
   try {
+    const slug = await allocateUniqueCauseSlug(causeData.title, {
+      shortId: causeId,
+      isTaken: (candidate) => isCauseSlugTaken(candidate),
+    });
+
     const cause = await prisma.$transaction(async (tx: any) => {
       const newCause = await tx.cause.create({
         data: {
           id: causeId,
           userId: userId,
           title: causeData.title,
+          slug,
           category: causeData.category,
           goal:
             typeof causeData.goal === "string"
