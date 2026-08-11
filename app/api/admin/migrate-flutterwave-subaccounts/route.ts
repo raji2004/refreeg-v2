@@ -72,10 +72,35 @@ export async function GET() {
           });
         }
       } catch (err: any) {
+        const msg = err.response?.data?.message || err.message || "Unknown API Error";
+
+        // If Flutterwave says the subaccount already exists, try to look it up
+        // by account number and save the existing ID to the DB
+        if (msg.toLowerCase().includes("already exists") && user.accountNumber) {
+          try {
+            const existingId = await Flutterwave.findSubaccountByAccountNumber(user.accountNumber);
+            if (existingId) {
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { flutterwaveSubAccountId: existingId },
+              });
+              results.push({
+                email: user.email,
+                status: "Recovered",
+                subaccount_id: existingId,
+                note: "Subaccount already existed in Flutterwave — ID recovered and saved",
+              });
+              continue;
+            }
+          } catch {
+            // Fall through to generic failure below
+          }
+        }
+
         results.push({
           email: user.email,
           status: "Failed",
-          reason: err.response?.data?.message || err.message || "Unknown API Error",
+          reason: msg,
           details: err.response?.data || null,
         });
       }

@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
     switch (event) {
       case "charge.completed": {
         const txRef = data?.tx_ref;
+        const transactionId = data?.id;
+
         if (!txRef) {
           return new NextResponse(
             JSON.stringify({ error: "Missing tx_ref" }),
@@ -50,8 +52,15 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Verify the transaction independently (don't trust webhook data alone)
-        const full = await Flutterwave.verifyByReferenceFull(txRef);
+        // Verify the transaction independently (don't trust webhook data alone).
+        // Prefer verifying by the numeric transaction ID (data.id) which works
+        // in both test and live mode. Fall back to tx_ref lookup if no ID.
+        let full: any;
+        if (transactionId) {
+          full = await Flutterwave.verifyTransactionFull(String(transactionId));
+        } else {
+          full = await Flutterwave.verifyByReferenceFull(txRef);
+        }
 
         if (full.status !== "successful") {
           return new NextResponse(

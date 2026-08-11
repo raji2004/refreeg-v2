@@ -9,7 +9,7 @@ interface UsePaymentReturn {
     pledgeId: string;
     guestToken?: string | null;
   }) => Promise<void>;
-  verifyPayment: (reference: string, provider?: PaymentProviderType) => Promise<boolean>;
+  verifyPayment: (reference: string, provider?: PaymentProviderType, transactionId?: string) => Promise<boolean>;
   isLoading: boolean;
   error: string | null;
 }
@@ -100,7 +100,7 @@ export const usePayment = (): UsePaymentReturn => {
   );
 
   const verifyPayment = useCallback(
-    async (reference: string, provider?: PaymentProviderType): Promise<boolean> => {
+    async (reference: string, provider?: PaymentProviderType, transactionId?: string): Promise<boolean> => {
       try {
         setIsLoading(true);
         setError(null);
@@ -113,7 +113,7 @@ export const usePayment = (): UsePaymentReturn => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ reference, provider: resolvedProvider }),
+          body: JSON.stringify({ reference, provider: resolvedProvider, transaction_id: transactionId }),
         });
 
         const result = await response.json();

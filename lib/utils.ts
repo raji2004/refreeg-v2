@@ -21,7 +21,7 @@ const SERVICE_FEE_CAP_NAIRA = 10000;
 
 export const calculateServiceFee = (amount: number): number => {
   const serviceFeePercentage = Number(
-    process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE || "0"
+    process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE || "0",
   );
   const fee = Math.round(amount * (serviceFeePercentage / 100) || 0);
   return Math.min(fee, SERVICE_FEE_CAP_NAIRA);
@@ -37,11 +37,11 @@ export const calculateServiceFee = (amount: number): number => {
  */
 export const calculateProviderFee = (
   donationAmount: number,
-  provider: "paystack" | "flutterwave" = "paystack"
+  provider: "paystack" | "flutterwave" = "paystack",
 ): number => {
   if (provider === "flutterwave") {
     // Flutterwave charges 1.4% of the TOTAL transaction amount.
-    // To ensure we receive the exact donationAmount after they take their cut, 
+    // To ensure we receive the exact donationAmount after they take their cut,
     // we use the gross-up formula: Total = Amount / (1 - 0.014) = Amount / 0.986
     const totalNeeded = donationAmount / 0.986;
     const fee = Math.ceil(totalNeeded - donationAmount);

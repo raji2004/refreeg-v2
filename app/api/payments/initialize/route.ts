@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { initializeTransaction } from "@/services/payment-provider";
 import { TransactionData } from "@/types";
+import { calculateProviderFee, calculateServiceFee } from "@/lib/utils";
 
 const MIN_DONATION_AMOUNT = 100;
 
@@ -21,6 +22,11 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Force recalculate fees on the server to prevent spoofing
+    // and correctly apply Flutterwave vs Paystack logic
+    data.serviceFee = calculateServiceFee(Number(data.amount));
+    data.providerFee = calculateProviderFee(Number(data.amount), data.paymentProvider as "paystack" | "flutterwave");
 
     // JIT Flutterwave Subaccount Creation for existing users
     if (
@@ -62,23 +68,34 @@ export async function POST(request: NextRequest) {
             if (bankCode) {
                const isTestMode = process.env.FLUTTERWAVE_SECRET_KEY?.includes("TEST");
 
-               const newSubaccount = await Flutterwave.createSubaccount({
-                 account_number: isTestMode ? "0690000031" : user.accountNumber,
-                 bank_code: isTestMode ? "044" : bankCode,
-                 business_name: user.fullName || user.username || "RefreeG Cause Creator",
-                 business_email: user.email || "no-reply@refreeg.com",
-               });
+               let subaccountId: string | null = null;
 
-               if (newSubaccount?.subaccount_id) {
+               try {
+                 const newSubaccount = await Flutterwave.createSubaccount({
+                   account_number: isTestMode ? "0690000031" : user.accountNumber,
+                   bank_code: isTestMode ? "044" : bankCode,
+                   business_name: user.fullName || user.username || "RefreeG Cause Creator",
+                   business_email: user.email || "no-reply@refreeg.com",
+                 });
+                 subaccountId = newSubaccount?.subaccount_id || null;
+               } catch (createErr: any) {
+                 const msg = createErr.response?.data?.message || createErr.message || "";
+                 if (msg.toLowerCase().includes("already exists") && user.accountNumber) {
+                   // Recover the existing Flutterwave subaccount ID
+                   subaccountId = await Flutterwave.findSubaccountByAccountNumber(user.accountNumber);
+                 }
+               }
+
+               if (subaccountId) {
                  await prisma.user.update({
                    where: { id: cause.userId },
-                   data: { flutterwaveSubAccountId: newSubaccount.subaccount_id },
+                   data: { flutterwaveSubAccountId: subaccountId },
                  });
 
                  data.subaccounts = [
                    {
-                     subaccount: newSubaccount.subaccount_id,
-                     share: Number(data.amount) * 100, // Frontend uses amount*100 ? Wait, usually share is ratio or flat.
+                     subaccount: subaccountId,
+                     share: Number(data.amount) * 100,
                    }
                  ];
                }

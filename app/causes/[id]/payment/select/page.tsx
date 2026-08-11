@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { usePayment } from "@/hooks/use-payment";
 import { Icons } from "@/components/icons";
+import { calculateProviderFee } from "@/lib/utils";
 import Image from "next/image";
 import type { PaymentProviderType, TransactionData } from "@/types";
 
@@ -121,6 +122,18 @@ export default function PaymentProviderSelectPage() {
             )}
           </button>
         </div>
+
+        {txData && calculateProviderFee(txData.amount, "flutterwave") > 2000 && (
+          <div className="mt-8 rounded-lg bg-orange-50 p-4 text-left text-sm text-orange-800">
+            <p>
+              <strong>💡 Processing Fee Notice:</strong> Because this is a large donation, you may notice a difference in processing fees at checkout depending on your choice.
+            </p>
+            <ul className="mt-2 ml-4 list-disc space-y-1">
+              <li><strong>Paystack</strong> caps its processing fee at a maximum of ₦2,000.</li>
+              <li><strong>Flutterwave</strong> charges a flat 1.4% processing fee with no upper limit.</li>
+            </ul>
+          </div>
+        )}
 
         <button
           onClick={() => router.back()}

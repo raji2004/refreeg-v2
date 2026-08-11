@@ -188,12 +188,117 @@ const Flutterwave = {
     if (nameLower.includes("palmpay")) {
       return banks.find((b: any) => b.name.toLowerCase().includes("palmpay"))?.code || "100033";
     }
+    if (nameLower.includes("first bank") || nameLower.includes("firstbank")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("first bank"))?.code || "011";
+    }
+    if (nameLower.includes("ecobank")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("ecobank"))?.code || "050";
+    }
+    if (nameLower.includes("union bank")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("union bank"))?.code || "032";
+    }
+    if (nameLower.includes("pocket") || nameLower.includes("teamapt")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("pocket") || b.name.toLowerCase().includes("teamapt"))?.code || "100005";
+    }
+    if (nameLower.includes("sterling")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("sterling"))?.code || "232";
+    }
+    if (nameLower.includes("wema")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("wema"))?.code || "035";
+    }
+    if (nameLower.includes("zenith")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("zenith"))?.code || "057";
+    }
+    if (nameLower.includes("gtb") || nameLower.includes("guaranty")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("gtb") || b.name.toLowerCase().includes("guaranty"))?.code || "058";
+    }
+    if (nameLower.includes("uba") || nameLower.includes("united bank")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("uba") || b.name.toLowerCase().includes("united bank"))?.code || "033";
+    }
+    if (nameLower.includes("access")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("access"))?.code || "044";
+    }
+    if (nameLower.includes("fcmb")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("fcmb"))?.code || "214";
+    }
+    if (nameLower.includes("polaris")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("polaris"))?.code || "076";
+    }
+    if (nameLower.includes("fidelity")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("fidelity"))?.code || "070";
+    }
+    if (nameLower.includes("jaiz")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("jaiz"))?.code || "301";
+    }
+    if (nameLower.includes("keystone")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("keystone"))?.code || "082";
+    }
+    if (nameLower.includes("providus")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("providus"))?.code || "101";
+    }
+    if (nameLower.includes("stanbic")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("stanbic"))?.code || "221";
+    }
+    if (nameLower.includes("standard chartered")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("standard chartered"))?.code || "068";
+    }
+    if (nameLower.includes("vfd")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("vfd"))?.code || "566";
+    }
+    if (nameLower.includes("9mobile") || nameLower.includes("9 mobile") || nameLower.includes("9psb")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("9mobile") || b.name.toLowerCase().includes("9psb"))?.code || "120001";
+    }
+    if (nameLower.includes("carbon") || nameLower.includes("one finance")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("carbon"))?.code || "565";
+    }
+    if (nameLower.includes("paga")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("paga"))?.code || "100002";
+    }
+    if (nameLower.includes("rubies")) {
+      return banks.find((b: any) => b.name.toLowerCase().includes("rubies"))?.code || "125";
+    }
 
     const partial = banks.find((b: any) => 
       b.name.toLowerCase().includes(nameLower) || nameLower.includes(b.name.toLowerCase())
     );
     
     return partial?.code || null;
+  },
+
+  /**
+   * Find an existing Flutterwave subaccount by account number.
+   * Used as a recovery path when "already exists" is returned during creation.
+   * Paginates through all pages to ensure the subaccount is found.
+   */
+  findSubaccountByAccountNumber: async function (accountNumber: string): Promise<string | null> {
+    try {
+      let page = 1;
+      const limit = 100;
+
+      while (true) {
+        const response = await this.api.get(`/subaccounts?limit=${limit}&page=${page}`);
+        const subaccounts: any[] = response.data.data || [];
+
+        if (subaccounts.length === 0) break; // No more pages
+
+        const match = subaccounts.find(
+          (s: any) => s.account_number === accountNumber
+        );
+
+        if (match) {
+          return String(match.subaccount_id || match.id);
+        }
+
+        // If fewer results than the limit, we're on the last page
+        if (subaccounts.length < limit) break;
+
+        page++;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
   },
 
   verifyAccountNumber: async function (

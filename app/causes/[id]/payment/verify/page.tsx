@@ -14,6 +14,7 @@ export default function PaymentVerification({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const [reference] = useQueryState("reference");
   const [txRef] = useQueryState("tx_ref"); // Flutterwave uses tx_ref
+  const [transactionId] = useQueryState("transaction_id"); // Flutterwave numeric ID
   const [providerQuery] = useQueryState("provider");
   const { verifyPayment, error } = usePayment();
   const [verificationStatus, setVerificationStatus] = useState<
@@ -38,7 +39,7 @@ export default function PaymentVerification({ params }: { params: Promise<{ id: 
         setHasVerified(true);
         // Verify payment using reference (Paystack) or txRef (Flutterwave)
         // Pass providerQuery directly, usePayment handles fallback to localStorage
-        const isSuccessful = await verifyPayment(finalReference, providerQuery as any);
+        const isSuccessful = await verifyPayment(finalReference, providerQuery as any, transactionId || undefined);
 
         if (isSuccessful) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -55,7 +56,7 @@ export default function PaymentVerification({ params }: { params: Promise<{ id: 
     };
 
     verifyPaymentStatus();
-  }, [reference, txRef, providerQuery, verifyPayment, hasVerified]);
+  }, [reference, txRef, providerQuery, transactionId, verifyPayment, hasVerified]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
