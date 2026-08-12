@@ -147,6 +147,7 @@ jobs:
           FLUTTERWAVE_WEBHOOK_HASH: ${{ secrets.FLUTTERWAVE_WEBHOOK_HASH }}
           FLUTTERWAVE_PUBLIC_KEY: ${{ secrets.FLUTTERWAVE_PUBLIC_KEY }}
           FLUTTERWAVE_SECRET_KEY: ${{ secrets.FLUTTERWAVE_SECRET_KEY }}
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
         run: |
           cat > secrets.env <<EOF
           DIDIT_WEBHOOK_SECRET=${DIDIT_WEBHOOK_SECRET}
@@ -182,6 +183,7 @@ jobs:
           FLUTTERWAVE_WEBHOOK_HASH=${FLUTTERWAVE_WEBHOOK_HASH}
           FLUTTERWAVE_PUBLIC_KEY=${FLUTTERWAVE_PUBLIC_KEY}
           FLUTTERWAVE_SECRET_KEY=${FLUTTERWAVE_SECRET_KEY}
+          NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
           NODE_ENV=production
           PORT=3000
           API_PORT=4000
@@ -283,6 +285,15 @@ jobs:
           SSH_USER: ec2-user
         run: |
           echo "🔄 Deployment failed — triggering rollback..."
+          # Re-seed known_hosts rather than trusting step 6's copy survived —
+          # this step runs on `failure()`, so a health-check failure right
+          # after the EC2 box restarted PM2 (SSH briefly unreachable, or the
+          # instance rotated its host key) can leave it stale/missing, which
+          # otherwise fails the one step meant to save a broken deploy.
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          chmod 600 ~/.ssh/known_hosts
           ssh ${{ env.SSH_USER }}@${{ env.EC2_HOST }} \
             "bash /mnt/data/refreeg/rollback.sh"
 

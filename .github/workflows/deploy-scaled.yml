@@ -156,6 +156,7 @@ jobs:
           FLUTTERWAVE_WEBHOOK_HASH: ${{ secrets.FLUTTERWAVE_WEBHOOK_HASH }}
           FLUTTERWAVE_PUBLIC_KEY: ${{ secrets.FLUTTERWAVE_PUBLIC_KEY }}
           FLUTTERWAVE_SECRET_KEY: ${{ secrets.FLUTTERWAVE_SECRET_KEY }}
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
           # HEALTH_CHECK_TOKEN intentionally NOT written — the ALB target group
           # health check can't send custom headers, so /api/health must stay
           # unauthenticated (it fails open with no token configured).
@@ -190,6 +191,7 @@ jobs:
             [FLUTTERWAVE_WEBHOOK_HASH]="$FLUTTERWAVE_WEBHOOK_HASH"
             [FLUTTERWAVE_PUBLIC_KEY]="$FLUTTERWAVE_PUBLIC_KEY"
             [FLUTTERWAVE_SECRET_KEY]="$FLUTTERWAVE_SECRET_KEY"
+            [NEXT_PUBLIC_BASE_URL]="$NEXT_PUBLIC_BASE_URL"
             [NODE_ENV]="production"
           )
 
