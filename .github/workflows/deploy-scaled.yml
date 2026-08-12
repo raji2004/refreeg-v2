@@ -94,7 +94,21 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: pnpm exec prisma migrate deploy
 
+      # NEXT_PUBLIC_* vars are inlined at build time, not read at runtime —
+      # see deploy.yml for the full explanation (the service-fee-always-0
+      # bug this was discovered from).
       - name: Build application
+        env:
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          NEXT_PUBLIC_REFREEG_SERVICE_FEE: ${{ secrets.NEXT_PUBLIC_REFREEG_SERVICE_FEE }}
+          NEXT_PUBLIC_BREET_ENV: ${{ secrets.NEXT_PUBLIC_BREET_ENV }}
+          NEXT_PUBLIC_BREET_WEBHOOK_SECRET: ${{ secrets.NEXT_PUBLIC_BREET_WEBHOOK_SECRET }}
+          NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_S3_DIRECT_UPLOAD: ${{ secrets.NEXT_PUBLIC_S3_DIRECT_UPLOAD }}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY }}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
         run: pnpm run build
 
       # ── 3. Package the minimal artifact ────────────────────────────────────
@@ -167,6 +181,11 @@ jobs:
           FLUTTERWAVE_PUBLIC_KEY: ${{ secrets.FLUTTERWAVE_PUBLIC_KEY }}
           FLUTTERWAVE_SECRET_KEY: ${{ secrets.FLUTTERWAVE_SECRET_KEY }}
           NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_S3_DIRECT_UPLOAD: ${{ secrets.NEXT_PUBLIC_S3_DIRECT_UPLOAD }}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY }}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
           # HEALTH_CHECK_TOKEN intentionally NOT written — the ALB target group
           # health check can't send custom headers, so /api/health must stay
           # unauthenticated (it fails open with no token configured).
@@ -202,6 +221,11 @@ jobs:
             [FLUTTERWAVE_PUBLIC_KEY]="$FLUTTERWAVE_PUBLIC_KEY"
             [FLUTTERWAVE_SECRET_KEY]="$FLUTTERWAVE_SECRET_KEY"
             [NEXT_PUBLIC_BASE_URL]="$NEXT_PUBLIC_BASE_URL"
+            [NEXT_PUBLIC_APP_URL]="$NEXT_PUBLIC_APP_URL"
+            [NEXT_PUBLIC_SITE_URL]="$NEXT_PUBLIC_SITE_URL"
+            [NEXT_PUBLIC_S3_DIRECT_UPLOAD]="$NEXT_PUBLIC_S3_DIRECT_UPLOAD"
+            [NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY]="$NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY"
+            [NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY]="$NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY"
             [NODE_ENV]="production"
           )
 

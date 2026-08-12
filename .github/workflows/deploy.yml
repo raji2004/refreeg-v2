@@ -120,7 +120,27 @@ jobs:
 
           pkill -f "15432:${DB_HOST}:${DB_PORT}" 2>/dev/null || true
 
+      # NEXT_PUBLIC_* vars are inlined into the compiled bundle at build time
+      # (Next.js statically replaces every `process.env.NEXT_PUBLIC_X`
+      # reference, in both client and server code, with a literal value
+      # during `next build`) — they are NOT read from the runtime
+      # environment. Having them only in secrets.env (below, written after
+      # this step) does nothing for these; whatever value is missing here
+      # gets permanently baked in as the code's `|| fallback`. This is what
+      # caused the service-fee-always-0 bug: NEXT_PUBLIC_REFREEG_SERVICE_FEE
+      # was only ever set at runtime, never at build time.
       - name: Build application
+        env:
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          NEXT_PUBLIC_REFREEG_SERVICE_FEE: ${{ secrets.NEXT_PUBLIC_REFREEG_SERVICE_FEE }}
+          NEXT_PUBLIC_BREET_ENV: ${{ secrets.NEXT_PUBLIC_BREET_ENV }}
+          NEXT_PUBLIC_BREET_WEBHOOK_SECRET: ${{ secrets.NEXT_PUBLIC_BREET_WEBHOOK_SECRET }}
+          NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_S3_DIRECT_UPLOAD: ${{ secrets.NEXT_PUBLIC_S3_DIRECT_UPLOAD }}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY }}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
         run: pnpm run build
 
       # ── 3. Package the minimal artifact ────────────────────────────────────
@@ -190,6 +210,11 @@ jobs:
           FLUTTERWAVE_PUBLIC_KEY: ${{ secrets.FLUTTERWAVE_PUBLIC_KEY }}
           FLUTTERWAVE_SECRET_KEY: ${{ secrets.FLUTTERWAVE_SECRET_KEY }}
           NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_S3_DIRECT_UPLOAD: ${{ secrets.NEXT_PUBLIC_S3_DIRECT_UPLOAD }}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY }}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
         run: |
           cat > secrets.env <<EOF
           DIDIT_WEBHOOK_SECRET=${DIDIT_WEBHOOK_SECRET}
@@ -226,6 +251,11 @@ jobs:
           FLUTTERWAVE_PUBLIC_KEY=${FLUTTERWAVE_PUBLIC_KEY}
           FLUTTERWAVE_SECRET_KEY=${FLUTTERWAVE_SECRET_KEY}
           NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+          NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+          NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+          NEXT_PUBLIC_S3_DIRECT_UPLOAD=${NEXT_PUBLIC_S3_DIRECT_UPLOAD}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY=${NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY=${NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY}
           NODE_ENV=production
           PORT=3000
           API_PORT=4000
