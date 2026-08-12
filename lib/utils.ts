@@ -15,7 +15,15 @@ export function formatCurrency(amount: number): string {
 }
 
 export function getBaseURL(): string {
-  return process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const configured = process.env.NEXT_PUBLIC_BASE_URL;
+  if (!configured) return "http://localhost:3000";
+
+  // A misconfigured secret (e.g. "apps.refreeg.com" instead of
+  // "https://apps.refreeg.com") silently produced an invalid redirect_url
+  // for every Flutterwave payment — their API rejects a bare hostname as
+  // "not a valid uri". Normalize a missing scheme instead of trusting the
+  // env var is well-formed.
+  return /^https?:\/\//i.test(configured) ? configured : `https://${configured}`;
 }
 const SERVICE_FEE_CAP_NAIRA = 10000;
 
