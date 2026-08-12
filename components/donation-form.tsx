@@ -40,6 +40,7 @@ interface DonationFormProps {
   causeUrl?: string; // Add causeUrl prop for the continue link
   recurring?: "one_time" | "weekly" | "monthly";
   tip?: number;
+  onTipChange?: (tip: number) => void;
   initialAmount?: number;
   hideHeader?: boolean;
   hideAmountField?: boolean;
@@ -64,6 +65,7 @@ export function DonationForm({
   causeUrl = "/causes", // Default value
   recurring = "one_time",
   tip = 10,
+  onTipChange,
   initialAmount = 0,
   hideHeader = false,
   hideAmountField = false,
@@ -380,9 +382,11 @@ export function DonationForm({
                 min={0}
                 placeholder="10"
                 value={tipAmount}
-                onChange={(e) =>
-                  setTipAmount(Math.max(0, Number(e.target.value) || 0))
-                }
+                onChange={(e) => {
+                  const newTip = Math.max(0, Number(e.target.value) || 0);
+                  setTipAmount(newTip);
+                  if (onTipChange) onTipChange(newTip);
+                }}
                 className="rounded-none border-0 shadow-none focus-visible:ring-0"
               />
             </div>
