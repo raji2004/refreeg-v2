@@ -65,6 +65,19 @@ jobs:
       - name: Install all dependencies
         run: pnpm install --frozen-lockfile
 
+      # ── 2b. Apply pending database migrations ──────────────────────────────
+      # Schema changes were previously applied by hand (or sometimes not at
+      # all — see the 2026-08-12 `payment_provider` incident, where a schema
+      # field shipped with no migration and no automated apply step, and
+      # silently broke prisma.donation.findMany() in production). Running
+      # `migrate deploy` here means every push to main keeps the DB in sync
+      # with prisma/migrations automatically, before the new code that
+      # depends on the new schema ever goes live.
+      - name: Apply database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm exec prisma migrate deploy
+
       - name: Build application
         run: pnpm run build
 
@@ -80,6 +93,18 @@ jobs:
           mkdir -p .next/standalone/.next
           cp -r .next/static .next/standalone/.next/static
           cp ecosystem.config.js .next/standalone/ecosystem.config.js
+
+          # `sharp` and its transitive deps (detect-libc, color, semver, the
+          # linux-arm64 native binding, ...) live under pnpm's nested
+          # .pnpm/<pkg>@<version>/ store and are only symlinked into
+          # node_modules/sharp. Next's output-file tracer doesn't reliably
+          # follow those nested symlinks into .next/standalone, which was
+          # causing "Cannot find module 'detect-libc'" at runtime even with
+          # outputFileTracingIncludes covering the real paths. Force a fully
+          # dereferenced (real-file, no-symlink) copy of the whole sharp
+          # dependency tree instead, so nothing can go missing.
+          rm -rf .next/standalone/node_modules/sharp
+          cp -rL node_modules/sharp .next/standalone/node_modules/sharp
 
           TARBALL="deploy-${{ github.sha }}.tar.gz"
           tar -czf "$TARBALL" -C .next/standalone .

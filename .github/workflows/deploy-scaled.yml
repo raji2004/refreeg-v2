@@ -75,6 +75,15 @@ jobs:
       - name: Install all dependencies
         run: pnpm install --frozen-lockfile
 
+      # ── 2b. Apply pending database migrations ──────────────────────────────
+      # Mirrors deploy.yml — keeps the DB in sync with prisma/migrations
+      # automatically instead of relying on someone applying schema changes
+      # by hand (see deploy.yml for the incident that motivated this).
+      - name: Apply database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm exec prisma migrate deploy
+
       - name: Build application
         run: pnpm run build
 
@@ -89,6 +98,14 @@ jobs:
           mkdir -p .next/standalone/.next
           cp -r .next/static .next/standalone/.next/static
           cp ecosystem.scaled.config.js .next/standalone/ecosystem.config.js
+
+          # sharp's transitive deps live in pnpm's nested .pnpm store and are
+          # only symlinked into node_modules/sharp — Next's output-file tracer
+          # doesn't reliably follow those into .next/standalone. Force a fully
+          # dereferenced copy so nothing goes missing (see deploy.yml for the
+          # full explanation of the "Cannot find module 'detect-libc'" bug).
+          rm -rf .next/standalone/node_modules/sharp
+          cp -rL node_modules/sharp .next/standalone/node_modules/sharp
 
           TARBALL="deploy-${{ github.sha }}.tar.gz"
           tar -czf "$TARBALL" -C .next/standalone .
