@@ -79,6 +79,16 @@ jobs:
       # Mirrors deploy.yml — keeps the DB in sync with prisma/migrations
       # automatically instead of relying on someone applying schema changes
       # by hand (see deploy.yml for the incident that motivated this).
+      #
+      # UNVERIFIED for this pipeline: deploy.yml's runner couldn't reach its
+      # DB directly (P1001 — Postgres bound to 127.0.0.1 on the EC2 box) and
+      # had to tunnel through SSH to a fixed host instead. This pipeline has
+      # no fixed host to tunnel through (ASG instances are ephemeral, per the
+      # note at the top of this file), so if this scaled RDS instance is
+      # similarly VPC-private, this step will fail the same way until it's
+      # replaced with something like an SSM Session Manager port-forward to
+      # one instance. Confirm reachability before this pipeline ever goes
+      # live — don't assume this works just because deploy.yml's fix does.
       - name: Apply database migrations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

@@ -65,7 +65,23 @@ jobs:
       - name: Install all dependencies
         run: pnpm install --frozen-lockfile
 
-      # ── 2b. Apply pending database migrations ──────────────────────────────
+      # ── 2b. SSH Agent + known_hosts (needed early now — the migration step
+      # below tunnels through SSH) ────────────────────────────────────────────
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Add EC2 host to known_hosts
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          chmod 600 ~/.ssh/known_hosts
+
+      # ── 2c. Apply pending database migrations ──────────────────────────────
       # Schema changes were previously applied by hand (or sometimes not at
       # all — see the 2026-08-12 `payment_provider` incident, where a schema
       # field shipped with no migration and no automated apply step, and
@@ -73,10 +89,36 @@ jobs:
       # `migrate deploy` here means every push to main keeps the DB in sync
       # with prisma/migrations automatically, before the new code that
       # depends on the new schema ever goes live.
+      #
+      # This runner can't reach the DB directly (confirmed via a P1001
+      # "can't reach database server" trying DATABASE_URL as-is) — it's not
+      # publicly exposed, and it's a separate host from EC2_HOST, not
+      # Postgres running locally on the app box. But the app box itself
+      # clearly *can* reach it (same VPC / security-group allowlist, since
+      # the app connects to it in production), so proxy the migration
+      # through an SSH tunnel via that box instead of assuming anything
+      # about where the DB actually lives — parse the real host/port
+      # straight out of the DATABASE_URL secret at runtime.
       - name: Apply database migrations
         env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          SSH_USER: ec2-user
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: pnpm exec prisma migrate deploy
+        run: |
+          DB_HOST=$(node -e "console.log(new URL(process.env.DATABASE_URL).hostname)")
+          DB_PORT=$(node -e "const u=new URL(process.env.DATABASE_URL); console.log(u.port || 5432)")
+
+          ssh -f -N -L "15432:${DB_HOST}:${DB_PORT}" ${{ env.SSH_USER }}@${{ env.EC2_HOST }}
+
+          TUNNELED_URL=$(node -e "
+            const u = new URL(process.env.DATABASE_URL);
+            u.hostname = '127.0.0.1';
+            u.port = '15432';
+            console.log(u.toString());
+          ")
+          DATABASE_URL="$TUNNELED_URL" pnpm exec prisma migrate deploy
+
+          pkill -f "15432:${DB_HOST}:${DB_PORT}" 2>/dev/null || true
 
       - name: Build application
         run: pnpm run build
@@ -190,22 +232,9 @@ jobs:
           EOF
           chmod 600 secrets.env
 
-      # ── 6. SSH Agent ───────────────────────────────────────────────────────
-      - name: Add SSH key
-        uses: webfactory/ssh-agent@v0.9.1
-        with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
-
-      - name: Add EC2 host to known_hosts
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null
-          chmod 600 ~/.ssh/known_hosts
-
       # ── 7. Transfer artifacts to EC2 ──────────────────────────────────────
+      # (SSH agent + known_hosts were already set up in step 2b, before the
+      # migration step, since that needed them too.)
       - name: Transfer artifacts to EC2
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
