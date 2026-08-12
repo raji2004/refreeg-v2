@@ -31,7 +31,9 @@ jest.mock("@/services/flutterwave", () => ({
   __esModule: true,
   default: {
     listBanks: jest.fn(),
+    getBankCode: jest.fn(),
     createSubaccount: jest.fn(),
+    findSubaccountByAccountNumber: jest.fn(),
     initializeTransaction: jest.fn().mockResolvedValue({ status: "success", data: "test" }),
   },
 }));
@@ -46,9 +48,12 @@ describe("POST /api/payments/initialize", () => {
   });
 
   it("should perform JIT Flutterwave subaccount creation for existing users with valid bank details", async () => {
-    // Setup mocks
+    // Setup mocks. prisma.cause.findUnique is called twice with different
+    // `select`s (compliance gate, then the JIT lookup) but it's the same
+    // mocked fn, so return a superset covering both call sites.
     (prisma.cause.findUnique as jest.Mock).mockResolvedValue({
       userId: "user-123",
+      compliance_paused: false,
     });
 
     (prisma.user.findUnique as jest.Mock).mockResolvedValue({
@@ -59,10 +64,7 @@ describe("POST /api/payments/initialize", () => {
       flutterwaveSubAccountId: null, // Missing Flutterwave subaccount
     });
 
-    (Flutterwave.listBanks as jest.Mock).mockResolvedValue([
-      { name: "Access Bank Plc", code: "044" },
-      { name: "UBA", code: "033" },
-    ]);
+    (Flutterwave.getBankCode as jest.Mock).mockResolvedValue("044");
 
     (Flutterwave.createSubaccount as jest.Mock).mockResolvedValue({
       subaccount_id: "RS_flutterwave123",
@@ -92,7 +94,7 @@ describe("POST /api/payments/initialize", () => {
     expect(prisma.user.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: "user-123" } })
     );
-    expect(Flutterwave.listBanks).toHaveBeenCalled();
+    expect(Flutterwave.getBankCode).toHaveBeenCalledWith("Access Bank");
     expect(Flutterwave.createSubaccount).toHaveBeenCalledWith(
       expect.objectContaining({
         account_number: "1234567890",
@@ -111,6 +113,12 @@ describe("POST /api/payments/initialize", () => {
   });
 
   it("should NOT perform JIT creation if subaccount already provided", async () => {
+    // The compliance gate (assertCauseAcceptingDonations) still looks up the
+    // cause on every request, regardless of the JIT path.
+    (prisma.cause.findUnique as jest.Mock).mockResolvedValue({
+      compliance_paused: false,
+    });
+
     const payload = {
       amount: 5000,
       email: "test@example.com",
@@ -125,8 +133,10 @@ describe("POST /api/payments/initialize", () => {
 
     await POST(req);
 
-    // Verify no DB queries were made for JIT
-    expect(prisma.cause.findUnique).not.toHaveBeenCalled();
+    // Verify no JIT-specific work was done — the cause lookup was only for
+    // the compliance gate, not the JIT subaccount-creation block.
+    expect(prisma.cause.findUnique).toHaveBeenCalledTimes(1);
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
     expect(Flutterwave.createSubaccount).not.toHaveBeenCalled();
   });
 });
