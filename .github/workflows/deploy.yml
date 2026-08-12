@@ -156,17 +156,44 @@ jobs:
           cp -r .next/static .next/standalone/.next/static
           cp ecosystem.config.js .next/standalone/ecosystem.config.js
 
-          # `sharp` and its transitive deps (detect-libc, color, semver, the
-          # linux-arm64 native binding, ...) live under pnpm's nested
-          # .pnpm/<pkg>@<version>/ store and are only symlinked into
-          # node_modules/sharp. Next's output-file tracer doesn't reliably
-          # follow those nested symlinks into .next/standalone, which was
-          # causing "Cannot find module 'detect-libc'" at runtime even with
-          # outputFileTracingIncludes covering the real paths. Force a fully
-          # dereferenced (real-file, no-symlink) copy of the whole sharp
-          # dependency tree instead, so nothing can go missing.
-          rm -rf .next/standalone/node_modules/sharp
-          cp -rL node_modules/sharp .next/standalone/node_modules/sharp
+          # `sharp`'s dependency tree is NOT nested inside node_modules/sharp
+          # under pnpm — pnpm gives every package its own isolated
+          # node_modules/ folder (e.g. detect-libc/color/semver live as
+          # SIBLINGS of sharp inside .pnpm/sharp@X/node_modules/, and color's
+          # own deps live inside .pnpm/color@Y/node_modules/, and so on).
+          # A plain `cp -rL node_modules/sharp` (tried previously) only
+          # copies sharp's own folder and misses this entire sibling chain,
+          # which is why "Cannot find module 'detect-libc'" persisted even
+          # after that fix shipped. Walk the real resolution chain — each
+          # package's own isolated folder, not a version-hardcoded guess —
+          # and copy every real (dereferenced) target directly.
+          STANDALONE_NM=".next/standalone/node_modules"
+          rm -rf "$STANDALONE_NM"/sharp "$STANDALONE_NM"/detect-libc "$STANDALONE_NM"/semver \
+                 "$STANDALONE_NM"/color "$STANDALONE_NM"/color-convert "$STANDALONE_NM"/color-string \
+                 "$STANDALONE_NM"/color-name "$STANDALONE_NM"/simple-swizzle "$STANDALONE_NM"/is-arrayish \
+                 "$STANDALONE_NM"/@img
+          mkdir -p "$STANDALONE_NM/@img"
+
+          SHARP_DIR=$(dirname "$(readlink -f node_modules/sharp)")
+          COLOR_DIR=$(dirname "$(readlink -f "$SHARP_DIR/color")")
+          COLOR_STRING_DIR=$(dirname "$(readlink -f "$COLOR_DIR/color-string")")
+          SWIZZLE_DIR=$(dirname "$(readlink -f "$COLOR_STRING_DIR/simple-swizzle")")
+
+          for pkg in sharp color detect-libc semver; do
+            cp -rL "$SHARP_DIR/$pkg" "$STANDALONE_NM/$pkg"
+          done
+          # Only the linux-arm64 binaries (the actual deploy target) — the
+          # other ~11 platform variants pnpm linked here (from
+          # supportedArchitectures, kept broad for local dev on other OSes)
+          # would just be dead weight on a disk-constrained EC2 instance.
+          cp -rL "$SHARP_DIR/@img/sharp-linux-arm64" "$STANDALONE_NM/@img/sharp-linux-arm64"
+          cp -rL "$SHARP_DIR/@img/sharp-libvips-linux-arm64" "$STANDALONE_NM/@img/sharp-libvips-linux-arm64"
+
+          cp -rL "$COLOR_DIR/color-convert" "$STANDALONE_NM/color-convert"
+          cp -rL "$COLOR_DIR/color-string" "$STANDALONE_NM/color-string"
+          cp -rL "$COLOR_STRING_DIR/color-name" "$STANDALONE_NM/color-name"
+          cp -rL "$COLOR_STRING_DIR/simple-swizzle" "$STANDALONE_NM/simple-swizzle"
+          cp -rL "$SWIZZLE_DIR/is-arrayish" "$STANDALONE_NM/is-arrayish"
 
           TARBALL="deploy-${{ github.sha }}.tar.gz"
           tar -czf "$TARBALL" -C .next/standalone .
