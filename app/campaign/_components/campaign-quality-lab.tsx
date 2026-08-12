@@ -873,6 +873,7 @@ function DonateCard({
           causeUrl={causePublicPath(cause)}
           recurring={recurring}
           tip={tip}
+          onTipChange={setTip}
           initialAmount={donation}
           hideHeader
           hideAmountField
