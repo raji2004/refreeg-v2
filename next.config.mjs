@@ -30,6 +30,20 @@ const nextConfig = {
       "./node_modules/.pnpm/sharp@*/**",
       "./node_modules/.pnpm/@img+sharp-linux-arm64@*/**",
       "./node_modules/.pnpm/@img+sharp-libvips-linux-arm64@*/**",
+      // sharp's own (non-optional) runtime deps + their transitive deps.
+      // pnpm keeps these nested under .pnpm/<pkg>@<version>/ rather than
+      // hoisted to top-level node_modules, so the globs above only copy a
+      // symlink *into* these folders, not the folders themselves — leaving
+      // dangling symlinks ("Cannot find module 'detect-libc'") in the
+      // deployed standalone bundle unless we include the real targets too.
+      "./node_modules/.pnpm/detect-libc@*/**",
+      "./node_modules/.pnpm/semver@*/**",
+      "./node_modules/.pnpm/color@*/**",
+      "./node_modules/.pnpm/color-string@*/**",
+      "./node_modules/.pnpm/color-convert@*/**",
+      "./node_modules/.pnpm/color-name@*/**",
+      "./node_modules/.pnpm/simple-swizzle@*/**",
+      "./node_modules/.pnpm/is-arrayish@*/**",
     ],
   },
   eslint: {
