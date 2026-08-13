@@ -83,6 +83,7 @@ export interface TransactionData
   pledgeId?: string;
   pledgeFutureAmount?: number;
   reminderDate?: string;
+  _flutterwaveSubAccountId?: string;
 }
 
 export interface ICreateSubaccount {
