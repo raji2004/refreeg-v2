@@ -22,6 +22,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { listUserDonations } from "@/actions/donation-actions";
+import { causePublicPath } from "@/lib/causes/slug";
 
 interface MyDonationsListProps {
   userId: string;
@@ -234,7 +235,13 @@ export async function MyDonationsList({
               </CardContent>
 
               <CardFooter className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:flex-row">
-                <Link href={`/causes/${donation.cause_id}`} className="w-full">
+                <Link
+                  href={causePublicPath({
+                    id: donation.cause_id,
+                    slug: donation.cause?.slug,
+                  })}
+                  className="w-full"
+                >
                   <Button
                     variant="outline"
                     className="h-11 w-full rounded-xl border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"

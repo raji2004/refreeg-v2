@@ -2,6 +2,7 @@ model Cause {
   id                   String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId               String                        @map("user_id") @db.Uuid
   title                String
+  slug                 String?                       @unique @db.VarChar(80)
   description          String?
   category             String
   goal                 Decimal                       @db.Decimal
@@ -56,6 +57,7 @@ model Donation {
   createdAt          DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   tip_amount         Decimal?  @default(0) @db.Decimal
   paystack_reference String?   @unique(map: "donations_unique") @db.VarChar
+  payment_provider   String?   @default("paystack") @db.VarChar
   cause              Cause     @relation(fields: [causeId], references: [id])
   user               User?     @relation(fields: [userId], references: [id])
 

@@ -75,7 +75,40 @@ jobs:
       - name: Install all dependencies
         run: pnpm install --frozen-lockfile
 
+      # ── 2b. Apply pending database migrations ──────────────────────────────
+      # Mirrors deploy.yml — keeps the DB in sync with prisma/migrations
+      # automatically instead of relying on someone applying schema changes
+      # by hand (see deploy.yml for the incident that motivated this).
+      #
+      # UNVERIFIED for this pipeline: deploy.yml's runner couldn't reach its
+      # DB directly (P1001 — Postgres bound to 127.0.0.1 on the EC2 box) and
+      # had to tunnel through SSH to a fixed host instead. This pipeline has
+      # no fixed host to tunnel through (ASG instances are ephemeral, per the
+      # note at the top of this file), so if this scaled RDS instance is
+      # similarly VPC-private, this step will fail the same way until it's
+      # replaced with something like an SSM Session Manager port-forward to
+      # one instance. Confirm reachability before this pipeline ever goes
+      # live — don't assume this works just because deploy.yml's fix does.
+      - name: Apply database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm exec prisma migrate deploy
+
+      # NEXT_PUBLIC_* vars are inlined at build time, not read at runtime —
+      # see deploy.yml for the full explanation (the service-fee-always-0
+      # bug this was discovered from).
       - name: Build application
+        env:
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          NEXT_PUBLIC_REFREEG_SERVICE_FEE: ${{ secrets.NEXT_PUBLIC_REFREEG_SERVICE_FEE }}
+          NEXT_PUBLIC_BREET_ENV: ${{ secrets.NEXT_PUBLIC_BREET_ENV }}
+          NEXT_PUBLIC_BREET_WEBHOOK_SECRET: ${{ secrets.NEXT_PUBLIC_BREET_WEBHOOK_SECRET }}
+          NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_S3_DIRECT_UPLOAD: ${{ secrets.NEXT_PUBLIC_S3_DIRECT_UPLOAD }}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY }}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
         run: pnpm run build
 
       # ── 3. Package the minimal artifact ────────────────────────────────────
@@ -89,6 +122,14 @@ jobs:
           mkdir -p .next/standalone/.next
           cp -r .next/static .next/standalone/.next/static
           cp ecosystem.scaled.config.js .next/standalone/ecosystem.config.js
+
+          # sharp's transitive deps live in pnpm's nested .pnpm store and are
+          # only symlinked into node_modules/sharp — Next's output-file tracer
+          # doesn't reliably follow those into .next/standalone. Force a fully
+          # dereferenced copy so nothing goes missing (see deploy.yml for the
+          # full explanation of the "Cannot find module 'detect-libc'" bug).
+          rm -rf .next/standalone/node_modules/sharp
+          cp -rL node_modules/sharp .next/standalone/node_modules/sharp
 
           TARBALL="deploy-${{ github.sha }}.tar.gz"
           tar -czf "$TARBALL" -C .next/standalone .
@@ -136,6 +177,15 @@ jobs:
           NEXT_PUBLIC_REFREEG_SERVICE_FEE: ${{ secrets.NEXT_PUBLIC_REFREEG_SERVICE_FEE }}
           PAYSTACK_SECRET_KEY: ${{ secrets.PAYSTACK_SECRET_KEY }}
           NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY }}
+          FLUTTERWAVE_WEBHOOK_HASH: ${{ secrets.FLUTTERWAVE_WEBHOOK_HASH }}
+          FLUTTERWAVE_PUBLIC_KEY: ${{ secrets.FLUTTERWAVE_PUBLIC_KEY }}
+          FLUTTERWAVE_SECRET_KEY: ${{ secrets.FLUTTERWAVE_SECRET_KEY }}
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_S3_DIRECT_UPLOAD: ${{ secrets.NEXT_PUBLIC_S3_DIRECT_UPLOAD }}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY }}
+          NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
           # HEALTH_CHECK_TOKEN intentionally NOT written — the ALB target group
           # health check can't send custom headers, so /api/health must stay
           # unauthenticated (it fails open with no token configured).
@@ -167,6 +217,15 @@ jobs:
             [NEXT_PUBLIC_REFREEG_SERVICE_FEE]="$NEXT_PUBLIC_REFREEG_SERVICE_FEE"
             [PAYSTACK_SECRET_KEY]="$PAYSTACK_SECRET_KEY"
             [NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY]="$NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY"
+            [FLUTTERWAVE_WEBHOOK_HASH]="$FLUTTERWAVE_WEBHOOK_HASH"
+            [FLUTTERWAVE_PUBLIC_KEY]="$FLUTTERWAVE_PUBLIC_KEY"
+            [FLUTTERWAVE_SECRET_KEY]="$FLUTTERWAVE_SECRET_KEY"
+            [NEXT_PUBLIC_BASE_URL]="$NEXT_PUBLIC_BASE_URL"
+            [NEXT_PUBLIC_APP_URL]="$NEXT_PUBLIC_APP_URL"
+            [NEXT_PUBLIC_SITE_URL]="$NEXT_PUBLIC_SITE_URL"
+            [NEXT_PUBLIC_S3_DIRECT_UPLOAD]="$NEXT_PUBLIC_S3_DIRECT_UPLOAD"
+            [NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY]="$NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY"
+            [NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY]="$NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY"
             [NODE_ENV]="production"
           )
 

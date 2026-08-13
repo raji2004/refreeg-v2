@@ -27,7 +27,7 @@ const Paystack = {
         );
       }
       const baseUrl = await getBaseURL();
-      const totalCharge = data.amount + data.serviceFee + (data.tipAmount || 0);
+      const totalCharge = data.amount + data.serviceFee + (data.providerFee || 0) + (data.tipAmount || 0);
       const feePlusTip = data.serviceFee + (data.tipAmount || 0);
       const primarySubaccount = data.subaccounts?.find(
         (entry) => entry?.subaccount?.trim().length,
@@ -42,7 +42,7 @@ const Paystack = {
         ...(primarySubaccount
           ? {
               subaccount: primarySubaccount,
-              bearer: "subaccount",
+              bearer: "account",
             }
           : {}),
         ...(data.plan ? { plan: data.plan } : {}),

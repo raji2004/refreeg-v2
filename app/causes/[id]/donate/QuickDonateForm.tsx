@@ -26,6 +26,7 @@ const PRESETS = [500, 1000, 5000, 10000];
 
 interface QuickDonateFormProps {
   causeId: string;
+  causeSlug?: string | null;
   causeTitle: string;
   causeImage?: string | null;
   causeMultimedia?: string[];
@@ -39,6 +40,7 @@ interface QuickDonateFormProps {
 
 export default function QuickDonateForm({
   causeId,
+  causeSlug,
   causeTitle,
   causeImage,
   causeMultimedia,
@@ -149,7 +151,7 @@ export default function QuickDonateForm({
         <p className="text-center text-xs text-slate-400">
           Want to learn more?{" "}
           <Link
-            href={`/causes/${causeId}`}
+            href={`/causes/${causeSlug || causeId}`}
             className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700"
           >
             View full campaign →

@@ -1,9 +1,9 @@
 import { createDonation } from "@/actions/donation-actions";
-import Paystack from "@/services/paystack";
+import { verifyTransactionFull } from "@/services/payment-provider";
 import {
   processPledgeAuthorizationSuccess,
   processPledgeScheduledChargeSuccess,
-} from "@/lib/pledge-paystack";
+} from "@/lib/pledge-provider";
 
 type ChargeResult = { ok: true; reason: string } | { ok: false; reason: string };
 
@@ -17,7 +17,7 @@ type ChargeResult = { ok: true; reason: string } | { ok: false; reason: string }
 export async function processSuccessfulCharge(
   reference: string,
 ): Promise<ChargeResult> {
-  const full = (await Paystack.verifyTransactionFull(reference)) as {
+  const full = (await verifyTransactionFull(reference, "paystack")) as {
     status?: string;
     metadata?: Record<string, string | number | boolean | undefined>;
   };
@@ -29,11 +29,11 @@ export async function processSuccessfulCharge(
   const meta = full.metadata || {};
 
   if (String(meta.pledge_flow) === "authorization") {
-    return processPledgeAuthorizationSuccess(reference);
+    return processPledgeAuthorizationSuccess(reference, "paystack");
   }
 
   if (String(meta.pledge_flow) === "scheduled_charge") {
-    return processPledgeScheduledChargeSuccess(reference);
+    return processPledgeScheduledChargeSuccess(reference, "paystack");
   }
 
   if (!meta.cause_id) {
@@ -53,6 +53,7 @@ export async function processSuccessfulCharge(
     },
     undefined,
     reference,
+    "paystack",
   );
 
   return { ok: true, reason: "donation_created" };

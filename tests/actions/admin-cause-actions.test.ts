@@ -20,6 +20,7 @@ jest.mock("@/lib/prisma", () => ({
     cause: {
       update: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     $transaction: jest.fn(),
   },
@@ -44,7 +45,7 @@ const mockAuth = auth as jest.Mock;
 const mockPrisma = prisma as unknown as {
   $queryRaw: jest.Mock;
   cause_edits: { findFirst: jest.Mock; update: jest.Mock; delete: jest.Mock };
-  cause: { update: jest.Mock; findUnique: jest.Mock };
+  cause: { update: jest.Mock; findUnique: jest.Mock; findFirst: jest.Mock };
   $transaction: jest.Mock;
 };
 
@@ -53,7 +54,12 @@ describe("admin-cause-actions", () => {
     jest.clearAllMocks();
     mockAuth.mockResolvedValue({ user: { id: "admin-1" } });
     (isAdminOrManager as jest.Mock).mockResolvedValue(true);
-    mockPrisma.cause.findUnique.mockResolvedValue({ location: "Lagos" });
+    mockPrisma.cause.findUnique.mockResolvedValue({
+      location: "Lagos",
+      title: "Test Cause",
+      slug: "test-cause",
+    });
+    mockPrisma.cause.findFirst.mockResolvedValue(null);
   });
 
   describe("listAdminCauses", () => {
@@ -147,6 +153,11 @@ describe("admin-cause-actions", () => {
   describe("updateCauseStatus", () => {
     it("approves cause without pending edit", async () => {
       mockPrisma.cause_edits.findFirst.mockResolvedValue(null);
+      mockPrisma.cause.findUnique.mockResolvedValue({
+        location: "Abuja",
+        title: "Help School",
+        slug: "help-school",
+      });
       mockPrisma.cause.update.mockResolvedValue({});
 
       const result = await updateCauseStatus("cause-1", "approved");

@@ -38,6 +38,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.55.0(react@19.1.0))
+      '@img/sharp-win32-x64':
+        specifier: ^0.35.3
+        version: 0.35.3
       '@metamask/providers':
         specifier: ^22.1.0
         version: 22.1.0(webextension-polyfill@0.12.0)
@@ -345,6 +348,13 @@ importers:
       typescript:
         specifier: ^5
         version: 5.8.2
+    optionalDependencies:
+      '@img/sharp-libvips-linux-arm64':
+        specifier: 1.0.4
+        version: 1.0.4
+      '@img/sharp-linux-arm64':
+        specifier: 0.33.5
+        version: 0.33.5
 
   sdks/javascript: {}
 
@@ -1764,6 +1774,12 @@ packages:
   '@img/sharp-win32-x64@0.33.5':
     resolution: {integrity: sha512-MpY/o8/8kj+EcnxwvrP4aTJSWw/aZ7JIGR4aBeZkZw5B7/Jn+tY9/VNwtcoGmdT7GfggGIU4kygOMSbYnOrAbg==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
+    cpu: [x64]
+    os: [win32]
+
+  '@img/sharp-win32-x64@0.35.3':
+    resolution: {integrity: sha512-D4y1vNeZrIIJCN+uHaWVtH86B+aCrdMYYjicy9pXHvbGZeGYLLSd3wdVuC37FxVXlU1ARsk84eKWfWMXGYEqvA==}
+    engines: {node: '>=20.9.0'}
     cpu: [x64]
     os: [win32]
 
@@ -8902,6 +8918,8 @@ snapshots:
 
   '@img/sharp-win32-x64@0.33.5':
     optional: true
+
+  '@img/sharp-win32-x64@0.35.3': {}
 
   '@internationalized/date@3.10.0':
     dependencies:

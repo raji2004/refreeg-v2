@@ -38,6 +38,15 @@ describe("lib/utils", () => {
     process.env.NEXT_PUBLIC_BASE_URL = original;
   });
 
+  it("adds a https:// scheme when the configured base URL is missing one", () => {
+    const original = process.env.NEXT_PUBLIC_BASE_URL;
+    process.env.NEXT_PUBLIC_BASE_URL = "apps.refreeg.com";
+
+    expect(getBaseURL()).toBe("https://apps.refreeg.com");
+
+    process.env.NEXT_PUBLIC_BASE_URL = original;
+  });
+
   it("returns zero fee when service fee percentage is unset", () => {
     const original = process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE;
     delete process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE;

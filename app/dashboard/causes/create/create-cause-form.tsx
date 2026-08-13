@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CampaignLocationAutocomplete } from "@/components/campaign-location-autocomplete";
+import { DeviceLocationField } from "@/components/device-location-field";
 import { CampaignCategorySelect } from "@/components/campaign-category-select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,6 +98,11 @@ import {
   validateCauseCoverImage,
   validateCauseGalleryImage,
 } from "@/lib/media/cause-cover";
+import type { DeviceLocation } from "@/types/cause-types";
+import {
+  formatFundingGoalInput,
+  normalizeFundingGoalInput,
+} from "@/lib/funding-goal";
 
 const currencies = [{ id: "NGN", name: "Naira (₦)" }];
 const MAX_DURATION_DAYS = 180;
@@ -112,6 +117,7 @@ type FormData = {
   title: string;
   summary: string;
   location: string;
+  deviceLocation: DeviceLocation | null;
   category: string;
   goal: string;
   currency: string;
@@ -140,6 +146,7 @@ type CauseFormData = {
   title: string;
   summary: string;
   location: string;
+  deviceLocation: DeviceLocation;
   category: string;
   goal: string;
   currency: string;
@@ -168,8 +175,8 @@ const validateForm = (formData: FormData): FormErrors => {
     errors.summary = "Summary must be less than 200 characters";
   }
 
-  if (!formData.location.trim()) {
-    errors.location = "Select a valid location from the suggestions";
+  if (!formData.deviceLocation || !formData.location.trim()) {
+    errors.location = "Use your current location to continue";
   } else if (formData.location.trim().length > 100) {
     errors.location = "Location must be less than 100 characters";
   }
@@ -243,6 +250,7 @@ export default function CreateCauseForm() {
     title: "",
     summary: "",
     location: "",
+    deviceLocation: null,
     category: "",
     goal: "",
     currency: "NGN",
@@ -297,9 +305,8 @@ export default function CreateCauseForm() {
 
       setFormData((prev) => ({
         ...parsedDraft,
-        location: parsedDraft.locationVerified
-          ? parsedDraft.location || ""
-          : "",
+        location: "",
+        deviceLocation: null,
         coverImage: prev.coverImage,
         startDate,
         endDate,
@@ -311,10 +318,16 @@ export default function CreateCauseForm() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const { coverImage, multimedia, ...dataToSave } = formData;
+      const {
+        coverImage,
+        multimedia,
+        deviceLocation,
+        ...dataToSave
+      } = formData;
       const serializedData = {
         ...dataToSave,
-        locationVerified: Boolean(dataToSave.location),
+        location: "",
+        locationVerified: false,
         startDate: dataToSave.startDate
           ? dataToSave.startDate.toISOString()
           : null,
@@ -382,6 +395,16 @@ export default function CreateCauseForm() {
 
     if (errors[name as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const goal = normalizeFundingGoalInput(e.target.value);
+    if (goal === null) return;
+
+    setFormData((prev) => ({ ...prev, goal }));
+    if (errors.goal) {
+      setErrors((prev) => ({ ...prev, goal: undefined }));
     }
   };
 
@@ -608,6 +631,7 @@ export default function CreateCauseForm() {
       title: formData.title,
       summary: formData.summary,
       location: formData.location,
+      deviceLocation: formData.deviceLocation!,
       category: formData.category,
       goal: formData.goal,
       currency: formData.currency,
@@ -640,13 +664,16 @@ export default function CreateCauseForm() {
       router.push("/dashboard/causes");
     } catch (error) {
       console.error("Error submitting cause:", error);
-      setErrors((prev) => ({
-        ...prev,
-        multimedia:
-          error instanceof Error
-            ? error.message
-            : "Failed to upload media or create cause",
-      }));
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to upload media or create cause";
+      if (/location|position|city/i.test(message)) {
+        setErrors((prev) => ({ ...prev, location: message }));
+        setCurrentStep(1);
+      } else {
+        setErrors((prev) => ({ ...prev, multimedia: message }));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -757,24 +784,34 @@ export default function CreateCauseForm() {
                     htmlFor="location"
                     className="text-sm font-semibold text-gray-700 sm:text-base"
                   >
-                    Location <span className="text-red-500">*</span>
+                    Current location <span className="text-red-500">*</span>
                   </Label>
-                  <CampaignLocationAutocomplete
+                  <DeviceLocationField
                     value={formData.location}
                     invalid={Boolean(errors.location)}
-                    onChange={(location) => {
-                      setFormData((current) => ({ ...current, location }));
-                      if (location) {
-                        setErrors((current) => ({
-                          ...current,
-                          location: undefined,
-                        }));
-                      }
+                    onVerificationStarted={() => {
+                      setFormData((current) => ({
+                        ...current,
+                        location: "",
+                        deviceLocation: null,
+                      }));
+                    }}
+                    onVerified={(location, deviceLocation) => {
+                      setFormData((current) => ({
+                        ...current,
+                        location,
+                        deviceLocation,
+                      }));
+                      setErrors((current) => ({
+                        ...current,
+                        location: undefined,
+                      }));
                     }}
                     className="h-11 premium-input sm:h-12"
                   />
                   <p className="text-xs text-slate-500">
-                    Type at least two letters, then select a place from the list.
+                    We use your device location to confirm the city. Your exact
+                    coordinates are not saved or shown publicly.
                   </p>
                   {errors.location && (
                     <p className="text-sm text-red-500 font-medium">
@@ -818,10 +855,11 @@ export default function CreateCauseForm() {
                       <Input
                         id="goal"
                         name="goal"
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="0.00"
-                        value={formData.goal}
-                        onChange={handleChange}
+                        value={formatFundingGoalInput(formData.goal)}
+                        onChange={handleGoalChange}
                         className={cn(
                           "h-11 pl-11 premium-input text-base font-mono sm:h-12 sm:pl-12 sm:text-lg",
                           errors.goal ? "border-red-500" : "",

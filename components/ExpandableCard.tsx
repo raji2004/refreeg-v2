@@ -10,10 +10,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { causePublicPath } from "@/lib/causes/slug";
 
 // TYPES
 interface ExpandableCardItem {
   id: string;
+  slug?: string | null;
   title: string;
   description?: string | null;
   image?: string | null;
@@ -46,14 +48,15 @@ export function ExpandableCard({ items, type }: ExpandableCardProps) {
 
   // NAVIGATION LOGIC
   const handleNavigation = (item: ExpandableCardItem) => {
+    const causePath = causePublicPath(item);
     if (item.action === "pledge") {
-      router.push(`/causes/${item.id}/pledge`);
+      router.push(`${causePath}/pledge`);
     } else if (item.action === "donate") {
-      router.push(`/causes/${item.id}`);
+      router.push(causePath);
     } else if (type === "petition") {
       router.push(`/petitions/${item.id}/sign`);
     } else {
-      router.push(`/causes/${item.id}`);
+      router.push(causePath);
     }
   };
 

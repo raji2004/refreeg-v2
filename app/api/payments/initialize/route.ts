@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import Paystack from "@/services/paystack";
+import { initializeTransaction } from "@/services/payment-provider";
 import { TransactionData } from "@/types";
 import { assertCauseAcceptingDonations } from "@/lib/proof-milestones";
+import { calculateProviderFee, calculateServiceFee } from "@/lib/utils";
 
 const MIN_DONATION_AMOUNT = 100;
 
@@ -29,7 +30,115 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: e.message }, { status: 403 });
     }
 
-    const response = await Paystack.initializeTransaction(data);
+    // Force recalculate fees on the server to prevent spoofing
+    // and correctly apply Flutterwave vs Paystack logic
+    data.serviceFee = calculateServiceFee(Number(data.amount));
+    data.providerFee = calculateProviderFee(
+      Number(data.amount),
+      data.paymentProvider as "paystack" | "flutterwave",
+    );
+
+    // JIT Flutterwave Subaccount Creation for existing users
+    if (
+      data.paymentProvider === "flutterwave" &&
+      (!data.subaccounts || data.subaccounts.length === 0)
+    ) {
+      try {
+        const { prisma } = await import("@/lib/prisma");
+        const Flutterwave = (await import("@/services/flutterwave")).default;
+
+        const cause = await prisma.cause.findUnique({
+          where: { id: data.causeId },
+          select: { userId: true },
+        });
+
+        if (cause?.userId) {
+          const user = await prisma.user.findUnique({
+            where: { id: cause.userId },
+            select: {
+              accountNumber: true,
+              bankName: true,
+              fullName: true,
+              username: true,
+              email: true,
+              subAccountCode: true,
+              flutterwaveSubAccountId: true,
+            },
+          });
+
+          // Only if they don't have flutterwave but HAVE paystack (meaning they are verified)
+          if (
+            user &&
+            !user.flutterwaveSubAccountId &&
+            user.subAccountCode &&
+            user.accountNumber &&
+            user.bankName
+          ) {
+            const bankCode = await Flutterwave.getBankCode(user.bankName);
+            if (bankCode) {
+              const isTestMode =
+                process.env.FLUTTERWAVE_SECRET_KEY?.includes("TEST");
+
+              let subaccountId: string | null = null;
+
+              try {
+                const newSubaccount = await Flutterwave.createSubaccount({
+                  account_number: isTestMode
+                    ? "0690000031"
+                    : user.accountNumber,
+                  bank_code: isTestMode ? "044" : bankCode,
+                  business_name:
+                    user.fullName || user.username || "RefreeG Cause Creator",
+                  business_email: user.email || "no-reply@refreeg.com",
+                });
+                subaccountId = newSubaccount?.subaccount_id || null;
+              } catch (createErr: any) {
+                const msg =
+                  createErr.response?.data?.message || createErr.message || "";
+                if (
+                  msg.toLowerCase().includes("already exists") &&
+                  user.accountNumber
+                ) {
+                  // Recover the existing Flutterwave subaccount ID
+                  subaccountId =
+                    await Flutterwave.findSubaccountByAccountNumber(
+                      user.accountNumber,
+                    );
+                }
+              }
+
+              if (subaccountId) {
+                await prisma.user.update({
+                  where: { id: cause.userId },
+                  data: { flutterwaveSubAccountId: subaccountId },
+                });
+
+                data.subaccounts = [
+                  {
+                    subaccount: subaccountId,
+                    share: Number(data.amount) * 100,
+                  },
+                ];
+              }
+            }
+          }
+        }
+      } catch (jitError) {
+        console.error("JIT Flutterwave Subaccount Creation Failed:", jitError);
+      }
+    }
+
+    // Ensure Flutterwave gets its specific subaccount ID, not the Paystack one
+    if (data.paymentProvider === "flutterwave" && data._flutterwaveSubAccountId) {
+      data.subaccounts = [
+        {
+          subaccount: data._flutterwaveSubAccountId,
+          share: Number(data.amount) * 100,
+        },
+      ];
+    }
+
+    const response = await initializeTransaction(data, data.paymentProvider);
 
     return NextResponse.json({
       success: true,

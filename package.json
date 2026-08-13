@@ -29,6 +29,7 @@
     "@emotion/styled": "^11.14.1",
     "@heroui/navbar": "^2.2.25",
     "@hookform/resolvers": "^3.9.1",
+    "@img/sharp-win32-x64": "^0.35.3",
     "@metamask/providers": "^22.1.0",
     "@mui/icons-material": "^7.3.4",
     "@prisma/client": "^6.19.3",
@@ -104,6 +105,10 @@
     "tsx": "^4.21.0",
     "vaul": "^0.9.6",
     "zod": "^3.24.1"
+  },
+  "optionalDependencies": {
+    "@img/sharp-linux-arm64": "0.33.5",
+    "@img/sharp-libvips-linux-arm64": "1.0.4"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.29.7",

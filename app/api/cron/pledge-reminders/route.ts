@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assertCronAuthorized } from "@/lib/cron-auth";
+import { causePublicPath } from "@/lib/causes/slug";
 
 /**
  * Daily job (Next.js): email reminders for pledges due today that are NOT
@@ -78,6 +79,7 @@ async function runPledgeReminders() {
     select: {
       id: true,
       title: true,
+      slug: true,
       raised: true,
       goal: true,
       createdAt: true,
@@ -119,7 +121,7 @@ async function runPledgeReminders() {
               data: {
                 followers: followerEmails,
                 causeTitle: cause.title,
-                causeUrl: `${appUrl}/causes/${cause.id}`,
+                causeUrl: `${appUrl}${causePublicPath(cause)}`,
                 amountRaised,
                 goalAmount,
                 percent,

@@ -19,5 +19,6 @@ export interface DonationWithCause extends Donation {
     title: string;
     category: string;
     status: string | null;
+    slug: string | null;
   };
 }
