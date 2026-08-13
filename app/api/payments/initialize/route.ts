@@ -128,6 +128,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Ensure Flutterwave gets its specific subaccount ID, not the Paystack one
+    if (data.paymentProvider === "flutterwave" && data._flutterwaveSubAccountId) {
+      data.subaccounts = [
+        {
+          subaccount: data._flutterwaveSubAccountId,
+          share: Number(data.amount) * 100,
+        },
+      ];
+    }
+
     const response = await initializeTransaction(data, data.paymentProvider);
 
     return NextResponse.json({

@@ -96,10 +96,13 @@ const Flutterwave = {
         data: error.response?.data?.message,
       });
 
-      throw new Error(
-        error.response?.data?.message ||
-          "Failed to initialize payment transaction"
-      );
+      let errorMessage = error.response?.data?.message || "Failed to initialize payment transaction";
+      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        const details = error.response.data.errors.map((e: any) => e.message).join(", ");
+        errorMessage += `: ${details}`;
+      }
+
+      throw new Error(errorMessage);
     }
   },
 
