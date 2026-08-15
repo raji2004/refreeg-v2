@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
-import { createDonation, createSubscription } from "@/actions";
-import {
-  processPledgeAuthorizationSuccess,
-  processPledgeScheduledChargeSuccess,
-} from "@/lib/pledge-provider";
-import Paystack from "@/services/paystack";
+import { createSubscription } from "@/actions";
+import { processSuccessfulCharge } from "@/lib/paystack-charge-processing";
 import crypto from "crypto";
 
 interface PaystackWebhookData {
@@ -91,61 +87,14 @@ export async function POST(request: Request) {
           );
         }
 
-        const full = (await Paystack.verifyTransactionFull(reference)) as {
-          status?: string;
-          metadata?: Record<string, string | number | boolean | undefined>;
-        };
+        const result = await processSuccessfulCharge(reference);
 
-        if (full.status !== "success") {
+        if (!result.ok) {
           return new NextResponse(
-            JSON.stringify({ message: "Transaction not successful" }),
+            JSON.stringify({ message: `Skipped: ${result.reason}` }),
             { status: 200 },
           );
         }
-
-        const meta = full.metadata || {};
-
-        if (String(meta.pledge_flow) === "authorization") {
-          await processPledgeAuthorizationSuccess(reference, "paystack");
-          return new NextResponse(
-            JSON.stringify({ message: "Pledge authorization stored" }),
-            { status: 201 },
-          );
-        }
-
-        if (String(meta.pledge_flow) === "scheduled_charge") {
-          await processPledgeScheduledChargeSuccess(reference, "paystack");
-          return new NextResponse(
-            JSON.stringify({ message: "Pledge charge processed" }),
-            { status: 201 },
-          );
-        }
-
-        if (!meta.cause_id) {
-          return new NextResponse(
-            JSON.stringify({ message: "Metadata missing cause_id, skipping" }),
-            { status: 200 },
-          );
-        }
-
-        const baseAmount = Number(meta.amount);
-        const tipAmount = Number(meta.tip_amount || 0);
-
-        await createDonation(
-          String(meta.cause_id),
-          meta.user_id ? String(meta.user_id) : null,
-          {
-            amount: baseAmount,
-            name: String(meta.customer_name || ""),
-            email: String(meta.email || ""),
-            message: String(meta.message || ""),
-            isAnonymous: Boolean(meta.is_anonymous),
-            tip_amount: tipAmount,
-          },
-          undefined,
-          reference,
-          "paystack",
-        );
 
         return new NextResponse(
           JSON.stringify({ message: "Donation processed successfully" }),

@@ -564,10 +564,25 @@ export async function getUserPetitions(userId: string): Promise<Petition[]> {
     orderBy: { created_at: "desc" },
   });
 
+  if (petitions.length === 0) return [];
+
+  const petitionIds = petitions.map((p) => p.id);
+  const aggregatedSignatures = await prisma.signatures.groupBy({
+    by: ["petition_id"],
+    _count: { petition_id: true },
+    where: { petition_id: { in: petitionIds } },
+  });
+
+  const signatureCountByPetition: Record<string, number> = {};
+  for (const s of aggregatedSignatures) {
+    signatureCountByPetition[s.petition_id] = s._count.petition_id;
+  }
+
   return petitions.map((p) => ({
     ...p,
     goal: Number(p.goal),
     raised: Number(p.raised),
+    signatures: signatureCountByPetition[p.id] || 0,
     created_at: p.created_at.toISOString(),
     updated_at: p.updated_at.toISOString(),
   })) as unknown as Petition[];
