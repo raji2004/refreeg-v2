@@ -23,6 +23,9 @@ jest.mock("@/lib/prisma", () => ({
       createMany: jest.fn(),
       deleteMany: jest.fn(),
     },
+    signatures: {
+      groupBy: jest.fn(),
+    },
     user: {
       findUnique: jest.fn(),
     },
@@ -91,6 +94,7 @@ const mockPrisma = prisma as unknown as {
     delete: jest.Mock;
   };
   petition_edit_sections: { createMany: jest.Mock; deleteMany: jest.Mock };
+  signatures: { groupBy: jest.Mock };
   user: { findUnique: jest.Mock };
 };
 
@@ -305,10 +309,14 @@ describe("petition-actions", () => {
           updated_at: updatedAt,
         },
       ]);
+      mockPrisma.signatures.groupBy.mockResolvedValue([
+        { petition_id: "petition-1", _count: { petition_id: 3 } },
+      ]);
 
       const result = await getUserPetitions("owner-1");
 
       expect(result[0].goal).toBe(100);
+      expect(result[0].signatures).toBe(3);
       expect(mockPrisma.petitions.findMany).toHaveBeenCalledWith({
         where: { user_id: "owner-1" },
         orderBy: { created_at: "desc" },
