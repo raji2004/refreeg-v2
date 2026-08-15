@@ -281,7 +281,7 @@ export async function listUserDonations(
       where: whereClause,
       include: {
         cause: {
-          select: { title: true, category: true, slug: true },
+          select: { title: true, category: true, status: true, slug: true },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -292,6 +292,7 @@ export async function listUserDonations(
       cause: {
         title: item.cause?.title || "Unknown Cause",
         category: item.cause?.category || "Unknown",
+        status: item.cause?.status ?? null,
         slug: item.cause?.slug || null,
       },
     }));

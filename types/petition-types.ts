@@ -13,6 +13,7 @@ export interface Petition {
   category: string;
   goal: number;
   raised: number;
+  signatures?: number;
   status: PetitionStatus;
   rejection_reason: string | null;
   created_at: string;
