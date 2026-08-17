@@ -232,7 +232,12 @@ describe("donation-actions", () => {
           amount: 5000,
           tip_amount: 0,
           createdAt: new Date("2026-01-01T00:00:00.000Z"),
-          cause: { title: "Help School", category: "education", slug: null },
+          cause: {
+            title: "Help School",
+            category: "education",
+            status: "approved",
+            slug: null,
+          },
         },
       ]);
 
@@ -241,6 +246,7 @@ describe("donation-actions", () => {
       expect(result[0].cause).toEqual({
         title: "Help School",
         category: "education",
+        status: "approved",
         slug: null,
       });
     });
