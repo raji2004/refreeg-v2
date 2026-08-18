@@ -135,7 +135,7 @@ export async function POST(req: Request) {
         });
 
         if (referrer) {
-          // 1. Create the referral record (v1 legacy support)
+          // 1. Create the referral record (v1) with full UTM attribution data
           await tx.referrals_v1.create({
             data: {
               referrer_id_v1: referrer.id,
@@ -146,11 +146,19 @@ export async function POST(req: Request) {
               reward_v1: null,
               reward_status_v1: "PENDING",
               kyc_verified_v1: false,
+
+              // UTM tracking — populated from the pending registration row
+              utm_source_v1: pending.utm_source ?? null,
+              utm_medium_v1: pending.utm_medium ?? null,
+              utm_campaign_v1: pending.utm_campaign ?? null,
+              ip_address_v1: pending.ip_address ?? null,
+              user_agent_v1: pending.user_agent ?? null,
             }
           });
         }
       }
       // ----------------------------
+
 
       await tx.pendingRegistration.delete({
         where: { email: normalizedEmail },
