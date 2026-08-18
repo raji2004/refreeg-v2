@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createReferralRecord } from "@/lib/referral-utils";
 
 function createOrganizationSlug(name: string) {
   const base = name
@@ -129,36 +130,21 @@ export async function POST(req: Request) {
 
       // --- Referral Integration ---
       if (pending.referralCode) {
-        const referrer = await tx.user.findUnique({
-          where: { referralCode: pending.referralCode },
-          select: { id: true, total_points: true }
+        // createReferralRecord is non-throwing and idempotent
+        await createReferralRecord({
+          referralCode: pending.referralCode,
+          newUserId: profile.id,
+          email: profile.email as string,
+          utmFields: {
+            utm_source: pending.utm_source,
+            utm_medium: pending.utm_medium,
+            utm_campaign: pending.utm_campaign,
+            ip_address: pending.ip_address,
+            user_agent: pending.user_agent,
+          },
         });
-
-        if (referrer) {
-          // 1. Create the referral record (v1) with full UTM attribution data
-          await tx.referrals_v1.create({
-            data: {
-              referrer_id_v1: referrer.id,
-              referee_id_v1: profile.id,
-              referee_email_v1: profile.email as string,
-              registered_v1: true,
-
-              reward_v1: null,
-              reward_status_v1: "PENDING",
-              kyc_verified_v1: false,
-
-              // UTM tracking — populated from the pending registration row
-              utm_source_v1: pending.utm_source ?? null,
-              utm_medium_v1: pending.utm_medium ?? null,
-              utm_campaign_v1: pending.utm_campaign ?? null,
-              ip_address_v1: pending.ip_address ?? null,
-              user_agent_v1: pending.user_agent ?? null,
-            }
-          });
-        }
       }
       // ----------------------------
-
 
       await tx.pendingRegistration.delete({
         where: { email: normalizedEmail },

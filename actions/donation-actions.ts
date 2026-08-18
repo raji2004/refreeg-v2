@@ -22,6 +22,7 @@ export async function createDonation(
   tipAmount: number = 0,
   paystackReference?: string | null,
   paymentProvider: PaymentProviderType = "paystack",
+  referrerCode?: string | null,
 ): Promise<Donation> {
   const donationAmount =
     typeof donationData.amount === "string"
@@ -81,6 +82,24 @@ export async function createDonation(
   } catch (error) {
     console.error("Error creating donation:", error);
     throw error;
+  }
+
+  // Record donor referral attribution if referral code is present
+  if (referrerCode) {
+    try {
+      const { recordDonorReferralAttribution } = await import(
+        "@/actions/referral-attribution"
+      );
+      await recordDonorReferralAttribution({
+        donationId: data.id,
+        causeId,
+        referralCode: referrerCode,
+        donorEmail: donationData.email,
+        donorUserId: userId,
+      });
+    } catch (refErr) {
+      console.warn("Failed to record donor referral attribution:", refErr);
+    }
   }
 
   // Record event for reward tracking (only if user is logged in)

@@ -84,6 +84,7 @@ export interface TransactionData
   pledgeFutureAmount?: number;
   reminderDate?: string;
   _flutterwaveSubAccountId?: string;
+  referrer_code?: string;
 }
 
 export interface ICreateSubaccount {

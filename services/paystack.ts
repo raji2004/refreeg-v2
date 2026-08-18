@@ -54,6 +54,7 @@ const Paystack = {
           email: data.email,
           message: data.message,
           is_anonymous: data.isAnonymous,
+          ...(data.referrer_code ? { ref_v1: data.referrer_code } : {}),
           ...(data.id ? { user_id: data.id } : {}),
           ...(data.plan ? { plan: data.plan } : {}),
           ...(data.pledgeFlow
