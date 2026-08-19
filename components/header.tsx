@@ -31,6 +31,7 @@ import {
   Star,
   Target,
   TargetIcon,
+  Trophy,
   UserCog,
   Users,
   Wallet,
@@ -109,24 +110,24 @@ const publicNavItems: NavItem[] = [
     type: "dropdown",
     items: [
       {
-        title: "How to start a cause",
+        title: "RefreeG Rewards",
         description:
-          "Set up a cause quickly with an opinionated workflow built for clarity and speed.",
-        href: "/dashboard/causes/create",
+          "Get rewarded in points, crypto and recognition for driving impact.",
+        href: "/rewards",
         icon: Star,
       },
       {
-        title: "Fees & Payouts",
+        title: "Crypto on RefreeG",
         description:
-          "Understand transaction fees, payout timelines, and how funds move across the platform.",
-        href: "/crowdfund/fees",
-        icon: CircleDollarSign,
+          "Support global causes seamlessly with fast, transparent crypto donations. Real-time tracking and low fees.",
+        href: "/crypto",
+        icon: Wallet,
       },
       {
         title: "FAQ",
         description:
-          "Read the most common questions around fundraising, petitions, verification, and payouts.",
-        href: "/#faq",
+          "Find answers to common questions about using the platform, campaigns, and donations.",
+        href: "/faq",
         icon: HelpCircle,
       },
     ],
