@@ -24,5 +24,8 @@ declare module "next-auth/jwt" {
     id?: string;
     onboardingCompleted?: boolean | null;
     role?: UserRole;
+    tier?: string;
+    /** Epoch ms when this session was originally created; used to enforce an absolute session lifetime. */
+    loginTime?: number;
   }
 }

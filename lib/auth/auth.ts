@@ -9,6 +9,14 @@ import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
 import { createReferralRecord } from "@/lib/referral-utils";
 
+// Idle timeout: session cookie/JWT expiry, renewed on activity (sliding window).
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
+// How often the sliding window is renewed while the user is active.
+const SESSION_UPDATE_AGE_SECONDS = 60 * 60 * 24; // 1 day
+// Absolute cap on a session's lifetime, regardless of activity, so a
+// continuously-active session cannot renew itself forever.
+const ABSOLUTE_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
+
 async function resolveUserRole(userId: string): Promise<UserRole> {
   const role = await prisma.role.findFirst({
     where: { user_id: userId },
@@ -58,7 +66,11 @@ const customAdapter: Adapter = {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: customAdapter,
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    maxAge: SESSION_MAX_AGE_SECONDS,
+    updateAge: SESSION_UPDATE_AGE_SECONDS,
+  },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -246,11 +258,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
+      // Enforce an absolute session lifetime regardless of activity, so a
+      // continuously-active session can't renew its sliding window forever.
+      // Returning null here invalidates the token and clears the cookie.
+      if (
+        !user &&
+        typeof token.loginTime === "number" &&
+        Date.now() - token.loginTime > ABSOLUTE_SESSION_MAX_AGE_MS
+      ) {
+        return null;
+      }
+
       const userId = user?.id;
       if (userId) {
+        // Stamp the original sign-in time; this persists across token
+        // refreshes since we only set it when a fresh `user` is present.
+        token.loginTime = Date.now();
         token.id = userId;
         token.onboardingCompleted = (user as any).onboarding_completed;
-        
+
         // If the role was already fetched during credentials authorize, use it
         if ((user as any).role) {
           token.role = (user as any).role;
