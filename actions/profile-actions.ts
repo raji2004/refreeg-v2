@@ -28,6 +28,7 @@ function mapPrismaToProfile(p: any): Profile {
     flutterwave_sub_account_id: p.flutterwaveSubAccountId || null,
     profile_photo: p.profilePhoto,
     is_blocked: p.isBlocked ?? false,
+    referral_code: p.referralCode || null,
     created_at: p.createdAt.toISOString(),
     updated_at: p.updatedAt?.toISOString() || new Date().toISOString(),
     account_type: p.accountType as any,

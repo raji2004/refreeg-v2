@@ -33,6 +33,15 @@ export async function POST(req: Request) {
 
     const { email, password, fullName, accountType } = registration;
     const referralCode = body.referralCode || null;
+    // UTM tracking fields — stored in pending registration, written to referrals_v1 on OTP verify
+    const utm_source = body.utm_source || null;
+    const utm_medium = body.utm_medium || null;
+    const utm_campaign = body.utm_campaign || null;
+    const user_agent = body.user_agent || null;
+    const ip_address =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      null;
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -60,6 +69,11 @@ export async function POST(req: Request) {
         organizationAddress: registration.organizationAddress,
         organizationIndustry: registration.organizationIndustry,
         referralCode,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        user_agent,
+        ip_address,
         otpCode,
         expiresAt,
         failedAttempts: 0,
@@ -75,6 +89,11 @@ export async function POST(req: Request) {
         organizationAddress: registration.organizationAddress,
         organizationIndustry: registration.organizationIndustry,
         referralCode,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        user_agent,
+        ip_address,
         otpCode,
         expiresAt,
         lastOtpSentAt: new Date(),

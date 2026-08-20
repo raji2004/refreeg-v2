@@ -18,6 +18,9 @@ import { createShortUrl } from "@/actions/url-actions";
 import { useState, useEffect, useRef } from "react";
 import QRCode from "react-qr-code";
 
+import { useAuth } from "@/hooks/use-auth";
+import { useProfile } from "@/hooks/use-profile";
+
 interface ShareModalProps {
   url: string;
   title: string;
@@ -34,7 +37,17 @@ export function ShareModal({
   entityType,
 }: ShareModalProps) {
   const { toast } = useToast();
-  const [shortUrl, setShortUrl] = useState<string>(url);
+  const { user } = useAuth();
+  const { profile } = useProfile(user?.id);
+
+  // If user is authenticated and sharing a cause, attach their referral code (?ref_v1=CODE)
+  const refCode = profile?.referral_code || profile?.username || user?.id;
+  const baseUrlWithRef =
+    entityType === "cause" && refCode
+      ? `${url}${url.includes("?") ? "&" : "?"}ref_v1=${encodeURIComponent(refCode)}`
+      : url;
+
+  const [shortUrl, setShortUrl] = useState<string>(baseUrlWithRef);
   const [isLoadingShortUrl, setIsLoadingShortUrl] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("share");
   const qrRef = useRef<HTMLDivElement>(null);
@@ -42,33 +55,33 @@ export function ShareModal({
   // Prefer the neat campaign URL (slug-based) for sharing; QR donate links off of it.
   const qrUrl =
     entityType === "cause"
-      ? url.includes("/donate")
-        ? url
-        : `${url.replace(/\/$/, "")}/donate`
-      : url;
+      ? baseUrlWithRef.includes("/donate")
+        ? baseUrlWithRef
+        : `${baseUrlWithRef.replace(/\/$/, "")}/donate`
+      : baseUrlWithRef;
 
   // Causes share the contextual slug URL directly. Petitions still use /s/ short codes.
   useEffect(() => {
     const generateUrl = async () => {
       if (entityType === "cause") {
-        setShortUrl(url);
+        setShortUrl(baseUrlWithRef);
         setIsLoadingShortUrl(false);
         // Keep short_urls analytics in sync with the slug destination.
-        createShortUrl(entityId, entityType, url).catch(() => undefined);
+        createShortUrl(entityId, entityType, baseUrlWithRef).catch(() => undefined);
         return;
       }
 
       try {
-        const shortened = await createShortUrl(entityId, entityType, url);
+        const shortened = await createShortUrl(entityId, entityType, baseUrlWithRef);
         setShortUrl(shortened);
       } catch {
-        setShortUrl(url);
+        setShortUrl(baseUrlWithRef);
       } finally {
         setIsLoadingShortUrl(false);
       }
     };
     generateUrl();
-  }, [entityId, entityType, url]);
+  }, [entityId, entityType, baseUrlWithRef]);
 
   const templates = {
     cause: {

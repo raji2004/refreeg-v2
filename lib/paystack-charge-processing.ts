@@ -54,6 +54,7 @@ export async function processSuccessfulCharge(
     undefined,
     reference,
     "paystack",
+    meta.ref_v1 ? String(meta.ref_v1) : undefined,
   );
 
   return { ok: true, reason: "donation_created" };

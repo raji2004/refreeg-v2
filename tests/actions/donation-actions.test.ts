@@ -36,8 +36,13 @@ jest.mock("@/lib/event-bus", () => ({
   },
 }));
 
+jest.mock("@/actions/referral-attribution", () => ({
+  recordDonorReferralAttribution: jest.fn().mockResolvedValue({ recorded: true }),
+}));
+
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { recordDonorReferralAttribution } from "@/actions/referral-attribution";
 import { recordEvent } from "@/actions/event-reward-actions";
 import { sendDonationReceivedEmail } from "@/services/mail";
 import {
@@ -95,6 +100,7 @@ describe("donation-actions", () => {
           amount: 5000,
           name: "Jane",
           email: "jane@test.com",
+          message: "",
           isAnonymous: false,
         },
         0,
@@ -141,6 +147,7 @@ describe("donation-actions", () => {
           amount: 10000,
           name: "Jane",
           email: "jane@test.com",
+          message: "",
           isAnonymous: false,
           tip_amount: 500,
         },
@@ -193,6 +200,7 @@ describe("donation-actions", () => {
         amount: 1000,
         name: "Hidden",
         email: "anon@test.com",
+        message: "",
         isAnonymous: "true" as unknown as boolean,
       });
 
@@ -201,6 +209,47 @@ describe("donation-actions", () => {
           data: expect.objectContaining({ name: "Anonymous" }),
         }),
       );
+    });
+
+    it("calls recordDonorReferralAttribution when referrerCode is provided", async () => {
+      mockPrisma.donation.findFirst.mockResolvedValue(null);
+      mockPrisma.donation.create.mockResolvedValue({
+        id: "don-new-123",
+        causeId: "cause-1",
+        amount: 2000,
+        tip_amount: 0,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        name: "Generous Donor",
+        email: "donor@test.com",
+        is_anonymous: false,
+        status: "completed",
+      });
+      mockPrisma.cause.update.mockResolvedValue({});
+      mockPrisma.pledges.updateMany.mockResolvedValue({ count: 0 });
+
+      await createDonation(
+        "cause-1",
+        "user-donor-id",
+        {
+          amount: 2000,
+          name: "Generous Donor",
+          email: "donor@test.com",
+          message: "",
+          isAnonymous: false,
+        },
+        0,
+        "ref-tx-123",
+        "flutterwave",
+        "REFERRAL_CODE_ABC",
+      );
+
+      expect(recordDonorReferralAttribution).toHaveBeenCalledWith({
+        donationId: "don-new-123",
+        causeId: "cause-1",
+        referralCode: "REFERRAL_CODE_ABC",
+        donorEmail: "donor@test.com",
+        donorUserId: "user-donor-id",
+      });
     });
   });
 

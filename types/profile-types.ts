@@ -16,6 +16,7 @@ export interface Profile {
   is_blocked: boolean;
   created_at: string;
   updated_at: string;
+  referral_code?: string | null;
   country_of_residence?: string;
   date_of_birth?: string;
   bvn?: number;

@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@/types/role-types";
 import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
+import { createReferralRecord } from "@/lib/referral-utils";
 
 // Idle timeout: session cookie/JWT expiry, renewed on activity (sliding window).
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
@@ -215,6 +216,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               userAgent: userAgent,
             }),
           }).catch((e) => console.error("Login notification API error:", e));
+
+          // ── OAuth referral attribution ──
+          // Read the ref_v1 cookie set by middleware when the user arrived
+          // via a referral link. Only create a referral record for genuinely
+          // new accounts (created within the last 10 seconds via OAuth).
+          const refV1Cookie = reqHeaders.get("cookie")
+            ?.split(";")
+            .map((c) => c.trim())
+            .find((c) => c.startsWith("ref_v1="))
+            ?.split("=")[1];
+
+          if (refV1Cookie && user.id) {
+            // Detect new OAuth user: account created within the last 10 seconds
+            const dbUser = await prisma.user.findUnique({
+              where: { id: user.id },
+              select: { createdAt: true, email: true },
+            });
+
+            const isNewUser =
+              dbUser?.createdAt &&
+              Date.now() - new Date(dbUser.createdAt).getTime() < 10_000;
+
+            if (isNewUser) {
+              // Non-blocking — createReferralRecord is non-throwing
+              createReferralRecord({
+                referralCode: refV1Cookie,
+                newUserId: user.id,
+                email: user.email,
+                // UTM fields unavailable for OAuth (lost during redirect)
+              }).catch((e) =>
+                console.error("[OAuth] createReferralRecord error:", e)
+              );
+            }
+          }
         } catch (e) {
           console.error("Login notification prep error:", e);
         }

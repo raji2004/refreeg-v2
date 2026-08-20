@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
           undefined,
           txRef,
           "flutterwave",
+          meta.ref_v1 ? String(meta.ref_v1) : undefined,
         );
 
         return new NextResponse(
