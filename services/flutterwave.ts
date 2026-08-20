@@ -6,7 +6,7 @@ const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
 
 if (!FLUTTERWAVE_SECRET_KEY) {
   console.warn(
-    "WARNING: No Flutterwave Secret Key found in environment variables. API calls will fail."
+    "WARNING: No Flutterwave Secret Key found in environment variables. API calls will fail.",
   );
 }
 
@@ -23,11 +23,15 @@ const Flutterwave = {
     try {
       if (!data.amount) {
         throw new Error(
-          "Missing required fields for transaction initialization"
+          "Missing required fields for transaction initialization",
         );
       }
       const baseUrl = await getBaseURL();
-      const totalCharge = data.amount + data.serviceFee + (data.providerFee || 0) + (data.tipAmount || 0);
+      const totalCharge =
+        data.amount +
+        data.serviceFee +
+        (data.providerFee || 0) +
+        (data.tipAmount || 0);
       const primarySubaccount = data.subaccounts?.find(
         (entry) => entry?.subaccount?.trim().length,
       )?.subaccount;
@@ -36,7 +40,9 @@ const Flutterwave = {
         tx_ref: `flw_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
         amount: totalCharge,
         currency: "NGN",
-        redirect_url: data.callbackUrl || `${baseUrl}/causes/${data.causeId}/payment/verify`,
+        redirect_url:
+          data.callbackUrl ||
+          `${baseUrl}/causes/${data.causeId}/payment/verify`,
         customer: {
           email: data.email,
           name: data.full_name || data.email,
@@ -53,6 +59,7 @@ const Flutterwave = {
           email: data.email,
           message: data.message || "",
           is_anonymous: String(data.isAnonymous),
+          ...(data.referrer_code ? { ref_v1: data.referrer_code } : {}),
           ...(data.id ? { user_id: data.id } : {}),
           ...(data.plan ? { plan: data.plan } : {}),
           ...(data.pledgeFlow
@@ -96,9 +103,16 @@ const Flutterwave = {
         data: error.response?.data?.message,
       });
 
-      let errorMessage = error.response?.data?.message || "Failed to initialize payment transaction";
-      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
-        const details = error.response.data.errors.map((e: any) => e.message).join(", ");
+      let errorMessage =
+        error.response?.data?.message ||
+        "Failed to initialize payment transaction";
+      if (
+        error.response?.data?.errors &&
+        Array.isArray(error.response.data.errors)
+      ) {
+        const details = error.response.data.errors
+          .map((e: any) => e.message)
+          .join(", ");
         errorMessage += `: ${details}`;
       }
 
@@ -108,14 +122,14 @@ const Flutterwave = {
 
   verifyTransaction: async function (transactionId: string) {
     const response = await this.api.get(
-      `/transactions/${transactionId}/verify`
+      `/transactions/${transactionId}/verify`,
     );
     return response.data.data.status === "successful";
   },
 
   verifyTransactionFull: async function (transactionId: string) {
     const response = await this.api.get(
-      `/transactions/${transactionId}/verify`
+      `/transactions/${transactionId}/verify`,
     );
     return response.data.data;
   },
@@ -127,14 +141,14 @@ const Flutterwave = {
    */
   verifyByReference: async function (txRef: string) {
     const response = await this.api.get(
-      `/transactions/verify_by_reference?tx_ref=${txRef}`
+      `/transactions/verify_by_reference?tx_ref=${txRef}`,
     );
     return response.data.data.status === "successful";
   },
 
   verifyByReferenceFull: async function (txRef: string) {
     const response = await this.api.get(
-      `/transactions/verify_by_reference?tx_ref=${txRef}`
+      `/transactions/verify_by_reference?tx_ref=${txRef}`,
     );
     return response.data.data;
   },
@@ -153,7 +167,9 @@ const Flutterwave = {
     });
 
     return {
-      subaccount_id: String(response.data.data.subaccount_id || response.data.data.id),
+      subaccount_id: String(
+        response.data.data.subaccount_id || response.data.data.id,
+      ),
       account_number: data.account_number,
     };
   },
@@ -175,96 +191,196 @@ const Flutterwave = {
   getBankCode: async function (bankName: string) {
     const banks = await this.listBanks();
     const nameLower = bankName.toLowerCase();
-    
+
     const exact = banks.find((b: any) => b.name.toLowerCase() === nameLower);
     if (exact) return exact.code;
 
     if (nameLower.includes("opay") || nameLower.includes("paycom")) {
-      return banks.find((b: any) => b.name.toLowerCase() === "opay")?.code || "100004";
+      return (
+        banks.find((b: any) => b.name.toLowerCase() === "opay")?.code ||
+        "100004"
+      );
     }
     if (nameLower.includes("moniepoint")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("moniepoint"))?.code || "50515";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("moniepoint"))
+          ?.code || "50515"
+      );
     }
     if (nameLower.includes("kuda")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("kuda"))?.code || "50211";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("kuda"))?.code ||
+        "50211"
+      );
     }
     if (nameLower.includes("palmpay")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("palmpay"))?.code || "100033";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("palmpay"))
+          ?.code || "100033"
+      );
     }
     if (nameLower.includes("first bank") || nameLower.includes("firstbank")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("first bank"))?.code || "011";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("first bank"))
+          ?.code || "011"
+      );
     }
     if (nameLower.includes("ecobank")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("ecobank"))?.code || "050";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("ecobank"))
+          ?.code || "050"
+      );
     }
     if (nameLower.includes("union bank")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("union bank"))?.code || "032";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("union bank"))
+          ?.code || "032"
+      );
     }
     if (nameLower.includes("pocket") || nameLower.includes("teamapt")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("pocket") || b.name.toLowerCase().includes("teamapt"))?.code || "100005";
+      return (
+        banks.find(
+          (b: any) =>
+            b.name.toLowerCase().includes("pocket") ||
+            b.name.toLowerCase().includes("teamapt"),
+        )?.code || "100005"
+      );
     }
     if (nameLower.includes("sterling")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("sterling"))?.code || "232";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("sterling"))
+          ?.code || "232"
+      );
     }
     if (nameLower.includes("wema")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("wema"))?.code || "035";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("wema"))?.code ||
+        "035"
+      );
     }
     if (nameLower.includes("zenith")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("zenith"))?.code || "057";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("zenith"))?.code ||
+        "057"
+      );
     }
     if (nameLower.includes("gtb") || nameLower.includes("guaranty")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("gtb") || b.name.toLowerCase().includes("guaranty"))?.code || "058";
+      return (
+        banks.find(
+          (b: any) =>
+            b.name.toLowerCase().includes("gtb") ||
+            b.name.toLowerCase().includes("guaranty"),
+        )?.code || "058"
+      );
     }
     if (nameLower.includes("uba") || nameLower.includes("united bank")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("uba") || b.name.toLowerCase().includes("united bank"))?.code || "033";
+      return (
+        banks.find(
+          (b: any) =>
+            b.name.toLowerCase().includes("uba") ||
+            b.name.toLowerCase().includes("united bank"),
+        )?.code || "033"
+      );
     }
     if (nameLower.includes("access")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("access"))?.code || "044";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("access"))?.code ||
+        "044"
+      );
     }
     if (nameLower.includes("fcmb")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("fcmb"))?.code || "214";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("fcmb"))?.code ||
+        "214"
+      );
     }
     if (nameLower.includes("polaris")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("polaris"))?.code || "076";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("polaris"))
+          ?.code || "076"
+      );
     }
     if (nameLower.includes("fidelity")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("fidelity"))?.code || "070";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("fidelity"))
+          ?.code || "070"
+      );
     }
     if (nameLower.includes("jaiz")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("jaiz"))?.code || "301";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("jaiz"))?.code ||
+        "301"
+      );
     }
     if (nameLower.includes("keystone")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("keystone"))?.code || "082";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("keystone"))
+          ?.code || "082"
+      );
     }
     if (nameLower.includes("providus")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("providus"))?.code || "101";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("providus"))
+          ?.code || "101"
+      );
     }
     if (nameLower.includes("stanbic")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("stanbic"))?.code || "221";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("stanbic"))
+          ?.code || "221"
+      );
     }
     if (nameLower.includes("standard chartered")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("standard chartered"))?.code || "068";
+      return (
+        banks.find((b: any) =>
+          b.name.toLowerCase().includes("standard chartered"),
+        )?.code || "068"
+      );
     }
     if (nameLower.includes("vfd")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("vfd"))?.code || "566";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("vfd"))?.code ||
+        "566"
+      );
     }
-    if (nameLower.includes("9mobile") || nameLower.includes("9 mobile") || nameLower.includes("9psb")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("9mobile") || b.name.toLowerCase().includes("9psb"))?.code || "120001";
+    if (
+      nameLower.includes("9mobile") ||
+      nameLower.includes("9 mobile") ||
+      nameLower.includes("9psb")
+    ) {
+      return (
+        banks.find(
+          (b: any) =>
+            b.name.toLowerCase().includes("9mobile") ||
+            b.name.toLowerCase().includes("9psb"),
+        )?.code || "120001"
+      );
     }
     if (nameLower.includes("carbon") || nameLower.includes("one finance")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("carbon"))?.code || "565";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("carbon"))?.code ||
+        "565"
+      );
     }
     if (nameLower.includes("paga")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("paga"))?.code || "100002";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("paga"))?.code ||
+        "100002"
+      );
     }
     if (nameLower.includes("rubies")) {
-      return banks.find((b: any) => b.name.toLowerCase().includes("rubies"))?.code || "125";
+      return (
+        banks.find((b: any) => b.name.toLowerCase().includes("rubies"))?.code ||
+        "125"
+      );
     }
 
-    const partial = banks.find((b: any) => 
-      b.name.toLowerCase().includes(nameLower) || nameLower.includes(b.name.toLowerCase())
+    const partial = banks.find(
+      (b: any) =>
+        b.name.toLowerCase().includes(nameLower) ||
+        nameLower.includes(b.name.toLowerCase()),
     );
-    
+
     return partial?.code || null;
   },
 
@@ -273,19 +389,23 @@ const Flutterwave = {
    * Used as a recovery path when "already exists" is returned during creation.
    * Paginates through all pages to ensure the subaccount is found.
    */
-  findSubaccountByAccountNumber: async function (accountNumber: string): Promise<string | null> {
+  findSubaccountByAccountNumber: async function (
+    accountNumber: string,
+  ): Promise<string | null> {
     try {
       let page = 1;
       const limit = 100;
 
       while (true) {
-        const response = await this.api.get(`/subaccounts?limit=${limit}&page=${page}`);
+        const response = await this.api.get(
+          `/subaccounts?limit=${limit}&page=${page}`,
+        );
         const subaccounts: any[] = response.data.data || [];
 
         if (subaccounts.length === 0) break; // No more pages
 
         const match = subaccounts.find(
-          (s: any) => s.account_number === accountNumber
+          (s: any) => s.account_number === accountNumber,
         );
 
         if (match) {
@@ -306,7 +426,7 @@ const Flutterwave = {
 
   verifyAccountNumber: async function (
     accountNumber: string,
-    bankCode: string
+    bankCode: string,
   ) {
     try {
       const response = await this.api.post("/accounts/resolve", {
@@ -321,11 +441,11 @@ const Flutterwave = {
     } catch (error: any) {
       console.error(
         "Error verifying account on Flutterwave:",
-        error.response?.data || error.message || error
+        error.response?.data || error.message || error,
       );
 
       throw new Error(
-        error.response?.data?.message || "Failed to verify account number"
+        error.response?.data?.message || "Failed to verify account number",
       );
     }
   },

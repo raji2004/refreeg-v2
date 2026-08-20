@@ -129,6 +129,12 @@ model PendingRegistration {
   organizationPhone    String?   @map("organization_phone")
   organizationAddress  String?   @map("organization_address")
   organizationIndustry String?   @map("organization_industry")
+  // UTM tracking fields — captured at signup, written to referrals_v1 on OTP verification
+  utm_source           String?
+  utm_medium           String?
+  utm_campaign         String?
+  user_agent           String?
+  ip_address           String?
 
   @@map("pending_registrations")
 }

@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
             },
             undefined,
             reference,
-            "flutterwave"
+            "flutterwave",
+            meta.ref_v1 ? String(meta.ref_v1) : undefined
           );
         }
       } catch (donationErr) {
