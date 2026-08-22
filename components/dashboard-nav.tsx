@@ -15,7 +15,6 @@ import {
   Shield,
   UserCog,
   ClipboardCheckIcon,
-  Wallet,
   Share2,
   Flag,
   Activity,
@@ -53,11 +52,6 @@ const userNavItems = [
     href: "/dashboard/donations",
     icon: Users,
   },
-  // {
-  //   title: "Crypto Wallet",
-  //   href: "/dashboard/crypto",
-  //   icon: Wallet,
-  // },
   {
     title: "Settings",
     href: "/dashboard/settings",

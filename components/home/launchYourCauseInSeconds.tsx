@@ -1,5 +1,5 @@
 "use client";
-import { H2, P } from "../typograpy";
+import { H2, P } from "../typography";
 import { FaRocket, FaBullhorn, FaHandshake } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";

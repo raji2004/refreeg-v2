@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
-import { H4, P } from "./typograpy";
+import { H4, P } from "./typography";
 import AnimatedCard from "./home/components/AnimatedCard";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 

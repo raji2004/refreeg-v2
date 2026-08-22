@@ -24,7 +24,7 @@ import {
 
 import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
-import { H4, P } from "../typograpy";
+import { H4, P } from "../typography";
 import AnimatedCard from "./components/AnimatedCard";
 import { causePublicPath } from "@/lib/causes/slug";
 

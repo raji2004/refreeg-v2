@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { FaBoltLightning } from "react-icons/fa6";
 import { FaUsers, FaCheckSquare, FaSmile } from "react-icons/fa";
-import { H2, H3, P } from "../typograpy";
+import { H2, H3, P } from "../typography";
 import { useAnimateInView } from "@/hooks/use-animate-In-view";
 
 const features = [
