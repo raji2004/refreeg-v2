@@ -53,11 +53,11 @@ const userNavItems = [
     href: "/dashboard/donations",
     icon: Users,
   },
-  {
-    title: "Crypto Wallet",
-    href: "/dashboard/crypto",
-    icon: Wallet,
-  },
+  // {
+  //   title: "Crypto Wallet",
+  //   href: "/dashboard/crypto",
+  //   icon: Wallet,
+  // },
   {
     title: "Settings",
     href: "/dashboard/settings",
