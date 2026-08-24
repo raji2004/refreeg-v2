@@ -5,7 +5,7 @@ import Link from "next/link";
 // import CausesSupported from "./_components/causesWeSupport";
 // import FAQ from "./_components/frequentlyAskedQuestions";
 // import WhyUseUs from "./_components/whyUseUs";
-import { H2, P, Ol } from "@/components/typograpy";
+import { H2, P, Ol } from "@/components/typography";
 // import { DonationCarousel } from "@/components/donationCarousel";
 // import Hero from "./_components/hero";
 import { Console } from "console";

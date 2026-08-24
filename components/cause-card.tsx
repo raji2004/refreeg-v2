@@ -12,7 +12,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { DonateButton } from "@/components/donate-button";
-import { H4, P } from "./typograpy";
+import { H4, P } from "./typography";
 import AnimatedCard from "./home/components/AnimatedCard";
 import { MapPin, Clock } from "lucide-react";
 import type { Cause } from "@/types";

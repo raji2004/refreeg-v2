@@ -1,5 +1,4 @@
 "use server";
-import "server-only";
 
 import nodemailer from "nodemailer";
 import fs from "fs";
@@ -51,17 +50,25 @@ export async function sendMail({
     const template = loadTemplate(templateName);
     const html = template(context);
 
-    const info = await transporter.sendMail({
-      from,
-      to,
-      cc,
-      bcc,
-      subject,
-      html,
-    });
+    // Enforce a strict 10-second timeout to prevent hanging the main thread
+    const info = (await Promise.race([
+      transporter.sendMail({
+        from,
+        to,
+        cc,
+        bcc,
+        subject,
+        html,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("SMTP Timeout")), 10000),
+      ),
+    ])) as any;
 
     return { success: true, messageId: info.messageId };
   } catch (error) {
+    // Log it, but DO NOT throw. The user flow must continue.
+    console.error("[MailService] Failed to send email:", error);
     return { success: false, error };
   }
 }

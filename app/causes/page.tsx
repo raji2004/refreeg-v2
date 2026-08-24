@@ -3,7 +3,7 @@ import { CausesList } from "@/components/causes-list";
 import { CausesFilter } from "@/components/causes-filter";
 import { Skeleton } from "@/components/ui/skeleton";
 import CausesFilterRow from "@/components/causes-filter-row";
-import { H1, H5 } from "@/components/typograpy";
+import { H1, H5 } from "@/components/typography";
 import { Metadata } from "next";
 import { getProfile } from "@/actions/profile-actions";
 
@@ -26,7 +26,6 @@ export default async function CausesPage({
     sortBy?: string;
   }>;
 }) {
-
   const params = await searchParams;
 
   const category = params.category || "all";
