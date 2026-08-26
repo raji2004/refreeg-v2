@@ -47,6 +47,7 @@ model Donation {
   id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   causeId            String    @map("cause_id") @db.Uuid
   userId             String?   @map("user_id") @db.Uuid
+  referrer_id        String?   @db.Uuid
   amount             Decimal   @db.Decimal
   name               String?
   email              String
@@ -63,6 +64,7 @@ model Donation {
 
   @@index([causeId], map: "idx_donations_cause_id")
   @@index([userId], map: "idx_donations_user_id")
+  @@index([referrer_id], map: "idx_donations_referrer_id")
   @@map("donations")
 }
 

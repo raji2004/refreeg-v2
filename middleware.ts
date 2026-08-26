@@ -19,6 +19,7 @@ const PUBLIC_API_PREFIXES = [
   "/api/mail", // Donor-facing email endpoints (no auth required)
   "/api/s3", // S3 image proxy (public images)
   "/api/dev", // Temporary local dev/testing routes
+  "/api/leaderboard", // Public leaderboard rankings
 ];
 
 const APP_ROUTE_PREFIXES = [
@@ -29,6 +30,7 @@ const APP_ROUTE_PREFIXES = [
   "/campaign",
   "/petitions",
   "/referrals",
+  "/leaderboard",
   "/organization",
   "/api",
   "/s",
@@ -130,6 +132,25 @@ export default auth(async (req) => {
     pathname.startsWith("/dashboard")
   ) {
     return NextResponse.redirect(new URL("/onboarding", req.url));
+  }
+
+  // ── 5. ref_v1 cookie — capture referral code from any URL for OAuth ──
+  // When a visitor arrives via a referral link (?ref_v1=CODE) on any page
+  // (signup, cause pages, etc.), we persist the code in a short-lived
+  // HttpOnly cookie. The NextAuth signIn event reads this cookie to attribute
+  // Google OAuth signups to the correct referrer without losing the code
+  // during the OAuth redirect roundtrip.
+  const refV1 = req.nextUrl.searchParams.get("ref_v1");
+  if (refV1) {
+    const response = NextResponse.next();
+    response.cookies.set("ref_v1", refV1, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 60 * 30, // 30 minutes
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+    });
+    return response;
   }
 });
 

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
-import { H2, P, H4 } from "../typograpy";
+import { H2, P, H4 } from "../typography";
 import { Button } from "../ui/button";
 import { listCauses } from "@/actions/cause-actions";
 import AnimatedCard from "./components/AnimatedCard";

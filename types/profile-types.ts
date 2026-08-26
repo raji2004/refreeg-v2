@@ -16,6 +16,7 @@ export interface Profile {
   is_blocked: boolean;
   created_at: string;
   updated_at: string;
+  referral_code?: string | null;
   country_of_residence?: string;
   date_of_birth?: string;
   bvn?: number;
@@ -26,7 +27,13 @@ export interface Profile {
   followers_count?: number;
   following_count?: number;
   causes_count?: number;
-  account_type?: "individual" | "creator" | "non-profit" | "organization" | "community" | "developer";
+  account_type?:
+    | "individual"
+    | "creator"
+    | "non-profit"
+    | "organization"
+    | "community"
+    | "developer";
   gender?: string | null;
   bio: string | null;
   solana_wallet?: string | null;
@@ -40,11 +47,6 @@ export interface Profile {
   facebook_url?: string | null;
   instagram_url?: string | null;
   linkedin_url?: string | null;
-  crypto_wallets?: {
-    ethereum?: string;
-    solana?: string;
-    [key: string]: any;
-  } | null;
 }
 
 export interface OnboardingProfileData {

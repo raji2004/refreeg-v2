@@ -1,4 +1,4 @@
-import { H2, P } from "../typograpy";
+import { H2, P } from "../typography";
 import AnimatedHeader from "@/components/home/components/AnimatedHeader";
 import FeaturedPetitionsCarousel from "./FeaturedPetitionsCarousel";
 
@@ -7,39 +7,38 @@ import { listSignaturesForPetition } from "@/actions/signature-actions";
 
 export async function FeaturedPetitions() {
   const featuredPetitions = (await listPetitions()).filter(
-    (p) => (p.days_active ?? 0) > 0 && p.status !== ("expired" as any)
+    (p) => (p.days_active ?? 0) > 0 && p.status !== ("expired" as any),
   );
 
-  const petitionsWithSigners = (await Promise.all(
-    featuredPetitions.map(async (petition) => {
-      const signers = await listSignaturesForPetition(petition.id);
+  const petitionsWithSigners = (
+    await Promise.all(
+      featuredPetitions.map(async (petition) => {
+        const signers = await listSignaturesForPetition(petition.id);
 
-      const signerCount = signers?.length || 0;
+        const signerCount = signers?.length || 0;
 
-      const totalAmount = signers.reduce(
-        (sum, s) => sum + (s.amount || 0),
-        0
-      );
+        const totalAmount = signers.reduce(
+          (sum, s) => sum + (s.amount || 0),
+          0,
+        );
 
-      const percentRaised =
-        petition.goal > 0
-          ? Math.min(
-              Math.round((totalAmount / petition.goal) * 100),
-              100
-            )
-          : 0;
+        const percentRaised =
+          petition.goal > 0
+            ? Math.min(Math.round((totalAmount / petition.goal) * 100), 100)
+            : 0;
 
-      return {
-        ...petition,
-        image: petition.image ?? undefined,
-        days_active: petition.days_active ?? undefined, // ✅ FIX
-        signers,
-        signerCount,
-        totalAmount,
-        percentRaised,
-      };
-    })
-  )).sort((a, b) => {
+        return {
+          ...petition,
+          image: petition.image ?? undefined,
+          days_active: petition.days_active ?? undefined, // ✅ FIX
+          signers,
+          signerCount,
+          totalAmount,
+          percentRaised,
+        };
+      }),
+    )
+  ).sort((a, b) => {
     // ✅ Push 0% to bottom
     if (a.percentRaised === 0 && b.percentRaised !== 0) return 1;
     if (b.percentRaised === 0 && a.percentRaised !== 0) return -1;
@@ -60,10 +59,7 @@ export async function FeaturedPetitions() {
     }
 
     // ✅ Then newest
-    return (
-      new Date(b.created_at).getTime() -
-      new Date(a.created_at).getTime()
-    );
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
   if (!petitionsWithSigners || petitionsWithSigners.length === 0) {

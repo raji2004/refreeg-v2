@@ -52,6 +52,9 @@ export default function SignUpPage() {
   );
   const [refV1FromUrl, setRefV1FromUrl] = useState<string | null>(null);
   const [redirectFromUrl, setRedirectFromUrl] = useState<string | null>(null);
+  const [utmSource, setUtmSource] = useState<string | null>(null);
+  const [utmMedium, setUtmMedium] = useState<string | null>(null);
+  const [utmCampaign, setUtmCampaign] = useState<string | null>(null);
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -61,6 +64,10 @@ export default function SignUpPage() {
       if (redirect?.startsWith("/") && !redirect.startsWith("//")) {
         setRedirectFromUrl(redirect);
       }
+      // Capture UTM params for referral attribution tracking
+      setUtmSource(params.get("utm_source"));
+      setUtmMedium(params.get("utm_medium"));
+      setUtmCampaign(params.get("utm_campaign"));
 
       router.prefetch("/auth/verify-otp");
     }
@@ -120,6 +127,11 @@ export default function SignUpPage() {
           ...registration,
           confirmPassword: undefined,
           referralCode: refV1FromUrl,
+          // UTM tracking — forwarded to referrals_v1 on OTP verification
+          utm_source: utmSource,
+          utm_medium: utmMedium,
+          utm_campaign: utmCampaign,
+          user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
         }),
       });
 

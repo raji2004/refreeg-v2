@@ -1,4 +1,4 @@
-import { H2, P } from "../typograpy";
+import { H2, P } from "../typography";
 import { listCauses } from "@/actions";
 import AnimatedHeader from "@/components/home/components/AnimatedHeader";
 import UrgentCausesCarousel from "./UrgentCausesCarousel";

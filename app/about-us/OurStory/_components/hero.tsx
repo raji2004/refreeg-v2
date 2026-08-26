@@ -1,7 +1,7 @@
 import React from "react";
 import { FaArrowRight } from "react-icons/fa6";
 import Image from "next/image";
-import { Ul } from "@/components/typograpy";
+import { Ul } from "@/components/typography";
 
 export default function Hero() {
   return (
