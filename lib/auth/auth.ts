@@ -64,6 +64,16 @@ const customAdapter: Adapter = {
   },
 };
 
+// The app is split across apps.refreeg.com (logged-in routes) and
+// www.refreeg.com / refreeg.com (public routes, including /[username]
+// profile pages). Without a shared cookie domain, the session cookie set on
+// apps.refreeg.com never reaches those public-host pages, so a logged-in
+// user's session appears to vanish there. csrfToken intentionally keeps the
+// default host-only scoping — its __Host- prefix forbids a Domain attribute.
+const cookieDomain = process.env.AUTH_COOKIE_DOMAIN;
+const useSecureCookies = process.env.AUTH_URL?.startsWith("https://") ?? true;
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: customAdapter,
   session: {
@@ -71,6 +81,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     maxAge: SESSION_MAX_AGE_SECONDS,
     updateAge: SESSION_UPDATE_AGE_SECONDS,
   },
+  ...(cookieDomain
+    ? {
+        cookies: {
+          sessionToken: {
+            name: `${cookiePrefix}authjs.session-token`,
+            options: {
+              httpOnly: true,
+              sameSite: "lax",
+              path: "/",
+              secure: useSecureCookies,
+              domain: cookieDomain,
+            },
+          },
+          callbackUrl: {
+            name: `${cookiePrefix}authjs.callback-url`,
+            options: {
+              httpOnly: true,
+              sameSite: "lax",
+              path: "/",
+              secure: useSecureCookies,
+              domain: cookieDomain,
+            },
+          },
+        },
+      }
+    : {}),
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
