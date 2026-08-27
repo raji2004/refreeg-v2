@@ -4,7 +4,14 @@ import {
   reportToRefreegAlert,
 } from "@/lib/refreeg-alert-reporter";
 
-export async function register() {}
+export async function register() {
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("../sentry.server.config");
+  }
+  if (process.env.NEXT_RUNTIME === "edge") {
+    await import("../sentry.edge.config");
+  }
+}
 
 export const onRequestError: Instrumentation.onRequestError = async (
   error,
@@ -20,4 +27,7 @@ export const onRequestError: Instrumentation.onRequestError = async (
     path: `${request.method} ${request.path.split("?")[0]} (${context.routeType})`,
     severity: "CRITICAL",
   });
+
+  const Sentry = await import("@sentry/nextjs");
+  Sentry.captureRequestError(error, request, context);
 };

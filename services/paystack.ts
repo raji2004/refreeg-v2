@@ -1,18 +1,24 @@
 import { ICreateSubaccount, TransactionData } from "@/types";
 import axios from "axios";
 import { getBaseURL } from "@/lib/utils";
+import {
+  checkCircuit,
+  recordFailure,
+  recordSuccess,
+} from "@/lib/circuit-breaker";
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
 if (!PAYSTACK_SECRET_KEY) {
   console.warn(
-    "WARNING: No Paystack Secret Key found in environment variables. API calls will fail."
+    "WARNING: No Paystack Secret Key found in environment variables. API calls will fail.",
   );
 }
 
 const Paystack = {
   api: axios.create({
     baseURL: "https://api.paystack.co",
+    timeout: 5000, // 👈 5-second timeout to prevent hanging
     headers: {
       Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
       "Content-Type": "application/json",
@@ -20,14 +26,19 @@ const Paystack = {
   }),
 
   initializeTransaction: async function (data: TransactionData) {
+    checkCircuit("paystack"); // 👈 Throws if circuit is open
     try {
       if (!data.amount) {
         throw new Error(
-          "Missing required fields for transaction initialization"
+          "Missing required fields for transaction initialization",
         );
       }
       const baseUrl = await getBaseURL();
-      const totalCharge = data.amount + data.serviceFee + (data.providerFee || 0) + (data.tipAmount || 0);
+      const totalCharge =
+        data.amount +
+        data.serviceFee +
+        (data.providerFee || 0) +
+        (data.tipAmount || 0);
       const feePlusTip = data.serviceFee + (data.tipAmount || 0);
       const primarySubaccount = data.subaccounts?.find(
         (entry) => entry?.subaccount?.trim().length,
@@ -37,7 +48,9 @@ const Paystack = {
         currency: "NGN",
         email: data.email,
         amount: Math.round(totalCharge * 100),
-        callback_url: data.callbackUrl || `${baseUrl}/causes/${data.causeId}/payment/verify`,
+        callback_url:
+          data.callbackUrl ||
+          `${baseUrl}/causes/${data.causeId}/payment/verify`,
         transaction_charge: Math.round(feePlusTip * 100),
         ...(primarySubaccount
           ? {
@@ -70,15 +83,17 @@ const Paystack = {
 
       const response = await this.api.post(
         "/transaction/initialize",
-        requestData
+        requestData,
       );
 
+      recordSuccess("paystack"); // 👈 Reset circuit on success
       return response.data.data as {
         authorization_url: string;
         reference: string;
         access_code: string;
       };
     } catch (error: any) {
+      recordFailure("paystack"); // 👈 Record failure
       console.error("Paystack initialization error:", {
         message: error.message,
         response: error.response?.data,
@@ -88,27 +103,39 @@ const Paystack = {
 
       throw new Error(
         error.response?.data?.message ||
-          "Failed to initialize payment transaction"
+          "Failed to initialize payment transaction",
       );
     }
   },
+
   verifyTransaction: async function (transactionReference: string) {
-    const response = await this.api.get(
-      `/transaction/verify/${transactionReference}`
-    );
-    return response.data.data.status === "success";
-  },
-  verifyTransactionFull: async function (transactionReference: string) {
-    const response = await this.api.get(
-      `/transaction/verify/${transactionReference}`
-    );
-    return response.data.data;
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.get(
+        `/transaction/verify/${transactionReference}`,
+      );
+      recordSuccess("paystack");
+      return response.data.data.status === "success";
+    } catch (error) {
+      recordFailure("paystack");
+      throw error;
+    }
   },
 
-  /**
-   * Charge a saved card (authorization code) — used for scheduled pledge fulfillment.
-   * @see https://paystack.com/docs/api/#transaction-charge-authorization
-   */
+  verifyTransactionFull: async function (transactionReference: string) {
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.get(
+        `/transaction/verify/${transactionReference}`,
+      );
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error) {
+      recordFailure("paystack");
+      throw error;
+    }
+  },
+
   chargeAuthorization: async function (params: {
     authorizationCode: string;
     email: string;
@@ -119,55 +146,69 @@ const Paystack = {
     subaccount?: string;
     metadata: Record<string, string | number | boolean | undefined>;
   }) {
-    const totalKobo = Math.round(
-      (params.amountNgn + params.serviceFeeNgn) * 100
-    );
-    const feeKobo = Math.round(params.serviceFeeNgn * 100);
-    const primarySubaccount = params.subaccount?.trim();
+    checkCircuit("paystack");
+    try {
+      const totalKobo = Math.round(
+        (params.amountNgn + params.serviceFeeNgn) * 100,
+      );
+      const feeKobo = Math.round(params.serviceFeeNgn * 100);
+      const primarySubaccount = params.subaccount?.trim();
 
-    const body: Record<string, unknown> = {
-      authorization_code: params.authorizationCode,
-      email: params.email,
-      amount: totalKobo,
-      reference: params.reference,
-      currency: "NGN",
-      metadata: params.metadata,
-    };
+      const body: Record<string, unknown> = {
+        authorization_code: params.authorizationCode,
+        email: params.email,
+        amount: totalKobo,
+        reference: params.reference,
+        currency: "NGN",
+        metadata: params.metadata,
+      };
 
-    if (primarySubaccount) {
-      body.subaccount = primarySubaccount;
-      body.bearer = "subaccount";
-      body.transaction_charge = feeKobo;
+      if (primarySubaccount) {
+        body.subaccount = primarySubaccount;
+        body.bearer = "subaccount";
+        body.transaction_charge = feeKobo;
+      }
+
+      const response = await this.api.post(
+        "/transaction/charge_authorization",
+        body,
+      );
+
+      recordSuccess("paystack");
+      return response.data.data as {
+        status?: string;
+        reference?: string;
+        gateway_response?: string;
+      };
+    } catch (error) {
+      recordFailure("paystack");
+      throw error;
     }
-
-    const response = await this.api.post(
-      "/transaction/charge_authorization",
-      body
-    );
-    return response.data.data as {
-      status?: string;
-      reference?: string;
-      gateway_response?: string;
-    };
   },
 
   createSubaccount: async function (data: ICreateSubaccount) {
-    const response = await this.api.post("/subaccount", {
-      ...data,
-      settlement_bank: data.bank_code,
-    });
-
-    return response.data.data as {
-      subaccount_code: string;
-      account_number: string;
-    };
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.post("/subaccount", {
+        ...data,
+        settlement_bank: data.bank_code,
+      });
+      recordSuccess("paystack");
+      return response.data.data as {
+        subaccount_code: string;
+        account_number: string;
+      };
+    } catch (error) {
+      recordFailure("paystack");
+      throw error;
+    }
   },
+
   listBanks: async function () {
     try {
       const response = await this.api.get("/bank", {
         params: { country: "nigeria", perPage: 100 },
       });
-
       return response.data.data as {
         name: string;
         code: string;
@@ -177,15 +218,15 @@ const Paystack = {
       return [];
     }
   },
+
   verifyAccountNumber: async function (
     accountNumber: string,
-    bankCode: string
+    bankCode: string,
   ) {
     try {
       const response = await this.api.get("/bank/resolve", {
         params: { account_number: accountNumber, bank_code: bankCode },
       });
-
       return response.data.data as {
         account_name: string;
         bank_id: number;
@@ -193,11 +234,10 @@ const Paystack = {
     } catch (error: any) {
       console.error(
         "Error verifying account:",
-        error.response?.data || error.message || error
+        error.response?.data || error.message || error,
       );
-
       throw new Error(
-        error.response?.data?.message || "Failed to verify account number"
+        error.response?.data?.message || "Failed to verify account number",
       );
     }
   },

@@ -1,4 +1,4 @@
-import { H2, P } from "../typograpy";
+import { H2, P } from "../typography";
 import { listCauses } from "@/actions";
 import AnimatedHeader from "@/components/home/components/AnimatedHeader";
 import UrgentCausesCarousel from "./UrgentCausesCarousel";
@@ -7,8 +7,8 @@ import UrgentCausesCarousel from "./UrgentCausesCarousel";
 function normalizeCause(cause: any) {
   return {
     ...cause,
-    image: cause.image ?? undefined,      // convert null → undefined
-    days_active: cause.days_active ?? 0,  // ensure number
+    image: cause.image ?? undefined, // convert null → undefined
+    days_active: cause.days_active ?? 0, // ensure number
     goal: cause.goal ?? 0,
     raised: cause.raised ?? 0,
   };
@@ -31,7 +31,7 @@ export async function UrgentCauses() {
 
   // 🔹 Everything else is normal
   const normalCauses = allCauses.filter(
-    (cause) => !urgentCauses.includes(cause)
+    (cause) => !urgentCauses.includes(cause),
   );
 
   // 🔹 Combine & normalize

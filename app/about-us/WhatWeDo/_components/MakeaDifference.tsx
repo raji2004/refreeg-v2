@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { H2, P, Ol } from "@/components/typograpy";
+import { H2, P, Ol } from "@/components/typography";
 
 export default function MakeaDifference() {
   return (

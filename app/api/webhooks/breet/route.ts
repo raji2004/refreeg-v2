@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createCryptoDonation } from "@/actions/crypto-actions";
 import { syncMilestoneRequirements } from "@/lib/proof-milestones";
+import { safeFetch } from "@/lib/http-client";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +124,7 @@ export async function POST(req: Request) {
       verifiedNetwork = "TRON Mainnet";
     }
 
+    // 1. CRITICAL: Create DB record (Must succeed)
     const result = await createCryptoDonation({
       cause_id: causeId,
       user_id: donorId,
@@ -137,89 +139,60 @@ export async function POST(req: Request) {
       currency: "USDT",
     });
 
-    try {
-      await syncMilestoneRequirements(causeId);
-    } catch (e) {
-      console.error("Error syncing proof milestones for crypto:", e);
-    }
+    // 2. FIRE-AND-FORGET: Move heavy lifting to background
+    Promise.resolve().then(async () => {
+      try {
+        await syncMilestoneRequirements(causeId);
 
-    try {
-      const creatorProfile = await prisma.user.findFirst({
-        where: { causes: { some: { id: causeId } } },
-      });
+        const creatorProfile = await prisma.user.findFirst({
+          where: { causes: { some: { id: causeId } } },
+        });
 
-      const accountNumber = creatorProfile?.accountNumber;
-      const bankNameText = creatorProfile?.bankName || "";
+        const accountNumber = creatorProfile?.accountNumber;
+        const bankNameText = creatorProfile?.bankName || "";
 
-      if (accountNumber && bankNameText) {
-        console.log(
-          `💸 Generating Paystack Transfer Recipient dynamically using user saved bank asset context...`,
-        );
+        if (accountNumber && bankNameText) {
+          console.log(
+            `💸 [Background] Generating Paystack Transfer Recipient...`,
+          );
 
-        const paystackBankResponse = await fetch(
-          "https://api.paystack.co/bank?country=nigeria",
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          const paystackBankResponse = await safeFetch(
+            "https://api.paystack.co/bank?country=nigeria",
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+              },
+              timeoutMs: 5000,
             },
-          },
-        );
+          );
 
-        const paystackBankData = await paystackBankResponse.json();
-        let resolvedBankCode: string | null = null;
+          const paystackBankData = await paystackBankResponse.json();
+          let resolvedBankCode: string | null = null;
 
-        if (paystackBankData.status && Array.isArray(paystackBankData.data)) {
-          const savedBankLower = bankNameText.toLowerCase().trim();
-
-          const matchedBankObject = paystackBankData.data.find((bank: any) => {
-            const currentBankNameLower = bank.name.toLowerCase();
-            return (
-              currentBankNameLower.includes(savedBankLower) ||
-              savedBankLower.includes(currentBankNameLower)
+          if (paystackBankData.status && Array.isArray(paystackBankData.data)) {
+            const savedBankLower = bankNameText.toLowerCase().trim();
+            const matchedBankObject = paystackBankData.data.find(
+              (bank: any) => {
+                const currentBankNameLower = bank.name.toLowerCase();
+                return (
+                  currentBankNameLower.includes(savedBankLower) ||
+                  savedBankLower.includes(currentBankNameLower)
+                );
+              },
             );
-          });
 
-          if (matchedBankObject) {
-            resolvedBankCode = matchedBankObject.code;
-            console.log(
-              `🎯 Match found! Resolved "${bankNameText}" to code: ${resolvedBankCode}`,
-            );
+            if (matchedBankObject) {
+              resolvedBankCode = matchedBankObject.code;
+            }
           }
-        }
 
-        // Fallback safety checkpoint if a bank text cannot be verified over the wire list
-        if (!resolvedBankCode) {
-          resolvedBankCode = "999992"; // Default fallback route to OPay settlement node
-        }
+          if (!resolvedBankCode) {
+            resolvedBankCode = "999992"; // OPay fallback
+          }
 
-        const recipientResponse = await fetch(
-          "https://api.paystack.co/transferrecipient",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              type: "nuban",
-              name: creatorProfile?.fullName || "Refreeg Creator Beneficiary",
-              account_number: accountNumber,
-              bank_code: resolvedBankCode,
-              currency: "NGN",
-            }),
-          },
-        );
-
-        const recipientResult = await recipientResponse.json();
-
-        if (recipientResult.status && recipientResult.data?.recipient_code) {
-          const recipientCode = recipientResult.data.recipient_code;
-
-          const transferAmountInKobo = Math.round(finalAmountNaira * 100);
-
-          const paystackPayoutResponse = await fetch(
-            "https://api.paystack.co/transfer",
+          const recipientResponse = await safeFetch(
+            "https://api.paystack.co/transferrecipient",
             {
               method: "POST",
               headers: {
@@ -227,46 +200,62 @@ export async function POST(req: Request) {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                source: "balance",
-                amount: transferAmountInKobo,
-                recipient: recipientCode,
-                reason: `Refreeg Crypto Settlement for Campaign ID: ${causeId}`,
+                type: "nuban",
+                name: creatorProfile?.fullName || "Refreeg Creator Beneficiary",
+                account_number: accountNumber,
+                bank_code: resolvedBankCode,
+                currency: "NGN",
               }),
+              timeoutMs: 5000,
             },
           );
 
-          const payoutResult = await paystackPayoutResponse.json();
-          if (payoutResult.status) {
-            console.log(
-              `🚀 SUCCESS: Cash safely routed to creator bank account! Ref: ${payoutResult.data.reference}`,
-            );
-          } else {
-            console.warn(
-              `⚠️ Paystack Transfer execution declined:`,
-              payoutResult.message,
-            );
-          }
-        } else {
-          console.warn(
-            `❌ Paystack Recipient registration failed:`,
-            recipientResult.message,
-          );
-        }
-      } else {
-        console.warn(
-          `❌ Missing dynamic bank information for user profile. Skipping programmatic payout transfer.`,
-        );
-      }
-    } catch (paystackError: any) {
-      console.error(
-        "💥 Automated Paystack routing handler failed:",
-        paystackError.message,
-      );
-    }
+          const recipientResult = await recipientResponse.json();
 
+          if (recipientResult.status && recipientResult.data?.recipient_code) {
+            const recipientCode = recipientResult.data.recipient_code;
+            const transferAmountInKobo = Math.round(finalAmountNaira * 100);
+
+            const paystackPayoutResponse = await safeFetch(
+              "https://api.paystack.co/transfer",
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  source: "balance",
+                  amount: transferAmountInKobo,
+                  recipient: recipientCode,
+                  reason: `Refreeg Crypto Settlement for Campaign ID: ${causeId}`,
+                }),
+                timeoutMs: 5000,
+              },
+            );
+
+            const payoutResult = await paystackPayoutResponse.json();
+            if (payoutResult.status) {
+              console.log(
+                `🚀 [Background] SUCCESS: Cash routed to creator! Ref: ${payoutResult.data.reference}`,
+              );
+            } else {
+              console.warn(
+                `⚠️ [Background] Paystack Transfer declined:`,
+                payoutResult.message,
+              );
+            }
+          }
+        }
+      } catch (bgError) {
+        console.error("[Webhook Background] Failed:", bgError);
+      }
+    });
+
+    // 3. Return 200 OK immediately to Breet
     return NextResponse.json({
       success: true,
-      message: "Database tracking synchronized and payout executed perfectly.",
+      message: "Database tracking synchronized.",
       donation_id: result.id,
     });
   } catch (error: any) {

@@ -3,47 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { recordEvent } from "@/actions/event-reward-actions";
-
-export async function getRecipientSolanaWallet(
-  causeId: string,
-): Promise<string | null> {
-  try {
-    const cause = await prisma.cause.findUnique({
-      where: { id: causeId },
-      select: {
-        user: {
-          select: { solana_wallet: true },
-        },
-      },
-    });
-
-    return cause?.user?.solana_wallet ?? null;
-  } catch (error) {
-    console.error("Error fetching recipient Solana wallet:", error);
-    return null;
-  }
-}
-
-export async function getRecipientPolygonWallet(
-  causeId: string,
-): Promise<string | null> {
-  try {
-    const cause = await prisma.cause.findUnique({
-      where: { id: causeId },
-      select: {
-        user: {
-          select: { crypto_wallets: true },
-        },
-      },
-    });
-
-    const wallets = cause?.user?.crypto_wallets as { ethereum?: string } | null;
-    return wallets?.ethereum ?? null;
-  } catch (error) {
-    console.error("Error fetching recipient Polygon wallet:", error);
-    return null;
-  }
-}
+import { syncMilestoneRequirements } from "@/lib/proof-milestones";
 
 interface CreateCryptoDonationParams {
   cause_id: string;
@@ -59,19 +19,21 @@ interface CreateCryptoDonationParams {
   currency: string;
 }
 
+/**
+ * Records a crypto donation (usually called by the Breet Webhook after settlement)
+ * and increments the campaign's raised total.
+ */
 export async function createCryptoDonation(data: CreateCryptoDonationParams) {
   try {
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create the crypto donation record
       const donation = await tx.crypto_donations.create({
         data: {
-          // 1. Ensure cause_id is a valid, clean string
           cause_id:
             data.cause_id && typeof data.cause_id === "string"
               ? data.cause_id.trim()
               : data.cause_id,
 
-          // 2. Clear out empty string objects for user_id
           user_id:
             data.user_id &&
             typeof data.user_id === "string" &&
@@ -83,7 +45,7 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
           amount_in_crypto: data.amount_in_crypto,
           status: data.status,
 
-          // 3. 🎯 SANITIZE TX_HASH: If it's empty/falsy, force it to null instead of ""
+          // SANITIZE TX_HASH: If it's empty/falsy, force it to null instead of ""
           tx_hash:
             data.tx_hash &&
             typeof data.tx_hash === "string" &&
@@ -108,7 +70,14 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
       return donation;
     });
 
-    // Fire off events if it was a registered user
+    // 3. Sync Proof Milestones (Triggers the 25/50/75/100% compliance engine)
+    try {
+      await syncMilestoneRequirements(data.cause_id);
+    } catch (e) {
+      console.error("Error syncing proof milestones for crypto:", e);
+    }
+
+    // 4. Fire off reward events if it was a registered user
     if (data.user_id) {
       try {
         await recordEvent({
@@ -128,7 +97,7 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
       }
     }
 
-    // Emit SSE event
+    // 5. Emit SSE event for real-time dashboard updates
     try {
       const { eventBus } = await import("@/lib/event-bus");
       eventBus.emit("donation", {
@@ -140,6 +109,7 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
       console.error("Error emitting crypto donation SSE:", e);
     }
 
+    // 6. Revalidate paths
     revalidatePath(`/causes/${data.cause_id}`);
     revalidatePath("/causes");
     revalidatePath("/");
