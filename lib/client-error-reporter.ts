@@ -1,5 +1,7 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
+
 type ClientErrorContext = {
   type: "window" | "unhandled-rejection" | "react";
   componentStack?: string | null;
@@ -29,6 +31,13 @@ export function reportClientError(error: unknown, context: ClientErrorContext) {
   const now = Date.now();
   if (now - (recentlyReported.get(dedupeKey) ?? 0) < DEDUPE_WINDOW_MS) return;
   recentlyReported.set(dedupeKey, now);
+
+  Sentry.captureException(error, {
+    tags: { source: context.type },
+    contexts: context.componentStack
+      ? { react: { componentStack: context.componentStack } }
+      : undefined,
+  });
 
   const stack = [report.stack, context.componentStack].filter(Boolean).join("\n");
   void fetch("/api/error-report", {

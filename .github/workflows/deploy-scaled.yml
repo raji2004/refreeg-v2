@@ -109,6 +109,11 @@ jobs:
           NEXT_PUBLIC_S3_DIRECT_UPLOAD: ${{ secrets.NEXT_PUBLIC_S3_DIRECT_UPLOAD }}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY }}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT: production
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm run build
 
       # ── 3. Package the minimal artifact ────────────────────────────────────
@@ -186,6 +191,8 @@ jobs:
           NEXT_PUBLIC_S3_DIRECT_UPLOAD: ${{ secrets.NEXT_PUBLIC_S3_DIRECT_UPLOAD }}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY }}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           # HEALTH_CHECK_TOKEN intentionally NOT written — the ALB target group
           # health check can't send custom headers, so /api/health must stay
           # unauthenticated (it fails open with no token configured).
@@ -226,6 +233,9 @@ jobs:
             [NEXT_PUBLIC_S3_DIRECT_UPLOAD]="$NEXT_PUBLIC_S3_DIRECT_UPLOAD"
             [NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY]="$NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY"
             [NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY]="$NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY"
+            [NEXT_PUBLIC_SENTRY_DSN]="$NEXT_PUBLIC_SENTRY_DSN"
+            [SENTRY_DSN]="$SENTRY_DSN"
+            [NEXT_PUBLIC_SENTRY_ENVIRONMENT]="production"
             [NODE_ENV]="production"
           )
 

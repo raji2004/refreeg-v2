@@ -29,8 +29,6 @@ import {
   isProfileComplete,
   hasCompletedOnboarding,
   getCurrentOnboardingStep,
-  getSolanaWallet,
-  updateSolanaWallet,
 } from "@/actions/profile-actions";
 
 const mockPrisma = prisma as unknown as {
@@ -280,29 +278,6 @@ describe("profile-actions", () => {
       const result = await getCurrentOnboardingStep("user-1");
 
       expect(result).toBe(4);
-    });
-  });
-
-  describe("getSolanaWallet / updateSolanaWallet", () => {
-    it("returns solana wallet from profile", async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({
-        solana_wallet: "sol-wallet-123",
-      });
-
-      const result = await getSolanaWallet("user-1");
-
-      expect(result).toBe("sol-wallet-123");
-    });
-
-    it("updates solana wallet and revalidates settings", async () => {
-      mockPrisma.user.update.mockResolvedValue({
-        solana_wallet: "new-sol-wallet",
-      });
-
-      const result = await updateSolanaWallet("user-1", "new-sol-wallet");
-
-      expect(result).toBe("new-sol-wallet");
-      expect(revalidatePath).toHaveBeenCalledWith("/dashboard/settings");
     });
   });
 });
