@@ -141,6 +141,16 @@ jobs:
           NEXT_PUBLIC_S3_DIRECT_UPLOAD: ${{ secrets.NEXT_PUBLIC_S3_DIRECT_UPLOAD }}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY }}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT: production
+          # SENTRY_ORG/PROJECT/AUTH_TOKEN are build-time-only — consumed by
+          # the Sentry webpack plugin to upload source maps and associate a
+          # release, never read by the running app. Deliberately NOT written
+          # to secrets.env below; no reason to ship an org-write-scoped auth
+          # token to the production server.
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm run build
 
       # ── 3. Package the minimal artifact ────────────────────────────────────
@@ -242,6 +252,8 @@ jobs:
           NEXT_PUBLIC_S3_DIRECT_UPLOAD: ${{ secrets.NEXT_PUBLIC_S3_DIRECT_UPLOAD }}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY }}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           cat > secrets.env <<EOF
           DIDIT_WEBHOOK_SECRET=${DIDIT_WEBHOOK_SECRET}
@@ -283,6 +295,9 @@ jobs:
           NEXT_PUBLIC_S3_DIRECT_UPLOAD=${NEXT_PUBLIC_S3_DIRECT_UPLOAD}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY=${NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY=${NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY}
+          NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT=production
+          SENTRY_DSN=${SENTRY_DSN}
           NODE_ENV=production
           PORT=3000
           API_PORT=4000

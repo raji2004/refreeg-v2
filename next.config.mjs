@@ -1,5 +1,6 @@
 import path from "path";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
+import { withSentryConfig } from "@sentry/nextjs";
 
 let userConfig = undefined;
 try {
@@ -157,4 +158,22 @@ function mergeConfig(nextConfig, userConfig) {
   }
 }
 
-export default nextConfig;
+// SENTRY_AUTH_TOKEN is intentionally optional here — without it, this just
+// skips source map upload (readable stack traces in Sentry) and release
+// association, logging a warning rather than failing the build. That keeps
+// local dev and any environment without the token building normally.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  widenClientFileUpload: true,
+  // We proxy Sentry's client requests through our own /monitoring route so
+  // ad-blockers (which commonly block sentry.io directly) don't silently
+  // drop error reports.
+  tunnelRoute: "/monitoring",
+  webpack: {
+    treeshake: { removeDebugLogging: true },
+    automaticVercelMonitors: false,
+  },
+});
