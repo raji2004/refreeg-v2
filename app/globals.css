@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -84,6 +84,21 @@ select:focus {
     --announcement-foreground: 220 81% 34%;
     --announcement-status: 216 31% 18%;
     --announcement-border: 83 57% 46%;
+
+    /* Fintech surface system (see docs/DESIGN_GUIDE.md) — additive, opt-in
+       tokens for new/rebuilt screens. Do not repoint --background/--primary
+       at these; existing pages keep the navy/white theme until re-themed. */
+    --ink: 220 25% 8%;
+    --ink-foreground: 60 20% 96%;
+
+    --cream: 40 27% 96%;
+    --cream-foreground: 220 25% 8%;
+
+    --lime: 74 78% 58%;
+    --lime-foreground: 220 25% 8%;
+
+    --gold: 38 72% 78%;
+    --gold-foreground: 220 25% 8%;
   }
 
   /* Dark theme commented out
@@ -155,6 +170,12 @@ select:focus {
 
 .border-brand {
   border-color: hsl(var(--brand));
+}
+
+/* Small-caps section labels used throughout the fintech surface system,
+   e.g. "STEP 1 OF 4", "WHAT LEVEL 2 UNLOCKS". See docs/DESIGN_GUIDE.md. */
+.label-eyebrow {
+  @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground;
 }
 
 /* Toast styles */

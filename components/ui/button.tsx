@@ -17,6 +17,10 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-secondary underline-offset-4 hover:underline",
+        // Fintech surface system — the one primary action per screen, see
+        // docs/DESIGN_GUIDE.md. Never pair two lime buttons on one view.
+        lime: "bg-lime text-lime-foreground hover:bg-lime/90",
+        ink: "bg-ink text-ink-foreground hover:bg-ink/90",
       },
       size: {
         default: "h-10 px-4 py-2",

@@ -13,6 +13,10 @@ const badgeVariants = cva(
         destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
         brand: "border-transparent bg-brand text-brand-foreground hover:bg-brand/80",
+        // Fintech surface system status chips, see docs/DESIGN_GUIDE.md
+        cleared: "border-transparent bg-lime text-lime-foreground",
+        pending: "border-transparent bg-gold text-gold-foreground",
+        held: "border border-ink/20 bg-transparent text-ink",
       },
     },
     defaultVariants: {
