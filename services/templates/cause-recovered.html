@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>We recovered your campaign on RefreeG</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        background-color: #003366;
+        color: white;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .content {
+        padding: 20px;
+        background-color: #f9f9f9;
+      }
+
+      .footer {
+        text-align: center;
+        padding: 20px;
+        font-size: 12px;
+        color: #777;
+        border-top: 3px solid #003366;
+      }
+
+      h1 {
+        color: #ffffff;
+        margin-top: 0;
+        font-size: 20px;
+      }
+
+      .cause-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background-color: #ffffff;
+        border: 1px solid #e2e2e2;
+        border-radius: 8px;
+        padding: 14px;
+        margin: 18px 0;
+      }
+
+      .cause-card img {
+        width: 64px;
+        height: 64px;
+        border-radius: 6px;
+        object-fit: cover;
+        flex-shrink: 0;
+      }
+
+      .cause-title {
+        font-weight: bold;
+        color: #003366;
+        margin: 0 0 4px 0;
+      }
+
+      .cause-title.placeholder {
+        font-weight: normal;
+        font-style: italic;
+        color: #555;
+      }
+
+      .cause-note {
+        font-size: 12px;
+        color: #888;
+        margin: 4px 0 0 0;
+      }
+
+      .cause-meta {
+        font-size: 13px;
+        color: #666;
+        margin: 0;
+      }
+
+      .cta-button {
+        display: inline-block;
+        background-color: #0066cc;
+        color: white !important;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 8px;
+        margin: 20px 0;
+        font-weight: bold;
+        font-size: 16px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .cta-button:hover {
+        background-color: #0052a3;
+        color: white !important;
+      }
+
+      .note {
+        background-color: #fff8e6;
+        border-left: 4px solid #e6a700;
+        padding: 12px 15px;
+        border-radius: 5px;
+        margin: 18px 0;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>A quick update on your campaign</h1>
+      </div>
+      <div class="content">
+        <p>Hey {{userName}},</p>
+
+        <p>
+          As we roll out improvements across the platform, we're making sure
+          every campaign is properly linked to its owner's account — including
+          this one, tied to this email address.
+        </p>
+
+        <div class="cause-card">
+          {{#if causeImage}}
+          <img src="{{causeImage}}" alt="" />
+          {{/if}}
+          <div>
+            <p class="cause-title{{#if titleIsPlaceholder}} placeholder{{/if}}">
+              {{causeTitle}}
+            </p>
+            <p class="cause-meta">
+              ₦{{causeRaised}} raised of ₦{{causeGoal}} goal
+            </p>
+            {{#if titleIsPlaceholder}}
+            <p class="cause-note">
+              We're missing a title and cover photo for this one — you can
+              add them once you're signed in.
+            </p>
+            {{/if}}
+          </div>
+        </div>
+
+        <p>
+          If this is your campaign, sign back in with Google using this same
+          email address ({{recipientEmail}}) and you'll see a prompt on your
+          dashboard to confirm and reclaim it.
+        </p>
+
+        <div style="text-align: center">
+          <a
+            href="{{signInUrl}}"
+            class="cta-button"
+            style="color: white; text-decoration: none"
+            >Sign in with Google</a
+          >
+        </div>
+
+        <div class="note">
+          Not sure this is you, or never created a campaign on RefreeG? No
+          action is needed — you can safely ignore this email.
+        </div>
+
+        <p>
+          Thanks for being part of RefreeG.
+        </p>
+
+        <p>
+          With love,<br />
+          The Refreeg Team
+        </p>
+      </div>
+      <div class="footer">
+        <p>
+          This is an automated email. Please do not reply directly to this
+          message.
+        </p>
+        <p>© {{currentYear}} RefreeG. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>

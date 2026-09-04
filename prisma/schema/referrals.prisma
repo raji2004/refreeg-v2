@@ -1,13 +1,13 @@
 model DonorReferralAttribution {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  referrer_id   String    @db.Uuid
-  donation_id   String    @unique @db.Uuid
-  cause_id      String    @db.Uuid
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  referrer_id   String   @db.Uuid
+  donation_id   String   @unique @db.Uuid
+  cause_id      String   @db.Uuid
   donor_email   String
-  donor_user_id String?   @db.Uuid
+  donor_user_id String?  @db.Uuid
   referral_code String
-  status        String    @default("confirmed") // 'confirmed' | 'self_referral' | 'own_campaign'
-  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  status        String   @default("confirmed") // 'confirmed' | 'self_referral' | 'own_campaign'
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
 
   @@index([referrer_id, status], map: "idx_dra_referrer_status")
   @@index([cause_id], map: "idx_dra_cause_id")

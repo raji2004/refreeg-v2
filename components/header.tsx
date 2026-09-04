@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Logo } from "@/components/logo";
 import { useAdmin } from "@/hooks/use-admin";
 import { cn } from "@/lib/utils";
+import { DiscoverSearch } from "@/components/discover/discover-search";
 import {
   ArrowRight,
   BarChart3,
@@ -63,7 +64,7 @@ type NavItem = NavLink | NavDropdown;
 
 const publicNavItems: NavItem[] = [
   {
-    title: "Explore Causes",
+    title: "Discover",
     href: "/causes",
     type: "link",
   },
@@ -398,6 +399,10 @@ export function Header() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
+              <div className="hidden md:block">
+                <DiscoverSearch />
+              </div>
+
               <div className="hidden lg:flex lg:items-center lg:gap-2">
                 {user && !isDashboardRoute ? (
                   <Link href="/dashboard">

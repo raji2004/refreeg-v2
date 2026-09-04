@@ -78,6 +78,34 @@ const mapPrismaToCause = (prismaCause: any): Cause => {
 /**
  * Get a cause by ID or public slug
  */
+/** Fetches exactly what QuickDonateForm needs, for opening it inside a modal from the grid. */
+export async function getQuickDonateProps(causeId: string) {
+  const { getProfile } = await import("./profile-actions");
+  const cause = await getCause(causeId);
+  if (!cause) return null;
+
+  const user = await getCurrentUser();
+  const profile = user ? await getProfile(user.id) : null;
+
+  return {
+    causeId: cause.id,
+    causeSlug: cause.slug ?? null,
+    causeTitle: cause.title,
+    causeImage: cause.image ?? null,
+    causeMultimedia: cause.multimedia ?? [],
+    goal: cause.goal,
+    raised: cause.raised,
+    subaccount: cause.user?.sub_account_code ?? undefined,
+    defaultName: profile?.full_name ?? "",
+    defaultEmail: profile?.email ?? "",
+    userId: user?.id,
+    // Real gate against paying into a paused campaign — the card/detail-page
+    // UI already hides the Give button, but this is the server-side check
+    // that actually matters (a client could otherwise call this directly).
+    paused: !!cause.paused,
+  };
+}
+
 export async function getCause(causeId: string): Promise<CauseWithUser | null> {
   if (!causeId?.trim()) return null;
   const user = await getCurrentUser();
@@ -545,6 +573,30 @@ export const listCauses = cache(
       };
     }
 
+    // Location filter — Cause.location is free text, so this is a
+    // contains-match, not a structured lookup against State/City.
+    if (options.location && options.location.trim()) {
+      whereClause.location = {
+        contains: options.location.trim(),
+        mode: "insensitive",
+      };
+    }
+
+    // Urgent filter — only causes with an explicit end_date within 7 days
+    // can be expressed as a DB predicate; causes that derive daysLeft from
+    // days_active/created_at (see utils/cause/cause-utils.ts) aren't covered.
+    if (options.urgentOnly) {
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+      whereClause.end_date = { gt: new Date(), lte: sevenDaysFromNow };
+    }
+
+    // Verified-NGO filter — derived from the creator's account verification;
+    // there's no org-level verified field.
+    if (options.verifiedOnly) {
+      whereClause.user = { isVerified: true };
+    }
+
     // Sorting
     let orderByClause: any = { createdAt: "desc" };
 
@@ -564,29 +616,63 @@ export const listCauses = cache(
         break;
     }
 
+    // Amount-still-needed range can't be expressed as a Prisma where clause
+    // (it's goal - raised, a column-to-column computation) — fetch a wider
+    // candidate slice and trim in JS when that filter is active.
+    const hasAmountRange =
+      options.minAmountNeeded != null || options.maxAmountNeeded != null;
+    const fetchTake = hasAmountRange && options.limit
+      ? options.limit * 4
+      : options.limit;
+
     try {
       const data = await prisma.cause.findMany({
         where: whereClause,
         include: {
           user: {
-            select: { fullName: true, email: true, profilePhoto: true },
+            select: {
+              fullName: true,
+              email: true,
+              profilePhoto: true,
+              isVerified: true,
+            },
           },
         },
         orderBy: orderByClause,
-        skip: options.offset,
-        take: options.limit,
+        skip: hasAmountRange ? undefined : options.offset,
+        take: fetchTake,
       });
 
-      const causes = data.map((d: any) => ({
+      let causes = data.map((d: any) => ({
         ...mapPrismaToCause(d),
         profiles: d.user
           ? {
               full_name: d.user.fullName,
               email: d.user.email,
               profile_photo: d.user.profilePhoto,
+              is_verified: !!d.user.isVerified,
             }
           : undefined,
       }));
+
+      if (hasAmountRange) {
+        causes = causes.filter((c) => {
+          const needed = Number(c.goal || 0) - Number(c.raised || 0);
+          if (
+            options.minAmountNeeded != null &&
+            needed < options.minAmountNeeded
+          )
+            return false;
+          if (
+            options.maxAmountNeeded != null &&
+            needed > options.maxAmountNeeded
+          )
+            return false;
+          return true;
+        });
+        const offset = options.offset || 0;
+        causes = causes.slice(offset, offset + (options.limit || causes.length));
+      }
 
       const isOwnerScoped = !!options.userId;
       const result = isOwnerScoped
@@ -644,7 +730,45 @@ export async function countCauses(
     };
   }
 
+  if (options.location && options.location.trim()) {
+    whereClause.location = {
+      contains: options.location.trim(),
+      mode: "insensitive",
+    };
+  }
+
+  if (options.urgentOnly) {
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    whereClause.end_date = { gt: new Date(), lte: sevenDaysFromNow };
+  }
+
+  if (options.verifiedOnly) {
+    whereClause.user = { isVerified: true };
+  }
+
   try {
+    const hasAmountRange =
+      options.minAmountNeeded != null || options.maxAmountNeeded != null;
+
+    if (hasAmountRange) {
+      // No column-to-column (goal - raised) predicate in Prisma's filter
+      // API — count by fetching just the two numeric fields and filtering
+      // in JS instead of pulling full rows.
+      const rows = await prisma.cause.findMany({
+        where: whereClause,
+        select: { goal: true, raised: true },
+      });
+      return rows.filter((r) => {
+        const needed = Number(r.goal || 0) - Number(r.raised || 0);
+        if (options.minAmountNeeded != null && needed < options.minAmountNeeded)
+          return false;
+        if (options.maxAmountNeeded != null && needed > options.maxAmountNeeded)
+          return false;
+        return true;
+      }).length;
+    }
+
     const count = await prisma.cause.count({ where: whereClause });
     return count;
   } catch (error) {
@@ -692,6 +816,8 @@ export async function updateCauseStatus(
               summary: edit.summary,
               location,
               status: "approved",
+              paused: false,
+              paused_at: null,
               updatedAt: new Date(),
             },
           });
@@ -787,6 +913,38 @@ export async function updateCauseStatus(
   }
 
   throw new Error(`Invalid status value: ${status}`);
+}
+
+/**
+ * Locks a cause's detail page (still shown in listings) — used for causes
+ * missing real content instead of hiding them outright. Cleared
+ * automatically when a submitted edit for the cause is approved, or
+ * manually via unpauseCause.
+ */
+export async function pauseCause(causeId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  if (!(await isAdminOrManager(user.id))) throw new Error("Unauthorized");
+
+  await prisma.cause.update({
+    where: { id: causeId },
+    data: { paused: true, paused_at: new Date() },
+  });
+  revalidatePath("/dashboard/admin/causes");
+  revalidatePath("/causes");
+}
+
+export async function unpauseCause(causeId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  if (!(await isAdminOrManager(user.id))) throw new Error("Unauthorized");
+
+  await prisma.cause.update({
+    where: { id: causeId },
+    data: { paused: false, paused_at: null },
+  });
+  revalidatePath("/dashboard/admin/causes");
+  revalidatePath("/causes");
 }
 
 /**
