@@ -33,6 +33,7 @@ function mapPrismaToProfile(p: any): Profile {
     updated_at: p.updatedAt?.toISOString() || new Date().toISOString(),
     account_type: p.accountType as any,
     is_verified: p.isVerified ?? false,
+    total_points: p.total_points ?? 0,
     gender: p.gender,
     bio: p.bio,
     // solana_wallet: p.solana_wallet, // 👈 REMOVED (Legacy Web3)
