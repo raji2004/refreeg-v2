@@ -42,18 +42,39 @@ export interface DiscoverItem {
   location: string | null;
   /** Campaign detail page is locked while true; petitions are never paused. See prisma/schema/cause.prisma. */
   paused: boolean;
+  createdAt: string;
 }
 
-const SORT_TO_CAUSE_SORT: Record<
-  DiscoverSort,
-  "recommended" | "latest" | "most-funded" | "ending-soon"
-> = {
-  "most-urgent": "ending-soon",
-  "closing-soonest": "ending-soon",
-  "closest-to-goal": "recommended",
-  newest: "latest",
-  "most-given": "most-funded",
-};
+/**
+ * Orders a merged campaigns+petitions list. Needed because the two types
+ * come from separate DB queries — a DB-level ORDER BY on each can't produce
+ * one correctly-interleaved combined feed, so every sort is applied here
+ * after merging.
+ *
+ * Paused campaigns (locked detail page, no real content yet) always sort
+ * after everything else, regardless of the active sort — otherwise a batch
+ * of just-reconstructed placeholders with a fresh `createdAt` can bury real
+ * campaigns at the top of "Newest first".
+ */
+function compareItems(a: DiscoverItem, b: DiscoverItem, sortBy: DiscoverSort): number {
+  if (a.paused !== b.paused) return a.paused ? 1 : -1;
+
+  switch (sortBy) {
+    case "closest-to-goal":
+      return b.percent - a.percent;
+    case "most-given":
+      return b.raised - a.raised;
+    case "most-urgent":
+    case "closing-soonest":
+      if (a.daysLeft == null && b.daysLeft == null) return 0;
+      if (a.daysLeft == null) return 1;
+      if (b.daysLeft == null) return -1;
+      return a.daysLeft - b.daysLeft;
+    case "newest":
+    default:
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  }
+}
 
 function daysLeftFromEndDate(endDate: string | null | undefined): number | null {
   if (!endDate) return null;
@@ -79,6 +100,7 @@ function causeToItem(cause: Cause): DiscoverItem {
     urgent: daysLeft != null && daysLeft <= 7,
     location: cause.location || null,
     paused: !!cause.paused,
+    createdAt: cause.created_at,
   };
 }
 
@@ -99,6 +121,7 @@ function petitionToItem(petition: Petition): DiscoverItem {
     urgent: false,
     location: null,
     paused: false,
+    createdAt: petition.created_at,
   };
 }
 
@@ -107,43 +130,32 @@ export async function listDiscoverResults(
   { limit, offset }: { limit: number; offset: number },
 ) {
   const sortBy = filters.sortBy || "newest";
-  const causeSort = SORT_TO_CAUSE_SORT[sortBy];
-  const needsJsSort = sortBy === "most-urgent" || sortBy === "closest-to-goal";
-
-  // For sorts that need a computed field (percent funded, days left) or the
-  // "near its goal" filter, DB-level pagination can't be trusted — fetch a
-  // wider candidate slice, compute + sort + filter in JS, then slice the
-  // page out of that. Otherwise, page directly at the DB level.
-  const wide = needsJsSort || filters.nearGoalOnly;
-  const fetchLimit = wide ? Math.min(DISCOVER_RESULT_CAP, offset + limit + 60) : limit;
-  const fetchOffset = wide ? 0 : offset;
-
   const includeCauses = filters.includeType !== "petitions";
   const includePetitions = filters.includeType !== "campaigns";
 
+  // Causes and petitions come from separate tables, so DB-level pagination
+  // on either one can't produce a correctly-paginated combined feed — fetch
+  // a bounded candidate set (capped at DISCOVER_RESULT_CAP, which is small)
+  // from each, merge, sort, and paginate here instead.
   const [causes, petitions] = await Promise.all([
     includeCauses
       ? listCauses({
           category: filters.category,
           search: filters.search,
-          sortBy: causeSort,
           location: filters.location,
           urgentOnly: filters.urgentOnly,
           verifiedOnly: filters.verifiedOnly,
           minAmountNeeded: filters.minAmountNeeded,
           maxAmountNeeded: filters.maxAmountNeeded,
-          limit: fetchLimit,
-          offset: fetchOffset,
+          limit: DISCOVER_RESULT_CAP,
         })
       : Promise.resolve([]),
     includePetitions
       ? listPetitions({
           category: filters.category,
           search: filters.search,
-          sortBy: causeSort,
           verifiedOnly: filters.verifiedOnly,
-          limit: fetchLimit,
-          offset: fetchOffset,
+          limit: DISCOVER_RESULT_CAP,
         })
       : Promise.resolve([]),
   ]);
@@ -157,21 +169,12 @@ export async function listDiscoverResults(
     items = items.filter((i) => i.percent >= 90 && i.percent < 100);
   }
 
-  if (sortBy === "closest-to-goal") {
-    items.sort((a, b) => b.percent - a.percent);
-  } else if (sortBy === "most-urgent") {
-    items.sort((a, b) => {
-      if (a.daysLeft == null) return 1;
-      if (b.daysLeft == null) return -1;
-      return a.daysLeft - b.daysLeft;
-    });
-  }
+  items.sort((a, b) => compareItems(a, b, sortBy));
 
-  const total = items.length;
-  const page = wide ? items.slice(offset, offset + limit) : items;
-  const cappedTotal = Math.min(total, DISCOVER_RESULT_CAP);
+  const cappedTotal = Math.min(items.length, DISCOVER_RESULT_CAP);
+  const page = items.slice(offset, offset + limit);
 
-  return { items: page, hasMore: offset + limit < cappedTotal };
+  return { items: page, hasMore: offset + page.length < cappedTotal };
 }
 
 export async function countDiscoverResults(
