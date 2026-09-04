@@ -11,9 +11,12 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
+import { Button } from "@/components/ui/button";
 import { H4, P } from "./typography";
 import AnimatedCard from "./home/components/AnimatedCard";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { Bookmark } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PetitionCardProps {
   petition: {
@@ -28,9 +31,17 @@ interface PetitionCardProps {
       full_name?: string;
     } | null;
   };
+  bookmarked?: boolean;
+  onToggleBookmark?: () => void;
+  onSignClick?: () => void;
 }
 
-export function PetitionCard({ petition }: PetitionCardProps) {
+export function PetitionCard({
+  petition,
+  bookmarked,
+  onToggleBookmark,
+  onSignClick,
+}: PetitionCardProps) {
   return (
     <Link href={`/petitions/${petition.id}`} className="group block h-full">
       <AnimatedCard>
@@ -44,6 +55,29 @@ export function PetitionCard({ petition }: PetitionCardProps) {
               className="object-cover"
               unoptimized={isProxyMediaUrl(getMediaUrl(petition.image))}
             />
+            {onToggleBookmark && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleBookmark();
+                }}
+                aria-pressed={bookmarked}
+                aria-label={bookmarked ? "Remove bookmark" : "Save"}
+                className={cn(
+                  "absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm shadow-sm transition-colors",
+                  bookmarked
+                    ? "bg-ink text-ink-foreground"
+                    : "bg-white/90 text-slate-700 hover:bg-white",
+                )}
+              >
+                <Bookmark
+                  className="h-4 w-4"
+                  fill={bookmarked ? "currentColor" : "none"}
+                />
+              </button>
+            )}
           </div>
 
           <CardHeader className="flex flex-col flex-1 p-4">
@@ -84,7 +118,21 @@ export function PetitionCard({ petition }: PetitionCardProps) {
                   </P>
                 </span>
 
-                <DonateButton type="petition" disableLink />
+                {onSignClick ? (
+                  <Button
+                    size="sm"
+                    variant="lime"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSignClick();
+                    }}
+                  >
+                    Sign now
+                  </Button>
+                ) : (
+                  <DonateButton type="petition" disableLink />
+                )}
               </div>
             </CardFooter>
           </div>

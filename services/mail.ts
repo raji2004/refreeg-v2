@@ -1117,6 +1117,46 @@ export async function sendProofUpdateRejectedEmail(params: {
   });
 }
 
+/**
+ * "recovered image only" causes (see prisma/schema/cause.prisma
+ * `reconstruction_note`) never got a real title back — don't print that
+ * placeholder string to the campaign owner as if it were their title.
+ */
+function isPlaceholderCauseTitle(title: string): boolean {
+  return /^untitled campaign\b/i.test(title.trim());
+}
+
+export async function sendCauseRecoveredEmail(params: {
+  to: string;
+  userName?: string;
+  causeTitle: string;
+  causeImage?: string | null;
+  causeRaised: number;
+  causeGoal: number;
+}) {
+  if (!params.to) return;
+  const currentYear = new Date().getFullYear();
+  const titleIsPlaceholder = isPlaceholderCauseTitle(params.causeTitle);
+  return sendMail({
+    to: params.to,
+    subject: "A quick update on your RefreeG campaign",
+    templateName: "cause-recovered",
+    context: {
+      userName: params.userName || "there",
+      recipientEmail: params.to,
+      causeTitle: titleIsPlaceholder
+        ? "A campaign linked to this account"
+        : params.causeTitle,
+      titleIsPlaceholder,
+      causeImage: params.causeImage || "",
+      causeRaised: params.causeRaised.toLocaleString(),
+      causeGoal: params.causeGoal.toLocaleString(),
+      signInUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/auth/signin`,
+      currentYear,
+    },
+  });
+}
+
 export async function sendProofUpdatePublishedEmail(params: {
   to: string;
   causeTitle: string;

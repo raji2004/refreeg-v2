@@ -226,6 +226,40 @@ export async function getOrganizationPublicProfile(ownerId: string) {
   }
 }
 
+/**
+ * Search organizations by name for the Discover ⌘K overlay. Verified status
+ * is derived from the owning user's account verification — there's no
+ * org-level verified field.
+ */
+export async function searchOrganizations(query: string, limit = 4) {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  try {
+    const organizations = await prisma.organization.findMany({
+      where: { name: { contains: trimmed, mode: "insensitive" } },
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        logoUrl: true,
+        owner: { select: { username: true, isVerified: true } },
+      },
+    });
+
+    return organizations.map((org) => ({
+      id: org.id,
+      name: org.name,
+      logoUrl: org.logoUrl || null,
+      username: org.owner?.username || null,
+      isVerified: !!org.owner?.isVerified,
+    }));
+  } catch (error) {
+    console.error("Unable to search organizations:", error);
+    return [];
+  }
+}
+
 export async function updateOrganization(input: {
   name: string;
   adminEmail: string;

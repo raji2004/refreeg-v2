@@ -322,14 +322,41 @@ export const listPetitions = cache(
       where.user_id = options.userId;
     }
 
+    if (options.search && options.search.trim()) {
+      where.title = { contains: options.search.trim(), mode: "insensitive" };
+    }
+
+    if (options.verifiedOnly) {
+      where.user = { isVerified: true };
+    }
+
+    let orderBy: any = { created_at: "desc" };
+    switch (options.sortBy) {
+      case "most-funded":
+        orderBy = [{ raised: "desc" }, { created_at: "desc" }];
+        break;
+      case "latest":
+      case "recommended":
+      default:
+        orderBy = { created_at: "desc" };
+        break;
+      // Petitions have no end_date, so "ending-soon" has no petition-side
+      // equivalent — falls back to newest first.
+    }
+
     const petitions = await prisma.petitions.findMany({
       where,
-      orderBy: { created_at: "desc" },
+      orderBy,
       take: options.limit || undefined,
       skip: options.offset || undefined,
       include: {
         user: {
-          select: { fullName: true, email: true, profilePhoto: true },
+          select: {
+            fullName: true,
+            email: true,
+            profilePhoto: true,
+            isVerified: true,
+          },
         },
       },
     });
@@ -347,6 +374,7 @@ export const listPetitions = cache(
             full_name: p.user.fullName || "",
             email: p.user.email || "",
             profile_photo: p.user.profilePhoto || null,
+            is_verified: !!p.user.isVerified,
           }
         : undefined,
     })) as unknown as Petition[];
@@ -375,6 +403,14 @@ export async function countPetitions(
 
   if (options.userId) {
     where.user_id = options.userId;
+  }
+
+  if (options.search && options.search.trim()) {
+    where.title = { contains: options.search.trim(), mode: "insensitive" };
+  }
+
+  if (options.verifiedOnly) {
+    where.user = { isVerified: true };
   }
 
   return prisma.petitions.count({ where });

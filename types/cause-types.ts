@@ -44,9 +44,13 @@ export interface Cause {
     full_name: string;
     email: string;
     profile_photo: string | null;
+    is_verified?: boolean;
   };
   compliance_paused?: boolean;
   compliance_paused_at?: string;
+  /** Still shown in public listings, but the detail page is locked. See prisma/schema/cause.prisma. */
+  paused?: boolean;
+  paused_at?: string | null;
   slug?: string | null;
 }
 export interface CauseWithSubHeading extends Cause {
@@ -90,4 +94,9 @@ export interface CauseFilterOptions {
   offset?: number;
   search?: string;
   sortBy?: "recommended" | "latest" | "most-funded" | "ending-soon";
+  location?: string;
+  urgentOnly?: boolean;
+  verifiedOnly?: boolean;
+  minAmountNeeded?: number;
+  maxAmountNeeded?: number;
 }

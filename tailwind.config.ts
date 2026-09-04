@@ -31,6 +31,9 @@ const config: Config = {
           "Arial",
           "sans-serif",
         ],
+        // Editorial display serif for page/section titles in the fintech
+        // surface system (docs/DESIGN_GUIDE.md). Body and UI stay Montserrat.
+        fraunces: ["Fraunces", "Georgia", "Cambria", "serif"],
       },
       colors: {
         customBlueGray: "#323F49",
@@ -162,6 +165,23 @@ const config: Config = {
         brand: {
           DEFAULT: "hsl(var(--brand))",
           foreground: "hsl(var(--brand-foreground))",
+        },
+        // Fintech surface system — additive tokens, see docs/DESIGN_GUIDE.md
+        ink: {
+          DEFAULT: "hsl(var(--ink))",
+          foreground: "hsl(var(--ink-foreground))",
+        },
+        cream: {
+          DEFAULT: "hsl(var(--cream))",
+          foreground: "hsl(var(--cream-foreground))",
+        },
+        lime: {
+          DEFAULT: "hsl(var(--lime))",
+          foreground: "hsl(var(--lime-foreground))",
+        },
+        gold: {
+          DEFAULT: "hsl(var(--gold))",
+          foreground: "hsl(var(--gold-foreground))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar))",
