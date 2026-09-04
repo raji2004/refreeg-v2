@@ -7,6 +7,8 @@ import { listCommentsForCause } from "@/actions/comment-actions";
 import { getApprovedProofUpdates } from "@/actions/proof-update-actions";
 import CampaignQualityLab from "@/app/campaign/_components/campaign-quality-lab";
 import { causePublicPath } from "@/lib/causes/slug";
+import { CausePausedNotice } from "@/components/cause-paused-notice";
+import { isAdminOrManager } from "@/actions/role-actions";
 
 import { Metadata } from "next";
 
@@ -62,6 +64,14 @@ export default async function CauseDetailPage({
   ]);
 
   const user = session?.user;
+
+  const isOwner = user?.id === cause.user_id;
+  if (cause.paused && !isOwner) {
+    const isAdmin = user?.id ? await isAdminOrManager(user.id as string) : false;
+    if (!isAdmin) {
+      return <CausePausedNotice title={cause.title} />;
+    }
+  }
 
   const [myprofile, creatorProfile] = await Promise.all([
     user ? getProfile(user.id as string) : Promise.resolve(undefined),

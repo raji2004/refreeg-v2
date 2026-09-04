@@ -36,6 +36,7 @@ type Cause = {
   goal: number;
   raised: number;
   days_active?: number;
+  paused?: boolean;
   profiles?: {
     full_name?: string;
   };
@@ -81,6 +82,11 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
                 className="object-cover"
                 unoptimized={isProxyMediaUrl(getMediaUrl(cause.image))}
               />
+              {cause.paused && (
+                <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-gold/90 px-2.5 py-1 text-xs font-medium text-ink backdrop-blur-sm">
+                  Paused
+                </div>
+              )}
             </div>
 
             <CardHeader className="flex flex-col flex-1 p-4">

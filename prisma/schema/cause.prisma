@@ -25,6 +25,21 @@ model Cause {
   end_date             DateTime?                     @db.Timestamptz(6)
   compliance_paused    Boolean                       @default(false)
   compliance_paused_at DateTime?                     @db.Timestamptz(6)
+  /// Distinct from compliance_paused: a paused cause still appears in public
+  /// listings (homepage, Discover), but its own detail page is locked to
+  /// everyone except the owner/admin — used for causes missing real content
+  /// (e.g. reconstructed-but-untitled) instead of hiding them outright.
+  /// Cleared automatically when a submitted edit for this cause is approved.
+  paused               Boolean                       @default(false)
+  paused_at            DateTime?                     @db.Timestamptz(6)
+  /// True for causes reconstructed after the 2026-09-03 data-loss incident from
+  /// recovered S3 images / archived snapshots — the real creator still needs to
+  /// review and fill in the rest via the "claim your campaign" flow.
+  reconstructed        Boolean                       @default(false)
+  reconstruction_note  String?
+  /// Best-guess original creator email, recovered from auth.audit_log_entries.
+  /// Used to offer the claim flow — cleared once the cause is actually claimed.
+  recovered_owner_email String?
   follows              campaign_follows[]
   edits                cause_edits[]
   sections             cause_sections[]
