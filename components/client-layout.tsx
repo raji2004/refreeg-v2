@@ -6,6 +6,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import NavigationLoader from "@/components/NavigationLoader";
 import AIAgentBot from "@/app/ai-agent/_components/ai-agent-bot";
+import { AppShell } from "@/components/app-shell/app-shell";
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -29,6 +30,22 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   ];
   const hideLayout = noLayoutRoutes.some((route) => pathname.startsWith(route));
 
+  // Persistent sidebar+header app shell (components/app-shell/app-shell.tsx),
+  // for the "app" section of the site — Discover, Petitions, the dashboard
+  // area, Wallet, Bounties, Saved — for both signed-in and signed-out
+  // visitors. Everything else (marketing pages) keeps the existing
+  // Header/Footer.
+  const appShellRoutes = [
+    "/dashboard",
+    "/causes",
+    "/petitions",
+    "/wallet",
+    "/bounties",
+    "/saved",
+  ];
+  const useAppShell =
+    !hideLayout && appShellRoutes.some((route) => pathname.startsWith(route));
+
   useEffect(() => {
     setIsRouteLoading(true);
     const timeout = setTimeout(() => {
@@ -37,6 +54,16 @@ export function ClientLayout({ children }: ClientLayoutProps) {
 
     return () => clearTimeout(timeout);
   }, [pathname]);
+
+  if (useAppShell) {
+    return (
+      <AppShell>
+        {isRouteLoading && <NavigationLoader />}
+        {children}
+        <AIAgentBot />
+      </AppShell>
+    );
+  }
 
   return (
     <>
