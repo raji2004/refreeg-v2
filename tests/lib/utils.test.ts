@@ -1,4 +1,10 @@
-import { cn, formatCurrency, calculateServiceFee, getBaseURL } from "@/lib/utils";
+import {
+  cn,
+  formatCurrency,
+  calculateServiceFee,
+  getBaseURL,
+  calculateProviderFee,
+} from "@/lib/utils";
 
 describe("lib/utils", () => {
   it("merges class names with tailwind precedence", () => {
@@ -63,5 +69,31 @@ describe("lib/utils", () => {
     expect(calculateServiceFee(0)).toBe(0);
 
     process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE = original;
+  });
+
+  describe("calculateProviderFee", () => {
+    it("grosses up the Flutterwave fee so the creator receives the full amount", () => {
+      // Total = Amount / 0.986, fee = ceil(Total - Amount)
+      expect(calculateProviderFee(10_000, "flutterwave")).toBe(
+        Math.ceil(10_000 / 0.986 - 10_000),
+      );
+    });
+
+    it("calculates the Paystack fee as 1.5% with no flat fee under ₦2,500", () => {
+      expect(calculateProviderFee(1000, "paystack")).toBe(15);
+    });
+
+    it("adds the ₦100 flat fee for Paystack amounts over ₦2,500", () => {
+      // 1.5% of 5000 = 75, + 100 flat = 175
+      expect(calculateProviderFee(5000, "paystack")).toBe(175);
+    });
+
+    it("defaults to Paystack when no provider is given", () => {
+      expect(calculateProviderFee(1000)).toBe(15);
+    });
+
+    it("caps the Paystack fee at ₦2,000", () => {
+      expect(calculateProviderFee(1_000_000, "paystack")).toBe(2000);
+    });
   });
 });
