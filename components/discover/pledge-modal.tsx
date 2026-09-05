@@ -1,6 +1,7 @@
 "use client";
 
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveDialogContent } from "@/components/ui/responsive-dialog-content";
 import { PledgeQuickForm } from "./pledge-quick-form";
 
 export function PledgeModal({
@@ -22,7 +23,7 @@ export function PledgeModal({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 max-h-[90vh] overflow-y-auto bg-transparent border-none shadow-none">
+      <ResponsiveDialogContent className="sm:max-w-md p-0 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto bg-transparent border-none shadow-none">
         <DialogTitle className="sr-only">Pledge to {causeTitle}</DialogTitle>
         <PledgeQuickForm
           causeId={causeId}
@@ -31,7 +32,7 @@ export function PledgeModal({
           defaultName={defaultName}
           defaultEmail={defaultEmail}
         />
-      </DialogContent>
+      </ResponsiveDialogContent>
     </Dialog>
   );
 }

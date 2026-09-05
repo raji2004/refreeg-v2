@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveDialogContent } from "@/components/ui/responsive-dialog-content";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Clock3 } from "lucide-react";
@@ -41,7 +42,7 @@ export function GiveModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 max-h-[90vh] overflow-y-auto bg-transparent border-none shadow-none">
+      <ResponsiveDialogContent className="sm:max-w-md p-0 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto bg-transparent border-none shadow-none">
         <DialogTitle className="sr-only">Give now</DialogTitle>
         {loading || !props ? (
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
@@ -61,7 +62,7 @@ export function GiveModal({
         ) : (
           <QuickDonateForm {...props} variant="modal" />
         )}
-      </DialogContent>
+      </ResponsiveDialogContent>
     </Dialog>
   );
 }
