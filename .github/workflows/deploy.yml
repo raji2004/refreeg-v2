@@ -228,6 +228,7 @@ jobs:
           AUTH_TRUST_HOST: ${{ secrets.AUTH_TRUST_HOST }}
           AUTH_URL: ${{ secrets.AUTH_URL }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          SESSIONS_INVALIDATED_AFTER: ${{ secrets.SESSIONS_INVALIDATED_AFTER }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -271,6 +272,7 @@ jobs:
           AUTH_TRUST_HOST=${AUTH_TRUST_HOST}
           AUTH_URL=${AUTH_URL}
           AUTH_SECRET=${AUTH_SECRET}
+          SESSIONS_INVALIDATED_AFTER=${SESSIONS_INVALIDATED_AFTER}
           DATABASE_URL=${DATABASE_URL}
           DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
           GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
