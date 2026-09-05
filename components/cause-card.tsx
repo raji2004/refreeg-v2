@@ -215,7 +215,7 @@ export function CauseCard({
                     {onPledgeClick && (
                       <Button
                         size="sm"
-                        variant="ink"
+                        variant="outline"
                         className="gap-1.5"
                         onClick={(e) => {
                           e.preventDefault();
@@ -230,7 +230,7 @@ export function CauseCard({
                     {onGiveClick && (
                       <Button
                         size="sm"
-                        variant="lime"
+                        variant="ink"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();

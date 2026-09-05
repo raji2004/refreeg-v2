@@ -121,7 +121,7 @@ export function DiscoverEmptyState({
           </div>
           <Button
             size="sm"
-            variant={alertSaved ? "outline" : "lime"}
+            variant="outline"
             disabled={savingAlert || alertSaved}
             onClick={handleSaveAlert}
             className="shrink-0"

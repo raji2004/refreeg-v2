@@ -280,8 +280,9 @@ export default function QuickDonateForm({
 
           <Button
             type="submit"
+            variant="lime"
             disabled={isLoading || donationAmount < MIN_DONATION_AMOUNT}
-            className="w-full rounded-full bg-blue-600 text-white hover:bg-blue-700"
+            className="w-full rounded-full"
           >
             {isLoading ? (
               <>

@@ -24,6 +24,8 @@ export interface Profile {
   pin?: number;
   donation_preference?: string;
   is_verified?: boolean;
+  total_points?: number;
+  interests?: string[];
   followers_count?: number;
   following_count?: number;
   causes_count?: number;

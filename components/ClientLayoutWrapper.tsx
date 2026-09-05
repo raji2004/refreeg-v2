@@ -2,8 +2,13 @@
 
 import type React from "react";
 import { usePathname } from "next/navigation";
-import { DashboardNav } from "@/components/dashboard-nav";
 
+/**
+ * Dashboard content chrome (max-width, padding, the rounded card look).
+ * The sidebar this used to render itself (DashboardNav) is now supplied
+ * globally by components/app-shell/app-shell.tsx, so this only owns the
+ * content-area styling — not navigation.
+ */
 export default function ClientLayoutWrapper({
   children,
 }: {
@@ -22,19 +27,13 @@ export default function ClientLayoutWrapper({
         </div>
       ) : (
         <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-3 pb-6 pt-3 sm:px-6 sm:pb-8 sm:pt-4 lg:px-8">
-          <div className="items-start md:grid md:grid-cols-[320px_minmax(0,1fr)] md:gap-6 xl:grid-cols-[340px_minmax(0,1fr)] xl:gap-8">
-            <aside className="sticky top-20 z-20 hidden max-h-[calc(100vh-6rem)] overflow-y-auto pr-2 md:block">
-              <DashboardNav />
-            </aside>
-
-            <main className="flex min-w-0 flex-col overflow-hidden">
-              <div className="rounded-[24px] border border-white/80 bg-white/66 p-2 shadow-[0_30px_70px_-50px_rgba(15,23,42,0.55)] backdrop-blur sm:rounded-[30px] sm:p-4">
-                <div className="rounded-[20px] border border-slate-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.92))] px-0.5 py-1.5 sm:rounded-[24px] sm:px-2 sm:py-3">
-                  {children}
-                </div>
+          <main className="flex min-w-0 flex-col overflow-hidden">
+            <div className="rounded-[24px] border border-white/80 bg-white/66 p-2 shadow-[0_30px_70px_-50px_rgba(15,23,42,0.55)] backdrop-blur sm:rounded-[30px] sm:p-4">
+              <div className="rounded-[20px] border border-slate-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.92))] px-0.5 py-1.5 sm:rounded-[24px] sm:px-2 sm:py-3">
+                {children}
               </div>
-            </main>
-          </div>
+            </div>
+          </main>
         </div>
       )}
     </div>
