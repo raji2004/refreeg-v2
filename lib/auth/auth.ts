@@ -17,6 +17,23 @@ const SESSION_UPDATE_AGE_SECONDS = 60 * 60 * 24; // 1 day
 // continuously-active session cannot renew itself forever.
 const ABSOLUTE_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
+/**
+ * Global session-invalidation cutoff — a kill switch for incident response.
+ * Set SESSIONS_INVALIDATED_AFTER to an ISO timestamp (e.g. the moment a
+ * breach was contained) and every session issued before that instant stops
+ * being accepted on its next request, forcing a fresh sign-in for everyone.
+ * Unset (or set to an empty value) to disable — the default, no-op state.
+ *
+ * Kept as a plain env-var comparison (no DB read) so this stays safe to run
+ * from the `jwt` callback, which also executes from middleware.ts on the
+ * Edge runtime — Prisma calls there would break it (see that file's note on
+ * admin-role checks being deferred to Node-runtime pages for the same
+ * reason). A per-user cutoff would need a DB read and can't live here.
+ */
+const SESSIONS_INVALIDATED_AFTER_MS = process.env.SESSIONS_INVALIDATED_AFTER
+  ? new Date(process.env.SESSIONS_INVALIDATED_AFTER).getTime()
+  : null;
+
 async function resolveUserRole(userId: string): Promise<UserRole> {
   const role = await prisma.role.findFirst({
     where: { user_id: userId },
@@ -265,6 +282,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         !user &&
         typeof token.loginTime === "number" &&
         Date.now() - token.loginTime > ABSOLUTE_SESSION_MAX_AGE_MS
+      ) {
+        return null;
+      }
+
+      // Incident-response kill switch — see SESSIONS_INVALIDATED_AFTER_MS above.
+      if (
+        !user &&
+        SESSIONS_INVALIDATED_AFTER_MS != null &&
+        typeof token.loginTime === "number" &&
+        token.loginTime < SESSIONS_INVALIDATED_AFTER_MS
       ) {
         return null;
       }

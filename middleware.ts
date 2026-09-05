@@ -119,7 +119,12 @@ export default auth(async (req) => {
   }
 
   // ── 3. Redirect authenticated users away from auth pages ──────────
-  if (user && pathname.startsWith("/auth")) {
+  // Excludes /auth/callback: that's the OAuth landing route, not a page a
+  // signed-in user would browse to — it needs to run its own onboarding
+  // check and honor the original ?redirect= target (app/auth/callback/route.ts),
+  // which a blanket redirect here would otherwise skip for a user who just
+  // finished signing in with Google.
+  if (user && pathname.startsWith("/auth") && pathname !== "/auth/callback") {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
