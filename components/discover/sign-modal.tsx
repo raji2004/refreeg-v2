@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveDialogContent } from "@/components/ui/responsive-dialog-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,7 +56,7 @@ export function SignModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <ResponsiveDialogContent className="sm:max-w-md max-h-[85vh] sm:max-h-none overflow-y-auto">
         <DialogTitle>Sign this petition</DialogTitle>
         <p className="text-sm text-muted-foreground -mt-2">{petitionTitle}</p>
 
@@ -113,7 +114,7 @@ export function SignModal({
             </Button>
           </form>
         )}
-      </DialogContent>
+      </ResponsiveDialogContent>
     </Dialog>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,28 +18,37 @@ import { DiscoverGrid } from "./discover-grid";
 import { campaignCategoryStyles } from "@/lib/campaign-categories";
 import {
   getDiscoverFacets,
+  countDiscoverResults,
   type DiscoverFilters,
   type DiscoverItem,
   type DiscoverSort as DiscoverSortType,
 } from "@/actions/discover-actions";
+import { buildDiscoverSearchParams } from "@/lib/discover-url";
 
 const CATEGORY_IDS = campaignCategoryStyles.map((c) => c.id);
 
 export function DiscoverPageClient({
+  initialTab,
   initialFilters,
   initialItems,
   initialHasMore,
   initialFacets,
 }: {
+  initialTab: DiscoverTab;
   initialFilters: DiscoverFilters;
   initialItems: DiscoverItem[];
   initialHasMore: boolean;
   initialFacets: { category: string; count: number }[];
 }) {
-  const [tab, setTab] = useState<DiscoverTab>("all");
+  const router = useRouter();
+  const pathname = usePathname();
+  const [tab, setTab] = useState<DiscoverTab>(initialTab);
   const [filters, setFilters] = useState<DiscoverFilters>(initialFilters);
   const [sortBy, setSortBy] = useState<DiscoverSortType>(initialFilters.sortBy || "newest");
   const [facets, setFacets] = useState(initialFacets);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [draftFilters, setDraftFilters] = useState<DiscoverFilters>(initialFilters);
+  const [draftCount, setDraftCount] = useState<number | null>(null);
 
   const activeFilters = useMemo<DiscoverFilters>(
     () => ({ ...filters, sortBy }),
@@ -54,6 +64,36 @@ export function DiscoverPageClient({
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify({ ...activeFilters, category: undefined })]);
+
+  // Keep the URL in sync so a shared or refreshed Discover link restores
+  // the same tab/filters/sort instead of resetting to defaults.
+  useEffect(() => {
+    const params = buildDiscoverSearchParams(tab, activeFilters);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, JSON.stringify(activeFilters)]);
+
+  // Mobile filter sheet: changes apply to a draft copy only, committed to
+  // the real (fetch-triggering) filters when "Show N results" is tapped —
+  // spec calls for a deferred apply, not the live-apply the desktop rail
+  // rendered in the sheet used to do.
+  useEffect(() => {
+    if (!mobileFiltersOpen) return;
+    setDraftFilters(filters);
+  }, [mobileFiltersOpen, filters]);
+
+  useEffect(() => {
+    if (!mobileFiltersOpen) return;
+    let cancelled = false;
+    countDiscoverResults(draftFilters).then((count) => {
+      if (!cancelled) setDraftCount(count);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mobileFiltersOpen, JSON.stringify(draftFilters)]);
 
   const handleTabChange = (next: DiscoverTab) => {
     setTab(next);
@@ -80,6 +120,19 @@ export function DiscoverPageClient({
     setSortBy("newest");
   };
 
+  const handleDraftFilterChange = (patch: Partial<DiscoverFilters>) => {
+    setDraftFilters((prev) => ({ ...prev, ...patch }));
+  };
+
+  const handleClearDraftFilters = () => {
+    setDraftFilters((prev) => ({ search: prev.search }));
+  };
+
+  const applyDraftFilters = () => {
+    setFilters(draftFilters);
+    setMobileFiltersOpen(false);
+  };
+
   return (
     <div className="bg-cream">
       <div className="container mx-auto px-4 py-8 md:py-12">
@@ -100,24 +153,34 @@ export function DiscoverPageClient({
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <DiscoverTabs active={tab} onChange={handleTabChange} />
           <div className="flex items-center gap-2">
-            <Sheet>
+            <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
               <SheetTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 lg:hidden">
                   <SlidersHorizontal className="h-3.5 w-3.5" />
                   Filters
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] overflow-y-auto bg-cream sm:w-[340px]">
-                <SheetHeader>
+              <SheetContent
+                side="bottom"
+                className="flex max-h-[85vh] flex-col overflow-hidden rounded-t-2xl bg-cream p-0"
+              >
+                <SheetHeader className="border-b border-ink/10 px-4 py-3">
                   <SheetTitle className="font-fraunces">Filters</SheetTitle>
                 </SheetHeader>
-                <div className="mt-4">
+                <div className="flex-1 overflow-y-auto px-4 py-4">
                   <DiscoverFilterRail
-                    filters={filters}
-                    onChange={handleFilterChange}
-                    onClear={handleClearFilters}
+                    filters={draftFilters}
+                    onChange={handleDraftFilterChange}
+                    onClear={handleClearDraftFilters}
                     facets={facets}
                   />
+                </div>
+                <div className="border-t border-ink/10 px-4 py-3">
+                  <Button variant="ink" className="w-full" onClick={applyDraftFilters}>
+                    {draftCount == null
+                      ? "Show results"
+                      : `Show ${draftCount} result${draftCount === 1 ? "" : "s"}`}
+                  </Button>
                 </div>
               </SheetContent>
             </Sheet>
