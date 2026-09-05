@@ -39,6 +39,19 @@ export async function getDashboardStats(userId: string) {
   }
 }
 
+/** Platform-wide donation total for the last 7 days — used by the first-run dashboard's "Delivered this week" callout. */
+export async function getPlatformWeeklyDelivered(): Promise<number> {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const agg = await prisma.donation.aggregate({
+    _sum: { amount: true },
+    where: { createdAt: { gte: sevenDaysAgo } },
+  });
+
+  return Number(agg._sum.amount || 0);
+}
+
 export async function getDonationTrends(userId: string) {
   try {
     const sixMonthsAgo = new Date();

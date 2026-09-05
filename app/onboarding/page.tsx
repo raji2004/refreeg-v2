@@ -29,6 +29,9 @@ const Step4 = dynamic(() => import("./step4"), {
 const Step5 = dynamic(() => import("./step5"), {
   loading: () => <Skeleton className="h-[400px] w-full" />,
 });
+const StepInterests = dynamic(() => import("./step-interests"), {
+  loading: () => <Skeleton className="h-[400px] w-full" />,
+});
 import NavigationLoader from "@/components/NavigationLoader";
 import OnboardingNav from "./onboardingNav";
 import {
@@ -52,6 +55,7 @@ type StepId =
   | "org-setup"
   | "invite-team"
   | "kyc"
+  | "interests"
   | "complete";
 
 const INDIVIDUAL_STEPS: StepId[] = [
@@ -59,6 +63,7 @@ const INDIVIDUAL_STEPS: StepId[] = [
   "gender",
   "profile",
   "kyc",
+  "interests",
   "complete",
 ];
 
@@ -68,6 +73,7 @@ const ORGANIZATION_STEPS: StepId[] = [
   "org-setup",
   "invite-team",
   "kyc",
+  "interests",
   "complete",
 ];
 
@@ -91,6 +97,10 @@ const ORGANIZATION_STEP_DETAILS = [
   {
     id: "kyc" as const,
     label: "Verification",
+  },
+  {
+    id: "interests" as const,
+    label: "Interests",
   },
   {
     id: "complete" as const,
@@ -262,7 +272,7 @@ export default function OnboardingPage() {
   // steps without completing the profile step
   useEffect(() => {
     if (!user) return;
-    const lateSteps: StepId[] = ["kyc", "complete"];
+    const lateSteps: StepId[] = ["kyc", "interests", "complete"];
     if (!lateSteps.includes(currentStepId)) return;
 
     const profileData = onboardingData.profile;
@@ -407,7 +417,7 @@ export default function OnboardingPage() {
   };
 
   const handleKycSkipOrSubmit = async () => {
-    goToStep("complete", 1);
+    goToStep("interests", 1);
   };
 
   const handleKyc = async () => {
@@ -519,6 +529,15 @@ export default function OnboardingPage() {
             updateOnboardingData={updateOnboardingData}
           />
         )}
+        {currentStepId === "interests" && (
+          <StepInterests
+            user={user}
+            onNext={goNext}
+            onBack={goBack}
+            onboardingData={onboardingData}
+            updateOnboardingData={updateOnboardingData}
+          />
+        )}
         {currentStepId === "complete" && (
           <Step5
             user={user}
@@ -539,7 +558,11 @@ export default function OnboardingPage() {
       <OnboardingNav
         currentStep={currentStepIndex + 1}
         onBack={goBack}
-        showUserNav={currentStepId === "kyc" || currentStepId === "complete"}
+        showUserNav={
+          currentStepId === "kyc" ||
+          currentStepId === "interests" ||
+          currentStepId === "complete"
+        }
         organizationMode={isOrg}
       />
       {isOrg ? (

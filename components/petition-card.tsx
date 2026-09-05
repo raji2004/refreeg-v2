@@ -121,7 +121,7 @@ export function PetitionCard({
                 {onSignClick ? (
                   <Button
                     size="sm"
-                    variant="lime"
+                    variant="ink"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

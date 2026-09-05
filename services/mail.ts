@@ -1139,7 +1139,7 @@ export async function sendCauseRecoveredEmail(params: {
   const titleIsPlaceholder = isPlaceholderCauseTitle(params.causeTitle);
   return sendMail({
     to: params.to,
-    subject: "A quick update on your RefreeG campaign",
+    subject: "Important: your RefreeG campaign",
     templateName: "cause-recovered",
     context: {
       userName: params.userName || "there",
