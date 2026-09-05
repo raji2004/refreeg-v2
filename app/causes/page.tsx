@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 import { DiscoverPageClient } from "@/components/discover/discover-page-client";
-import {
-  listDiscoverResults,
-  getDiscoverFacets,
-  type DiscoverFilters,
-} from "@/actions/discover-actions";
+import { listDiscoverResults, getDiscoverFacets } from "@/actions/discover-actions";
 import { campaignCategoryStyles } from "@/lib/campaign-categories";
+import { parseDiscoverSearchParams, type DiscoverSearchParams } from "@/lib/discover-url";
 
 export const metadata: Metadata = {
   title: "Discover",
@@ -19,13 +16,10 @@ const CATEGORY_IDS = campaignCategoryStyles.map((c) => c.id);
 export default async function DiscoverPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string }>;
+  searchParams: Promise<DiscoverSearchParams>;
 }) {
   const params = await searchParams;
-  const initialFilters: DiscoverFilters = {
-    search: params.search || undefined,
-    sortBy: "newest",
-  };
+  const { tab: initialTab, filters: initialFilters } = parseDiscoverSearchParams(params);
 
   const [{ items, hasMore }, facets] = await Promise.all([
     listDiscoverResults(initialFilters, { limit: PAGE_SIZE, offset: 0 }),
@@ -34,6 +28,7 @@ export default async function DiscoverPage({
 
   return (
     <DiscoverPageClient
+      initialTab={initialTab}
       initialFilters={initialFilters}
       initialItems={items}
       initialHasMore={hasMore}
