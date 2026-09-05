@@ -44,6 +44,8 @@ model User {
   emailVerified               DateTime?                @map("email_verified")
   password                    String?
   lastLoginUserAgent          String?                  @map("last_login_user_agent")
+  interests                   String[]                 @default([])
+  interest_location           String?
   accounts                    Account[]
   campaign_follows            campaign_follows[]
   campaign_proof_updates      campaign_proof_updates[]
