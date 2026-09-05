@@ -133,7 +133,7 @@ export function DiscoverCard({
                 <>
                   <Button
                     size="sm"
-                    variant="ink"
+                    variant="outline"
                     className="gap-1.5"
                     onClick={(e) => {
                       e.preventDefault();
@@ -146,7 +146,7 @@ export function DiscoverCard({
                   </Button>
                   <Button
                     size="sm"
-                    variant="lime"
+                    variant="ink"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -159,7 +159,7 @@ export function DiscoverCard({
               ) : (
                 <Button
                   size="sm"
-                  variant="lime"
+                  variant="ink"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();

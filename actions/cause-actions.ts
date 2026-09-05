@@ -561,8 +561,9 @@ export const listCauses = cache(
     if (options.userId) {
       whereClause.userId = options.userId;
     } else {
-      // Hide compliance-paused causes from public listings
+      // Hide compliance-paused and paused causes from public listings
       whereClause.compliance_paused = false;
+      whereClause.paused = false;
     }
 
     // Search filter
@@ -707,8 +708,9 @@ export async function countCauses(
     } else {
       whereClause.status = options.status;
     }
-    // Hide compliance-paused causes from public counts
+    // Hide compliance-paused and paused causes from public counts
     whereClause.compliance_paused = false;
+    whereClause.paused = false;
   } else {
     if (options.status) {
       whereClause.status = options.status;

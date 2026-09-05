@@ -183,6 +183,10 @@ const config: Config = {
           DEFAULT: "hsl(var(--gold))",
           foreground: "hsl(var(--gold-foreground))",
         },
+        parchment: {
+          DEFAULT: "hsl(var(--parchment))",
+          foreground: "hsl(var(--parchment-foreground))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar))",
           foreground: "hsl(var(--sidebar-foreground))",

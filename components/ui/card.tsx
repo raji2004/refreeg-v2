@@ -12,6 +12,9 @@ const cardVariants = cva("text-card-foreground", {
       outlined: "rounded-xl border-2 border-ink bg-cream shadow-none",
       // Dark panel for money-state surfaces (wallet balance, held funds).
       ink: "rounded-xl border border-ink bg-ink text-ink-foreground shadow-none",
+      // Petition cards/surfaces only — same flat black-bordered treatment as
+      // `outlined`, on the warmer `parchment` background. See docs/DESIGN_GUIDE.md.
+      parchment: "rounded-xl border-2 border-ink bg-parchment shadow-none",
     },
   },
   defaultVariants: {

@@ -44,7 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-cream">
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-ink/10 bg-cream px-4 py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-ink/10 bg-white px-4 py-5 lg:flex">
         <Link href="/" className="mb-6 px-2">
           <Logo />
         </Link>
@@ -67,7 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <SheetContent side="left" className="w-72 bg-cream p-4">
+        <SheetContent side="left" className="w-72 bg-white p-4">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <Link href="/" className="mb-6 block px-2" onClick={() => setMobileNavOpen(false)}>
             <Logo />

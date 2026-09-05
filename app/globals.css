@@ -99,6 +99,12 @@ select:focus {
 
     --gold: 38 72% 78%;
     --gold-foreground: 220 25% 8%;
+
+    /* Petition surfaces only — see docs/DESIGN_GUIDE.md. Warmer/tanner than
+       --cream, reads as paper. Text/borders/buttons on it still use
+       ink/lime/gold as usual, just this one background token differs. */
+    --parchment: 40 38% 91%;
+    --parchment-foreground: 220 25% 8%;
   }
 
   /* Dark theme commented out

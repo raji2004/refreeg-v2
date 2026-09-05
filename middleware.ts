@@ -32,6 +32,9 @@ const APP_ROUTE_PREFIXES = [
   "/referrals",
   "/leaderboard",
   "/organization",
+  "/wallet",
+  "/bounties",
+  "/saved",
   "/api",
   "/s",
 ];

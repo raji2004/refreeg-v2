@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createReferralRecord } from "@/lib/referral-utils";
 
+// Flat one-time EIZA credit granted on email verification (no ledger/history
+// for this pass — matches a single "150 EIZA" welcome credit, not itemized).
+const SIGNUP_EIZA_BONUS = 150;
+
 function createOrganizationSlug(name: string) {
   const base = name
     .normalize("NFKD")
@@ -99,6 +103,7 @@ export async function POST(req: Request) {
           emailVerified: new Date(),
           isVerified: false,
           onboarding_completed: false,
+          total_points: SIGNUP_EIZA_BONUS,
         },
       });
 
