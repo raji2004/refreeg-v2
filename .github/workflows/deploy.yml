@@ -4,6 +4,16 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      send_recovery_emails:
+        description: >-
+          Send the "your campaign was recovered" notice (scripts/send-recovery-emails.ts)
+          to unclaimed reconstructed causes' recovered_owner_email after this deploy.
+          Off by default so ordinary push-to-main deploys never send anything — only
+          check this on the specific manual run where you also want the recovery
+          notice to go out (e.g. alongside setting SESSIONS_INVALIDATED_AFTER).
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -372,6 +382,19 @@ jobs:
             exit 0
           fi
           exit 1
+
+      # ── 9b. Recovery emails (manual opt-in only, see workflow_dispatch input) ──
+      - name: Send recovery emails
+        if: github.event_name == 'workflow_dispatch' && inputs.send_recovery_emails == true
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+        run: npx tsx scripts/send-recovery-emails.ts
 
       # ── 10. Status badge note ─────────────────────────────────────────────
       - name: Status badge
