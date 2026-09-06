@@ -76,8 +76,7 @@ export default auth(async (req) => {
   if (
     host === APP_HOST &&
     !isAppRoute &&
-    !isHostNeutralApiRoute &&
-    pathname !== "/"
+    !isHostNeutralApiRoute
   ) {
     const target = req.nextUrl.clone();
     target.hostname = WWW_HOST;
