@@ -88,6 +88,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     maxAge: SESSION_MAX_AGE_SECONDS,
     updateAge: SESSION_UPDATE_AGE_SECONDS,
   },
+  // Without this, Auth.js's cookies default to host-only (no Domain
+  // attribute) — scoped to whichever hostname actually set them. Since
+  // middleware.ts routes every /auth page to apps.refreeg.com, sign-in
+  // always happens there, so the session cookie would only ever be sent
+  // back on requests to apps.refreeg.com — not to www.refreeg.com, a
+  // sibling subdomain, not a parent/child of it. A user signed in on
+  // apps would show as signed out on www. The leading dot on the domain
+  // makes the cookie valid for refreeg.com and every subdomain of it.
+  // Left undefined outside production so cookies still work normally on
+  // localhost (a dot-prefixed domain isn't valid for a bare hostname).
+  cookies:
+    process.env.NODE_ENV === "production"
+      ? {
+          sessionToken: { options: { domain: ".refreeg.com" } },
+          callbackUrl: { options: { domain: ".refreeg.com" } },
+          csrfToken: { options: { domain: ".refreeg.com" } },
+        }
+      : undefined,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,

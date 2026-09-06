@@ -59,12 +59,42 @@ mv -Tf "${APP_DIR}/current_tmp" "$CURRENT_LINK"
 echo "current -> releases/${RELEASE_ID}"
 
 # ── 6. Start/reload via PM2 ───────────────────────────────────────────────────
-# `pm2 startOrReload` can reuse a stale process definition (e.g. an old `script`
-# path) for an app name it already knows about, especially if that process was
-# left in a crashed/errored state. Delete by name first so every deploy always
-# registers fresh from the current ecosystem.config.js.
+# Postgres runs on this same EC2 instance (small, RAM-constrained — see
+# ecosystem.config.js). This used to run two separate PM2 processes
+# ("frontend" on :3000, "api" on :4000, one per hostname) — each held its own
+# Prisma connection pool, and the old `pm2 delete frontend api` + `pm2 start`
+# here fully deregistered both before respawning them from scratch, leaving
+# a real window with neither process running, right on top of the tar
+# extraction/prune I/O this script also does. That's enough contention on a
+# small box to make Postgres briefly slow to accept connections (intermittent
+# PrismaClientKnownRequestError/PrismaClientInitializationError in prod) at
+# the same moment old static chunks vanish for anyone with the site already
+# open (their next chunk fetch 404s once the old process — and its release
+# directory — is gone).
+#
+# ecosystem.config.js now defines one "refreeg" process serving both
+# hostnames (nginx proxies both to the same port; middleware.ts's domain
+# split is a browser-facing redirect, not a backend route) — halves both the
+# connection-pool count and the restart contention. The one-time delete below
+# only matters for the first deploy after this change, to clear out the old
+# "frontend"/"api" names (and free port 3000) before the new "refreeg"
+# process tries to bind it; harmless no-op on every deploy after that.
 pm2 delete frontend api 2>/dev/null || true
-pm2 start "${CURRENT_LINK}/ecosystem.config.js" --update-env
+
+# `pm2 reload <config>` re-reads ecosystem.config.js (so an updated script
+# path/args/env still takes effect) but reloads an already-registered process
+# instead of fully deregistering and re-registering from scratch —
+# meaningfully less downtime than delete+start. Note this is NOT true
+# zero-downtime: that requires cluster mode (multiple instances so a new one
+# can come up before the old one stops), which is deliberately not used here
+# for RAM reasons. Falls back to `pm2 start` on a fresh box, or right after
+# the one-time "frontend"/"api" cleanup above.
+if pm2 describe refreeg > /dev/null 2>&1; then
+  pm2 reload "${CURRENT_LINK}/ecosystem.config.js" --update-env
+else
+  echo "No existing refreeg process found — starting fresh."
+  pm2 start "${CURRENT_LINK}/ecosystem.config.js" --update-env
+fi
 
 # ── 7. Persist new PM2 state (only after successful reload) ──────────────────
 pm2 save --force

@@ -76,8 +76,7 @@ export default auth(async (req) => {
   if (
     host === APP_HOST &&
     !isAppRoute &&
-    !isHostNeutralApiRoute &&
-    pathname !== "/"
+    !isHostNeutralApiRoute
   ) {
     const target = req.nextUrl.clone();
     target.hostname = WWW_HOST;
@@ -127,7 +126,23 @@ export default auth(async (req) => {
   // check and honor the original ?redirect= target (app/auth/callback/route.ts),
   // which a blanket redirect here would otherwise skip for a user who just
   // finished signing in with Google.
-  if (user && pathname.startsWith("/auth") && pathname !== "/auth/callback") {
+  //
+  // Also excludes /auth/signin and /auth/signup: those two used to
+  // silently bounce a still-signed-in visitor straight to /dashboard,
+  // making it impossible to ever reach the actual form to sign in as
+  // someone else. They now render an explicit "Signed in as X — Continue /
+  // Sign in as someone else" card instead (see AlreadySignedInCard) —
+  // still fast for the common case, but never a silent decision.
+  const AUTH_PAGES_WITH_OWN_SESSION_HANDLING = [
+    "/auth/callback",
+    "/auth/signin",
+    "/auth/signup",
+  ];
+  if (
+    user &&
+    pathname.startsWith("/auth") &&
+    !AUTH_PAGES_WITH_OWN_SESSION_HANDLING.includes(pathname)
+  ) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
