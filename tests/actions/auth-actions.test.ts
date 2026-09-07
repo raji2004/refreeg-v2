@@ -14,6 +14,7 @@ jest.mock("@/lib/prisma", () => ({
   prisma: {
     user: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
@@ -76,6 +77,7 @@ const mockAuth = auth as jest.Mock;
 const mockPrisma = prisma as unknown as {
   user: {
     findUnique: jest.Mock;
+    findFirst: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
   };
@@ -241,27 +243,43 @@ describe("auth-actions", () => {
   });
 
   describe("requestPasswordResetAction", () => {
-    it("returns error when user is not found", async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+    it("returns a neutral success without leaking account existence when the user is not found", async () => {
+      mockPrisma.user.findFirst.mockResolvedValue(null);
 
       const result = await requestPasswordResetAction("missing@example.com");
 
-      expect(result).toEqual({
-        success: false,
-        error: "No account found with this email address.",
-      });
+      // Same shape as the success path — no enumeration.
+      expect(result).toEqual({ success: true });
+      expect(mockPrisma.passwordResetToken.upsert).not.toHaveBeenCalled();
+      expect(sendPasswordResetEmail).not.toHaveBeenCalled();
     });
 
-    it("stores token and sends reset email on success", async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ id: "user-1" });
-      (mockPrisma.passwordResetToken.upsert as jest.Mock).mockResolvedValue(
-        {},
-      );
-      (sendPasswordResetEmail as jest.Mock).mockResolvedValue(undefined);
-
-      const result = await requestPasswordResetAction("test@example.com");
+    it("returns a neutral success for a blank or malformed email without touching the database", async () => {
+      const result = await requestPasswordResetAction("   ");
 
       expect(result).toEqual({ success: true });
+      expect(mockPrisma.user.findFirst).not.toHaveBeenCalled();
+      expect(sendPasswordResetEmail).not.toHaveBeenCalled();
+    });
+
+    it("normalizes the email, stores the token and sends the reset email on success", async () => {
+      mockPrisma.user.findFirst.mockResolvedValue({
+        id: "user-1",
+        email: "test@example.com",
+      });
+      (mockPrisma.passwordResetToken.upsert as jest.Mock).mockResolvedValue({});
+      (sendPasswordResetEmail as jest.Mock).mockResolvedValue(undefined);
+
+      const result = await requestPasswordResetAction("  TEST@Example.com ");
+
+      expect(result).toEqual({ success: true });
+      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
+        where: { email: { equals: "test@example.com", mode: "insensitive" } },
+        select: { id: true, email: true },
+      });
+      expect(mockPrisma.passwordResetToken.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { email: "test@example.com" } }),
+      );
       expect(sendPasswordResetEmail).toHaveBeenCalledWith({
         email: "test@example.com",
         resetUrl: expect.stringContaining("/auth/update-password?token="),

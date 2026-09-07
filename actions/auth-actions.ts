@@ -193,22 +193,42 @@ export async function recordSignupReward(userId: string, amount: number = 1) {
 }
 
 export async function requestPasswordResetAction(email: string) {
+  // The response is identical for every outcome (unknown email, known email,
+  // invalid input) so the endpoint never reveals whether an account exists.
+  const neutralResponse = { success: true as const };
+
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    
-    if (!user) {
-      return { success: false, error: "No account found with this email address." };
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
+
+    if (!normalizedEmail || !normalizedEmail.includes("@")) {
+      return neutralResponse;
     }
+
+    // Case-insensitive lookup so an address entered with different casing or
+    // stored un-normalized (legacy rows) still resolves to the real account.
+    const user = await prisma.user.findFirst({
+      where: { email: { equals: normalizedEmail, mode: "insensitive" } },
+      select: { id: true, email: true },
+    });
+
+    if (!user?.email) {
+      // No account (or an account with no email): do nothing, disclose nothing.
+      return neutralResponse;
+    }
+
+    const canonicalEmail = user.email;
 
     // Generate a secure random token
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 3600000); // 1 hour from now
 
-    // Store token in DB
+    // Key the token on the account's canonical email so resetPasswordAction
+    // can map it back to the user row.
     await prisma.passwordResetToken.upsert({
-      where: { email },
+      where: { email: canonicalEmail },
       update: { token, expires },
-      create: { email, token, expires },
+      create: { email: canonicalEmail, token, expires },
     });
 
     // Use AUTH_URL from env, default to localhost if not set
@@ -216,14 +236,15 @@ export async function requestPasswordResetAction(email: string) {
     const resetUrl = `${baseUrl}/auth/update-password?token=${token}`;
 
     await sendPasswordResetEmail({
-      email,
+      email: canonicalEmail,
       resetUrl,
     });
 
-    return { success: true };
+    return neutralResponse;
   } catch (error) {
     console.error("Password reset request error:", error);
-    return { success: false, error: "Failed to send reset link" };
+    // Generic failure — not correlated with whether the account exists.
+    return { success: false, error: "Failed to send reset link. Please try again." };
   }
 }
 
