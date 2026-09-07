@@ -353,6 +353,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         (session.user as any).onboardingCompleted = token.onboardingCompleted;
         session.user.role = parseUserRole(token.role);
+        // Exposes when this session was actually issued, so Node-runtime
+        // code (e.g. app/dashboard/layout.tsx) can compare it against a
+        // per-user sessions_invalidated_after cutoff — see
+        // lib/auth/session-guard.ts. Plain field copy, no DB read, so it's
+        // safe to compute here even though this callback also runs from
+        // middleware on the Edge runtime.
+        (session.user as any).loginTime = token.loginTime;
       }
       return session;
     },

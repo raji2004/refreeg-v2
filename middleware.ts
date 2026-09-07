@@ -73,10 +73,19 @@ export default auth(async (req) => {
     return NextResponse.redirect(target, 308);
   }
 
+  // Bare "/" on apps.refreeg.com is deliberately NOT redirected to www here.
+  // components/app-shell/app-shell.tsx links its logo to "/", rendered on
+  // every app-shell page — Next.js's <Link> auto-prefetches that target in
+  // the background, and a cross-origin 308 for a same-page prefetch fetch
+  // triggers a CORS preflight that fails (blocked, not merely redirected),
+  // logging errors on every app page and breaking the prefetch outright.
+  // Real top-level navigation to apps.refreeg.com/ still just renders the
+  // homepage directly instead — same content, no redirect needed either way.
   if (
     host === APP_HOST &&
     !isAppRoute &&
-    !isHostNeutralApiRoute
+    !isHostNeutralApiRoute &&
+    pathname !== "/"
   ) {
     const target = req.nextUrl.clone();
     target.hostname = WWW_HOST;
