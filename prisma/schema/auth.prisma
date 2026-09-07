@@ -46,6 +46,13 @@ model User {
   lastLoginUserAgent          String?                  @map("last_login_user_agent")
   interests                   String[]                 @default([])
   interest_location           String?
+  /// Per-user session-invalidation cutoff — any session issued (see
+  /// session.user.loginTime, lib/auth/auth.ts) before this instant is
+  /// rejected on its next request to a Node-runtime auth-guarded route (see
+  /// lib/auth/session-guard.ts). Used to force a fresh sign-in for accounts
+  /// affected by the 2026-09-03 data-loss incident, without touching
+  /// everyone else's sessions — see scripts/invalidate-incident-sessions.ts.
+  sessions_invalidated_after  DateTime?                @db.Timestamptz(6)
   accounts                    Account[]
   campaign_follows            campaign_follows[]
   campaign_proof_updates      campaign_proof_updates[]
