@@ -312,7 +312,6 @@ jobs:
           SENTRY_DSN=${SENTRY_DSN}
           NODE_ENV=production
           PORT=3000
-          API_PORT=4000
           EOF
           chmod 600 secrets.env
 
@@ -375,10 +374,13 @@ jobs:
             return 1
           }
 
-          check "https://refreeg.com/api/health" && frontend_ok=1 || frontend_ok=0
-          check "https://apps.refreeg.com/api/health" && api_ok=1 || api_ok=0
+          # Both hostnames proxy to the same single "refreeg" PM2 process
+          # (see ecosystem.config.js) — checking both still confirms nginx
+          # is routing each hostname correctly, not that two backends exist.
+          check "https://refreeg.com/api/health" && www_ok=1 || www_ok=0
+          check "https://apps.refreeg.com/api/health" && apps_ok=1 || apps_ok=0
 
-          if [ "$frontend_ok" -eq 1 ] && [ "$api_ok" -eq 1 ]; then
+          if [ "$www_ok" -eq 1 ] && [ "$apps_ok" -eq 1 ]; then
             exit 0
           fi
           exit 1
