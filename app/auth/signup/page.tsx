@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { AuthTestimonials } from "@/components/ui/auth-testimonials";
+import { AlreadySignedInCard } from "@/components/auth/already-signed-in-card";
 import {
   getPasswordErrors,
   normalizeRegistrationInput,
@@ -30,9 +31,14 @@ import {
   validateRegistrationInput,
 } from "@/lib/auth/registration";
 
+function normalizeRedirect(target: string | null): string | null {
+  if (!target || !target.startsWith("/") || target.startsWith("//")) return null;
+  return target;
+}
+
 export default function SignUpPage() {
   const router = useRouter();
-  const { signInWithGoogle } = useAuth();
+  const { user, isLoading, signInWithGoogle } = useAuth();
 
   const [accountType, setAccountType] =
     useState<SignupAccountType>("individual");
@@ -164,6 +170,28 @@ export default function SignUpPage() {
   };
 
   const activePasswordErrors = getPasswordErrors(password);
+
+  if (isLoading) {
+    return <div className="min-h-screen w-screen bg-white" />;
+  }
+
+  if (user) {
+    return (
+      <div className="flex min-h-screen w-screen bg-white">
+        <div className="flex md:w-1/2 w-full flex-col items-center justify-center bg-white px-6 py-10 md:px-10">
+          <AlreadySignedInCard
+            name={user.name}
+            email={user.email}
+            redirectTo={normalizeRedirect(redirectFromUrl) || "/dashboard"}
+            variant="signup"
+          />
+        </div>
+        <div className="hidden md:flex md:w-1/2 items-center justify-center bg-[#003366] px-8">
+          <AuthTestimonials />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-screen bg-white">

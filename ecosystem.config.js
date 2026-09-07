@@ -1,10 +1,22 @@
 /**
  * PM2 Ecosystem Configuration for Refreeg v2
  *
- * Frontend (landing page) → port 3000  (http://www.refreeg.com)
- * API / App              → port 4000  (http://apps.refreeg.com)
+ * One process serves both hostnames — nginx proxies both www.refreeg.com
+ * (marketing pages) and apps.refreeg.com (the app) to this same port.
+ * middleware.ts's domain-split logic decides which routes are canonical on
+ * which hostname (redirecting the browser, not routing to a different
+ * backend) purely from the `Host` header, so a single Next.js process can
+ * serve both without any cross-process split.
  *
- * Memory limits are intentionally conservative given the limited EC2 RAM.
+ * This used to be two separate PM2 processes on two ports (frontend:3000,
+ * apps:4000) — each held its own Prisma connection pool, and every deploy
+ * had to kill and restart both at once. On this same small EC2 box that
+ * also runs Postgres, that was enough contention to intermittently show up
+ * as PrismaClientKnownRequestError/PrismaClientInitializationError in prod.
+ * One process halves both the connection-pool count and the restart
+ * contention.
+ *
+ * Memory limit is intentionally conservative given the limited EC2 RAM.
  * Increase `max_memory_restart` if you upgrade the instance.
  *
  * Docs: https://pm2.keymetrics.io/docs/usage/application-declaration/
@@ -39,8 +51,7 @@ const secrets = loadSecrets("/mnt/data/refreeg/shared/secrets.env");
 module.exports = {
   apps: [
     {
-      // ── Landing page ──────────────────────────────────────────────────────
-      name: "frontend",
+      name: "refreeg",
       // Next.js "standalone" output: a minimal self-contained server.js with
       // its own pruned node_modules, instead of running via next start out of
       // a full node_modules copy.
@@ -60,55 +71,21 @@ module.exports = {
       },
 
       // ── Resource limits ───────────────────────────────────────────────────
-      max_memory_restart: "300M",  // restart if process exceeds 300 MB
-      instances: 1,                // single instance (small EC2 – keep RAM low)
-      exec_mode: "fork",           // fork mode (cluster mode needs more RAM)
+      max_memory_restart: "400M", // restart if process exceeds 400 MB
+      instances: 1, // single instance (small EC2 – keep RAM low)
+      exec_mode: "fork", // fork mode (cluster mode needs more RAM)
 
       // ── Logging ───────────────────────────────────────────────────────────
-      out_file: "/mnt/data/refreeg/shared/logs/frontend.out.log",
-      error_file: "/mnt/data/refreeg/shared/logs/frontend.err.log",
+      out_file: "/mnt/data/refreeg/shared/logs/refreeg.out.log",
+      error_file: "/mnt/data/refreeg/shared/logs/refreeg.err.log",
       merge_logs: true,
       log_date_format: "YYYY-MM-DD HH:mm:ss Z",
 
       // ── Restart policy ────────────────────────────────────────────────────
       autorestart: true,
-      restart_delay: 3000,         // wait 3 s before restarting
-      max_restarts: 10,            // give up after 10 rapid crashes
-      min_uptime: "10s",           // crash if process dies within 10 s
-    },
-
-    {
-      // ── API / App ─────────────────────────────────────────────────────────
-      name: "api",
-      // Next.js "standalone" output: a minimal self-contained server.js with
-      // its own pruned node_modules, instead of running via next start out of
-      // a full node_modules copy.
-      script: "server.js",
-      cwd: "/mnt/data/refreeg/current",
-      env: {
-        ...secrets,
-        NODE_ENV: "production",
-        PORT: 4000,
-        // See the "frontend" app above.
-        HOSTNAME: "0.0.0.0",
-      },
-
-      // ── Resource limits ───────────────────────────────────────────────────
-      max_memory_restart: "300M",
-      instances: 1,
-      exec_mode: "fork",
-
-      // ── Logging ───────────────────────────────────────────────────────────
-      out_file: "/mnt/data/refreeg/shared/logs/api.out.log",
-      error_file: "/mnt/data/refreeg/shared/logs/api.err.log",
-      merge_logs: true,
-      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
-
-      // ── Restart policy ────────────────────────────────────────────────────
-      autorestart: true,
-      restart_delay: 3000,
-      max_restarts: 10,
-      min_uptime: "10s",
+      restart_delay: 3000, // wait 3 s before restarting
+      max_restarts: 10, // give up after 10 rapid crashes
+      min_uptime: "10s", // crash if process dies within 10 s
     },
   ],
 };
