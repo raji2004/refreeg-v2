@@ -66,8 +66,8 @@ export function SectionValidateAi() {
                 object in your next prompt to the LLM. 
                 Example prompt: 
                 <span className="block mt-4 bg-slate-950/50 p-4 rounded-xl border border-white/5 italic text-blue-200">
-                  "The RefreeG API rejected the previous JSON because the description was too short. 
-                  Below are the error details. Please strictly rewrite the JSON to satisfy these constraints: [ERROR_DETAILS]"
+                  &quot;The RefreeG API rejected the previous JSON because the description was too short. 
+                  Below are the error details. Please strictly rewrite the JSON to satisfy these constraints: [ERROR_DETAILS]&quot;
                 </span>
               </p>
             </div>

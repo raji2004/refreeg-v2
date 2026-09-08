@@ -25,15 +25,19 @@ function mapPrismaToProfile(p: any): Profile {
     bank_name: p.bankName,
     account_name: p.accountName,
     sub_account_code: p.subAccountCode,
+    flutterwave_sub_account_id: p.flutterwaveSubAccountId || null,
     profile_photo: p.profilePhoto,
     is_blocked: p.isBlocked ?? false,
+    referral_code: p.referralCode || null,
     created_at: p.createdAt.toISOString(),
     updated_at: p.updatedAt?.toISOString() || new Date().toISOString(),
     account_type: p.accountType as any,
     is_verified: p.isVerified ?? false,
+    total_points: p.total_points ?? 0,
+    interests: p.interests ?? [],
     gender: p.gender,
     bio: p.bio,
-    solana_wallet: p.solana_wallet,
+    // solana_wallet: p.solana_wallet, // 👈 REMOVED (Legacy Web3)
     twitter_url: p.twitter_url,
     facebook_url: p.facebook_url,
     instagram_url: p.instagram_url,
@@ -104,7 +108,7 @@ export async function updateProfilePhoto(
   userId: string,
   photoFile: File,
 ): Promise<string> {
-  const ext = photoFile.name.split('.').pop() || 'jpg';
+  const ext = photoFile.name.split(".").pop() || "jpg";
   const uniqueId = Math.random().toString(36).substring(2, 15);
   try {
     const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
@@ -144,6 +148,9 @@ export async function updateBankDetails(
         bankName: bankData.bankName,
         accountName: bankData.accountName,
         subAccountCode: bankData.sub_account_code,
+        ...(bankData.flutterwave_sub_account_id
+          ? { flutterwaveSubAccountId: bankData.flutterwave_sub_account_id }
+          : {}),
       },
     });
 
@@ -168,7 +175,7 @@ export async function createOnboardingProfile(
   let profilePhotoUrl: string | null = existingProfile?.profilePhoto ?? null;
 
   if (profileData.profilePhoto) {
-    const ext = profileData.profilePhoto.name.split('.').pop() || 'jpg';
+    const ext = profileData.profilePhoto.name.split(".").pop() || "jpg";
     const uniqueId = Math.random().toString(36).substring(2, 15);
     try {
       const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
@@ -195,7 +202,9 @@ export async function createOnboardingProfile(
   }`.trim();
 
   const updateData: any = {
-    onboarding_completed: true,
+    // The wizard is completed explicitly on its final screen. Keeping this
+    // false here prevents the onboarding guard from skipping KYC and success.
+    onboarding_completed: false,
   };
 
   if (profileData.email) updateData.email = profileData.email;
@@ -238,6 +247,7 @@ export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
         username: true,
         location: true,
         createdAt: true,
+        onboarding_completed: true,
       },
     });
 
@@ -245,28 +255,12 @@ export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
       return false;
     }
 
-    const hasBasicProfile = !!(profile.fullName && profile.email);
-
-    const hasOnboardingFields = !!(
-      profile.firstName &&
-      profile.lastName &&
-      profile.username &&
-      profile.location &&
-      profile.phone
-    );
-
-    if (hasBasicProfile && !hasOnboardingFields) {
-      // Check if the user is very old (created before onboarding fields were added)
-      // For new users created by the trigger, this should be false
-      const createdAt = new Date(profile.createdAt);
-      const onboardingcutoff = new Date("2024-12-21"); // Date when onboarding was added
-
-      if (createdAt < onboardingcutoff) {
-        return true;
-      }
+    if (profile.onboarding_completed === true) {
+      return true;
     }
 
-    return hasOnboardingFields;
+    // Preserve access for legacy accounts that predate the onboarding wizard.
+    return new Date(profile.createdAt) < new Date("2024-12-21");
   } catch (error) {
     console.error("Error checking onboarding completion:", error);
     return false;
@@ -300,7 +294,7 @@ export async function getCurrentOnboardingStep(
       return 1;
     }
 
-    if (!profile.gender) {
+    if (profile.accountType !== "organization" && !profile.gender) {
       return 2;
     }
 
@@ -315,6 +309,23 @@ export async function getCurrentOnboardingStep(
 
     if (!hasProfileData) {
       return 3;
+    }
+
+    // For organization accounts, check if org setup is complete (Step 3B)
+    if (profile.accountType === "organization") {
+      const org = await prisma.organization.findFirst({
+        where: { ownerId: userId },
+        select: { logoUrl: true, preferences: true },
+      });
+      // Org setup step: logo is optional, but we use a flag in preferences
+      // to know the user has visited the step. If preferences is still the
+      // default empty object "{}", they haven't been through org setup.
+      const prefs = org?.preferences as Record<string, unknown> | null;
+      const hasVisitedOrgSetup = prefs && Object.keys(prefs).length > 0;
+      if (!hasVisitedOrgSetup) {
+        // Return a special value — the orchestrator maps this to step 3B
+        return 3.5;
+      }
     }
 
     return 4;
@@ -438,17 +449,120 @@ export async function saveStep2Progress(
 
 export async function checkUsernameAvailability(
   username: string,
+  currentUserId?: string,
 ): Promise<boolean> {
   try {
+    // Normalise to lowercase to prevent case-sensitivity false conflicts
+    const normalizedUsername = username.trim().toLowerCase();
+    if (!normalizedUsername || normalizedUsername.length < 3) {
+      return true; // Too short to check — let field validation handle it
+    }
+
     const profile = await prisma.user.findUnique({
-      where: { username },
+      where: { username: normalizedUsername },
       select: { id: true },
     });
-    return !profile; // Return true if profile does not exist (username is available)
+
+    // No match → available
+    if (!profile) return true;
+
+    // Match is the current user's own row → available for them
+    if (currentUserId && profile.id === currentUserId) return true;
+
+    // Taken by someone else
+    return false;
   } catch (error) {
     console.error("Error checking username availability:", error);
     return false; // Safely return false if an error occurs
   }
+}
+
+/**
+ * Fetch the organization onboarding data for the owner to pre-fill Step 3B.
+ */
+export async function getOrganizationOnboardingData(userId: string) {
+  try {
+    const org = await prisma.organization.findFirst({
+      where: { ownerId: userId },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        address: true,
+        industry: true,
+        logoUrl: true,
+        bio: true,
+        websiteUrl: true,
+        instagramUrl: true,
+        twitterUrl: true,
+        tiktokUrl: true,
+        facebookUrl: true,
+        whatsappNumber: true,
+        preferences: true,
+      },
+    });
+
+    if (!org) return null;
+
+    return {
+      id: org.id,
+      name: org.name,
+      phone: org.phone || "",
+      address: org.address || "",
+      industry: org.industry || "",
+      logoUrl: org.logoUrl || "",
+      bio: org.bio || "",
+      websiteUrl: org.websiteUrl || "",
+      instagramUrl: org.instagramUrl || "",
+      twitterUrl: org.twitterUrl || "",
+      tiktokUrl: org.tiktokUrl || "",
+      facebookUrl: org.facebookUrl || "",
+      whatsappNumber: org.whatsappNumber || "",
+      preferences: (org.preferences || {}) as Record<string, boolean>,
+    };
+  } catch (error) {
+    console.error("Error fetching organization onboarding data:", error);
+    return null;
+  }
+}
+
+export async function completeOnboarding(userId: string): Promise<void> {
+  const profile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      accountType: true,
+      firstName: true,
+      lastName: true,
+      username: true,
+      location: true,
+      phone: true,
+    },
+  });
+
+  if (!profile) {
+    throw new Error("Profile not found");
+  }
+
+  const missingFields = [
+    !profile.accountType && "account type",
+    !profile.firstName && "first name",
+    !profile.lastName && "last name",
+    !profile.username && "username",
+    !profile.location && "location",
+    !profile.phone && "phone number",
+  ].filter(Boolean);
+
+  if (missingFields.length > 0) {
+    throw new Error(`Complete ${missingFields.join(", ")} before continuing`);
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { onboarding_completed: true },
+  });
+
+  revalidatePath("/onboarding");
+  revalidatePath("/dashboard");
 }
 
 export async function isProfileComplete(
@@ -484,16 +598,23 @@ export async function isProfileComplete(
   }
 }
 
-export async function hasKycVerification(userId: string): Promise<KycVerification | null> {
+export async function hasKycVerification(
+  userId: string,
+): Promise<KycVerification | null> {
   try {
     const data = await prisma.kyc_verifications.findFirst({
-      where: { user_id: userId }
+      where: { user_id: userId },
     });
 
     if (!data) return null;
 
-    if (data.document_url && !data.document_url.startsWith('http') && !data.document_url.startsWith('/api/s3/image')) {
-      (data as any).document_url = `/api/s3/image?key=${encodeURIComponent(data.document_url)}`;
+    if (
+      data.document_url &&
+      !data.document_url.startsWith("http") &&
+      !data.document_url.startsWith("/api/s3/image")
+    ) {
+      (data as any).document_url =
+        `/api/s3/image?key=${encodeURIComponent(data.document_url)}`;
     }
 
     return data as unknown as KycVerification;
@@ -525,87 +646,7 @@ export async function updateKycStatus(
   }
 }
 
-export async function getSolanaWallet(userId: string): Promise<string | null> {
-  try {
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { solana_wallet: true },
-    });
-
-    return profile?.solana_wallet ?? null;
-  } catch (error) {
-    console.error("Error fetching Solana wallet:", error);
-    return null;
-  }
-}
-
-export async function updateSolanaWallet(
-  userId: string,
-  walletAddress: string | null,
-): Promise<string | null> {
-  try {
-    const profile = await prisma.user.update({
-      where: { id: userId },
-      data: { solana_wallet: walletAddress },
-      select: { solana_wallet: true },
-    });
-
-    revalidatePath("/dashboard/settings");
-    return profile.solana_wallet ?? null;
-  } catch (error) {
-    console.error("Error updating Solana wallet:", error);
-    throw error;
-  }
-}
-
-export async function getPolygonWallet(userId: string): Promise<string | null> {
-  try {
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { crypto_wallets: true },
-    });
-
-    const wallets = profile?.crypto_wallets as { ethereum?: string } | null;
-    return wallets?.ethereum ?? null;
-  } catch (error) {
-    console.error("Error fetching Polygon wallet:", error);
-    return null;
-  }
-}
-
-export async function updatePolygonWallet(
-  userId: string,
-  walletAddress: string | null,
-): Promise<string | null> {
-  try {
-    // We need to fetch existing crypto_wallets to preserve other keys if they exist
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { crypto_wallets: true },
-    });
-    
-    const currentWallets = profile?.crypto_wallets as Record<string, any> || {};
-    
-    if (walletAddress === null) {
-      delete currentWallets.ethereum;
-    } else {
-      currentWallets.ethereum = walletAddress;
-    }
-
-    const updatedProfile = await prisma.user.update({
-      where: { id: userId },
-      data: { crypto_wallets: currentWallets },
-      select: { crypto_wallets: true },
-    });
-
-    revalidatePath("/dashboard/settings");
-    const updatedWallets = updatedProfile.crypto_wallets as { ethereum?: string } | null;
-    return updatedWallets?.ethereum ?? null;
-  } catch (error) {
-    console.error("Error updating Polygon wallet:", error);
-    throw error;
-  }
-}
+// 👇 REMOVED: getSolanaWallet, updateSolanaWallet, getPolygonWallet, updatePolygonWallet
 
 export async function getProfileByUsername(
   username: string,

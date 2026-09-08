@@ -10,8 +10,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { Shield, ArrowRight, ArrowLeft } from "lucide-react";
+import {
+  ArrowRight,
+  Clock3,
+  Loader2,
+  ShieldCheck,
+} from "lucide-react";
 import Image from "next/image";
 import { getProfile } from "@/actions/profile-actions";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
@@ -19,6 +23,7 @@ import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 interface Step4Props {
   user: any;
   onNext: () => void;
+  onKyc: () => void | Promise<void>;
   onBack: () => void;
   onboardingData: any;
   updateOnboardingData: (key: string, value: any) => void;
@@ -27,13 +32,14 @@ interface Step4Props {
 export default function Step4({
   user,
   onNext,
+  onKyc,
   onBack,
   onboardingData,
   updateOnboardingData,
 }: Step4Props) {
-  const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStartingKyc, setIsStartingKyc] = useState(false);
 
   // Fetch profile data using the same method as UserNav
   useEffect(() => {
@@ -65,17 +71,88 @@ export default function Step4({
     onNext();
   };
 
-  const handleKyc = () => {
-    updateOnboardingData("kycCompleted", true);
-    // Clear all onboarding data and redirect to KYC setup page
-    localStorage.removeItem("onboarding_account_type");
-    localStorage.removeItem("onboarding_gender");
-    localStorage.removeItem("onboarding_profile");
-    localStorage.removeItem("onboarding_interests");
-    localStorage.removeItem("onboarding_kyc_completed");
-    localStorage.removeItem("onboarding_consent");
-    router.push("/dashboard/settings/kyc-setup");
+  const handleKyc = async () => {
+    if (isStartingKyc) return;
+
+    setIsStartingKyc(true);
+    updateOnboardingData("kycCompleted", false);
+
+    try {
+      await onKyc();
+    } finally {
+      setIsStartingKyc(false);
+    }
   };
+
+  const isOrg = onboardingData.accountType === "organization";
+
+  if (isOrg) {
+    return (
+      <div className="py-2">
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="mx-auto w-full max-w-3xl"
+        >
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <h1 className="mt-5 text-3xl font-semibold leading-tight text-slate-950">
+            Verify the organisation owner
+          </h1>
+          <p className="mt-3 text-base leading-7 text-slate-600">
+            Owner verification is required before the organisation can fundraise or receive payouts. It helps protect the workspace and builds trust with supporters.
+          </p>
+
+          <div className="mt-8 grid overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:grid-cols-2">
+            <div className="p-5 sm:border-r sm:border-slate-200">
+              <h2 className="text-sm font-semibold text-slate-900">What you will need</h2>
+              <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                <li>A valid government-issued ID</li>
+                <li>A clear live identity check</li>
+              </ul>
+            </div>
+            <div className="border-t border-slate-200 p-5 sm:border-t-0">
+              <h2 className="text-sm font-semibold text-slate-900">What to expect</h2>
+              <p className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+                <Clock3 className="h-4 w-4 text-blue-700" />
+                The process usually takes a few minutes.
+              </p>
+              <p className="mt-2 text-sm text-slate-600">Your information is encrypted and handled securely.</p>
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row-reverse">
+            <Button
+              onClick={handleKyc}
+              disabled={isStartingKyc}
+              className="h-12 flex-1 bg-blue-700 text-white hover:bg-blue-800"
+            >
+              {isStartingKyc ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Opening verification...
+                </>
+              ) : (
+                <>
+                  Start verification
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleSkip}
+              variant="outline"
+              className="h-12 flex-1 border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              Do this later
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-4">

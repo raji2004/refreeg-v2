@@ -83,9 +83,9 @@ export default function GetStartedPage() {
 
           {/* BODY TEXT */}
           <p className="mt-3 text-[16px] leading-7 text-gray-700">
-            RefreeG is Africa's people-powered crowdfunding platform built to help 
+            RefreeG is Africa&apos;s people-powered crowdfunding platform built to help 
             individuals, creators, and communities raise funds for causes that matter, 
-            transparently and securely. Whether you're an NGO driving social impact, 
+            transparently and securely. Whether you&apos;re an NGO driving social impact, 
             a student raising funds for a project, or a creator building community support, 
             RefreeG gives you the tools to make it happen.
           </p>

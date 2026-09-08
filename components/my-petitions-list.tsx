@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -10,75 +9,66 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Edit, Eye, MoreHorizontal, Trash } from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  deletePetition,
-  getUserPetitionsWithStatus,
-} from "@/actions/petition-actions";
+  AlertCircle,
+  ArrowRight,
+  BarChart3,
+  CalendarDays,
+  CircleCheck,
+  Clock3,
+  FileSignature,
+  PencilLine,
+  Plus,
+  Users,
+} from "lucide-react";
+import { getUserPetitionsWithStatus } from "@/actions/petition-actions";
 import { listSignaturesForPetition } from "@/actions/signature-actions";
 import { PetitionDropdown } from "./petition-dropdown";
-
-// Mock data for user's petitions
-const mockUserPetition = [
-  {
-    id: "1",
-    title: "Clean Water Initiative",
-    description: "Providing clean water to communities in rural areas.",
-    category: "Environment",
-    raised: 12500,
-    goal: 20000,
-    status: "approved",
-    created_at: "2023-05-15T10:30:00Z",
-    updated_at: "2023-05-16T08:45:00Z",
-  },
-  {
-    id: "2",
-    title: "Education for All",
-    description: "Supporting education for underprivileged children.",
-    category: "Education",
-    raised: 8700,
-    goal: 15000,
-    status: "approved",
-    created_at: "2023-06-10T14:45:00Z",
-    updated_at: "2023-06-11T09:30:00Z",
-  },
-  {
-    id: "3",
-    title: "Medical Supplies Drive",
-    description: "Collecting medical supplies for local clinics.",
-    category: "Healthcare",
-    raised: 0,
-    goal: 10000,
-    status: "pending",
-    created_at: "2023-07-05T09:15:00Z",
-    updated_at: "2023-07-05T09:15:00Z",
-  },
-  {
-    id: "4",
-    title: "Community Garden Project",
-    description: "Creating a sustainable garden in our neighborhood.",
-    category: "Community",
-    raised: 0,
-    goal: 5000,
-    status: "rejected",
-    created_at: "2023-07-10T11:30:00Z",
-    updated_at: "2023-07-12T15:20:00Z",
-    rejection_reason:
-      "Insufficient details provided about project implementation.",
-  },
-];
 
 interface MyPetitionsListProps {
   status: string;
   userId: string;
 }
+
+const formatNumber = (value: number) =>
+  new Intl.NumberFormat("en-NG").format(value || 0);
+
+const formatDate = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not available";
+
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+};
+
+const getStatusDetails = (status: string) => {
+  switch (status) {
+    case "approved":
+      return {
+        label: "Active",
+        icon: CircleCheck,
+        badge: "border-emerald-200 bg-emerald-50 text-emerald-700",
+        accent: "bg-emerald-500",
+      };
+    case "pending":
+      return {
+        label: "Pending review",
+        icon: Clock3,
+        badge: "border-amber-200 bg-amber-50 text-amber-700",
+        accent: "bg-amber-400",
+      };
+    default:
+      return {
+        label: "Needs revision",
+        icon: AlertCircle,
+        badge: "border-rose-200 bg-rose-50 text-rose-700",
+        accent: "bg-rose-500",
+      };
+  }
+};
 
 export async function MyPetitionsList({
   status,
@@ -105,123 +95,195 @@ export async function MyPetitionsList({
 
   if (petitionsWithSigners.length === 0) {
     return (
-      <div className="text-center py-10 border rounded-lg bg-muted/20">
-        <h3 className="text-lg font-medium mb-2">No petitions found</h3>
+      <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 px-5 py-14 text-center">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+          <FileSignature className="h-6 w-6" />
+        </span>
+        <h3 className="mt-5 text-xl font-semibold text-slate-950">
+          No petitions found
+        </h3>
         {status === "all" ? (
-          <p className="text-muted-foreground mb-4">
-            You haven't created any petitions yet.
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+            You haven&apos;t created any petitions yet.
           </p>
         ) : status === "approved" ? (
-          <p className="text-muted-foreground mb-4">
-            You don't have any active petitions.
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+            You don&apos;t have any active petitions.
           </p>
         ) : status === "pending" ? (
-          <p className="text-muted-foreground mb-4">
-            You don't have any petitions pending approval.
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+            You don&apos;t have any petitions pending approval.
           </p>
         ) : (
-          <p className="text-muted-foreground mb-4">
-            You don't have any rejected petitions.
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+            You don&apos;t have any rejected petitions.
           </p>
         )}
-        <Link href="/dashboard/petitions/create">
-          <Button>Create a New Petition</Button>
+        <Link href="/dashboard/petitions/create" className="inline-block">
+          <Button className="mt-6 h-11 rounded-xl bg-blue-600 px-5 text-white hover:bg-blue-700">
+            <Plus className="mr-2 h-4 w-4" />
+            Create a new petition
+          </Button>
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {petitionsWithSigners.map((petition) => (
-        <Card key={petition.id}>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-lg line-clamp-1">
-                  {petition.title}
-                </CardTitle>
+    <div className="grid gap-5 xl:grid-cols-2">
+      {petitionsWithSigners.map((petition) => {
+        const goal = Number(petition.goal) || 0;
+        const progress =
+          goal > 0
+            ? Math.min(
+                Math.max((petition.signatures / goal) * 100, 0),
+                100,
+              )
+            : 0;
+        const statusDetails = getStatusDetails(petition.status);
+        const StatusIcon = statusDetails.icon;
+
+        return (
+          <Card
+            key={petition.id}
+            className="group relative overflow-hidden rounded-3xl border-slate-200/90 bg-white shadow-[0_14px_35px_-28px_rgba(15,23,42,0.55)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_22px_48px_-30px_rgba(37,99,235,0.35)]"
+          >
+            <div
+              className={`absolute inset-x-0 top-0 h-1 ${statusDetails.accent}`}
+            />
+            <CardHeader className="pb-4 pt-6">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    {petition.category && (
+                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                        {petition.category}
+                      </span>
+                    )}
+                    <Badge
+                      variant="outline"
+                      className={`gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${statusDetails.badge}`}
+                    >
+                      <StatusIcon className="h-3.5 w-3.5" />
+                      {statusDetails.label}
+                    </Badge>
+                  </div>
+                  <CardTitle
+                    className="line-clamp-2 text-xl leading-7 text-slate-950"
+                    title={petition.title}
+                  >
+                    {petition.title}
+                  </CardTitle>
+                  {petition.description && (
+                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+                      {petition.description}
+                    </p>
+                  )}
+                </div>
+                <div className="shrink-0">
+                  <PetitionDropdown petitionId={petition.id} />
+                </div>
               </div>
-              <div className="flex items-center">
-                <Badge
-                  variant={
-                    petition.status === "approved"
-                      ? "default"
-                      : petition.status === "pending"
-                        ? "secondary"
-                        : "destructive"
-                  }
-                >
-                  {petition.status}
-                </Badge>
-                <PetitionDropdown petitionId={petition.id} />
+            </CardHeader>
+
+            <CardContent className="space-y-5 pb-5">
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="flex items-end justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Signatures collected
+                    </p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Users className="h-5 w-5 text-blue-600" />
+                      <p className="text-xl font-bold tracking-tight text-slate-950">
+                        {formatNumber(petition.signatures)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs text-slate-500">
+                      Goal {formatNumber(goal)}
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-blue-700">
+                      {progress.toFixed(0)}%
+                    </p>
+                  </div>
+                </div>
+                <Progress value={progress} className="mt-3 h-2.5 bg-slate-200" />
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pb-2">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="font-medium">
-                  {petition.signatures} signatures
-                </span>
-                <span className="text-muted-foreground">
-                  of {petition.goal.toLocaleString()}
-                </span>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-2xl border border-slate-100 bg-white p-3">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <CalendarDays className="h-4 w-4 text-slate-400" />
+                    Created
+                  </div>
+                  <p className="mt-1.5 font-medium text-slate-800">
+                    {formatDate(petition.created_at)}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-100 bg-white p-3">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Clock3 className="h-4 w-4 text-slate-400" />
+                    Updated
+                  </div>
+                  <p className="mt-1.5 font-medium text-slate-800">
+                    {formatDate(petition.updated_at)}
+                  </p>
+                </div>
               </div>
-              <Progress
-                value={Math.min(
-                  (petition.signatures / petition.goal) * 100,
-                  100,
+
+              {petition.status === "rejected" &&
+                petition.rejection_reason && (
+                  <div className="flex gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-3.5 text-sm text-rose-800">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <p className="min-w-0 leading-5">
+                      <strong className="font-semibold">Review note:</strong>{" "}
+                      {petition.rejection_reason}
+                    </p>
+                  </div>
                 )}
-              />
-            </div>
-            <div className="mt-4 text-sm text-muted-foreground">
-              <div className="flex justify-between">
-                <span>Created:</span>
-                <span>
-                  {new Date(petition.created_at).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Last updated:</span>
-                <span>
-                  {new Date(petition.updated_at).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-            {petition.status === "rejected" && petition.rejection_reason && (
-              <div className="mt-4 p-2 bg-destructive/10 text-destructive text-sm rounded">
-                <strong>Reason:</strong> {petition.rejection_reason}
-              </div>
-            )}
-          </CardContent>
-          <CardFooter className="flex justify-between pt-4">
-            {petition.status === "approved" ? (
-              <Link
-                href={`/dashboard/petitions/${petition.id}/analytics`}
-                className="w-full"
-              >
-                <Button variant="outline" className="w-full">
-                  View Analytics
-                </Button>
-              </Link>
-            ) : petition.status === "pending" ? (
-              <Button variant="outline" className="w-full" disabled>
-                Awaiting Approval
-              </Button>
-            ) : (
-              <Link
-                href={`/dashboard/petitions/${petition.id}/edit`}
-                className="w-full"
-              >
-                <Button variant="outline" className="w-full">
-                  Revise & Resubmit
-                </Button>
-              </Link>
-            )}
-          </CardFooter>
-        </Card>
-      ))}
+            </CardContent>
+
+            <CardFooter className="border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+              {petition.status === "approved" ? (
+                <Link
+                  href={`/dashboard/petitions/${petition.id}/analytics`}
+                  className="w-full"
+                >
+                  <Button className="h-11 w-full rounded-xl bg-blue-600 text-white hover:bg-blue-700">
+                    <BarChart3 className="mr-2 h-4 w-4" />
+                    View analytics
+                    <ArrowRight className="ml-auto h-4 w-4" />
+                  </Button>
+                </Link>
+              ) : petition.status === "pending" ? (
+                <Badge
+                  variant="outline"
+                  className="flex h-11 w-full justify-center rounded-xl border-amber-200 bg-amber-50 text-sm font-medium text-amber-700"
+                >
+                  <Clock3 className="mr-2 h-4 w-4" />
+                  Awaiting approval
+                </Badge>
+              ) : (
+                <Link
+                  href={`/dashboard/petitions/${petition.id}/edit`}
+                  className="w-full"
+                >
+                  <Button
+                    variant="outline"
+                    className="h-11 w-full rounded-xl border-rose-200 bg-white text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                  >
+                    <PencilLine className="mr-2 h-4 w-4" />
+                    Revise and resubmit
+                    <ArrowRight className="ml-auto h-4 w-4" />
+                  </Button>
+                </Link>
+              )}
+            </CardFooter>
+          </Card>
+        );
+      })}
     </div>
   );
 }

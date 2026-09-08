@@ -48,7 +48,7 @@ export default function GotQuestions() {
             variants={itemVariants}
           >
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Got Questions? You're at
+              Got Questions? You&apos;re at
               <br />
               the right place
             </h2>

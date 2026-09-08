@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
                 Check your email
               </CardTitle>
               <CardDescription className="text-center">
-                We've sent a password reset link to {email}
+                We&apos;ve sent a password reset link to {email}
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
                 <Icons.mail className="h-12 w-12 text-muted-foreground" />
               </div>
               <p className="text-sm text-muted-foreground">
-                If you don't see the email, check your spam folder or try again.
+                If you don&apos;t see the email, check your spam folder or try again.
               </p>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
                 Remember your password?{" "}
                 <Link
                   href="/auth/signin"
-                  className="underline underline-offset-4 hover:text-primary"
+                  className="text-secondary underline underline-offset-4 transition-colors hover:text-secondary/80"
                 >
                   Sign in
                 </Link>
@@ -103,7 +103,7 @@ export default function ResetPasswordPage() {
               Reset password
             </CardTitle>
             <CardDescription className="text-center">
-              Enter your email address and we'll send you a link to reset your
+              Enter your email address and we&apos;ll send you a link to reset your
               password
             </CardDescription>
           </CardHeader>
@@ -139,16 +139,16 @@ export default function ResetPasswordPage() {
               Remember your password?{" "}
               <Link
                 href="/auth/signin"
-                className="underline underline-offset-4 hover:text-primary"
+                className="text-secondary underline underline-offset-4 transition-colors hover:text-secondary/80"
               >
                 Sign in
               </Link>
             </div>
             <div className="text-sm text-center text-muted-foreground">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/auth/signup"
-                className="underline underline-offset-4 hover:text-primary"
+                className="text-secondary underline underline-offset-4 transition-colors hover:text-secondary/80"
               >
                 Sign up
               </Link>

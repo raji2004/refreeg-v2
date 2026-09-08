@@ -207,9 +207,11 @@ export function Footer() {
         <div className="footer-social flex flex-col gap-6 pt-8 pb-4 md:flex-row md:items-center md:justify-between">
 
           <div className="flex items-center border p-2 rounded-xl gap-3 text-sm">
-            <img
+            <Image
               src="https://flagcdn.com/us.svg"
-              width="30"
+              width={30}
+              height={20}
+              unoptimized
               alt="United States"
             />
             <span>United States · English</span>

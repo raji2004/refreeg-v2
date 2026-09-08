@@ -56,7 +56,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${montserrat.variable} font-montserrat antialiased`}>
+      {/* suppressHydrationWarning: browser extensions (Grammarly, etc.) inject
+          data-gr-* attributes onto <body> before React hydrates — a false
+          positive, not an actual server/client mismatch. */}
+      <body
+        className={`${montserrat.variable} font-montserrat antialiased`}
+        suppressHydrationWarning
+      >
         <Providers>
           <ClientLayout>{children}</ClientLayout>
           <Toaster />

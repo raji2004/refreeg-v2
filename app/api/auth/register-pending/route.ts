@@ -2,26 +2,46 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { sendOtpEmail } from "@/services/mail";
+import {
+  normalizeRegistrationInput,
+  type RegistrationInput,
+  validateRegistrationInput,
+} from "@/lib/auth/registration";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, password, firstName, lastName, username, referralCode } =
-      body;
+    const registration = normalizeRegistrationInput({
+      accountType: body.accountType,
+      fullName: body.fullName,
+      email: body.email,
+      password: body.password,
+      organizationName: body.organizationName,
+      organizationPhone: body.organizationPhone,
+      organizationAddress: body.organizationAddress,
+      organizationIndustry: body.organizationIndustry,
+    } as RegistrationInput);
+    const validationErrors = validateRegistrationInput(registration);
+    const firstError = Object.values(validationErrors)[0];
 
-    if (!email || !password) {
+    if (firstError) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: firstError, fieldErrors: validationErrors },
         { status: 400 },
       );
     }
 
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters long" },
-        { status: 400 },
-      );
-    }
+    const { email, password, fullName, accountType } = registration;
+    const referralCode = body.referralCode || null;
+    // UTM tracking fields — stored in pending registration, written to referrals_v1 on OTP verify
+    const utm_source = body.utm_source || null;
+    const utm_medium = body.utm_medium || null;
+    const utm_campaign = body.utm_campaign || null;
+    const user_agent = body.user_agent || null;
+    const ip_address =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      null;
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -35,11 +55,6 @@ export async function POST(req: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const fullName =
-      `${firstName || ""} ${lastName || ""}`.trim() ||
-      username ||
-      email.split("@")[0];
-
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -48,7 +63,17 @@ export async function POST(req: Request) {
       update: {
         password: hashedPassword,
         fullName,
+        accountType,
+        organizationName: registration.organizationName,
+        organizationPhone: registration.organizationPhone,
+        organizationAddress: registration.organizationAddress,
+        organizationIndustry: registration.organizationIndustry,
         referralCode,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        user_agent,
+        ip_address,
         otpCode,
         expiresAt,
         failedAttempts: 0,
@@ -58,7 +83,17 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         fullName,
+        accountType,
+        organizationName: registration.organizationName,
+        organizationPhone: registration.organizationPhone,
+        organizationAddress: registration.organizationAddress,
+        organizationIndustry: registration.organizationIndustry,
         referralCode,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        user_agent,
+        ip_address,
         otpCode,
         expiresAt,
         lastOtpSentAt: new Date(),

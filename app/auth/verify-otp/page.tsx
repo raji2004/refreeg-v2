@@ -12,6 +12,11 @@ export default function VerifyOtpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
+  const requestedRedirect = searchParams.get("redirect");
+  const safeRedirect =
+    requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")
+      ? requestedRedirect
+      : null;
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -110,14 +115,18 @@ export default function VerifyOtpPage() {
         if (loginRes?.error) {
           toast.error("Auto-login failed, please sign in manually.");
           router.push(
-            `/auth/signin?email=${encodeURIComponent(email)}&verified=true`,
+            `/auth/signin?email=${encodeURIComponent(email)}&verified=true${safeRedirect ? `&redirect=${encodeURIComponent(safeRedirect)}` : ""}`,
           );
         } else {
-          router.push("/onboarding");
+          router.push(
+            safeRedirect
+              ? `/onboarding?redirect=${encodeURIComponent(safeRedirect)}`
+              : "/onboarding",
+          );
         }
       } else {
         router.push(
-          `/auth/signin?email=${encodeURIComponent(email)}&verified=true`,
+          `/auth/signin?email=${encodeURIComponent(email)}&verified=true${safeRedirect ? `&redirect=${encodeURIComponent(safeRedirect)}` : ""}`,
         );
       }
     } catch (error) {
@@ -192,7 +201,7 @@ export default function VerifyOtpPage() {
               Verify your email
             </h1>
             <p className="text-slate-500 text-sm sm:text-base leading-relaxed px-2">
-              We've sent a 6-digit verification code to
+              We&apos;ve sent a 6-digit verification code to
               <br />
               <span className="text-[#002B5B] font-semibold break-all">
                 {email}
@@ -233,7 +242,7 @@ export default function VerifyOtpPage() {
 
           <div className="text-center">
             <p className="text-xs sm:text-sm text-slate-500">
-              Didn't receive the code?{" "}
+              Didn&apos;t receive the code?{" "}
               <button
                 onClick={handleResend}
                 disabled={isResending || cooldown > 0}

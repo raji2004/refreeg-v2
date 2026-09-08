@@ -34,7 +34,16 @@ const SLIDER_SPEED = 50;
 function MobileTeamSlider() {
   const { ref, isInView } = useAnimateInView({ once: true, margin: "-50px" });
   const sliderControls = useAnimation();
-  const itemControls = TEAM.map(() => useAnimation());
+  // TEAM is a fixed-size module-level constant, so calling useAnimation()
+  // a fixed number of times here (rather than inside TEAM.map) keeps hook
+  // calls unconditional and in the same order on every render.
+  const teamControl0 = useAnimation();
+  const teamControl1 = useAnimation();
+  const teamControl2 = useAnimation();
+  const itemControls = [teamControl0, teamControl1, teamControl2].slice(
+    0,
+    TEAM.length,
+  );
 
   if (isInView) {
     (async () => {

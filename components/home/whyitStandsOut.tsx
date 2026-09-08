@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { FaBoltLightning } from "react-icons/fa6";
 import { FaUsers, FaCheckSquare, FaSmile } from "react-icons/fa";
-import { H2, H3, P } from "../typograpy";
+import { H2, H3, P } from "../typography";
 import { useAnimateInView } from "@/hooks/use-animate-In-view";
 
 const features = [
@@ -27,6 +27,36 @@ const features = [
       "Donate to causes with just a few clicks and track progress every step of the way.",
   },
 ];
+
+function FeatureCard({
+  feature,
+  idx,
+}: {
+  feature: (typeof features)[number];
+  idx: number;
+}) {
+  const itemRef = useRef(null);
+  const itemInView = useInView(itemRef, {
+    once: true,
+    margin: "-100px",
+  });
+
+  return (
+    <motion.div
+      ref={itemRef}
+      className="flex flex-col items-center text-center px-4"
+      initial={{ opacity: 0, y: 40 }}
+      animate={itemInView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.7, ease: "easeOut", delay: idx * 0.2 }}
+    >
+      <div className="w-48 h-48 rounded-full bg-white flex items-center justify-center mb-6">
+        {feature.icon}
+      </div>
+      <H3 className="text-white font-bold mb-2">{feature.title}</H3>
+      <P className="text-white max-w-xs">{feature.description}</P>
+    </motion.div>
+  );
+}
 
 export default function WhyItStandsOut() {
   const { ref, isInView } = useAnimateInView({
@@ -61,30 +91,9 @@ export default function WhyItStandsOut() {
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-6xl mx-auto">
-        {features.map((feature, idx) => {
-          const itemRef = useRef(null);
-          const itemInView = useInView(itemRef, {
-            once: true,
-            margin: "-100px",
-          });
-
-          return (
-            <motion.div
-              ref={itemRef}
-              key={idx}
-              className="flex flex-col items-center text-center px-4"
-              initial={{ opacity: 0, y: 40 }}
-              animate={itemInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.7, ease: "easeOut", delay: idx * 0.2 }}
-            >
-              <div className="w-48 h-48 rounded-full bg-white flex items-center justify-center mb-6">
-                {feature.icon}
-              </div>
-              <H3 className="text-white font-bold mb-2">{feature.title}</H3>
-              <P className="text-white max-w-xs">{feature.description}</P>
-            </motion.div>
-          );
-        })}
+        {features.map((feature, idx) => (
+          <FeatureCard key={idx} feature={feature} idx={idx} />
+        ))}
       </div>
     </section>
   );

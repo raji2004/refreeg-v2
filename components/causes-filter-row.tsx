@@ -25,9 +25,9 @@ export default function CausesFilterRow({ className }: CausesFilterRowProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const search = searchParams.get("search") || "";
-  const sortBy = searchParams.get("recommended") || "recommended";
 
-  // Local search state for debouncing
+  const sortBy = searchParams.get("recommended") || "most-funded";
+
   const [searchInput, setSearchInput] = useState(search);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -85,7 +85,9 @@ export default function CausesFilterRow({ className }: CausesFilterRowProps) {
   };
 
   const handleSortChange = (value: string) => {
-    pushParams({ recommended: value === "recommended" ? undefined : value });
+    // If they select "most-funded" (our new default), we can actually omit it from the URL
+    // to keep URLs clean, OR keep it explicit. Let's keep it explicit so the URL reflects the state.
+    pushParams({ recommended: value });
   };
 
   const handleFilterToggle = (open: boolean) => {
@@ -143,10 +145,10 @@ export default function CausesFilterRow({ className }: CausesFilterRowProps) {
                 <SelectValue placeholder="Sort by..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="recommended">Recommended</SelectItem>
-                <SelectItem value="latest">Latest</SelectItem>
                 <SelectItem value="most-funded">Most Funded</SelectItem>
+                <SelectItem value="latest">Latest</SelectItem>
                 <SelectItem value="ending-soon">Ending Soon</SelectItem>
+                <SelectItem value="recommended">Recommended</SelectItem>
               </SelectContent>
             </Select>
           </div>

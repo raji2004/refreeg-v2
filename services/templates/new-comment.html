@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>New Comment on Your Campaign</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #334155; margin: 0; padding: 0; background-color: #f8fafc; }
+        .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .header { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 40px 20px; text-align: center; color: #ffffff; }
+        .content { padding: 40px 30px; }
+        .comment-box { background: #eff6ff; border: 2px solid #93c5fd; border-radius: 12px; padding: 20px 24px; margin: 24px 0; }
+        .comment-box .author { font-size: 13px; color: #1d4ed8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+        .comment-box .text { font-size: 16px; color: #1e293b; }
+        .badge { display: inline-block; background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 999px; font-weight: 600; font-size: 14px; margin-bottom: 16px; }
+        .btn { display: inline-block; background-color: #2563eb; color: #ffffff !important; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 24px; }
+        .divider { border: none; border-top: 1px solid #e2e8f0; margin: 28px 0; }
+        .footer { padding: 24px; text-align: center; font-size: 14px; color: #64748b; background-color: #f1f5f9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">New Comment on Your Campaign 💬</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 16px;">Someone's talking about your cause.</p>
+        </div>
+        <div class="content">
+            <span class="badge">NEW COMMENT</span>
+            <p>Hi <strong>{{ownerName}}</strong>,</p>
+            <p>
+                <strong>{{commenterName}}</strong> just left a comment on your campaign
+                <strong>"{{causeTitle}}"</strong>:
+            </p>
+
+            <div class="comment-box">
+                <div class="author">{{commenterName}}</div>
+                <div class="text">{{commentExcerpt}}</div>
+            </div>
+
+            <hr class="divider">
+
+            <p>
+                Engaging with comments helps build trust with your supporters — consider replying to keep the
+                conversation going.
+            </p>
+
+            <div style="text-align: center;">
+                <a href="{{causeUrl}}" class="btn">View Comment</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>You're receiving this because you own a campaign on <strong>RefreeG</strong>.</p>
+            <p>&copy; {{currentYear}} RefreeG. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
-import { createDonation, createSubscription } from "@/actions";
-import {
-  processPledgeAuthorizationSuccess,
-  processPledgeScheduledChargeSuccess,
-} from "@/lib/pledge-paystack";
-import Paystack from "@/services/paystack";
+import { createSubscription } from "@/actions";
+import { processSuccessfulCharge } from "@/lib/paystack-charge-processing";
 import crypto from "crypto";
 
 interface PaystackWebhookData {
@@ -91,64 +87,21 @@ export async function POST(request: Request) {
           );
         }
 
-        const full = (await Paystack.verifyTransactionFull(reference)) as {
-          status?: string;
-          metadata?: Record<string, string | number | boolean | undefined>;
-        };
+        // FIRE-AND-FORGET: Process in background
+        Promise.resolve().then(async () => {
+          try {
+            await processSuccessfulCharge(reference);
+          } catch (bgError) {
+            console.error("[Paystack Webhook Background] Failed:", bgError);
+          }
+        });
 
-        if (full.status !== "success") {
-          return new NextResponse(
-            JSON.stringify({ message: "Transaction not successful" }),
-            { status: 200 },
-          );
-        }
-
-        const meta = full.metadata || {};
-
-        if (String(meta.pledge_flow) === "authorization") {
-          await processPledgeAuthorizationSuccess(reference);
-          return new NextResponse(
-            JSON.stringify({ message: "Pledge authorization stored" }),
-            { status: 201 },
-          );
-        }
-
-        if (String(meta.pledge_flow) === "scheduled_charge") {
-          await processPledgeScheduledChargeSuccess(reference);
-          return new NextResponse(
-            JSON.stringify({ message: "Pledge charge processed" }),
-            { status: 201 },
-          );
-        }
-
-        if (!meta.cause_id) {
-          return new NextResponse(
-            JSON.stringify({ message: "Metadata missing cause_id, skipping" }),
-            { status: 200 },
-          );
-        }
-
-        const baseAmount = Number(meta.amount);
-        const tipAmount = Number(meta.tip_amount || 0);
-
-        await createDonation(
-          String(meta.cause_id),
-          meta.user_id ? String(meta.user_id) : null,
-          {
-            amount: baseAmount,
-            name: String(meta.customer_name || ""),
-            email: String(meta.email || ""),
-            message: String(meta.message || ""),
-            isAnonymous: Boolean(meta.is_anonymous),
-            tip_amount: tipAmount,
-          },
-          undefined,
-          reference,
-        );
-
+        // Return 200 OK immediately to Paystack
         return new NextResponse(
-          JSON.stringify({ message: "Donation processed successfully" }),
-          { status: 201 },
+          JSON.stringify({
+            message: "Donation received, processing in background",
+          }),
+          { status: 200 },
         );
       }
 
@@ -161,19 +114,29 @@ export async function POST(request: Request) {
           );
         }
 
-        await createSubscription({
-          user_id: metadata.user_id || undefined,
-          cause_id: String(metadata.cause_id),
-          paystack_subscription_code: data.subscription_code!,
-          paystack_email_token: data.email_token,
-          amount: Number(metadata.amount),
-          interval: data.plan?.interval || "monthly",
-          status: "active",
+        // FIRE-AND-FORGET
+        Promise.resolve().then(async () => {
+          try {
+            await createSubscription({
+              user_id: metadata.user_id || undefined,
+              cause_id: String(metadata.cause_id),
+              paystack_subscription_code: data.subscription_code!,
+              paystack_email_token: data.email_token,
+              amount: Number(metadata.amount),
+              interval: data.plan?.interval || "monthly",
+              status: "active",
+            });
+          } catch (bgError) {
+            console.error(
+              "[Paystack Webhook Background] Subscription failed:",
+              bgError,
+            );
+          }
         });
 
         return new NextResponse(
-          JSON.stringify({ message: "Subscription created successfully" }),
-          { status: 201 },
+          JSON.stringify({ message: "Subscription received" }),
+          { status: 200 },
         );
       }
 

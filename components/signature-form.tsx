@@ -155,7 +155,7 @@ export function SignatureForm({
           {hasSigned && (
             <div className="p-3 bg-green-50 border border-green-200 rounded-md">
               <p className="text-sm text-green-600">
-                ✓ You've already signed this petition
+                ✓ You&apos;ve already signed this petition
               </p>
             </div>
           )}

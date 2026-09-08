@@ -16,9 +16,32 @@ import {
   sendCauseRejectedEmailForUser,
 } from "@/services/mail";
 import { cache } from "react";
+import {
+  validateCauseCoverImage,
+  validateCauseGalleryImage,
+} from "@/lib/media/cause-cover";
+import {
+  resolveCampaignLocation,
+  resolveDeviceCampaignLocation,
+} from "@/lib/locations/campaign-location";
+import { allocateUniqueCauseSlug } from "@/lib/causes/slug";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function isCauseSlugTaken(
+  slug: string,
+  excludeCauseId?: string,
+): Promise<boolean> {
+  const existing = await prisma.cause.findFirst({
+    where: {
+      slug,
+      ...(excludeCauseId ? { id: { not: excludeCauseId } } : {}),
+    },
+    select: { id: true },
+  });
+  return !!existing;
+}
 
 const mapPrismaToCause = (prismaCause: any): Cause => {
   return {
@@ -28,53 +51,120 @@ const mapPrismaToCause = (prismaCause: any): Cause => {
     goal: prismaCause.goal ? Number(prismaCause.goal) : 0,
     raised: prismaCause.raised ? Number(prismaCause.raised) : 0,
     shared: prismaCause.shared ? Number(prismaCause.shared) : 0,
-    // Ensure dates are strings to match the interface
-    created_at: prismaCause.createdAt instanceof Date ? prismaCause.createdAt.toISOString() : prismaCause.createdAt,
-    updated_at: prismaCause.updatedAt instanceof Date ? prismaCause.updatedAt.toISOString() : prismaCause.updatedAt,
-    start_date: prismaCause.start_date instanceof Date ? prismaCause.start_date.toISOString() : prismaCause.start_date,
-    end_date: prismaCause.end_date instanceof Date ? prismaCause.end_date.toISOString() : prismaCause.end_date,
+
+    created_at:
+      prismaCause.createdAt instanceof Date
+        ? prismaCause.createdAt.toISOString()
+        : prismaCause.createdAt,
+    updated_at:
+      prismaCause.updatedAt instanceof Date
+        ? prismaCause.updatedAt.toISOString()
+        : prismaCause.updatedAt,
+    start_date:
+      prismaCause.start_date instanceof Date
+        ? prismaCause.start_date.toISOString()
+        : prismaCause.start_date,
+    end_date:
+      prismaCause.end_date instanceof Date
+        ? prismaCause.end_date.toISOString()
+        : prismaCause.end_date,
     rejection_reason: prismaCause.rejectionReason,
     days_active: prismaCause.daysActive,
     video_links: prismaCause.videoLinks,
+    compliance_paused: prismaCause.compliance_paused || false,
   } as unknown as Cause;
 };
 
 /**
- * Get a cause by ID
+ * Get a cause by ID or public slug
  */
+/** Fetches exactly what QuickDonateForm needs, for opening it inside a modal from the grid. */
+export async function getQuickDonateProps(causeId: string) {
+  const { getProfile } = await import("./profile-actions");
+  const cause = await getCause(causeId);
+  if (!cause) return null;
+
+  const user = await getCurrentUser();
+  const profile = user ? await getProfile(user.id) : null;
+
+  return {
+    causeId: cause.id,
+    causeSlug: cause.slug ?? null,
+    causeTitle: cause.title,
+    causeImage: cause.image ?? null,
+    causeMultimedia: cause.multimedia ?? [],
+    goal: cause.goal,
+    raised: cause.raised,
+    subaccount: cause.user?.sub_account_code ?? undefined,
+    defaultName: profile?.full_name ?? "",
+    defaultEmail: profile?.email ?? "",
+    userId: user?.id,
+    // Real gate against paying into a paused campaign — the card/detail-page
+    // UI already hides the Give button, but this is the server-side check
+    // that actually matters (a client could otherwise call this directly).
+    paused: !!cause.paused,
+  };
+}
+
 export async function getCause(causeId: string): Promise<CauseWithUser | null> {
-  if (!UUID_REGEX.test(causeId)) return null;
+  if (!causeId?.trim()) return null;
   const user = await getCurrentUser();
 
-  const data = await prisma.cause.findUnique({
-    where: { id: causeId },
-    include: {
-      user: {
-        select: {
-          fullName: true,
-          email: true,
-          username: true,
-          subAccountCode: true,
-          profilePhoto: true,
+  const data = UUID_REGEX.test(causeId)
+    ? await prisma.cause.findUnique({
+        where: { id: causeId },
+        include: {
+          user: {
+            select: {
+              fullName: true,
+              email: true,
+              username: true,
+              subAccountCode: true,
+              profilePhoto: true,
+            },
+          },
+          sections: {
+            select: {
+              id: true,
+              heading: true,
+              description: true,
+            },
+            orderBy: { id: "asc" },
+          },
         },
-      },
-      sections: {
-        select: {
-          id: true,
-          heading: true,
-          description: true,
+      })
+    : await prisma.cause.findUnique({
+        where: { slug: causeId },
+        include: {
+          user: {
+            select: {
+              fullName: true,
+              email: true,
+              username: true,
+              subAccountCode: true,
+              profilePhoto: true,
+            },
+          },
+          sections: {
+            select: {
+              id: true,
+              heading: true,
+              description: true,
+            },
+            orderBy: { id: "asc" },
+          },
         },
-        orderBy: { id: "asc" },
-      },
-    },
-  });
+      });
 
   if (!data) return null;
 
   const isAdmin = user?.id ? await isAdminOrManager(user.id) : false;
 
+  // Block access if pending, rejected, OR compliance_paused (unless owner or admin)
   if (
-    (data.status === "pending" || data.status === "rejected") &&
+    (data.status === "pending" ||
+      data.status === "rejected" ||
+      data.compliance_paused) &&
     user?.id !== data.userId &&
     !isAdmin
   ) {
@@ -86,7 +176,7 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
   let isFollowing = false;
   if (user?.id) {
     const followData = await prisma.campaign_follows.findFirst({
-      where: { cause_id: causeId, user_id: user.id },
+      where: { cause_id: data.id, user_id: user.id },
       select: { id: true },
     });
     isFollowing = !!followData;
@@ -134,12 +224,20 @@ async function uploadFileToS3(
     );
   }
 
-  const ext = file.name.split('.').pop() || 'file';
+  if (type === "cover") {
+    const validationError = await validateCauseCoverImage(file);
+    if (validationError) throw new Error(validationError);
+  } else if (file.type.startsWith("image/")) {
+    const validationError = await validateCauseGalleryImage(file);
+    if (validationError) throw new Error(validationError);
+  }
+
+  const ext = file.name.split(".").pop() || "file";
   const uniqueId = Math.random().toString(36).substring(2, 15);
-  
+
   try {
     const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
-    
+
     const s3Key = generateS3Key({
       entityType: "causes",
       userId,
@@ -164,6 +262,11 @@ export async function createCause(
   userId: string,
   causeData: CauseFormData,
 ): Promise<Cause> {
+  // The display label is always derived again on the server. Do not trust a
+  // location string supplied by the browser.
+  const location = await resolveDeviceCampaignLocation(
+    causeData.deviceLocation,
+  );
   const causeId = crypto.randomUUID();
   let coverImageUrl = null;
   if (causeData.coverImage) {
@@ -215,12 +318,18 @@ export async function createCause(
   }
 
   try {
+    const slug = await allocateUniqueCauseSlug(causeData.title, {
+      shortId: causeId,
+      isTaken: (candidate) => isCauseSlugTaken(candidate),
+    });
+
     const cause = await prisma.$transaction(async (tx: any) => {
       const newCause = await tx.cause.create({
         data: {
           id: causeId,
           userId: userId,
           title: causeData.title,
+          slug,
           category: causeData.category,
           goal:
             typeof causeData.goal === "string"
@@ -236,7 +345,7 @@ export async function createCause(
           multimedia: multimediaUrls,
           videoLinks: causeData.video_links || [],
           summary: causeData.summary || null,
-          location: causeData.location || null,
+          location,
         },
       });
 
@@ -291,6 +400,8 @@ export async function updateCause(
   userId: string,
   causeData: Partial<CauseFormData>,
 ): Promise<any> {
+  const location = await resolveCampaignLocation(causeData.location);
+
   // Check for existing pending edit for this cause
   const existingEdit = await prisma.cause_edits.findFirst({
     where: { original_cause_id: causeId, status: "pending" },
@@ -304,7 +415,12 @@ export async function updateCause(
   }
 
   let coverImageUrl = causeData.coverImage
-    ? await uploadFileToS3(causeData.coverImage as File, userId, causeId, "cover")
+    ? await uploadFileToS3(
+        causeData.coverImage as File,
+        userId,
+        causeId,
+        "cover",
+      )
     : causeData.image || null;
 
   let daysActive = null;
@@ -337,7 +453,12 @@ export async function updateCause(
       multimediaUrls = await Promise.all(
         causeData.multimedia.map(async (item) => {
           if (typeof item === "string") return item; // Keep existing URL
-          return await uploadFileToS3(item as File, userId, causeId, "additional");
+          return await uploadFileToS3(
+            item as File,
+            userId,
+            causeId,
+            "additional",
+          );
         }),
       );
     } catch (error) {
@@ -367,7 +488,7 @@ export async function updateCause(
           multimedia: multimediaUrls.length > 0 ? multimediaUrls : [],
           video_links: causeData.video_links || [],
           summary: causeData.summary || null,
-          location: causeData.location || null,
+          location,
           status: "pending",
         },
       });
@@ -439,6 +560,10 @@ export const listCauses = cache(
     // User filter
     if (options.userId) {
       whereClause.userId = options.userId;
+    } else {
+      // Hide compliance-paused and paused causes from public listings
+      whereClause.compliance_paused = false;
+      whereClause.paused = false;
     }
 
     // Search filter
@@ -449,17 +574,42 @@ export const listCauses = cache(
       };
     }
 
+    // Location filter — Cause.location is free text, so this is a
+    // contains-match, not a structured lookup against State/City.
+    if (options.location && options.location.trim()) {
+      whereClause.location = {
+        contains: options.location.trim(),
+        mode: "insensitive",
+      };
+    }
+
+    // Urgent filter — only causes with an explicit end_date within 7 days
+    // can be expressed as a DB predicate; causes that derive daysLeft from
+    // days_active/created_at (see utils/cause/cause-utils.ts) aren't covered.
+    if (options.urgentOnly) {
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+      whereClause.end_date = { gt: new Date(), lte: sevenDaysFromNow };
+    }
+
+    // Verified-NGO filter — derived from the creator's account verification;
+    // there's no org-level verified field.
+    if (options.verifiedOnly) {
+      whereClause.user = { isVerified: true };
+    }
+
     // Sorting
     let orderByClause: any = { createdAt: "desc" };
+
     switch (options.sortBy) {
-      case "latest":
-        orderByClause = { createdAt: "desc" };
-        break;
       case "most-funded":
-        orderByClause = { raised: "desc" };
+        orderByClause = [{ raised: "desc" }, { createdAt: "desc" }];
         break;
       case "ending-soon":
         orderByClause = { end_date: "asc" };
+        break;
+      case "latest":
+        orderByClause = { createdAt: "desc" };
         break;
       case "recommended":
       default:
@@ -467,29 +617,63 @@ export const listCauses = cache(
         break;
     }
 
+    // Amount-still-needed range can't be expressed as a Prisma where clause
+    // (it's goal - raised, a column-to-column computation) — fetch a wider
+    // candidate slice and trim in JS when that filter is active.
+    const hasAmountRange =
+      options.minAmountNeeded != null || options.maxAmountNeeded != null;
+    const fetchTake = hasAmountRange && options.limit
+      ? options.limit * 4
+      : options.limit;
+
     try {
       const data = await prisma.cause.findMany({
         where: whereClause,
         include: {
           user: {
-            select: { fullName: true, email: true, profilePhoto: true },
+            select: {
+              fullName: true,
+              email: true,
+              profilePhoto: true,
+              isVerified: true,
+            },
           },
         },
         orderBy: orderByClause,
-        skip: options.offset,
-        take: options.limit,
+        skip: hasAmountRange ? undefined : options.offset,
+        take: fetchTake,
       });
 
-      const causes = data.map((d: any) => ({
+      let causes = data.map((d: any) => ({
         ...mapPrismaToCause(d),
         profiles: d.user
           ? {
               full_name: d.user.fullName,
               email: d.user.email,
               profile_photo: d.user.profilePhoto,
+              is_verified: !!d.user.isVerified,
             }
           : undefined,
       }));
+
+      if (hasAmountRange) {
+        causes = causes.filter((c) => {
+          const needed = Number(c.goal || 0) - Number(c.raised || 0);
+          if (
+            options.minAmountNeeded != null &&
+            needed < options.minAmountNeeded
+          )
+            return false;
+          if (
+            options.maxAmountNeeded != null &&
+            needed > options.maxAmountNeeded
+          )
+            return false;
+          return true;
+        });
+        const offset = options.offset || 0;
+        causes = causes.slice(offset, offset + (options.limit || causes.length));
+      }
 
       const isOwnerScoped = !!options.userId;
       const result = isOwnerScoped
@@ -524,6 +708,9 @@ export async function countCauses(
     } else {
       whereClause.status = options.status;
     }
+    // Hide compliance-paused and paused causes from public counts
+    whereClause.compliance_paused = false;
+    whereClause.paused = false;
   } else {
     if (options.status) {
       whereClause.status = options.status;
@@ -545,7 +732,45 @@ export async function countCauses(
     };
   }
 
+  if (options.location && options.location.trim()) {
+    whereClause.location = {
+      contains: options.location.trim(),
+      mode: "insensitive",
+    };
+  }
+
+  if (options.urgentOnly) {
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    whereClause.end_date = { gt: new Date(), lte: sevenDaysFromNow };
+  }
+
+  if (options.verifiedOnly) {
+    whereClause.user = { isVerified: true };
+  }
+
   try {
+    const hasAmountRange =
+      options.minAmountNeeded != null || options.maxAmountNeeded != null;
+
+    if (hasAmountRange) {
+      // No column-to-column (goal - raised) predicate in Prisma's filter
+      // API — count by fetching just the two numeric fields and filtering
+      // in JS instead of pulling full rows.
+      const rows = await prisma.cause.findMany({
+        where: whereClause,
+        select: { goal: true, raised: true },
+      });
+      return rows.filter((r) => {
+        const needed = Number(r.goal || 0) - Number(r.raised || 0);
+        if (options.minAmountNeeded != null && needed < options.minAmountNeeded)
+          return false;
+        if (options.maxAmountNeeded != null && needed > options.maxAmountNeeded)
+          return false;
+        return true;
+      }).length;
+    }
+
     const count = await prisma.cause.count({ where: whereClause });
     return count;
   } catch (error) {
@@ -575,6 +800,7 @@ export async function updateCauseStatus(
     });
 
     if (edit) {
+      const location = await resolveCampaignLocation(edit.location);
       try {
         const updated = await prisma.$transaction(async (tx: any) => {
           const c = await tx.cause.update({
@@ -590,8 +816,10 @@ export async function updateCauseStatus(
               multimedia: edit.multimedia,
               videoLinks: edit.video_links,
               summary: edit.summary,
-              location: edit.location,
+              location,
               status: "approved",
+              paused: false,
+              paused_at: null,
               updatedAt: new Date(),
             },
           });
@@ -625,6 +853,12 @@ export async function updateCauseStatus(
       }
     } else {
       try {
+        const cause = await prisma.cause.findUnique({
+          where: { id: causeId },
+          select: { location: true },
+        });
+        await resolveCampaignLocation(cause?.location);
+
         const updated = await prisma.cause.update({
           where: { id: causeId },
           data: { status: "approved", updatedAt: new Date() },
@@ -681,6 +915,38 @@ export async function updateCauseStatus(
   }
 
   throw new Error(`Invalid status value: ${status}`);
+}
+
+/**
+ * Locks a cause's detail page (still shown in listings) — used for causes
+ * missing real content instead of hiding them outright. Cleared
+ * automatically when a submitted edit for the cause is approved, or
+ * manually via unpauseCause.
+ */
+export async function pauseCause(causeId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  if (!(await isAdminOrManager(user.id))) throw new Error("Unauthorized");
+
+  await prisma.cause.update({
+    where: { id: causeId },
+    data: { paused: true, paused_at: new Date() },
+  });
+  revalidatePath("/dashboard/admin/causes");
+  revalidatePath("/causes");
+}
+
+export async function unpauseCause(causeId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  if (!(await isAdminOrManager(user.id))) throw new Error("Unauthorized");
+
+  await prisma.cause.update({
+    where: { id: causeId },
+    data: { paused: false, paused_at: null },
+  });
+  revalidatePath("/dashboard/admin/causes");
+  revalidatePath("/causes");
 }
 
 /**

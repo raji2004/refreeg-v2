@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { SignatureForm } from "@/components/signature-form";
 import {
   Dialog,
@@ -67,9 +68,9 @@ const PetitionSignatureClient = ({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <a href="/auth/signin">
+            <Link href="/auth/signin">
               <Button className="w-full">Sign up or Log in</Button>
-            </a>
+            </Link>
           </DialogFooter>
         </DialogContent>
       </Dialog>

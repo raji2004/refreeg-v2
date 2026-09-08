@@ -2,7 +2,7 @@ import Image from "next/image";
 import { FC } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { H3, P } from "@/components/typograpy";
+import { H3, P } from "@/components/typography";
 
 interface StoryDescriptionProps {
   imageSrc: string;

@@ -12,101 +12,51 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { DonateButton } from "@/components/donate-button";
-import { H4, P } from "./typograpy";
+import { Button } from "@/components/ui/button";
+import { H4, P } from "./typography";
 import AnimatedCard from "./home/components/AnimatedCard";
-import {
-  MapPin,
-  Clock,
-  GraduationCap,
-  HeartPulse,
-  Leaf,
-  Users,
-  AlertTriangle,
-  PawPrint,
-  Sparkles,
-  Briefcase,
-  FolderHeart,
-} from "lucide-react";
+import { MapPin, Clock, Bookmark, HandHeart } from "lucide-react";
 import type { Cause } from "@/types";
-
-const categoryConfig: Record<
-  string,
-  { icon: React.ElementType; color: string; bg: string }
-> = {
-  education: {
-    icon: GraduationCap,
-    color: "text-blue-700",
-    bg: "bg-blue-50 border-blue-200",
-  },
-  health: {
-    icon: HeartPulse,
-    color: "text-rose-700",
-    bg: "bg-rose-50 border-rose-200",
-  },
-  environment: {
-    icon: Leaf,
-    color: "text-emerald-700",
-    bg: "bg-emerald-50 border-emerald-200",
-  },
-  community: {
-    icon: Users,
-    color: "text-violet-700",
-    bg: "bg-violet-50 border-violet-200",
-  },
-  disaster: {
-    icon: AlertTriangle,
-    color: "text-amber-700",
-    bg: "bg-amber-50 border-amber-200",
-  },
-  animals: {
-    icon: PawPrint,
-    color: "text-orange-700",
-    bg: "bg-orange-50 border-orange-200",
-  },
-  creative: {
-    icon: Sparkles,
-    color: "text-pink-700",
-    bg: "bg-pink-50 border-pink-200",
-  },
-  business: {
-    icon: Briefcase,
-    color: "text-slate-700",
-    bg: "bg-slate-50 border-slate-200",
-  },
-};
-
-const defaultCategoryConfig = {
-  icon: FolderHeart,
-  color: "text-gray-700",
-  bg: "bg-gray-50 border-gray-200",
-};
+import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
+import { cn } from "@/lib/utils";
 
 import { calculateDaysLeft, isCauseExpired } from "@/utils/cause/cause-utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { causePublicPath } from "@/lib/causes/slug";
 
 interface CauseCardProps {
   cause: Cause;
   action?: string | null;
+  bookmarked?: boolean;
+  onToggleBookmark?: () => void;
+  onGiveClick?: () => void;
+  onPledgeClick?: () => void;
 }
 
-export function CauseCard({ cause, action }: CauseCardProps) {
+export function CauseCard({
+  cause,
+  action,
+  bookmarked,
+  onToggleBookmark,
+  onGiveClick,
+  onPledgeClick,
+}: CauseCardProps) {
   const percentFunded = cause.goal
     ? Math.min(Math.round((cause.raised / cause.goal) * 100), 100)
     : 0;
 
-  const catKey = cause.category?.toLowerCase() || "";
-  const catConfig = categoryConfig[catKey] || defaultCategoryConfig;
+  const catConfig = getCampaignCategoryStyle(cause.category);
   const CategoryIcon = catConfig.icon;
 
   const daysLeft = calculateDaysLeft(cause);
   const isExpired = isCauseExpired(cause);
 
   return (
-    <Link href={`/causes/${cause.id}`} className="group block h-full">
+    <Link href={causePublicPath(cause)} className="group block h-full">
       <AnimatedCard>
         <Card className="overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-2xl shadow-md h-full flex flex-col border border-gray-200/80 bg-white">
           {/* Image Section */}
-          <div className="aspect-[16/10] w-full overflow-hidden relative">
+          <div className="aspect-video w-full overflow-hidden relative">
             <Image
               src={getMediaUrl(cause.image) || "/placeholder.svg"}
               alt={cause.title}
@@ -119,14 +69,24 @@ export function CauseCard({ cause, action }: CauseCardProps) {
             <div className="absolute top-3 left-3">
               <Badge
                 variant="secondary"
-                className={`${catConfig.bg} ${catConfig.color} border text-xs font-medium px-2.5 py-1 rounded-full backdrop-blur-sm flex items-center gap-1.5 shadow-sm`}
+                className={`${catConfig.badgeClassName} border text-xs font-medium px-2.5 py-1 rounded-full backdrop-blur-sm flex items-center gap-1.5 shadow-sm`}
               >
                 <CategoryIcon className="h-3 w-3" />
-                <span className="capitalize">{cause.category}</span>
+                <span>{catConfig.name}</span>
               </Badge>
             </div>
-            {/* Days Left / Expired Overlay */}
-            {isExpired ? (
+            {/* Days Left / Expired / Paused Overlay */}
+            {cause.paused ? (
+              <div className="absolute top-3 right-3">
+                <Badge
+                  variant="outline"
+                  className="bg-gold/90 backdrop-blur-sm text-ink border-gold/50 text-xs font-medium px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1"
+                >
+                  <Clock className="h-3 w-3" />
+                  Paused
+                </Badge>
+              </div>
+            ) : isExpired ? (
               <div className="absolute top-3 right-3">
                 <Badge
                   variant="outline"
@@ -151,6 +111,29 @@ export function CauseCard({ cause, action }: CauseCardProps) {
                 </Badge>
               </div>
             ) : null}
+            {onToggleBookmark && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleBookmark();
+                }}
+                aria-pressed={bookmarked}
+                aria-label={bookmarked ? "Remove bookmark" : "Save"}
+                className={cn(
+                  "absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm shadow-sm transition-colors",
+                  bookmarked
+                    ? "bg-ink text-ink-foreground"
+                    : "bg-white/90 text-slate-700 hover:bg-white",
+                )}
+              >
+                <Bookmark
+                  className="h-4 w-4"
+                  fill={bookmarked ? "currentColor" : "none"}
+                />
+              </button>
+            )}
           </div>
 
           {/* Content */}
@@ -223,7 +206,44 @@ export function CauseCard({ cause, action }: CauseCardProps) {
                     of ₦{cause.goal?.toLocaleString()} goal
                   </P>
                 </span>
-                <DonateButton type="cause" id={cause.id} disableLink />
+                {cause.paused ? (
+                  <Button size="sm" variant="outline" disabled>
+                    Paused
+                  </Button>
+                ) : onGiveClick || onPledgeClick ? (
+                  <div className="flex items-center gap-1.5">
+                    {onPledgeClick && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onPledgeClick();
+                        }}
+                      >
+                        <HandHeart className="h-3.5 w-3.5" />
+                        Pledge
+                      </Button>
+                    )}
+                    {onGiveClick && (
+                      <Button
+                        size="sm"
+                        variant="ink"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onGiveClick();
+                        }}
+                      >
+                        Give now
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <DonateButton type="cause" id={cause.id} disableLink />
+                )}
               </div>
             </CardFooter>
           </div>

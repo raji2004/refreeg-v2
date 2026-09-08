@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body style="font-family: sans-serif; background: #f8fafc; padding: 20px">
+    <div
+      style="
+        max-width: 600px;
+        margin: auto;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+      "
+    >
+      <div
+        style="
+          background: #b45309;
+          padding: 24px;
+          text-align: center;
+          color: white;
+        "
+      >
+        <h2 style="margin: 0">Action Required: Update Due Soon</h2>
+      </div>
+      <div style="padding: 32px; color: #334155; line-height: 1.6">
+        <p>Hi <strong>{{userName}}</strong>,</p>
+        <p>
+          A quick reminder: your
+          <strong>{{milestone}}% fund-use update</strong> for "{{causeTitle}}"
+          is due by <strong>{{deadline}}</strong>.
+        </p>
+        <div
+          style="
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 24px 0;
+          "
+        >
+          <p style="margin: 0">
+            If the deadline passes without an update, your campaign will be
+            <strong>paused and hidden</strong> from the platform until an update
+            is approved.
+          </p>
+        </div>
+        <a
+          href="{{dashboardUrl}}"
+          style="
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+          "
+          >Post your update now</a
+        >
+      </div>
+    </div>
+  </body>
+</html>

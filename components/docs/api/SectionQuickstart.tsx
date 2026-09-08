@@ -86,7 +86,7 @@ export default function SectionQuickstart() {
                <div className="space-y-1">
                   <h4 className="font-bold text-[#0A2A5C] text-[15px]">Check the Response</h4>
                   <p className="text-slate-500 text-[13px] leading-relaxed">
-                     A successful request will return a **201 Created** status and a JSON object containing the campaign's unique UUID.
+                     A successful request will return a **201 Created** status and a JSON object containing the campaign&apos;s unique UUID.
                   </p>
                </div>
             </div>

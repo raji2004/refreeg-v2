@@ -34,10 +34,10 @@ export default async function KycReviewPage({
   params,
   searchParams,
 }: {
-  params: { userId: string };
+  params: Promise<{ userId: string }>;
   searchParams?: Promise<{ kyc_alert?: string }>;
 }) {
-  const userId = params.userId;
+  const { userId } = await params;
 
   const resolvedSearchParams = searchParams ? await searchParams : {};
 
@@ -195,7 +195,7 @@ export default async function KycReviewPage({
                   </span>
                 </div>
                 <span className="text-gray-700 break-words">
-                  {kyc.full_name || "-"}
+                  {kyc.full_name || profile.full_name || "-"}
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
@@ -205,7 +205,7 @@ export default async function KycReviewPage({
                     Date of Birth:
                   </span>
                 </div>
-                <span className="text-gray-700">{kyc.dob || "-"}</span>
+                <span className="text-gray-700">{kyc.dob || profile.date_of_birth || "-"}</span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <div className="flex items-center gap-2 sm:gap-3">
@@ -215,7 +215,7 @@ export default async function KycReviewPage({
                   </span>
                 </div>
                 <span className="text-gray-700 break-all">
-                  {kyc.phone || "-"}
+                  {kyc.phone || profile.phone || "-"}
                 </span>
               </div>
             </div>
@@ -236,7 +236,7 @@ export default async function KycReviewPage({
                   </span>
                 </div>
                 <span className="text-gray-700 break-words">
-                  {kyc.address || "-"}
+                  {kyc.address || profile.location || "-"}
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
@@ -273,7 +273,7 @@ export default async function KycReviewPage({
                     Country:
                   </span>
                 </div>
-                <span className="text-gray-700">{kyc.country || "-"}</span>
+                <span className="text-gray-700">{kyc.country || profile.country_of_residence || "-"}</span>
               </div>
             </div>
           </div>
@@ -284,7 +284,14 @@ export default async function KycReviewPage({
             <h4 className="font-semibold text-sm text-gray-600 uppercase tracking-wide">
               Document Preview
             </h4>
-            {kyc?.document_url ? (
+            {kyc?.document_type === "didit" ? (
+              <div className="border rounded-lg p-8 bg-gray-50 text-center text-gray-700">
+                <p className="font-medium text-lg">Verified via Didit</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Session ID: {kyc.document_url || "N/A"}
+                </p>
+              </div>
+            ) : kyc?.document_url ? (
               kyc.document_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
                 <div className="border rounded-lg p-4 bg-gray-50 flex justify-center items-center">
                   <a
@@ -347,23 +354,25 @@ export default async function KycReviewPage({
         </CardContent>
       </Card>
 
-      <Card className="shadow-lg">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <form action={approveAction}>
-              <Button
-                type="submit"
-                disabled={kyc?.status === "approved"}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 w-full"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Approve KYC
-              </Button>
-            </form>
-            <KycRejectionDialog kycId={kyc.id} />
-          </div>
-        </CardContent>
-      </Card>
+      {kyc?.document_type !== "didit" && (
+        <Card className="shadow-lg">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <form action={approveAction}>
+                <Button
+                  type="submit"
+                  disabled={kyc?.status === "approved"}
+                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 w-full"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Approve KYC
+                </Button>
+              </form>
+              <KycRejectionDialog kycId={kyc.id} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

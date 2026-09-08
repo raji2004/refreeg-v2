@@ -104,9 +104,9 @@ export function NotificationsForm() {
             <div className="text-sm text-muted-foreground">
               To disable notifications, please update your browser settings:
               <ol className="list-decimal list-inside mt-2 space-y-1">
-                <li>Click the lock icon in your browser's address bar</li>
+                <li>Click the lock icon in your browser&apos;s address bar</li>
                 <li>Find the Notifications setting</li>
-                <li>Change it to "Block" or "Deny"</li>
+                <li>Change it to &quot;Block&quot; or &quot;Deny&quot;</li>
               </ol>
             </div>
           </AlertDialogHeader>

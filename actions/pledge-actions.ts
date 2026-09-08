@@ -35,6 +35,17 @@ export async function createPledge(input: CreatePledgeInput) {
     };
   }
 
+  const cause = await prisma.cause.findUnique({
+    where: { id: input.causeId },
+    select: { paused: true },
+  });
+  if (cause?.paused) {
+    return {
+      data: null,
+      error: "This campaign is paused while its details are being updated.",
+    };
+  }
+
   const session = await auth();
   const user = session?.user;
 

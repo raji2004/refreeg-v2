@@ -3,8 +3,12 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { isProxyMediaUrl } from "@/lib/s3/media";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CampaignLocationAutocomplete } from "@/components/campaign-location-autocomplete";
+import { CampaignCategorySelect } from "@/components/campaign-category-select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -56,6 +60,18 @@ import {
   validateGalleryVideo,
 } from "@/lib/media/video";
 import { resolveMultimediaForSubmit } from "@/lib/s3/upload-client";
+import {
+  CAUSE_COVER_ACCEPT,
+  CAUSE_COVER_DESCRIPTION,
+  CAUSE_COVER_HEIGHT,
+  CAUSE_COVER_WIDTH,
+  validateCauseCoverImage,
+  validateCauseGalleryImage,
+} from "@/lib/media/cause-cover";
+import {
+  formatFundingGoalInput,
+  normalizeFundingGoalInput,
+} from "@/lib/funding-goal";
 
 const Calendar = dynamic(
   () => import("@/components/ui/calendar").then((mod) => mod.Calendar),
@@ -93,7 +109,7 @@ const currencies = [{ id: "NGN", name: "Naira (₦)" }];
 const MAX_DURATION_DAYS = 180;
 
 const GALLERY_ACCEPT = {
-  "image/*": [],
+  ...CAUSE_COVER_ACCEPT,
   "video/mp4": [".mp4"],
   "video/webm": [".webm"],
 };
@@ -173,6 +189,16 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
     }
   };
 
+  const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const goal = normalizeFundingGoalInput(e.target.value);
+    if (goal === null) return;
+
+    setFormData((prev) => ({ ...prev, goal }));
+    if (errors.goal) {
+      setErrors((prev) => ({ ...prev, goal: undefined }));
+    }
+  };
+
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
 
@@ -194,6 +220,12 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
     }
 
     if (file) {
+      const validationError = await validateCauseCoverImage(file);
+      if (validationError) {
+        setFormData((prev) => ({ ...prev, coverImage: null }));
+        setErrors((prev) => ({ ...prev, coverImage: validationError }));
+        return;
+      }
       setFormData((prev) => ({ ...prev, coverImage: file }));
     }
 
@@ -288,8 +320,13 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
       }
 
       if (file.type.startsWith("image/")) {
+        const imageError = await validateCauseGalleryImage(file);
+        if (imageError) {
+          setErrors((prev) => ({ ...prev, multimedia: imageError }));
+          return;
+        }
         try {
-          processedFiles.push(await compressImage(file, 1000, 0.7));
+          processedFiles.push(await compressImage(file, 1600, 0.8));
         } catch (err) {
           console.error("Compression error:", err);
           processedFiles.push(file);
@@ -351,7 +388,10 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
     switch (step) {
       case 1:
         return (
-          !currentErrors.title && !currentErrors.category && !currentErrors.goal
+          !currentErrors.title &&
+          !currentErrors.location &&
+          !currentErrors.category &&
+          !currentErrors.goal
         );
       case 2:
         if (currentErrors.sections) {
@@ -506,19 +546,25 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="location" className="text-base font-semibold text-gray-700">
-                    Location <span className="text-gray-400 font-normal">(optional)</span>
+                    Location <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    id="location"
-                    name="location"
-                    placeholder="e.g., Lagos, Nigeria"
+                  <CampaignLocationAutocomplete
                     value={formData.location}
-                    onChange={handleChange}
-                    className={cn(
-                      "h-12 premium-input",
-                      errors.location ? "border-red-500" : ""
-                    )}
+                    invalid={Boolean(errors.location)}
+                    onChange={(location) => {
+                      setFormData((current) => ({ ...current, location }));
+                      if (location) {
+                        setErrors((current) => ({
+                          ...current,
+                          location: undefined,
+                        }));
+                      }
+                    }}
+                    className="h-12 premium-input"
                   />
+                  <p className="text-xs text-slate-500">
+                    Type at least two letters, then select a place from the list.
+                  </p>
                   {errors.location && (
                     <p className="text-sm text-red-500 font-medium">
                       {errors.location}
@@ -535,28 +581,13 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                   >
                     Category
                   </Label>
-                  <Select
+                  <CampaignCategorySelect
                     value={formData.category}
                     onValueChange={(value) =>
                       handleSelectChange("category", value)
                     }
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        "h-12 premium-input",
-                        errors.category ? "border-red-500" : "",
-                      )}
-                    >
-                      <SelectValue placeholder="What's this about?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    invalid={Boolean(errors.category)}
+                  />
                   {errors.category && (
                     <p className="text-sm text-red-500 font-medium">
                       {errors.category}
@@ -576,10 +607,11 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                       <Input
                         id="goal"
                         name="goal"
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="0.00"
-                        value={formData.goal}
-                        onChange={handleChange}
+                        value={formatFundingGoalInput(formData.goal)}
+                        onChange={handleGoalChange}
                         className={cn(
                           "h-12 pl-12 premium-input text-lg font-mono",
                           errors.goal ? "border-red-500" : "",
@@ -851,14 +883,20 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                 </Label>
                 <div className="glass-panel p-6 rounded-2xl border-brand/10 transition-all hover:border-brand/30">
                   <div className="relative group aspect-video rounded-xl overflow-hidden shadow-sm border border-brand/10 mb-4 ">
-                    <img
+                    <Image
                       src={
                         formData.coverImage
                           ? URL.createObjectURL(formData.coverImage)
                           : formData.image || "/placeholder-image.jpg"
                       }
                       alt="Cover preview"
-                      className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      unoptimized={
+                        !!formData.coverImage ||
+                        isProxyMediaUrl(formData.image || "")
+                      }
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                     {formData.coverImage && (
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -882,7 +920,13 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                   <ImageUpload
                     onUpload={handleImageUpload}
                     maxFiles={1}
-                    autoNormalize
+                    accept={CAUSE_COVER_ACCEPT}
+                    enableCrop
+                    cropAspect={16 / 9}
+                    cropRequired
+                    cropOutputWidth={CAUSE_COVER_WIDTH}
+                    cropOutputHeight={CAUSE_COVER_HEIGHT}
+                    description={`${CAUSE_COVER_DESCRIPTION} · up to 100MB`}
                   />
                   {errors.coverImage && (
                     <p className="mt-2 text-sm text-red-500 font-medium">
@@ -906,9 +950,11 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                     onUpload={(files) => handleMultimediaUpload(files)}
                     maxFiles={5 - (formData.multimedia?.length || 0)}
                     accept={GALLERY_ACCEPT}
-                    enableCrop={false}
-                    description="Images or short videos (MP4/WebM, max 50MB / 90s each)"
-                    autoNormalize
+                    enableCrop
+                    cropAspect={16 / 9}
+                    cropOutputWidth={CAUSE_COVER_WIDTH}
+                    cropOutputHeight={CAUSE_COVER_HEIGHT}
+                    description="Select up to 5 images and crop each one, or keep its original framing; videos may be MP4/WebM (max 50MB / 90s each)"
                   />
                   {errors.multimedia && (
                     <p className="mt-2 text-sm text-red-500 font-medium">
@@ -1040,7 +1086,7 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                     )}
                     {formData.summary && (
                       <p className="text-gray-500 italic mb-4 border-l-4 border-brand/20 pl-4 py-1">
-                        "{formData.summary}"
+                        &quot;{formData.summary}&quot;
                       </p>
                     )}
                     {formData.sections[0]?.heading && (
@@ -1220,7 +1266,9 @@ function validateForm(formData: FormData): FormErrors {
     errors.summary = "Summary must be less than 200 characters";
   }
 
-  if (formData.location && formData.location.length > 100) {
+  if (!formData.location.trim()) {
+    errors.location = "Select a valid location from the suggestions";
+  } else if (formData.location.trim().length > 100) {
     errors.location = "Location must be less than 100 characters";
   }
 

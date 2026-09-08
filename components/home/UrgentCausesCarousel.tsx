@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
@@ -24,16 +24,19 @@ import {
 
 import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
-import { H4, P } from "../typograpy";
+import { H4, P } from "../typography";
 import AnimatedCard from "./components/AnimatedCard";
+import { causePublicPath } from "@/lib/causes/slug";
 
 type Cause = {
   id: string;
+  slug?: string | null;
   title: string;
   image?: string;
   goal: number;
   raised: number;
   days_active?: number;
+  paused?: boolean;
   profiles?: {
     full_name?: string;
   };
@@ -43,13 +46,13 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
   const [api, setApi] = useState<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const startAutoplay = () => {
+  const startAutoplay = useCallback(() => {
     if (!api) return;
 
     timerRef.current = setInterval(() => {
       api.scrollNext();
     }, 6500);
-  };
+  }, [api]);
 
   const stopAutoplay = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -60,14 +63,14 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
 
     startAutoplay();
     return () => stopAutoplay();
-  }, [api]);
+  }, [api, startAutoplay]);
 
   const renderCard = (cause: any) => {
     const percentRaised =
       cause.goal > 0 ? Math.round((cause.raised / cause.goal) * 100) : 0;
 
     return (
-      <Link href={`/causes/${cause.id}`} className="group block h-full">
+      <Link href={causePublicPath(cause)} className="group block h-full">
         <AnimatedCard>
           <Card className="overflow-hidden cursor-pointer transition h-full flex flex-col border border-gray-300">
             <div className="aspect-video w-full overflow-hidden rounded-t-lg relative">
@@ -79,6 +82,11 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
                 className="object-cover"
                 unoptimized={isProxyMediaUrl(getMediaUrl(cause.image))}
               />
+              {cause.paused && (
+                <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-gold/90 px-2.5 py-1 text-xs font-medium text-ink backdrop-blur-sm">
+                  Paused
+                </div>
+              )}
             </div>
 
             <CardHeader className="flex flex-col flex-1 p-4">

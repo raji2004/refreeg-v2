@@ -5,12 +5,14 @@ import {
   getPetitionDashboardStats,
 } from "@/actions/dashboard-actions";
 
-const formatNaira = (value: number) =>
-  new Intl.NumberFormat("en-NG", {
+const formatNaira = (value: number | string | null | undefined) => {
+  const amount = typeof value === "number" ? value : Number(value);
+  return new Intl.NumberFormat("en-NG", {
     style: "currency",
     currency: "NGN",
     maximumFractionDigits: 0,
-  }).format(value || 0);
+  }).format(Number.isFinite(amount) ? amount : 0);
+};
 
 export async function DashboardStats({
   type = "all",

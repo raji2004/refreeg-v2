@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>KYC Application Action Required</title>
+    <style>
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background-color: #f4f7f6;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        background: #ffffff;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      }
+      .logo {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .logo img {
+        max-height: 40px;
+        vertical-align: middle;
+        display: inline-block;
+      }
+      .brand-name {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333333;
+        vertical-align: middle;
+        display: inline-block;
+        margin-left: 10px;
+      }
+      h1 {
+        color: #333333;
+        font-size: 24px;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      p {
+        color: #555555;
+        font-size: 16px;
+        line-height: 1.6;
+        text-align: center;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #007bff;
+        color: #ffffff;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        margin: 20px 0;
+      }
+      .btn-container {
+        text-align: center;
+      }
+      .resubmit-box {
+        background: #fffbeb;
+        border: 2px solid #f59e0b;
+        color: #92400e;
+        font-size: 16px;
+        text-align: center;
+        padding: 20px;
+        margin: 30px 0;
+        border-radius: 8px;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 40px;
+        font-size: 14px;
+        color: #999999;
+        border-top: 1px solid #eeeeee;
+        padding-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">
+        <img src="https://www.refreeg.com/logo.svg" alt="RefreeG Logo" />
+        <span class="brand-name">{{organizationName}}</span>
+      </div>
+      <h1>Action Required: Identity Verification Update</h1>
+      <p>Hi {{userName}},</p>
+      <p>
+        We have reviewed your identity verification application. It requires a few corrections before we can approve it. Please review the specific issue below:
+      </p>
+      
+      <div class="resubmit-box">
+        <strong>Reason for Resubmission:</strong> {{resubmitReason}}
+      </div>
+
+      <p>
+        Don't worry! You don't have to start from scratch. Please resume your session to address the requested updates.
+      </p>
+      
+      <div class="btn-container">
+        <a href="{{kycResubmitLink}}" class="btn">Resume Verification</a>
+      </div>
+      
+      <p>
+        If you need help, please contact our support team at <a href="mailto:refreegcorrespondence@gmail.com" style="color: #007bff; text-decoration: none;">refreegcorrespondence@gmail.com</a>.
+      </p>
+
+      <div class="footer">
+        &copy; {{currentYear}} {{organizationName}}. All rights reserved.
+      </div>
+    </div>
+  </body>
+</html>

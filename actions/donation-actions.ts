@@ -2,15 +2,17 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import type { Donation, DonationWithCause, DonationFormData } from "@/types";
+import type { Donation, DonationWithCause, DonationFormData, PaymentProviderType } from "@/types";
 import { recordEvent } from "@/actions/event-reward-actions";
 import { sendDonationReceivedEmail } from "@/services/mail";
+import { syncMilestoneRequirements } from "@/lib/proof-milestones";
 
 const mapPrismaToDonation = (d: any): Donation => ({
   ...d,
   amount: Number(d.amount),
   tip_amount: d.tip_amount ? Number(d.tip_amount) : 0,
-  created_at: d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt,
+  created_at:
+    d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt,
 });
 
 export async function createDonation(
@@ -19,6 +21,8 @@ export async function createDonation(
   donationData: DonationFormData,
   tipAmount: number = 0,
   paystackReference?: string | null,
+  paymentProvider: PaymentProviderType = "paystack",
+  referrerCode?: string | null,
 ): Promise<Donation> {
   const donationAmount =
     typeof donationData.amount === "string"
@@ -51,6 +55,7 @@ export async function createDonation(
         causeId: causeId,
         ...(userId ? { userId: userId } : {}),
         ...(paystackReference ? { paystack_reference: paystackReference } : {}),
+        payment_provider: paymentProvider,
         amount: donationAmount,
         tip_amount: finalTipAmount,
         name:
@@ -69,9 +74,32 @@ export async function createDonation(
       where: { id: causeId },
       data: { raised: { increment: donationAmount } },
     });
+    try {
+      await syncMilestoneRequirements(causeId);
+    } catch (e) {
+      console.error("Error syncing proof milestones:", e);
+    }
   } catch (error) {
     console.error("Error creating donation:", error);
     throw error;
+  }
+
+  // Record donor referral attribution if referral code is present
+  if (referrerCode) {
+    try {
+      const { recordDonorReferralAttribution } = await import(
+        "@/actions/referral-attribution"
+      );
+      await recordDonorReferralAttribution({
+        donationId: data.id,
+        causeId,
+        referralCode: referrerCode,
+        donorEmail: donationData.email,
+        donorUserId: userId,
+      });
+    } catch (refErr) {
+      console.warn("Failed to record donor referral attribution:", refErr);
+    }
   }
 
   // Record event for reward tracking (only if user is logged in)
@@ -272,7 +300,7 @@ export async function listUserDonations(
       where: whereClause,
       include: {
         cause: {
-          select: { title: true, category: true },
+          select: { title: true, category: true, status: true, slug: true },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -283,6 +311,8 @@ export async function listUserDonations(
       cause: {
         title: item.cause?.title || "Unknown Cause",
         category: item.cause?.category || "Unknown",
+        status: item.cause?.status ?? null,
+        slug: item.cause?.slug || null,
       },
     }));
   } catch (error) {

@@ -51,7 +51,7 @@ export default async function AnalyticsPage({
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Petition Analytics</h1>
         <p className="text-muted-foreground">
-          Track your petition's performance and engagement
+          Track your petition&apos;s performance and engagement
         </p>
       </div>
 

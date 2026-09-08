@@ -17,15 +17,29 @@ export function getMediaUrl(key: string | null | undefined): string {
     return key;
   }
 
-  // Otherwise assume it's an S3 key and use our proxy
-  return `/api/s3/image?key=${encodeURIComponent(key)}`;
+  const isCauseImage =
+    key.startsWith("uploads/causes/") && key.includes("/images/");
+  return `/api/s3/image?key=${encodeURIComponent(key)}${
+    isCauseImage ? "&presentation=clean-v3" : ""
+  }`;
 }
 
 /**
- * Checks if a resolved media URL goes through the internal S3 proxy.
- * Next.js Image optimizer cannot follow redirects from internal API routes,
- * so these images must be marked as `unoptimized` when used with next/image.
+ * Checks if a resolved media URL should skip the Next.js image optimizer.
+ * The optimizer cannot follow /api/s3/image redirects, and S3 hosts vary by
+ * bucket/region so they are safer rendered as-is.
  */
 export function isProxyMediaUrl(url: string): boolean {
-  return url.startsWith("/api/s3/image");
+  if (!url) return false;
+  if (url.startsWith("/api/s3/image")) return true;
+
+  try {
+    const hostname = new URL(url).hostname;
+    return (
+      hostname.includes("amazonaws.com") ||
+      hostname.includes("cloudfront.net")
+    );
+  } catch {
+    return false;
+  }
 }

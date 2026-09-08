@@ -1,8 +1,13 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Keep campaign photos unobstructed while the full-screen gallery is open. */
+body[data-media-lightbox-open="true"] [data-support-bot] {
+  display: none;
+}
 
 /* Prevent Chrome autofill styles */
 input:-webkit-autofill,
@@ -79,6 +84,27 @@ select:focus {
     --announcement-foreground: 220 81% 34%;
     --announcement-status: 216 31% 18%;
     --announcement-border: 83 57% 46%;
+
+    /* Fintech surface system (see docs/DESIGN_GUIDE.md) — additive, opt-in
+       tokens for new/rebuilt screens. Do not repoint --background/--primary
+       at these; existing pages keep the navy/white theme until re-themed. */
+    --ink: 220 25% 8%;
+    --ink-foreground: 60 20% 96%;
+
+    --cream: 40 27% 96%;
+    --cream-foreground: 220 25% 8%;
+
+    --lime: 74 78% 58%;
+    --lime-foreground: 220 25% 8%;
+
+    --gold: 38 72% 78%;
+    --gold-foreground: 220 25% 8%;
+
+    /* Petition surfaces only — see docs/DESIGN_GUIDE.md. Warmer/tanner than
+       --cream, reads as paper. Text/borders/buttons on it still use
+       ink/lime/gold as usual, just this one background token differs. */
+    --parchment: 40 38% 91%;
+    --parchment-foreground: 220 25% 8%;
   }
 
   /* Dark theme commented out
@@ -150,6 +176,12 @@ select:focus {
 
 .border-brand {
   border-color: hsl(var(--brand));
+}
+
+/* Small-caps section labels used throughout the fintech surface system,
+   e.g. "STEP 1 OF 4", "WHAT LEVEL 2 UNLOCKS". See docs/DESIGN_GUIDE.md. */
+.label-eyebrow {
+  @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground;
 }
 
 /* Toast styles */
@@ -282,6 +314,15 @@ select:focus {
 
 .premium-input {
   @apply bg-white/50 border-gray-200/50 focus:border-brand/50 focus:ring-brand/20 transition-all duration-300;
+}
+
+/* Flat, product-led styling for the cause creation workspace. */
+.cause-flow .premium-input {
+  @apply rounded-xl border-[#D8E0E8] bg-white shadow-none transition-colors duration-150 focus:border-[#235DA7] focus:ring-[#235DA7]/15;
+}
+
+.cause-flow label {
+  color: #33445a;
 }
 
 .stepper-line {

@@ -45,9 +45,9 @@ export default async function DeveloperLayout({
 
           <CardContent className="space-y-4 px-4 sm:px-6">
             <div className="bg-slate-50 p-3 sm:p-4 rounded-lg text-sm text-slate-600 italic">
-              "Your current account type is set to{" "}
+              &quot;Your current account type is set to{" "}
               <strong>{profile?.account_type || "User"}</strong>. To access
-              these tools, you need to be a registered developer."
+              these tools, you need to be a registered developer.&quot;
             </div>
 
             <div className="flex flex-col gap-2 pt-1 sm:pt-2">

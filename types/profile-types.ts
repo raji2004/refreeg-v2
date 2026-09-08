@@ -11,10 +11,12 @@ export interface Profile {
   bank_name: string | null;
   account_name: string | null;
   sub_account_code: string | null;
+  flutterwave_sub_account_id: string | null;
   profile_photo: string | null;
   is_blocked: boolean;
   created_at: string;
   updated_at: string;
+  referral_code?: string | null;
   country_of_residence?: string;
   date_of_birth?: string;
   bvn?: number;
@@ -22,10 +24,18 @@ export interface Profile {
   pin?: number;
   donation_preference?: string;
   is_verified?: boolean;
+  total_points?: number;
+  interests?: string[];
   followers_count?: number;
   following_count?: number;
   causes_count?: number;
-  account_type?: "individual" | "creator" | "non-profit" | "organization" | "community" | "developer";
+  account_type?:
+    | "individual"
+    | "creator"
+    | "non-profit"
+    | "organization"
+    | "community"
+    | "developer";
   gender?: string | null;
   bio: string | null;
   solana_wallet?: string | null;
@@ -39,11 +49,6 @@ export interface Profile {
   facebook_url?: string | null;
   instagram_url?: string | null;
   linkedin_url?: string | null;
-  crypto_wallets?: {
-    ethereum?: string;
-    solana?: string;
-    [key: string]: any;
-  } | null;
 }
 
 export interface OnboardingProfileData {
@@ -55,5 +60,21 @@ export interface OnboardingProfileData {
   email: string;
   profilePhoto?: File | null;
   accountType: string;
-  gender: string;
+  gender?: string;
+}
+
+export interface OrganizationPreferences {
+  donationNotifications: boolean;
+  teamDigest: boolean;
+  publicProfile: boolean;
+  [key: string]: boolean;
+}
+
+export interface OrganizationOnboardingData {
+  name: string;
+  phone?: string;
+  address?: string;
+  industry?: string;
+  logoUrl?: string;
+  preferences: OrganizationPreferences;
 }

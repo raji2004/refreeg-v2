@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body style="font-family: sans-serif; background: #f8fafc; padding: 20px">
+    <div
+      style="
+        max-width: 600px;
+        margin: auto;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+      "
+    >
+      <div
+        style="
+          background: #991b1b;
+          padding: 24px;
+          text-align: center;
+          color: white;
+        "
+      >
+        <h2 style="margin: 0">Your campaign has been paused</h2>
+      </div>
+      <div style="padding: 32px; color: #334155; line-height: 1.6">
+        <p>Hi <strong>{{userName}}</strong>,</p>
+        <p>
+          Your campaign <strong>"{{causeTitle}}"</strong> is now
+          <strong>paused</strong>. It is hidden from the platform and cannot
+          receive new donations because the required fund-use update was not
+          submitted in time.
+        </p>
+        <p>
+          <strong>To bring it back:</strong> Post your update now. Once our team
+          approves it, your campaign goes live again automatically.
+        </p>
+        <a
+          href="{{dashboardUrl}}"
+          style="
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+          "
+          >Restore my campaign</a
+        >
+      </div>
+    </div>
+  </body>
+</html>

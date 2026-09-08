@@ -24,11 +24,12 @@
     "@aws-sdk/client-ec2": "^3.1041.0",
     "@aws-sdk/client-s3": "^3.1040.0",
     "@aws-sdk/s3-request-presigner": "^3.1040.0",
+    "@didit-protocol/sdk-web": "^0.2.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@heroui/navbar": "^2.2.25",
     "@hookform/resolvers": "^3.9.1",
-    "@metamask/providers": "^22.1.0",
+    "@img/sharp-win32-x64": "^0.35.3",
     "@mui/icons-material": "^7.3.4",
     "@prisma/client": "^6.19.3",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -59,7 +60,7 @@
     "@radix-ui/react-toggle": "^1.1.1",
     "@radix-ui/react-toggle-group": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.6",
-    "@solana/web3.js": "^1.98.2",
+    "@sentry/nextjs": "^10.71.0",
     "@tanstack/react-query": "^5.71.5",
     "@types/firebase": "^2.4.32",
     "@types/nodemailer": "^6.4.17",
@@ -72,7 +73,6 @@
     "cmdk": "1.0.4",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "8.5.1",
-    "ethers": "^6.14.0",
     "framer-motion": "^12.23.6",
     "gsap": "^3.15.0",
     "handlebars": "^4.7.8",
@@ -97,12 +97,17 @@
     "react-resizable-panels": "^2.1.7",
     "react-use-measure": "^2.1.7",
     "recharts": "2.15.0",
+    "sharp": "0.33.5",
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.21.0",
     "vaul": "^0.9.6",
     "zod": "^3.24.1"
+  },
+  "optionalDependencies": {
+    "@img/sharp-libvips-linux-arm64": "1.0.4",
+    "@img/sharp-linux-arm64": "0.33.5"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.29.7",
@@ -121,6 +126,7 @@
     "@types/react-dom": "^19",
     "babel-jest": "^30.4.1",
     "cross-env": "^10.1.0",
+    "dotenv": "^17.4.2",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.2.6",
     "jest": "^30.4.2",
@@ -129,6 +135,7 @@
     "postcss": "^8",
     "prisma": "^6.19.3",
     "tailwindcss": "^3.4.17",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   },
   "packageManager": "pnpm@10.24.0+sha512.01ff8ae71b4419903b65c60fb2dc9d34cf8bb6e06d03bde112ef38f7a34d6904c424ba66bea5cdcf12890230bf39f9580473140ed9c946fef328b6e5238a345a",
@@ -142,6 +149,18 @@
       "bufferutil",
       "utf-8-validate",
       "sharp"
-    ]
+    ],
+    "supportedArchitectures": {
+      "os": [
+        "linux",
+        "win32",
+        "darwin",
+        "current"
+      ],
+      "cpu": [
+        "x64",
+        "arm64"
+      ]
+    }
   }
 }

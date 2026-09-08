@@ -26,6 +26,7 @@ const PRESETS = [500, 1000, 5000, 10000];
 
 interface QuickDonateFormProps {
   causeId: string;
+  causeSlug?: string | null;
   causeTitle: string;
   causeImage?: string | null;
   causeMultimedia?: string[];
@@ -35,10 +36,13 @@ interface QuickDonateFormProps {
   defaultName?: string;
   defaultEmail?: string;
   userId?: string;
+  /** "modal" drops the full-viewport wrapper and the "view full campaign" link, for use inside a Dialog. */
+  variant?: "page" | "modal";
 }
 
 export default function QuickDonateForm({
   causeId,
+  causeSlug,
   causeTitle,
   causeImage,
   causeMultimedia,
@@ -48,6 +52,7 @@ export default function QuickDonateForm({
   defaultName = "",
   defaultEmail = "",
   userId,
+  variant = "page",
 }: QuickDonateFormProps) {
   const { initializePayment, isLoading } = usePayment();
 
@@ -99,9 +104,8 @@ export default function QuickDonateForm({
     return Array.from(new Set(allImages));
   }, [causeImage, causeMultimedia]);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md space-y-6">
+  const content = (
+    <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center">
           <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">
@@ -146,15 +150,17 @@ export default function QuickDonateForm({
         )}
 
         {/* Back link */}
-        <p className="text-center text-xs text-slate-400">
-          Want to learn more?{" "}
-          <Link
-            href={`/causes/${causeId}`}
-            className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700"
-          >
-            View full campaign →
-          </Link>
-        </p>
+        {variant === "page" && (
+          <p className="text-center text-xs text-slate-400">
+            Want to learn more?{" "}
+            <Link
+              href={`/causes/${causeSlug || causeId}`}
+              className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700"
+            >
+              View full campaign →
+            </Link>
+          </p>
+        )}
 
         {/* Form */}
         <form
@@ -274,8 +280,9 @@ export default function QuickDonateForm({
 
           <Button
             type="submit"
+            variant="lime"
             disabled={isLoading || donationAmount < MIN_DONATION_AMOUNT}
-            className="w-full rounded-full bg-blue-600 text-white hover:bg-blue-700"
+            className="w-full rounded-full"
           >
             {isLoading ? (
               <>
@@ -288,6 +295,13 @@ export default function QuickDonateForm({
           </Button>
         </form>
       </div>
+  );
+
+  if (variant === "modal") return content;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4 py-10">
+      {content}
     </div>
   );
 }

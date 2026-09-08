@@ -39,7 +39,7 @@ export default function FAQ() {
           Frequently Asked Questions
         </h1>
         <p className="text-gray-600 text-lg">
-          Got questions? We've got the answers you need to get started.
+          Got questions? We&apos;ve got the answers you need to get started.
         </p>
       </motion.div>
 

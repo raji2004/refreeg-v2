@@ -172,7 +172,7 @@ export function SectionResources() {
                     <span className="ml-2 text-xs font-medium text-slate-500 font-mono">index.ts - Initialization</span>
                   </div>
                   <pre className="text-sm font-mono text-slate-300 overflow-x-auto pb-4">
-                    <code className="text-purple-400">import</code> <code className="text-slate-300">{`{ Refreeg }`}</code> <code className="text-purple-400">from</code> <code className="text-green-300">"./libs/refreeg-sdk"</code>;
+                    <code className="text-purple-400">import</code> <code className="text-slate-300">{`{ Refreeg }`}</code> <code className="text-purple-400">from</code> <code className="text-green-300">&quot;./libs/refreeg-sdk&quot;</code>;
                     <br /><br />
                     <code className="text-slate-500">{`// Initialize the client`}</code><br />
                     <code className="text-purple-400">const</code> <code className="text-slate-300">refreeg</code> = <code className="text-purple-400">new</code> <code className="text-amber-300">Refreeg</code>({`{`}<br />
@@ -189,7 +189,7 @@ export function SectionResources() {
                   <pre className="text-sm font-mono text-slate-300 overflow-x-auto pb-4">
                     <code className="text-slate-500">{`// 1. Create a campaign`}</code><br />
                     <code className="text-purple-400">const</code> <code className="text-slate-300">campaign</code> = <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.campaigns.</code><code className="text-blue-300">create</code>({`{`}<br />
-                    <code className="text-slate-300">&nbsp;&nbsp;title: </code><code className="text-green-300">"Emergency Relief Fund"</code>,<br />
+                    <code className="text-slate-300">&nbsp;&nbsp;title: </code><code className="text-green-300">&quot;Emergency Relief Fund&quot;</code>,<br />
                     <code className="text-slate-300">&nbsp;&nbsp;goal_amount: </code><code className="text-orange-300">500000</code><br />
                     <code className="text-slate-300">{`}`});</code><br /><br />
                     
@@ -198,7 +198,7 @@ export function SectionResources() {
                     <code className="text-purple-400">const</code> <code className="text-slate-300">allCampaigns</code> = <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.campaigns.</code><code className="text-blue-300">list</code>();<br /><br />
                     
                     <code className="text-slate-500">{`// 3. Update & Manage State`}</code><br />
-                    <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.campaigns.</code><code className="text-blue-300">update</code>(<code className="text-slate-300">campaign.id</code>, {`{`} <code className="text-slate-300">title:</code> <code className="text-green-300">"Updated Campaign"</code> {`}`});<br />
+                    <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.campaigns.</code><code className="text-blue-300">update</code>(<code className="text-slate-300">campaign.id</code>, {`{`} <code className="text-slate-300">title:</code> <code className="text-green-300">&quot;Updated Campaign&quot;</code> {`}`});<br />
                     <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.campaigns.</code><code className="text-blue-300">pause</code>(<code className="text-slate-300">campaign.id</code>);<br />
                     <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.campaigns.</code><code className="text-blue-300">resume</code>(<code className="text-slate-300">campaign.id</code>);<br />
                     <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.campaigns.</code><code className="text-blue-300">cancel</code>(<code className="text-slate-300">campaign.id</code>);<br /><br />
@@ -215,14 +215,14 @@ export function SectionResources() {
                   </div>
                   <pre className="text-sm font-mono text-slate-300 overflow-x-auto pb-4">
                     <code className="text-slate-500">{`// 1. Bank Configuration`}</code><br />
-                    <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.banks.</code><code className="text-blue-300">register</code>({`{`} <code className="text-slate-300">account_number: </code><code className="text-green-300">"0123456789"</code><code className="text-slate-300">, bank_code: </code><code className="text-green-300">"058"</code> {`}`});<br />
+                    <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.banks.</code><code className="text-blue-300">register</code>({`{`} <code className="text-slate-300">account_number: </code><code className="text-green-300">&quot;0123456789&quot;</code><code className="text-slate-300">, bank_code: </code><code className="text-green-300">&quot;058&quot;</code> {`}`});<br />
                     <code className="text-purple-400">const</code> <code className="text-slate-300">myBanks</code> = <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.banks.</code><code className="text-blue-300">list</code>();<br /><br />
                     
                     <code className="text-slate-500">{`// 2. Process a Donation`}</code><br />
                     <code className="text-purple-400">const</code> <code className="text-slate-300">intent</code> = <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.donations.</code><code className="text-blue-300">initialize</code>({`{`}<br />
-                    <code className="text-slate-300">&nbsp;&nbsp;campaign_id: </code><code className="text-green-300">"cmp_12345"</code>,<br />
+                    <code className="text-slate-300">&nbsp;&nbsp;campaign_id: </code><code className="text-green-300">&quot;cmp_12345&quot;</code>,<br />
                     <code className="text-slate-300">&nbsp;&nbsp;amount: </code><code className="text-orange-300">5000</code>,<br />
-                    <code className="text-slate-300">&nbsp;&nbsp;email: </code><code className="text-green-300">"donor@example.com"</code><br />
+                    <code className="text-slate-300">&nbsp;&nbsp;email: </code><code className="text-green-300">&quot;donor@example.com&quot;</code><br />
                     <code className="text-slate-300">{`}`});</code><br /><br />
 
                     <code className="text-slate-500">{`// 3. Verify / Get Donation status`}</code><br />
@@ -238,10 +238,10 @@ export function SectionResources() {
                   </div>
                   <pre className="text-sm font-mono text-slate-300 overflow-x-auto pb-4">
                     <code className="text-purple-400">const</code> <code className="text-slate-300">webhook</code> = <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.webhooks.</code><code className="text-blue-300">register</code>({`{`}<br />
-                    <code className="text-slate-300">&nbsp;&nbsp;url: </code><code className="text-green-300">"https://api.vourapp.com/refreeg-events"</code>,<br />
-                    <code className="text-slate-300">&nbsp;&nbsp;events: [</code><code className="text-green-300">"donation.successful"</code><code className="text-slate-300">, </code><code className="text-green-300">"campaign.completed"</code><code className="text-slate-300">]</code><br />
+                    <code className="text-slate-300">&nbsp;&nbsp;url: </code><code className="text-green-300">&quot;https://api.vourapp.com/refreeg-events&quot;</code>,<br />
+                    <code className="text-slate-300">&nbsp;&nbsp;events: [</code><code className="text-green-300">&quot;donation.successful&quot;</code><code className="text-slate-300">, </code><code className="text-green-300">&quot;campaign.completed&quot;</code><code className="text-slate-300">]</code><br />
                     {`}`});<br /><br />
-                    <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.webhooks.</code><code className="text-blue-300">update</code>(<code className="text-slate-300">webhook.id</code>, {`{`} <code className="text-slate-300">url: </code><code className="text-green-300">"https://new-api.vourapp.com"</code> {`}`});<br />
+                    <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.webhooks.</code><code className="text-blue-300">update</code>(<code className="text-slate-300">webhook.id</code>, {`{`} <code className="text-slate-300">url: </code><code className="text-green-300">&quot;https://new-api.vourapp.com&quot;</code> {`}`});<br />
                     <code className="text-purple-400">const</code> <code className="text-slate-300">allHooks</code> = <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.webhooks.</code><code className="text-blue-300">list</code>();<br />
                     <code className="text-blue-400">await</code> <code className="text-slate-300">refreeg.webhooks.</code><code className="text-blue-300">delete</code>(<code className="text-slate-300">webhook.id</code>);<br />
                   </pre>
@@ -286,7 +286,7 @@ export function SectionResources() {
                     <code className="text-purple-400">import</code> <code className="text-slate-300">os</code><br />
                     <code className="text-purple-400">from</code> <code className="text-slate-300">refreeg_sdk</code> <code className="text-purple-400">import</code> <code className="text-amber-300">Refreeg</code><br /><br />
                     <code className="text-slate-500">{`# Initialize the client`}</code><br />
-                    <code className="text-slate-300">client = </code><code className="text-amber-300">Refreeg</code>(api_key=os.environ.get(<code className="text-green-300">"REFREEG_API_KEY"</code>))<br /><br />
+                    <code className="text-slate-300">client = </code><code className="text-amber-300">Refreeg</code>(api_key=os.environ.get(<code className="text-green-300">&quot;REFREEG_API_KEY&quot;</code>))<br /><br />
                     <code className="text-slate-500">{`# Pro-tip: Use try/except for robust error handling`}</code><br />
                     <code className="text-purple-400">from</code> <code className="text-slate-300">refreeg_sdk.exceptions</code> <code className="text-purple-400">import</code> <code className="text-slate-300">RefreegError</code>
                   </pre>
@@ -300,22 +300,22 @@ export function SectionResources() {
                   <pre className="text-sm font-mono text-slate-300 overflow-x-auto pb-4">
                     <code className="text-slate-500">{`# 1. Create a campaign`}</code><br />
                     <code className="text-slate-300">campaign = client.campaigns.create({`{`}</code><br />
-                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;"title"</code><code className="text-slate-300">: </code><code className="text-green-300">"Medical Fund"</code>,<br />
-                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;"goal_amount"</code><code className="text-slate-300">: </code><code className="text-orange-300">500000</code><br />
+                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;&quot;title&quot;</code><code className="text-slate-300">: </code><code className="text-green-300">&quot;Medical Fund&quot;</code>,<br />
+                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;&quot;goal_amount&quot;</code><code className="text-slate-300">: </code><code className="text-orange-300">500000</code><br />
                     <code className="text-slate-300">{`}`}</code>)<br /><br />
                     
                     <code className="text-slate-500">{`# 2. Fetch a single campaign & List all`}</code><br />
-                    <code className="text-slate-300">details = client.campaigns.get(campaign[<code className="text-green-300">'id'</code>])</code><br />
+                    <code className="text-slate-300">details = client.campaigns.get(campaign[<code className="text-green-300">&apos;id&apos;</code>])</code><br />
                     <code className="text-slate-300">all_campaigns = client.campaigns.list()</code><br /><br />
                     
                     <code className="text-slate-500">{`# 3. Update & Manage State`}</code><br />
-                    <code className="text-slate-300">client.campaigns.update(campaign[<code className="text-green-300">'id'</code>], {`{`} <code className="text-green-300">"title"</code>: <code className="text-green-300">"Updated Campaign"</code> {`}`} )</code><br />
-                    <code className="text-slate-300">client.campaigns.pause(campaign[<code className="text-green-300">'id'</code>])</code><br />
-                    <code className="text-slate-300">client.campaigns.resume(campaign[<code className="text-green-300">'id'</code>])</code><br />
-                    <code className="text-slate-300">client.campaigns.cancel(campaign[<code className="text-green-300">'id'</code>])</code><br /><br />
+                    <code className="text-slate-300">client.campaigns.update(campaign[<code className="text-green-300">&apos;id&apos;</code>], {`{`} <code className="text-green-300">&quot;title&quot;</code>: <code className="text-green-300">&quot;Updated Campaign&quot;</code> {`}`} )</code><br />
+                    <code className="text-slate-300">client.campaigns.pause(campaign[<code className="text-green-300">&apos;id&apos;</code>])</code><br />
+                    <code className="text-slate-300">client.campaigns.resume(campaign[<code className="text-green-300">&apos;id&apos;</code>])</code><br />
+                    <code className="text-slate-300">client.campaigns.cancel(campaign[<code className="text-green-300">&apos;id&apos;</code>])</code><br /><br />
 
                     <code className="text-slate-500">{`# 4. Get all donatons for a campaign`}</code><br />
-                    <code className="text-slate-300">donors = client.campaigns.donations(campaign[<code className="text-green-300">'id'</code>])</code>
+                    <code className="text-slate-300">donors = client.campaigns.donations(campaign[<code className="text-green-300">&apos;id&apos;</code>])</code>
                   </pre>
                 </div>
 
@@ -327,23 +327,23 @@ export function SectionResources() {
                   <pre className="text-sm font-mono text-slate-300 overflow-x-auto pb-4">
                     <code className="text-slate-500">{`# 1. Bank Configuration`}</code><br />
                     <code className="text-slate-300">bank = client.banks.register({`{`}</code><br />
-                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;"account_number"</code><code className="text-slate-300">: </code><code className="text-green-300">"0123456789"</code>,<br />
-                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;"bank_code"</code><code className="text-slate-300">: </code><code className="text-green-300">"058"</code>,<br />
-                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;"account_name"</code><code className="text-slate-300">: </code><code className="text-green-300">"John Doe"</code><br />
+                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;&quot;account_number&quot;</code><code className="text-slate-300">: </code><code className="text-green-300">&quot;0123456789&quot;</code>,<br />
+                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;&quot;bank_code&quot;</code><code className="text-slate-300">: </code><code className="text-green-300">&quot;058&quot;</code>,<br />
+                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;&quot;account_name&quot;</code><code className="text-slate-300">: </code><code className="text-green-300">&quot;John Doe&quot;</code><br />
                     <code className="text-slate-300">{`}`}</code>)<br />
                     <code className="text-slate-300">my_banks = client.banks.list()</code><br /><br />
                     
                     <code className="text-slate-500">{`# 2. Trigger a charge intent when user clicks 'Donate'`}</code><br />
                     <code className="text-slate-300">donation = client.donations.initialize({`{`}</code><br />
-                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;"campaign_id"</code><code className="text-slate-300">: </code><code className="text-green-300">"cmp_12345"</code>,<br />
-                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;"amount"</code><code className="text-slate-300">: </code><code className="text-orange-300">5000</code>,<br />
-                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;"email"</code><code className="text-slate-300">: </code><code className="text-green-300">"donor@example.com"</code>,<br />
-                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;"name"</code><code className="text-slate-300">: </code><code className="text-green-300">"Zion Tech"</code><br />
+                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;&quot;campaign_id&quot;</code><code className="text-slate-300">: </code><code className="text-green-300">&quot;cmp_12345&quot;</code>,<br />
+                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;&quot;amount&quot;</code><code className="text-slate-300">: </code><code className="text-orange-300">5000</code>,<br />
+                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;&quot;email&quot;</code><code className="text-slate-300">: </code><code className="text-green-300">&quot;donor@example.com&quot;</code>,<br />
+                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;&quot;name&quot;</code><code className="text-slate-300">: </code><code className="text-green-300">&quot;Zion Tech&quot;</code><br />
                     <code className="text-slate-300">{`}`}</code>)<br /><br />
  
                     <code className="text-slate-500">{`# 3. Verify / Get Donation status`}</code><br />
-                    <code className="text-slate-300">status = client.donations.verify(reference=donation[<code className="text-green-300">'reference'</code>])</code><br />
-                    <code className="text-slate-300">single_donation = client.donations.get(donation[<code className="text-green-300">'id'</code>])</code>
+                    <code className="text-slate-300">status = client.donations.verify(reference=donation[<code className="text-green-300">&apos;reference&apos;</code>])</code><br />
+                    <code className="text-slate-300">single_donation = client.donations.get(donation[<code className="text-green-300">&apos;id&apos;</code>])</code>
                   </pre>
                 </div>
 
@@ -354,13 +354,13 @@ export function SectionResources() {
                   </div>
                   <pre className="text-sm font-mono text-slate-300 overflow-x-auto pb-4">
                     <code className="text-slate-300">webhook = client.webhooks.register({`{`}</code><br />
-                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;"url"</code><code className="text-slate-300">: </code><code className="text-green-300">"https://api.vourapp.com/refreeg-events"</code>,<br />
-                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;"events"</code><code className="text-slate-300">: [</code><code className="text-green-300">"donation.successful"</code><code className="text-slate-300">, </code><code className="text-green-300">"campaign.completed"</code><code className="text-slate-300">]</code><br />
+                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;&quot;url&quot;</code><code className="text-slate-300">: </code><code className="text-green-300">&quot;https://api.vourapp.com/refreeg-events&quot;</code>,<br />
+                    <code className="text-green-300">&nbsp;&nbsp;&nbsp;&nbsp;&quot;events&quot;</code><code className="text-slate-300">: [</code><code className="text-green-300">&quot;donation.successful&quot;</code><code className="text-slate-300">, </code><code className="text-green-300">&quot;campaign.completed&quot;</code><code className="text-slate-300">]</code><br />
                     <code className="text-slate-300">{`}`}</code>)<br /><br />
                     
-                    <code className="text-slate-300">client.webhooks.update(webhook[<code className="text-green-300">'id'</code>], {`{`} <code className="text-green-300">"url"</code>: <code className="text-green-300">"https://new-api.vourapp.com"</code> {`}`} )</code><br />
+                    <code className="text-slate-300">client.webhooks.update(webhook[<code className="text-green-300">&apos;id&apos;</code>], {`{`} <code className="text-green-300">&quot;url&quot;</code>: <code className="text-green-300">&quot;https://new-api.vourapp.com&quot;</code> {`}`} )</code><br />
                     <code className="text-slate-300">all_hooks = client.webhooks.list()</code><br />
-                    <code className="text-slate-300">client.webhooks.delete(webhook[<code className="text-green-300">'id'</code>])</code>
+                    <code className="text-slate-300">client.webhooks.delete(webhook[<code className="text-green-300">&apos;id&apos;</code>])</code>
                   </pre>
                 </div>
               </div>

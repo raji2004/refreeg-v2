@@ -446,6 +446,7 @@ export default function PublicProfile({
                   <ExpandableCard
                     items={causes.map((cause) => ({
                       id: cause.id,
+                      slug: cause.slug,
                       title: cause.title,
                       description: cause.description,
                       image: cause.image,

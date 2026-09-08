@@ -5,6 +5,13 @@ import type {
   subHeadingWithSubDescription,
 } from "./common-types";
 
+export type DeviceLocation = {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  capturedAt: number;
+};
+
 export interface Cause {
   id: string;
   user_id: string;
@@ -37,7 +44,14 @@ export interface Cause {
     full_name: string;
     email: string;
     profile_photo: string | null;
+    is_verified?: boolean;
   };
+  compliance_paused?: boolean;
+  compliance_paused_at?: string;
+  /** Still shown in public listings, but the detail page is locked. See prisma/schema/cause.prisma. */
+  paused?: boolean;
+  paused_at?: string | null;
+  slug?: string | null;
 }
 export interface CauseWithSubHeading extends Cause {
   sub_heading: subHeadingWithSubDescription[];
@@ -50,6 +64,7 @@ export interface CauseWithUser extends Cause {
     sub_account_code?: string;
     username: string;
     profile_photo?: string | null;
+    flutterwave_sub_account_id?: string | null;
   };
   isFollowing?: boolean;
 }
@@ -68,7 +83,8 @@ export interface CauseFormData {
   multimedia: (File | string)[];
   video_links?: string[];
   summary?: string | null;
-  location?: string | null;
+  location: string;
+  deviceLocation?: DeviceLocation | null;
 }
 export interface CauseFilterOptions {
   category?: string;
@@ -78,4 +94,9 @@ export interface CauseFilterOptions {
   offset?: number;
   search?: string;
   sortBy?: "recommended" | "latest" | "most-funded" | "ending-soon";
+  location?: string;
+  urgentOnly?: boolean;
+  verifiedOnly?: boolean;
+  minAmountNeeded?: number;
+  maxAmountNeeded?: number;
 }

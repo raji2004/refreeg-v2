@@ -18,7 +18,7 @@ export function SignatureTrends({ data }: SignatureTrendsProps) {
       <Card>
         <CardHeader>
           <CardTitle>Signature Trends</CardTitle>
-          <CardDescription>Track your petition's signature patterns over time</CardDescription>
+          <CardDescription>Track your petition&apos;s signature patterns over time</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
@@ -35,7 +35,7 @@ export function SignatureTrends({ data }: SignatureTrendsProps) {
     <Card>
       <CardHeader>
         <CardTitle>Signature Trends</CardTitle>
-        <CardDescription>Track your petition's signature patterns over time</CardDescription>
+        <CardDescription>Track your petition&apos;s signature patterns over time</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer

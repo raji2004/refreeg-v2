@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNotifications } from "@/hooks/use-notification";
 import { toast } from "@/components/ui/use-toast";
 
@@ -22,36 +22,7 @@ export function MilestoneNotifications({
   const { showNotification } = useNotifications();
   const [lastMilestone, setLastMilestone] = useState<number | null>(null);
 
-  useEffect(() => {
-    const percentage = Math.round((raised / goal) * 100);
-    let milestone = null;
-
-    if (percentage >= 25 && (lastMilestone === null || lastMilestone < 25)) {
-      milestone = 25;
-    } else if (
-      percentage >= 50 &&
-      (lastMilestone === null || lastMilestone < 50)
-    ) {
-      milestone = 50;
-    } else if (
-      percentage >= 75 &&
-      (lastMilestone === null || lastMilestone < 75)
-    ) {
-      milestone = 75;
-    } else if (
-      percentage >= 100 &&
-      (lastMilestone === null || lastMilestone < 100)
-    ) {
-      milestone = 100;
-    }
-
-    if (milestone !== null) {
-      setLastMilestone(milestone);
-      triggerMilestoneNotification(milestone);
-    }
-  }, [raised, goal, lastMilestone]);
-
-  const triggerMilestoneNotification = (milestone: number) => {
+  const triggerMilestoneNotification = useCallback((milestone: number) => {
     let title = "";
     let body = "";
     let icon = "/icons/icon-192x192.png";
@@ -85,7 +56,36 @@ export function MilestoneNotifications({
       title,
       description: body,
     });
-  };
+  }, [causeTitle, userName, showNotification]);
+
+  useEffect(() => {
+    const percentage = Math.round((raised / goal) * 100);
+    let milestone = null;
+
+    if (percentage >= 25 && (lastMilestone === null || lastMilestone < 25)) {
+      milestone = 25;
+    } else if (
+      percentage >= 50 &&
+      (lastMilestone === null || lastMilestone < 50)
+    ) {
+      milestone = 50;
+    } else if (
+      percentage >= 75 &&
+      (lastMilestone === null || lastMilestone < 75)
+    ) {
+      milestone = 75;
+    } else if (
+      percentage >= 100 &&
+      (lastMilestone === null || lastMilestone < 100)
+    ) {
+      milestone = 100;
+    }
+
+    if (milestone !== null) {
+      setLastMilestone(milestone);
+      triggerMilestoneNotification(milestone);
+    }
+  }, [raised, goal, lastMilestone, triggerMilestoneNotification]);
 
   return null;
 }

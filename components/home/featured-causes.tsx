@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
-import { H2, P, H4 } from "../typograpy";
+import { H2, P, H4 } from "../typography";
 import { Button } from "../ui/button";
 import { listCauses } from "@/actions/cause-actions";
 import AnimatedCard from "./components/AnimatedCard";
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/carousel";
 
 import { calculateDaysLeft, isCauseExpired } from "@/utils/cause/cause-utils";
+import { causePublicPath } from "@/lib/causes/slug";
 
 export async function FeaturedCauses() {
   const allCauses = await listCauses({ limit: 12, status: "approved" });
@@ -93,7 +94,7 @@ export async function FeaturedCauses() {
                 className="md:pl-4 basis-[88%] sm:basis-[68%] md:basis-[44%]"
               >
                 <Link
-                  href={`/causes/${cause.id}`}
+                  href={causePublicPath(cause)}
                   className="group block h-full"
                 >
                   <AnimatedCard>
@@ -109,6 +110,11 @@ export async function FeaturedCauses() {
                             getMediaUrl(cause.image),
                           )}
                         />
+                        {cause.paused && (
+                          <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-gold/90 px-2.5 py-1 text-xs font-medium text-ink backdrop-blur-sm">
+                            Paused
+                          </div>
+                        )}
                       </div>
 
                       <CardHeader className="flex flex-col flex-1 p-4">

@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Logo } from "@/components/logo";
 import { useAdmin } from "@/hooks/use-admin";
 import { cn } from "@/lib/utils";
+import { DiscoverSearch } from "@/components/discover/discover-search";
 import {
   ArrowRight,
   BarChart3,
@@ -31,6 +32,7 @@ import {
   Star,
   Target,
   TargetIcon,
+  Trophy,
   UserCog,
   Users,
   Wallet,
@@ -62,7 +64,7 @@ type NavItem = NavLink | NavDropdown;
 
 const publicNavItems: NavItem[] = [
   {
-    title: "Explore Causes",
+    title: "Discover",
     href: "/causes",
     type: "link",
   },
@@ -109,24 +111,24 @@ const publicNavItems: NavItem[] = [
     type: "dropdown",
     items: [
       {
-        title: "How to start a cause",
+        title: "RefreeG Rewards",
         description:
-          "Set up a cause quickly with an opinionated workflow built for clarity and speed.",
-        href: "/dashboard/causes/create",
+          "Get rewarded in points, crypto and recognition for driving impact.",
+        href: "/rewards",
         icon: Star,
       },
       {
-        title: "Fees & Payouts",
+        title: "Crypto on RefreeG",
         description:
-          "Understand transaction fees, payout timelines, and how funds move across the platform.",
-        href: "/crowdfund/fees",
-        icon: CircleDollarSign,
+          "Support global causes seamlessly with fast, transparent crypto donations. Real-time tracking and low fees.",
+        href: "/crypto",
+        icon: Wallet,
       },
       {
         title: "FAQ",
         description:
-          "Read the most common questions around fundraising, petitions, verification, and payouts.",
-        href: "/#faq",
+          "Find answers to common questions about using the platform, campaigns, and donations.",
+        href: "/faq",
         icon: HelpCircle,
       },
     ],
@@ -397,6 +399,10 @@ export function Header() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
+              <div className="hidden md:block">
+                <DiscoverSearch />
+              </div>
+
               <div className="hidden lg:flex lg:items-center lg:gap-2">
                 {user && !isDashboardRoute ? (
                   <Link href="/dashboard">
@@ -423,27 +429,33 @@ export function Header() {
               </div>
 
               {!isLoading && !user ? (
-                <Link href="/auth/signin" className="lg:hidden">
+                <Link href="/auth/signup" className="lg:hidden">
                   <Button
-                    variant="outline"
                     size="sm"
-                    className={`h-10 rounded-full border px-3 text-xs ${activeTheme.outline} bg-white transition-colors hover:text-white sm:px-4 sm:text-sm`}
+                    className={`h-10 rounded-full px-3 text-xs text-white ${activeTheme.solid} sm:px-4 sm:text-sm`}
                   >
-                    Sign In
+                    Sign Up
                   </Button>
                 </Link>
               ) : null}
 
               {!isLoading && !user ? (
-                <Link href="/auth/signin" className="hidden lg:block">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={`rounded-full border ${activeTheme.outline} bg-white transition-colors hover:text-white`}
-                  >
-                    Sign In
-                  </Button>
-                </Link>
+                <div className="hidden items-center gap-2 lg:flex">
+                  <Link href="/auth/signin">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`rounded-full border ${activeTheme.outline} bg-white transition-colors hover:text-white`}
+                    >
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/auth/signup">
+                    <Button size="sm" className={`rounded-full text-white ${activeTheme.solid}`}>
+                      Sign Up
+                    </Button>
+                  </Link>
+                </div>
               ) : null}
 
               {!isLoading && user ? <UserNav /> : null}
@@ -666,14 +678,21 @@ export function Header() {
 
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 {!isLoading && !user ? (
-                  <Link href="/auth/signin" className="w-full sm:flex-1">
-                    <Button
-                      variant="outline"
-                      className={`h-11 w-full rounded-2xl border ${activeTheme.outline} bg-white transition-colors hover:text-white`}
-                    >
-                      Sign In
-                    </Button>
-                  </Link>
+                  <>
+                    <Link href="/auth/signin" className="w-full sm:flex-1">
+                      <Button
+                        variant="outline"
+                        className={`h-11 w-full rounded-2xl border ${activeTheme.outline} bg-white transition-colors hover:text-white`}
+                      >
+                        Sign In
+                      </Button>
+                    </Link>
+                    <Link href="/auth/signup" className="w-full sm:flex-1">
+                      <Button className={`h-11 w-full rounded-2xl text-white ${activeTheme.solid}`}>
+                        Sign Up
+                      </Button>
+                    </Link>
+                  </>
                 ) : null}
 
                 {user && !isDashboardRoute ? (

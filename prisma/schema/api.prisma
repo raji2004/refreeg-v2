@@ -1,5 +1,5 @@
 model api_bank_accounts {
-  id                  String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   developer_id        String   @db.Uuid
   bank_account_number String
   bank_code           String
@@ -10,7 +10,7 @@ model api_bank_accounts {
 }
 
 model api_campaign_reports {
-  id               String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   api_campaign_id  String        @db.Uuid
   reason           String
   message          String
@@ -29,7 +29,7 @@ model api_campaign_reports {
 }
 
 model api_campaigns {
-  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   developer_id         String                 @db.Uuid
   api_key_id           String?                @db.Uuid
   title                String
@@ -52,7 +52,7 @@ model api_campaigns {
 }
 
 model api_donations {
-  id                 String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   api_campaign_id    String   @db.Uuid
   amount             Decimal  @db.Decimal
   tip_amount         Decimal  @default(0) @db.Decimal
@@ -83,7 +83,7 @@ model api_keys {
 }
 
 model api_request_logs {
-  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   api_key_id       String?  @db.Uuid
   user_id          String?  @db.Uuid
   endpoint         String

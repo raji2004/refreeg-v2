@@ -285,7 +285,7 @@ export default function TermsOfService() {
               Terms of Service
             </h1>
             <p className="text-lg md:text-xl text-purple-100">
-              Please read these terms carefully before using RefreeG's
+              Please read these terms carefully before using RefreeG&apos;s
               crowdfunding platform.
             </p>
             <p className="text-sm text-purple-200 mt-4">
@@ -305,11 +305,11 @@ export default function TermsOfService() {
             className="bg-white rounded-2xl shadow-lg p-8 mb-12 border border-blue-100"
           >
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Welcome to RefreeG's Terms of Service
+              Welcome to RefreeG&apos;s Terms of Service
             </h2>
             <p className="text-gray-700 leading-relaxed mb-4">
-              These Terms of Service ("Terms") govern your access to and use of
-              RefreeG's blockchain-powered crowdfunding platform. RefreeG
+              These Terms of Service (&quot;Terms&quot;) govern your access to and use of
+              RefreeG&apos;s blockchain-powered crowdfunding platform. RefreeG
               connects verified cause creators with supporters to make a
               positive impact through transparent and secure fundraising.
             </p>

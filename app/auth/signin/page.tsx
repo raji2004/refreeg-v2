@@ -9,17 +9,23 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Icons } from "@/components/icons";
 import { AuthTestimonials } from "@/components/ui/auth-testimonials";
+import { AlreadySignedInCard } from "@/components/auth/already-signed-in-card";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+
+function normalizeRedirect(target: string | null): string | null {
+  if (!target || !target.startsWith("/") || target.startsWith("//")) return null;
+  return target;
+}
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loadingType, setLoadingType] = useState<"manual" | "google" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn, signInWithGoogle } = useAuth();
+  const { user, isLoading, signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
@@ -32,6 +38,7 @@ export default function SignInPage() {
   }, [router]);
 
   useEffect(() => {
+    if (user) return;
     if (redirectTo && !hasShownAuthNotice.current) {
       toast({
         title: "Sign in required",
@@ -39,7 +46,7 @@ export default function SignInPage() {
       });
       hasShownAuthNotice.current = true;
     }
-  }, [redirectTo]);
+  }, [redirectTo, user]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -67,6 +74,28 @@ export default function SignInPage() {
       setLoadingType(null);
     }
   };
+
+  if (isLoading) {
+    return <div className="h-screen w-screen bg-white" />;
+  }
+
+  if (user) {
+    return (
+      <div className="flex h-screen w-screen">
+        <div className="flex md:w-2/5 w-full flex-col items-center justify-center bg-white px-8">
+          <AlreadySignedInCard
+            name={user.name}
+            email={user.email}
+            redirectTo={normalizeRedirect(redirectTo) || "/dashboard"}
+            variant="signin"
+          />
+        </div>
+        <div className="hidden md:flex md:w-3/5 items-center justify-center bg-[#003366] px-8">
+          <AuthTestimonials />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-screen">

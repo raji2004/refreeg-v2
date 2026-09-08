@@ -26,6 +26,8 @@ import {
  * 6. Create a second cause and admin-reject it
  * 7. Unapprove own KYC (reject if approved)
  * 8. Resubmit KYC
+ * 8.5. Receive Didit resubmitted webhook
+ * 8.6. Resume verification (returns to pending)
  * 9. Admin-reject the pending KYC and verify rejected UI
  * 10. Resubmit KYC again
  * 11. Approve own pending KYC (leave account verified)
@@ -489,6 +491,52 @@ test.describe("RefreeG Production — Causes & KYC", () => {
         .first(),
     ).toBeVisible({ timeout: 20_000 });
     console.log("KYC status shows pending after resubmit.");
+  });
+
+  test("8.5) Didit webhook sets KYC to resubmitted", async ({ page }) => {
+    await page.goto("/dashboard/settings/kyc-setup", {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    const container = page.getByTestId("kyc-setup-container");
+    await expect(container).toBeVisible({ timeout: 15_000 });
+    const userId = await container.getAttribute("data-userid");
+    
+    const response = await page.request.post("/api/webhooks/didit", {
+      data: {
+        session_id: "e2e-session-mock",
+        status: "Resubmitted",
+        vendor_data: userId,
+        reason: "Document blurry",
+        webhook_type: "status.updated"
+      }
+    });
+    expect(response.ok()).toBeTruthy();
+
+    await page.goto("/dashboard/settings/kyc", {
+      waitUntil: "domcontentloaded",
+    });
+    
+    await expect(page.getByText(/Your KYC requires a few corrections/i).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("button", { name: /Resume Verification/i })).toBeVisible({ timeout: 15_000 });
+    console.log("Resubmitted status and Resume button visible.");
+  });
+
+  test("8.6) user resumes verification and it returns to pending", async ({ page }) => {
+    await submitKycSetupForm(page);
+
+    await page.goto("/dashboard/settings/kyc", {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await expect(
+      page
+        .getByText(
+          /pending review|Pending Review|under review|in the review queue|Pending/i,
+        )
+        .first(),
+    ).toBeVisible({ timeout: 20_000 });
+    console.log("KYC pending again after resuming from resubmitted.");
   });
 
   test("9) admin rejects the pending KYC and user sees rejection", async ({

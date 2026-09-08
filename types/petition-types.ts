@@ -13,6 +13,7 @@ export interface Petition {
   category: string;
   goal: number;
   raised: number;
+  signatures?: number;
   status: PetitionStatus;
   rejection_reason: string | null;
   created_at: string;
@@ -23,6 +24,7 @@ export interface Petition {
     full_name: string;
     email: string;
     profile_photo?: string | null;
+    is_verified?: boolean;
   };
   sections?: { heading: string; description: string }[];
   multimedia?: string[];
@@ -55,4 +57,7 @@ export interface PetitionFilterOptions {
   userId?: string;
   limit?: number;
   offset?: number;
+  search?: string;
+  sortBy?: "recommended" | "latest" | "most-funded" | "ending-soon";
+  verifiedOnly?: boolean;
 }

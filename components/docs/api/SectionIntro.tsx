@@ -36,7 +36,7 @@ export default function SectionIntro() {
         <section className="space-y-4">
           <h2 className="text-2xl font-bold text-slate-900 border-l-4 border-blue-600 pl-4">Core Concepts</h2>
           <p className="text-slate-600 leading-relaxed max-w-3xl">
-            The RefreeG API is designed for robustness. Whether you're building a Discord bot, a mobile application, or any 
+            The RefreeG API is designed for robustness. Whether you&apos;re building a Discord bot, a mobile application, or any 
             third-party interface, our API provides the hooks you need to manage the complete donor lifecycle.
           </p>
         </section>

@@ -14,11 +14,18 @@ jest.mock("@/lib/prisma", () => ({
     events: {
       findFirst: jest.fn(),
     },
+    cause: {
+      findUnique: jest.fn(),
+    },
   },
 }));
 
 jest.mock("@/actions/event-reward-actions", () => ({
   recordEvent: jest.fn(),
+}));
+
+jest.mock("@/services/mail", () => ({
+  sendNewCommentEmail: jest.fn(),
 }));
 
 jest.mock("@/lib/event-bus", () => ({
@@ -29,6 +36,7 @@ jest.mock("@/lib/event-bus", () => ({
 
 import { prisma } from "@/lib/prisma";
 import { recordEvent } from "@/actions/event-reward-actions";
+import { sendNewCommentEmail } from "@/services/mail";
 import { eventBus } from "@/lib/event-bus";
 import {
   createComment,
@@ -48,6 +56,7 @@ const mockPrisma = prisma as unknown as {
     groupBy: jest.Mock;
   };
   events: { findFirst: jest.Mock };
+  cause: { findUnique: jest.Mock };
 };
 
 const commentRecord = {
@@ -70,7 +79,9 @@ describe("comment-actions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (recordEvent as jest.Mock).mockResolvedValue({});
+    (sendNewCommentEmail as jest.Mock).mockResolvedValue({ success: true });
     mockPrisma.events.findFirst.mockResolvedValue(null);
+    mockPrisma.cause.findUnique.mockResolvedValue(null);
   });
 
   describe("createComment", () => {
@@ -118,6 +129,57 @@ describe("comment-actions", () => {
       await createComment("cause-1", null, "Guest comment");
 
       expect(recordEvent).not.toHaveBeenCalled();
+    });
+
+    it("emails the cause owner when someone else comments", async () => {
+      mockPrisma.comments.create.mockResolvedValue(commentRecord);
+      mockPrisma.cause.findUnique.mockResolvedValue({
+        title: "Clean Water Initiative",
+        userId: "owner-1",
+        user: { fullName: "Owner Name", email: "owner@test.com" },
+      });
+
+      await createComment("cause-1", "user-1", "Great cause!");
+
+      // Fire-and-forget: give the un-awaited notification microtask a chance to run.
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(sendNewCommentEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: "owner@test.com",
+          ownerName: "Owner Name",
+          commenterName: "Jane Doe",
+          causeTitle: "Clean Water Initiative",
+          commentText: "Great cause!",
+        }),
+      );
+    });
+
+    it("does not email the owner when they comment on their own cause", async () => {
+      mockPrisma.comments.create.mockResolvedValue({
+        ...commentRecord,
+        user_id: "owner-1",
+      });
+      mockPrisma.cause.findUnique.mockResolvedValue({
+        title: "Clean Water Initiative",
+        userId: "owner-1",
+        user: { fullName: "Owner Name", email: "owner@test.com" },
+      });
+
+      await createComment("cause-1", "owner-1", "Thanks everyone!");
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(sendNewCommentEmail).not.toHaveBeenCalled();
+    });
+
+    it("does not throw when the cause owner lookup fails", async () => {
+      mockPrisma.comments.create.mockResolvedValue(commentRecord);
+      mockPrisma.cause.findUnique.mockRejectedValue(new Error("db error"));
+
+      await expect(
+        createComment("cause-1", "user-1", "Great cause!"),
+      ).resolves.toBeDefined();
+      expect(sendNewCommentEmail).not.toHaveBeenCalled();
     });
   });
 

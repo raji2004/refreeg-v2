@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getDeveloperCampaignReports } from "@/actions/api-campaign-report-actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +14,7 @@ export default function DeveloperApiReportsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getDeveloperCampaignReports();
@@ -25,11 +25,11 @@ export default function DeveloperApiReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [fetchReports]);
 
   const filteredReports = reports.filter((report) => 
     report.api_campaigns?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -113,7 +113,7 @@ export default function DeveloperApiReportsPage() {
                     {report.message && (
                       <div className="bg-slate-50 p-3 rounded-md border border-slate-100">
                         <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Additional Details</h4>
-                        <p className="text-sm text-slate-700 italic">"{report.message}"</p>
+                        <p className="text-sm text-slate-700 italic">&quot;{report.message}&quot;</p>
                       </div>
                     )}
                   </div>

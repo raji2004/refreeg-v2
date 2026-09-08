@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -817,10 +818,13 @@ export default function CreatePetitionForm() {
                   <ImageUpload onUpload={handleImageUpload} maxFiles={1} />
                   {formData.coverImage && (
                     <div className="mt-4 relative group aspect-video rounded-xl overflow-hidden shadow-sm border border-brand/10">
-                      <img
+                      <Image
                         src={URL.createObjectURL(formData.coverImage)}
                         alt="Cover preview"
-                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        unoptimized
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Button

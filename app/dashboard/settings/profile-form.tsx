@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Upload, Eye } from "lucide-react";
+import { Building2, Camera, Upload, Eye } from "lucide-react";
 import { Icons } from "@/components/icons";
 import { SocialMedia } from "@/components/social-media";
 import type { ProfileFormData } from "@/types";
@@ -195,6 +195,12 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
   };
 
   const username = formData.username;
+  const personalProfileHref = username
+    ? profile.account_type === "organization"
+      ? `/${username}?view=personal`
+      : `/${username}`
+    : "";
+  const organizationProfileHref = username ? `/${username}` : "";
 
   const hasSocialErrors = [
     ["twitter_url", "twitter"],
@@ -212,16 +218,39 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
       <CardHeader>
         <div className="flex justify-between items-start md:flex-row flex-col gap-2">
           <div>
-            <CardTitle>Profile</CardTitle>
-            <CardDescription>Update your personal information.</CardDescription>
+            <CardTitle>
+              {profile.account_type === "organization"
+                ? "Personal profile"
+                : "Profile"}
+            </CardTitle>
+            <CardDescription>
+              {profile.account_type === "organization"
+                ? "Manage your individual identity separately from your organisation."
+                : "Update your personal information."}
+            </CardDescription>
           </div>
           {username && (
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/${username}`} className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                View Public Profile
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href={personalProfileHref} className="flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  {profile.account_type === "organization"
+                    ? "View Personal Profile"
+                    : "View Public Profile"}
+                </Link>
+              </Button>
+              {profile.account_type === "organization" && (
+                <Button asChild variant="outline" size="sm">
+                  <Link
+                    href={organizationProfileHref}
+                    className="flex items-center gap-2"
+                  >
+                    <Building2 className="h-4 w-4" />
+                    View Organisation Profile
+                  </Link>
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </CardHeader>
@@ -300,8 +329,18 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
               onChange={handleChange}
             />
             <p className="text-xs text-muted-foreground">
-              This will be used in your profile URL: refreeg.com/
-              {formData.username || "username"}
+              {profile.account_type === "organization" ? (
+                <>
+                  Your organisation profile uses: refreeg.com/
+                  {formData.username || "username"}. Your personal profile is
+                  kept separate.
+                </>
+              ) : (
+                <>
+                  This will be used in your profile URL: refreeg.com/
+                  {formData.username || "username"}
+                </>
+              )}
             </p>
           </div>
 

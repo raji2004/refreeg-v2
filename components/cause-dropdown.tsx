@@ -14,9 +14,10 @@ import { useCause } from "@/hooks/use-cause";
 
 interface CauseDropdownProps {
   causeId: string;
+  causeSlug?: string | null;
 }
 
-export function CauseDropdown({ causeId }: CauseDropdownProps) {
+export function CauseDropdown({ causeId, causeSlug }: CauseDropdownProps) {
   const { deleteCause, isLoading } = useCause();
 
   async function handleDelete() {
@@ -44,7 +45,7 @@ export function CauseDropdown({ causeId }: CauseDropdownProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem asChild>
-          <Link href={`/causes/${causeId}`}>
+          <Link href={`/causes/${causeSlug || causeId}`}>
             <Eye className="mr-2 h-4 w-4" />
             View Cause
           </Link>

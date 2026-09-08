@@ -48,7 +48,7 @@ export default function MoreThanCrowdfunding() {
             whileInView="show"
             viewport={{ once: true }}
           >
-            Don't wait. Start your cause today and turn support into real
+            Don&apos;t wait. Start your cause today and turn support into real
             impact.
           </motion.p>
           <motion.div

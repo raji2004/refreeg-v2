@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Comment } from "@/types/common-types";
 import { recordEvent } from "@/actions/event-reward-actions";
+import { sendNewCommentEmail } from "@/services/mail";
 
 /** Helper to map Prisma's camelCase User fields to the snake_case shape the Comment type expects */
 function mapUserToCommentUser(user: {
@@ -87,6 +88,49 @@ export async function createComment(
     });
   } catch (e) {
     console.error("Error emitting comment SSE:", e);
+  }
+
+  // Notify the cause owner about the new comment (skip if they commented on
+  // their own cause — no point emailing yourself).
+  try {
+    const causeWithOwner = await prisma.cause.findUnique({
+      where: { id: causeId },
+      select: {
+        title: true,
+        userId: true,
+        user: {
+          select: { fullName: true, email: true },
+        },
+      },
+    });
+
+    if (causeWithOwner && causeWithOwner.userId !== dbUserId) {
+      const ownerEmail = causeWithOwner.user?.email;
+      const ownerName = causeWithOwner.user?.fullName || "Campaign Owner";
+
+      if (ownerEmail) {
+        const appUrl =
+          process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+        const commenterName =
+          comment.user?.fullName || comment.user?.username || "Someone";
+
+        sendNewCommentEmail({
+          to: ownerEmail,
+          ownerName,
+          commenterName,
+          causeTitle: causeWithOwner.title,
+          commentText: content,
+          causeUrl: `${appUrl}/causes/${causeId}`,
+        }).catch((err) =>
+          console.error("Error sending new comment email:", err),
+        );
+      }
+    }
+  } catch (ownerEmailError) {
+    console.error(
+      "Error fetching cause owner for comment email:",
+      ownerEmailError,
+    );
   }
 
   return {

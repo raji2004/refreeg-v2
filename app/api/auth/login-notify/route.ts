@@ -22,6 +22,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: "Known device" });
     }
 
+    // Skip sending login emails for the E2E test account to prevent SMTP rate limits and hangs
+    if (email === "kingraj1344@gmail.com" || email === process.env.REFREEG_E2E_EMAIL) {
+      return NextResponse.json({ success: true, message: "Skipped for E2E user" });
+    }
+
     // New device or first time! Send the email.
     await sendLoginNotificationEmail({
       email,

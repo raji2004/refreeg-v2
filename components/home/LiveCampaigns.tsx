@@ -7,6 +7,8 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { listCauses } from "@/actions";
+import { sortCausesByFunding } from "@/lib/causes/funding-rank";
+import { causePublicPath } from "@/lib/causes/slug";
 import {
   ChevronRight,
   ChevronLeft,
@@ -18,6 +20,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 type Campaign = {
   id: string;
+  slug?: string | null;
   title: string;
   image?: string;
   goal: number;
@@ -41,14 +44,19 @@ export default function LiveCampaigns() {
     async function fetchCampaigns() {
       try {
         const allCauses = await listCauses();
-        const transformedCampaigns = allCauses.map((cause) => ({
+
+        // ↓↓↓ THE ALGORITHM: most-funded first, ₦0 last, ties → % of goal → newest
+        const rankedCauses = sortCausesByFunding(allCauses);
+
+        const transformedCampaigns = rankedCauses.map((cause) => ({
           id: cause.id,
+          slug: cause.slug,
           title: cause.title,
           image: cause.image ?? undefined,
           goal: cause.goal ?? 0,
           raised: cause.raised ?? 0,
           category: cause.category || "CAUSE",
-          location: cause.location || "GLOBAL",
+          location: cause.location || "",
         }));
         setCampaigns(transformedCampaigns);
       } catch (error) {
@@ -210,7 +218,7 @@ export default function LiveCampaigns() {
         </div>
 
         <p className="text-gray-600 max-w-2xl text-base mb-8">
-          A glimpse of what's funding right now. Each campaign is verified,
+          A glimpse of what&apos;s funding right now. Each campaign is verified,
           every naira tracked from contribution to impact.
         </p>
 
@@ -268,7 +276,7 @@ export default function LiveCampaigns() {
                   : 0;
 
               return (
-                <Link href={`/causes/${campaign.id}`} key={campaign.id}>
+                <Link href={causePublicPath(campaign)} key={campaign.id}>
                   <div
                     ref={(el) => {
                       cardsRef.current[index] = el;
@@ -302,7 +310,8 @@ export default function LiveCampaigns() {
 
                       <div className="p-5">
                         <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                          {campaign.category} · {campaign.location}
+                          {campaign.category}
+                          {campaign.location ? ` · ${campaign.location}` : ""}
                         </div>
 
                         <h3 className="font-semibold text-gray-900 text-base leading-tight mb-4 line-clamp-2">

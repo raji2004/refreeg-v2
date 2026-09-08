@@ -57,7 +57,7 @@ const ComingSoonPage: React.FC<ComingSoonPageProps> = ({
           <div className="max-w-md mx-auto">
             <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-6">
               <p className="text-blue-700 font-medium">
-                Don't have an account?
+                Don&apos;t have an account?
               </p>
               <p className="text-blue-600 text-sm mt-2">
                 <Link

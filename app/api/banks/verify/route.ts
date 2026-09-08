@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import Paystack from "@/services/paystack";
+import { verifyAccountNumber } from "@/services/payment-provider";
+import type { PaymentProviderType } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
-    const { accountNumber, bankCode } = await request.json();
+    const { accountNumber, bankCode, provider } = await request.json() as {
+      accountNumber?: string;
+      bankCode?: string;
+      provider?: PaymentProviderType;
+    };
 
     if (!accountNumber || !bankCode) {
       return NextResponse.json(
@@ -14,9 +19,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const verification = await Paystack.verifyAccountNumber(
+    const verification = await verifyAccountNumber(
       accountNumber,
-      bankCode
+      bankCode,
+      provider,
     );
 
     return NextResponse.json({

@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body style="font-family: sans-serif; background: #f8fafc; padding: 20px">
+    <div
+      style="
+        max-width: 600px;
+        margin: auto;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+      "
+    >
+      <div
+        style="
+          background: #1e3a8a;
+          padding: 24px;
+          text-align: center;
+          color: white;
+        "
+      >
+        <h2 style="margin: 0">Your campaign hit a new milestone 🎉</h2>
+      </div>
+      <div style="padding: 32px; color: #334155; line-height: 1.6">
+        <p>Hi <strong>{{userName}}</strong>,</p>
+        <p>
+          Congratulations — <strong>"{{causeTitle}}"</strong> has crossed the
+          <strong>{{milestones}}</strong> funding milestone.
+        </p>
+        <div
+          style="
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 24px 0;
+          "
+        >
+          <p style="margin: 0">
+            <strong>Transparency check:</strong> Please post a fund-use update
+            (photos, videos, or receipts) before <strong>{{deadline}}</strong>.
+            If no update is submitted by then, your campaign will be temporarily
+            hidden from the platform.
+          </p>
+        </div>
+        <a
+          href="{{dashboardUrl}}"
+          style="
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+          "
+          >Post your update</a
+        >
+        <p style="margin-top: 24px; font-size: 14px; color: #64748b">
+          This keeps your donors' trust alive. Campaigns that post proof raise
+          more, faster.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

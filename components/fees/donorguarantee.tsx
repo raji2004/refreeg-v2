@@ -41,7 +41,7 @@ export default function DonorGuarantee() {
         variants={itemVariants}
       >
         <h2 className="text-2xl md:text-3xl lg:text-5xl font-bold mb-4">
-          RefreeG's Donor <span className="text-gray-500">Guarantee</span>
+          RefreeG&apos;s Donor <span className="text-gray-500">Guarantee</span>
         </h2>
         <p className="text-sm md:text-base text-gray-600 max-w-4xl mx-auto">
           Transparency for donors. Accountability for cause owners. Safety for everyone.

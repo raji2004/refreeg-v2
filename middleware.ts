@@ -19,6 +19,8 @@ const PUBLIC_API_PREFIXES = [
   "/api/states", // Public lookup data
   "/api/mail", // Donor-facing email endpoints (no auth required)
   "/api/s3", // S3 image proxy (public images)
+  "/api/dev", // Temporary local dev/testing routes
+  "/api/leaderboard", // Public leaderboard rankings
 ];
 
 const APP_ROUTE_PREFIXES = [
@@ -29,6 +31,11 @@ const APP_ROUTE_PREFIXES = [
   "/campaign",
   "/petitions",
   "/referrals",
+  "/leaderboard",
+  "/organization",
+  "/wallet",
+  "/bounties",
+  "/saved",
   "/api",
   "/s",
 ];
@@ -67,6 +74,14 @@ export default auth(async (req) => {
     return NextResponse.redirect(target, 308);
   }
 
+  // Bare "/" on apps.refreeg.com is deliberately NOT redirected to www here.
+  // components/app-shell/app-shell.tsx links its logo to "/", rendered on
+  // every app-shell page — Next.js's <Link> auto-prefetches that target in
+  // the background, and a cross-origin 308 for a same-page prefetch fetch
+  // triggers a CORS preflight that fails (blocked, not merely redirected),
+  // logging errors on every app page and breaking the prefetch outright.
+  // Real top-level navigation to apps.refreeg.com/ still just renders the
+  // homepage directly instead — same content, no redirect needed either way.
   if (
     host === APP_HOST &&
     !isAppRoute &&
@@ -116,7 +131,28 @@ export default auth(async (req) => {
   }
 
   // ── 3. Redirect authenticated users away from auth pages ──────────
-  if (user && pathname.startsWith("/auth")) {
+  // Excludes /auth/callback: that's the OAuth landing route, not a page a
+  // signed-in user would browse to — it needs to run its own onboarding
+  // check and honor the original ?redirect= target (app/auth/callback/route.ts),
+  // which a blanket redirect here would otherwise skip for a user who just
+  // finished signing in with Google.
+  //
+  // Also excludes /auth/signin and /auth/signup: those two used to
+  // silently bounce a still-signed-in visitor straight to /dashboard,
+  // making it impossible to ever reach the actual form to sign in as
+  // someone else. They now render an explicit "Signed in as X — Continue /
+  // Sign in as someone else" card instead (see AlreadySignedInCard) —
+  // still fast for the common case, but never a silent decision.
+  const AUTH_PAGES_WITH_OWN_SESSION_HANDLING = [
+    "/auth/callback",
+    "/auth/signin",
+    "/auth/signup",
+  ];
+  if (
+    user &&
+    pathname.startsWith("/auth") &&
+    !AUTH_PAGES_WITH_OWN_SESSION_HANDLING.includes(pathname)
+  ) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
@@ -129,6 +165,25 @@ export default auth(async (req) => {
     pathname.startsWith("/dashboard")
   ) {
     return NextResponse.redirect(new URL("/onboarding", req.url));
+  }
+
+  // ── 5. ref_v1 cookie — capture referral code from any URL for OAuth ──
+  // When a visitor arrives via a referral link (?ref_v1=CODE) on any page
+  // (signup, cause pages, etc.), we persist the code in a short-lived
+  // HttpOnly cookie. The NextAuth signIn event reads this cookie to attribute
+  // Google OAuth signups to the correct referrer without losing the code
+  // during the OAuth redirect roundtrip.
+  const refV1 = req.nextUrl.searchParams.get("ref_v1");
+  if (refV1) {
+    const response = NextResponse.next();
+    response.cookies.set("ref_v1", refV1, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 60 * 30, // 30 minutes
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+    });
+    return response;
   }
 });
 

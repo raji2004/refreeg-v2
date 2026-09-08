@@ -29,8 +29,6 @@ import {
   isProfileComplete,
   hasCompletedOnboarding,
   getCurrentOnboardingStep,
-  getSolanaWallet,
-  updateSolanaWallet,
 } from "@/actions/profile-actions";
 
 const mockPrisma = prisma as unknown as {
@@ -182,7 +180,7 @@ describe("profile-actions", () => {
   });
 
   describe("hasCompletedOnboarding", () => {
-    it("returns true when all onboarding fields are present", async () => {
+    it("returns true when onboarding_completed is true", async () => {
       mockPrisma.user.findUnique.mockResolvedValue({
         fullName: "Test User",
         phone: "08012345678",
@@ -192,6 +190,43 @@ describe("profile-actions", () => {
         username: "testuser",
         location: "Lagos",
         createdAt: new Date("2026-01-01"),
+        onboarding_completed: true,
+      });
+
+      const result = await hasCompletedOnboarding("user-1");
+
+      expect(result).toBe(true);
+    });
+
+    it("returns false when onboarding_completed is false for a recent account", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        fullName: "Test User",
+        phone: "08012345678",
+        email: "user@test.com",
+        firstName: "Test",
+        lastName: "User",
+        username: "testuser",
+        location: "Lagos",
+        createdAt: new Date("2026-01-01"),
+        onboarding_completed: false,
+      });
+
+      const result = await hasCompletedOnboarding("user-1");
+
+      expect(result).toBe(false);
+    });
+
+    it("returns true for legacy accounts predating the onboarding wizard", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        fullName: "Test User",
+        phone: "08012345678",
+        email: "user@test.com",
+        firstName: "Test",
+        lastName: "User",
+        username: "testuser",
+        location: "Lagos",
+        createdAt: new Date("2024-01-01"),
+        onboarding_completed: false,
       });
 
       const result = await hasCompletedOnboarding("user-1");
@@ -243,29 +278,6 @@ describe("profile-actions", () => {
       const result = await getCurrentOnboardingStep("user-1");
 
       expect(result).toBe(4);
-    });
-  });
-
-  describe("getSolanaWallet / updateSolanaWallet", () => {
-    it("returns solana wallet from profile", async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({
-        solana_wallet: "sol-wallet-123",
-      });
-
-      const result = await getSolanaWallet("user-1");
-
-      expect(result).toBe("sol-wallet-123");
-    });
-
-    it("updates solana wallet and revalidates settings", async () => {
-      mockPrisma.user.update.mockResolvedValue({
-        solana_wallet: "new-sol-wallet",
-      });
-
-      const result = await updateSolanaWallet("user-1", "new-sol-wallet");
-
-      expect(result).toBe("new-sol-wallet");
-      expect(revalidatePath).toHaveBeenCalledWith("/dashboard/settings");
     });
   });
 });

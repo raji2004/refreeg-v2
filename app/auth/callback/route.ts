@@ -24,7 +24,11 @@ export async function GET(request: NextRequest) {
     (await hasCompletedOnboarding(session.user.id));
 
   if (!completedOnboarding) {
-    return NextResponse.redirect(new URL("/onboarding", request.url));
+    const onboardingUrl = new URL("/onboarding", request.url);
+    if (requestedRedirect) {
+      onboardingUrl.searchParams.set("redirect", requestedRedirect);
+    }
+    return NextResponse.redirect(onboardingUrl);
   }
 
   return NextResponse.redirect(

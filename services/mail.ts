@@ -1,5 +1,4 @@
 "use server";
-import "server-only";
 
 import nodemailer from "nodemailer";
 import fs from "fs";
@@ -43,7 +42,7 @@ export async function sendMail({
   subject,
   templateName,
   context,
-  from = process.env.EMAIL_FROM  || "noreply@refreeg.com",
+  from = process.env.EMAIL_FROM || "noreply@refreeg.com",
   cc,
   bcc,
 }: SendMailOptions) {
@@ -51,17 +50,25 @@ export async function sendMail({
     const template = loadTemplate(templateName);
     const html = template(context);
 
-    const info = await transporter.sendMail({
-      from,
-      to,
-      cc,
-      bcc,
-      subject,
-      html,
-    });
+    // Enforce a strict 10-second timeout to prevent hanging the main thread
+    const info = (await Promise.race([
+      transporter.sendMail({
+        from,
+        to,
+        cc,
+        bcc,
+        subject,
+        html,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("SMTP Timeout")), 10000),
+      ),
+    ])) as any;
 
     return { success: true, messageId: info.messageId };
   } catch (error) {
+    // Log it, but DO NOT throw. The user flow must continue.
+    console.error("[MailService] Failed to send email:", error);
     return { success: false, error };
   }
 }
@@ -82,6 +89,21 @@ export async function sendOtpEmail(context: {
       otpCode: context.otpCode,
       currentYear,
     },
+  });
+}
+
+export async function sendOrganizationInvitationEmail(context: {
+  email: string;
+  inviterName: string;
+  organizationName: string;
+  role: string;
+  invitationUrl: string;
+}) {
+  return sendMail({
+    to: context.email,
+    subject: `You're invited to join ${context.organizationName} on RefreeG`,
+    templateName: "organization-invitation",
+    context: { ...context, currentYear: new Date().getFullYear() },
   });
 }
 
@@ -277,9 +299,33 @@ export async function sendKycRejectedEmail(
   });
 }
 
+export async function sendKycResubmittedEmail(
+  userEmail: string,
+  userName: string,
+  resubmitReason: string,
+) {
+  const currentYear = new Date().getFullYear();
+  return sendMail({
+    to: userEmail,
+    subject: "Action Required: KYC Verification Update - Refreeg",
+    templateName: "kyc-resubmitted",
+    context: {
+      userName,
+      organizationName: "Refreeg",
+      resubmitReason,
+      kycResubmitLink: "https://www.refreeg.com/dashboard/settings?tab=kyc",
+      currentYear,
+    },
+  });
+}
+
 export async function sendCauseRejectedEmailForUser(
   userId: string,
-  context: { causeName: string; rejectionReason?: string; dashboardUrl: string },
+  context: {
+    causeName: string;
+    rejectionReason?: string;
+    dashboardUrl: string;
+  },
 ) {
   const profile = await getProfile(userId);
   if (!profile?.email) throw new Error("Recipient email not found");
@@ -428,14 +474,14 @@ export async function sendLoginNotificationEmail(context: {
     const headersList = await headers();
     const xff = headersList.get("x-forwarded-for");
     const xri = headersList.get("x-real-ip");
-    
+
     let detectedIp = (xff?.split(",")[0] || xri || "Unknown IP").trim();
-    
+
     // Label localhost clearly for local development
     if (detectedIp === "::1" || detectedIp === "127.0.0.1") {
       detectedIp = `${detectedIp} (Localhost)`;
     }
-    
+
     ipAddress = detectedIp;
   } catch {
     // headers() may fail outside of a request context
@@ -848,7 +894,8 @@ export async function sendKycReminderEmail(
   const currentYear = new Date().getFullYear();
   return sendMail({
     to: userEmail,
-    subject: "🔐 Your Refreeg account isn't verified yet — here's why it matters",
+    subject:
+      "🔐 Your Refreeg account isn't verified yet — here's why it matters",
     templateName: "kyc-reminder",
     context: {
       userName,
@@ -879,7 +926,9 @@ export async function sendDonationReceivedEmail({
 }) {
   const currentYear = new Date().getFullYear();
   const showProgress =
-    typeof amountRaised === "number" && typeof goalAmount === "number" && goalAmount > 0;
+    typeof amountRaised === "number" &&
+    typeof goalAmount === "number" &&
+    goalAmount > 0;
   const percent = showProgress
     ? Math.min(Math.round(((amountRaised ?? 0) / (goalAmount ?? 1)) * 100), 100)
     : 0;
@@ -898,6 +947,230 @@ export async function sendDonationReceivedEmail({
       amountRaised: amountRaised?.toLocaleString() ?? "0",
       goalAmount: goalAmount?.toLocaleString() ?? "0",
       percent,
+      currentYear,
+    },
+  });
+}
+
+const COMMENT_EXCERPT_MAX_LENGTH = 200;
+
+export async function sendNewCommentEmail({
+  to,
+  ownerName,
+  commenterName,
+  causeTitle,
+  commentText,
+  causeUrl,
+}: {
+  to: string;
+  ownerName: string;
+  commenterName: string;
+  causeTitle: string;
+  commentText: string;
+  causeUrl: string;
+}) {
+  const currentYear = new Date().getFullYear();
+  const commentExcerpt =
+    commentText.length > COMMENT_EXCERPT_MAX_LENGTH
+      ? `${commentText.slice(0, COMMENT_EXCERPT_MAX_LENGTH)}…`
+      : commentText;
+
+  return sendMail({
+    to,
+    subject: `💬 New comment on "${causeTitle}"`,
+    templateName: "new-comment",
+    context: {
+      ownerName,
+      commenterName,
+      causeTitle,
+      commentExcerpt,
+      causeUrl,
+      currentYear,
+    },
+  });
+}
+
+function formatMilestones(milestones: number[]): string {
+  return [...new Set(milestones)]
+    .sort((a, b) => a - b)
+    .map((m) => `${m}%`)
+    .join(", ");
+}
+
+export async function sendProofUpdateRequiredEmail(params: {
+  to: string;
+  userName: string;
+  causeTitle: string;
+  causeUrl: string;
+  milestones: number[];
+  deadline: string;
+}) {
+  if (!params.to) return;
+  const currentYear = new Date().getFullYear();
+  return sendMail({
+    to: params.to,
+    subject: `Action required: fund-use update for "${params.causeTitle}"`,
+    templateName: "proof-update-required",
+    context: {
+      userName: params.userName,
+      causeTitle: params.causeTitle,
+      milestones: formatMilestones(params.milestones),
+      deadline: params.deadline,
+      dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/dashboard/causes`,
+      currentYear,
+    },
+  });
+}
+
+export async function sendProofUpdateReminderEmail(params: {
+  to: string;
+  userName: string;
+  causeTitle: string;
+  milestone: number;
+  deadline: string;
+  dashboardUrl: string;
+}) {
+  if (!params.to) return;
+  const currentYear = new Date().getFullYear();
+  return sendMail({
+    to: params.to,
+    subject: `Reminder: your ${params.milestone}% update for "${params.causeTitle}" is due soon`,
+    templateName: "proof-update-reminder",
+    context: {
+      userName: params.userName,
+      causeTitle: params.causeTitle,
+      milestone: `${params.milestone}%`,
+      deadline: params.deadline,
+      dashboardUrl: params.dashboardUrl,
+      currentYear,
+    },
+  });
+}
+
+export async function sendProofCausePausedEmail(params: {
+  to: string;
+  userName: string;
+  causeTitle: string;
+  dashboardUrl: string;
+}) {
+  if (!params.to) return;
+  const currentYear = new Date().getFullYear();
+  return sendMail({
+    to: params.to,
+    subject: `"${params.causeTitle}" has been paused`,
+    templateName: "proof-cause-paused",
+    context: {
+      userName: params.userName,
+      causeTitle: params.causeTitle,
+      dashboardUrl: params.dashboardUrl,
+      currentYear,
+    },
+  });
+}
+
+export async function sendProofUpdateApprovedEmail(params: {
+  to: string;
+  userName: string;
+  causeTitle: string;
+  causeUrl: string;
+  pauseLifted: boolean;
+}) {
+  if (!params.to) return;
+  const currentYear = new Date().getFullYear();
+  return sendMail({
+    to: params.to,
+    subject: `Your update for "${params.causeTitle}" is approved`,
+    templateName: "proof-update-approved",
+    context: {
+      userName: params.userName,
+      causeTitle: params.causeTitle,
+      causeUrl: params.causeUrl,
+      pauseLine: params.pauseLifted
+        ? "Your campaign has been restored — it's live and visible again!"
+        : "Your donors can now see it on your campaign page.",
+      currentYear,
+    },
+  });
+}
+
+export async function sendProofUpdateRejectedEmail(params: {
+  to: string;
+  userName: string;
+  causeTitle: string;
+  rejectionReason: string;
+}) {
+  if (!params.to) return;
+  const currentYear = new Date().getFullYear();
+  return sendMail({
+    to: params.to,
+    subject: `Your update for "${params.causeTitle}" needs changes`,
+    templateName: "proof-update-rejected",
+    context: {
+      userName: params.userName,
+      causeTitle: params.causeTitle,
+      rejectionReason:
+        params.rejectionReason ||
+        "The update didn't clearly show how the funds were used.",
+      dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/dashboard/causes`,
+      currentYear,
+    },
+  });
+}
+
+/**
+ * "recovered image only" causes (see prisma/schema/cause.prisma
+ * `reconstruction_note`) never got a real title back — don't print that
+ * placeholder string to the campaign owner as if it were their title.
+ */
+function isPlaceholderCauseTitle(title: string): boolean {
+  return /^untitled campaign\b/i.test(title.trim());
+}
+
+export async function sendCauseRecoveredEmail(params: {
+  to: string;
+  userName?: string;
+  causeTitle: string;
+  causeImage?: string | null;
+  causeRaised: number;
+  causeGoal: number;
+}) {
+  if (!params.to) return;
+  const currentYear = new Date().getFullYear();
+  const titleIsPlaceholder = isPlaceholderCauseTitle(params.causeTitle);
+  return sendMail({
+    to: params.to,
+    subject: "Important: your RefreeG campaign",
+    templateName: "cause-recovered",
+    context: {
+      userName: params.userName || "there",
+      recipientEmail: params.to,
+      causeTitle: titleIsPlaceholder
+        ? "A campaign linked to this account"
+        : params.causeTitle,
+      titleIsPlaceholder,
+      causeImage: params.causeImage || "",
+      causeRaised: params.causeRaised.toLocaleString(),
+      causeGoal: params.causeGoal.toLocaleString(),
+      signInUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/auth/signin`,
+      currentYear,
+    },
+  });
+}
+
+export async function sendProofUpdatePublishedEmail(params: {
+  to: string;
+  causeTitle: string;
+  causeUrl: string;
+}) {
+  if (!params.to) return;
+  const currentYear = new Date().getFullYear();
+  return sendMail({
+    to: params.to,
+    subject: `New verified update on "${params.causeTitle}"`,
+    templateName: "proof-update-published",
+    context: {
+      causeTitle: params.causeTitle,
+      causeUrl: params.causeUrl,
       currentYear,
     },
   });

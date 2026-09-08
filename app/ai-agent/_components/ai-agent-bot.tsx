@@ -255,6 +255,7 @@ export default function AIAgentBot() {
 
   return (
     <div
+      data-support-bot
       className={cn(
         "pointer-events-none fixed right-3 z-[120] flex max-w-[calc(100vw-1rem)] flex-col items-end sm:bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:right-6 sm:max-w-[calc(100vw-1.5rem)]",
         isCauseDetailPage

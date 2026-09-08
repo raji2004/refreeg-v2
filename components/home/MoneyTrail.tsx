@@ -200,16 +200,16 @@ export function MoneyTrail() {
                 <span className="md:hidden">
                   Built for the people who ask
                   <span className="italic block mt-2">
-                    "Where did my money actually go?"
+                    &quot;Where did my money actually go?&quot;
                   </span>
                 </span>
 
                 <span className="hidden md:inline">
                   Built for the people who ask{" "}
                   <span className="italic">
-                    "Where
+                    &quot;Where
                     <br />
-                    did my money actually go?"
+                    did my money actually go?&quot;
                   </span>
                 </span>
               </h2>

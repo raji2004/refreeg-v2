@@ -1,8 +1,12 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getCause } from "@/actions/cause-actions";
 import { getCurrentUser } from "@/actions/auth-actions";
 import { getProfile } from "@/actions/profile-actions";
 import PledgeScreen from "@/app/campaign/_components/pledge-screen";
+import { causePublicPath } from "@/lib/causes/slug";
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function CausePledgePage({
   params,
@@ -13,6 +17,10 @@ export default async function CausePledgePage({
   const cause = await getCause(id);
   if (!cause) {
     notFound();
+  }
+
+  if (UUID_REGEX.test(id) && cause.slug) {
+    redirect(`${causePublicPath(cause)}/pledge`);
   }
 
   const user = await getCurrentUser();

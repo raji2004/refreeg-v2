@@ -34,12 +34,10 @@ export function useAuth() {
       });
 
       if (res?.error) {
-        toast({
-          title: "Error signing in",
-          description: "Invalid email or password.",
-          variant: "destructive",
-        });
-        return;
+        if (res.error === "CredentialsSignin") {
+          throw new Error("Invalid credentials");
+        }
+        throw new Error(`Auth Error: ${res.error}`);
       }
 
       toast({
@@ -48,8 +46,7 @@ export function useAuth() {
       });
 
       const safeRedirect = normalizeRedirectPath(redirectTo) || "/dashboard";
-      router.refresh();
-      router.push(safeRedirect);
+      window.location.href = safeRedirect;
     } catch (error: any) {
       toast({
         title: "Error signing in",

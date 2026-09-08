@@ -361,7 +361,7 @@ const FeaturesSection = () => {
               variants={textVariants}
               transition={{ delay: 0.1 }}
             >
-              Stake your nonprofit's funds in our liquidity pool to generate
+              Stake your nonprofit&apos;s funds in our liquidity pool to generate
               yield and sustain your mission long-term.
             </motion.p>
           </motion.div>

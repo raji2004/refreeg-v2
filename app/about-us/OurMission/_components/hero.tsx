@@ -19,7 +19,7 @@ export default function Hero() {
             </div>
 
             <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-tight">
-              RefreeG's Mission
+              RefreeG&apos;s Mission
             </h1>
 
             <p className="text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed max-w-none lg:max-w-lg">
