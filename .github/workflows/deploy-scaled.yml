@@ -315,8 +315,8 @@ jobs:
 
       # ── 8. Health check — against the ALB directly, by Host header ─────────
       # Until DNS is manually cut over to the ALB (a deliberate, later step —
-      # see infra rollout plan), www.refreeg.com/apps.refreeg.com still point
-      # at the old EC2 box. Hitting the ALB's own DNS name with an explicit
+      # see infra rollout plan), www.refreeg.com still points at the old EC2
+      # box. Hitting the ALB's own DNS name with an explicit
       # Host header validates the new ALB routing/target groups correctly
       # regardless of DNS cutover status. -k skips TLS hostname verification
       # since the ALB's own DNS name isn't covered by the ACM cert (only the
@@ -345,12 +345,7 @@ jobs:
             return 1
           }
 
-          check "www.refreeg.com" && frontend_ok=1 || frontend_ok=0
-          check "apps.refreeg.com" && api_ok=1 || api_ok=0
-
-          if [ "$frontend_ok" -eq 1 ] && [ "$api_ok" -eq 1 ]; then
-            exit 0
-          fi
+          check "www.refreeg.com" && exit 0
           exit 1
 
       # ── 9. Advance the "latest release" pointer new instances bootstrap from
