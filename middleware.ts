@@ -22,6 +22,19 @@ const PUBLIC_API_PREFIXES = [
   "/api/leaderboard", // Public leaderboard rankings
 ];
 
+// Builds an absolute URL from the request's own forwarded headers instead
+// of req.url/req.nextUrl — in this self-hosted standalone deployment,
+// req.url has been observed to resolve to the server's bind address
+// (0.0.0.0:3000, from ecosystem.config.js's HOSTNAME) instead of the real
+// public host when the reverse proxy doesn't send X-Forwarded-Host (see
+// nginx/nginx.conf). Explicit headers are safe regardless of proxy config.
+function absoluteUrl(path: string, req: Request): URL {
+  const host =
+    req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  return new URL(path, `${proto}://${host}`);
+}
+
 export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   const user = req.auth?.user;
@@ -47,7 +60,7 @@ export default auth(async (req) => {
     pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding");
 
   if (isProtectedRoute && !user) {
-    const signInUrl = new URL("/auth/signin", req.url);
+    const signInUrl = absoluteUrl("/auth/signin", req);
     signInUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(signInUrl);
   }
@@ -57,7 +70,7 @@ export default auth(async (req) => {
   if (pathname.startsWith("/dashboard/admin") && user) {
     const role = (user as { role?: string }).role;
     if (role === "user") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(absoluteUrl("/dashboard", req));
     }
   }
 
@@ -84,7 +97,7 @@ export default auth(async (req) => {
     pathname.startsWith("/auth") &&
     !AUTH_PAGES_WITH_OWN_SESSION_HANDLING.includes(pathname)
   ) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.redirect(absoluteUrl("/dashboard", req));
   }
 
   // ── 4. Onboarding Redirect ────────────────────────────────────────
@@ -95,7 +108,7 @@ export default auth(async (req) => {
     isOnboardingCompleted === false &&
     pathname.startsWith("/dashboard")
   ) {
-    return NextResponse.redirect(new URL("/onboarding", req.url));
+    return NextResponse.redirect(absoluteUrl("/onboarding", req));
   }
 
   // ── 5. ref_v1 cookie — capture referral code from any URL for OAuth ──
