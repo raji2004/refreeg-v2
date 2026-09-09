@@ -22,77 +22,9 @@ const PUBLIC_API_PREFIXES = [
   "/api/leaderboard", // Public leaderboard rankings
 ];
 
-const APP_ROUTE_PREFIXES = [
-  "/dashboard",
-  "/onboarding",
-  "/auth",
-  "/causes",
-  "/campaign",
-  "/petitions",
-  "/referrals",
-  "/leaderboard",
-  "/organization",
-  "/wallet",
-  "/bounties",
-  "/saved",
-  "/api",
-  "/s",
-];
-
-const APP_HOST = "apps.refreeg.com";
-const WWW_HOST = "www.refreeg.com";
-const Test_HOST = "http://localhost:3000/";
-const HOST_NEUTRAL_API_PREFIXES = ["/api/health", "/api/error-report"];
-
 export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   const user = req.auth?.user;
-  const hostHeader =
-    req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
-  const forwardedProto = req.headers.get("x-forwarded-proto") || "";
-  const targetProtocol = forwardedProto
-    ? `${forwardedProto.split(",")[0].trim()}:`
-    : req.nextUrl.protocol;
-  const host = hostHeader.split(":")[0].toLowerCase();
-
-  // ── 0. Domain split for single-process deployment ────────────────
-  // Keep landing pages on www and app features on apps while both hosts
-  // are served by the same Next.js process.
-  const isAppRoute = APP_ROUTE_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
-  const isHostNeutralApiRoute = HOST_NEUTRAL_API_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
-
-  if (host === WWW_HOST && isAppRoute && !isHostNeutralApiRoute) {
-    const target = req.nextUrl.clone();
-    target.hostname = APP_HOST;
-    target.protocol = targetProtocol;
-    target.port = req.nextUrl.port;
-    return NextResponse.redirect(target, 308);
-  }
-
-  // Bare "/" on apps.refreeg.com is deliberately NOT redirected to www here.
-  // components/app-shell/app-shell.tsx links its logo to "/", rendered on
-  // every app-shell page — Next.js's <Link> auto-prefetches that target in
-  // the background, and a cross-origin 308 for a same-page prefetch fetch
-  // triggers a CORS preflight that fails (blocked, not merely redirected),
-  // logging errors on every app page and breaking the prefetch outright.
-  // Real top-level navigation to apps.refreeg.com/ still just renders the
-  // homepage directly instead — same content, no redirect needed either way.
-  if (
-    host === APP_HOST &&
-    !isAppRoute &&
-    !isHostNeutralApiRoute &&
-    pathname !== "/"
-  ) {
-    const target = req.nextUrl.clone();
-    target.hostname = WWW_HOST;
-    target.protocol = targetProtocol;
-    target.port = req.nextUrl.port;
-    return NextResponse.redirect(target, 308);
-  }
 
   // ── 1. Protect API routes ─────────────────────────────────────────
   // Return 401 for authenticated API routes when no session exists.
