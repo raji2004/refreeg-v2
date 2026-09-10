@@ -29,6 +29,22 @@ export const getCurrentUser = cache(async () => {
   });
 });
 
+/**
+ * Whether the signed-in user has a password set — false for a Google-only
+ * signup. Drives whether Settings > Account asks for a current password
+ * before allowing a change (see updatePasswordAction below).
+ */
+export async function getHasPasswordAction() {
+  const session = await auth();
+  if (!session?.user?.id) return false;
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { password: true },
+  });
+  return !!user?.password;
+}
+
 export async function signUpAction(
   email: string,
   password: string,
@@ -253,5 +269,55 @@ export async function resetPasswordAction(token: string, password: string) {
   } catch (error) {
     console.error("Password reset error:", error);
     return { success: false, error: "Failed to reset password" };
+  }
+}
+
+/**
+ * Sets or changes the signed-in user's password. If the account already has
+ * one (vs. a Google-only signup with password: null), the current password
+ * must be verified first — this runs from Settings, not the logged-out
+ * token-based reset-password flow above, so there's no token to prove intent.
+ */
+export async function updatePasswordAction(
+  currentPassword: string | null,
+  newPassword: string,
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be signed in to do this." };
+  }
+
+  if (newPassword.length < 8) {
+    return {
+      success: false,
+      error: "Password must be at least 8 characters.",
+    };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { password: true },
+    });
+
+    if (user?.password) {
+      const matches =
+        !!currentPassword &&
+        (await bcrypt.compare(currentPassword, user.password));
+      if (!matches) {
+        return { success: false, error: "Current password is incorrect." };
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { password: hashedPassword },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Update password error:", error);
+    return { success: false, error: "Failed to update password" };
   }
 }
