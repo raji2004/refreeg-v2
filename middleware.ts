@@ -23,77 +23,22 @@ const PUBLIC_API_PREFIXES = [
   "/api/leaderboard", // Public leaderboard rankings
 ];
 
-const APP_ROUTE_PREFIXES = [
-  "/dashboard",
-  "/onboarding",
-  "/auth",
-  "/causes",
-  "/campaign",
-  "/petitions",
-  "/referrals",
-  "/leaderboard",
-  "/organization",
-  "/wallet",
-  "/bounties",
-  "/saved",
-  "/api",
-  "/s",
-];
-
-const APP_HOST = "apps.refreeg.com";
-const WWW_HOST = "www.refreeg.com";
-const Test_HOST = "http://localhost:3000/";
-const HOST_NEUTRAL_API_PREFIXES = ["/api/health", "/api/error-report"];
+// Builds an absolute URL from the request's own forwarded headers instead
+// of req.url/req.nextUrl — in this self-hosted standalone deployment,
+// req.url has been observed to resolve to the server's bind address
+// (0.0.0.0:3000, from ecosystem.config.js's HOSTNAME) instead of the real
+// public host when the reverse proxy doesn't send X-Forwarded-Host (see
+// nginx/nginx.conf). Explicit headers are safe regardless of proxy config.
+function absoluteUrl(path: string, req: Request): URL {
+  const host =
+    req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  return new URL(path, `${proto}://${host}`);
+}
 
 export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   const user = req.auth?.user;
-  const hostHeader =
-    req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
-  const forwardedProto = req.headers.get("x-forwarded-proto") || "";
-  const targetProtocol = forwardedProto
-    ? `${forwardedProto.split(",")[0].trim()}:`
-    : req.nextUrl.protocol;
-  const host = hostHeader.split(":")[0].toLowerCase();
-
-  // ── 0. Domain split for single-process deployment ────────────────
-  // Keep landing pages on www and app features on apps while both hosts
-  // are served by the same Next.js process.
-  const isAppRoute = APP_ROUTE_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
-  const isHostNeutralApiRoute = HOST_NEUTRAL_API_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
-
-  if (host === WWW_HOST && isAppRoute && !isHostNeutralApiRoute) {
-    const target = req.nextUrl.clone();
-    target.hostname = APP_HOST;
-    target.protocol = targetProtocol;
-    target.port = req.nextUrl.port;
-    return NextResponse.redirect(target, 308);
-  }
-
-  // Bare "/" on apps.refreeg.com is deliberately NOT redirected to www here.
-  // components/app-shell/app-shell.tsx links its logo to "/", rendered on
-  // every app-shell page — Next.js's <Link> auto-prefetches that target in
-  // the background, and a cross-origin 308 for a same-page prefetch fetch
-  // triggers a CORS preflight that fails (blocked, not merely redirected),
-  // logging errors on every app page and breaking the prefetch outright.
-  // Real top-level navigation to apps.refreeg.com/ still just renders the
-  // homepage directly instead — same content, no redirect needed either way.
-  if (
-    host === APP_HOST &&
-    !isAppRoute &&
-    !isHostNeutralApiRoute &&
-    pathname !== "/"
-  ) {
-    const target = req.nextUrl.clone();
-    target.hostname = WWW_HOST;
-    target.protocol = targetProtocol;
-    target.port = req.nextUrl.port;
-    return NextResponse.redirect(target, 308);
-  }
 
   // ── 1. Protect API routes ─────────────────────────────────────────
   // Return 401 for authenticated API routes when no session exists.
@@ -116,7 +61,7 @@ export default auth(async (req) => {
     pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding");
 
   if (isProtectedRoute && !user) {
-    const signInUrl = new URL("/auth/signin", req.url);
+    const signInUrl = absoluteUrl("/auth/signin", req);
     signInUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(signInUrl);
   }
@@ -126,7 +71,7 @@ export default auth(async (req) => {
   if (pathname.startsWith("/dashboard/admin") && user) {
     const role = (user as { role?: string }).role;
     if (role === "user") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(absoluteUrl("/dashboard", req));
     }
   }
 
@@ -153,7 +98,7 @@ export default auth(async (req) => {
     pathname.startsWith("/auth") &&
     !AUTH_PAGES_WITH_OWN_SESSION_HANDLING.includes(pathname)
   ) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.redirect(absoluteUrl("/dashboard", req));
   }
 
   // ── 4. Onboarding Redirect ────────────────────────────────────────
@@ -164,7 +109,7 @@ export default auth(async (req) => {
     isOnboardingCompleted === false &&
     pathname.startsWith("/dashboard")
   ) {
-    return NextResponse.redirect(new URL("/onboarding", req.url));
+    return NextResponse.redirect(absoluteUrl("/onboarding", req));
   }
 
   // ── 5. ref_v1 cookie — capture referral code from any URL for OAuth ──

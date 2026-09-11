@@ -13,7 +13,14 @@ export async function GET(req: Request) {
 
   await signOut({ redirect: false });
 
-  const target = new URL(redirectTo, req.url);
+  // Built from the incoming request's own Host header, not req.url's own
+  // origin — in this self-hosted standalone deployment, req.url has been
+  // observed to resolve to the server's bind address (0.0.0.0:3000, from
+  // ecosystem.config.js's HOSTNAME) instead of the real public host when
+  // the reverse proxy doesn't send X-Forwarded-Host (see nginx/nginx.conf).
+  const forwardedHost = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  const forwardedProto = req.headers.get("x-forwarded-proto") || url.protocol.replace(":", "");
+  const target = new URL(`${forwardedProto}://${forwardedHost}${redirectTo}`);
   target.searchParams.set("reason", "security-reset");
   return NextResponse.redirect(target);
 }
