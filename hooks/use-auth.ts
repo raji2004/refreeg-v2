@@ -114,6 +114,15 @@ export function useAuth() {
         ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(safeRedirect)}`
         : `${window.location.origin}/auth/callback`;
 
+      // Clears any stale csrf-token/callback-url cookie left over from this
+      // app's several cookie/domain configurations this week — a mismatched
+      // one can make Auth.js's CSRF check fail silently, bouncing straight
+      // back to the sign-in page with no error. See that route's comment.
+      await fetch("/api/auth/pre-signin-cleanup", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+
       await nextAuthSignIn("google", {
         callbackUrl,
       });
