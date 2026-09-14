@@ -13,11 +13,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email, password, fullName, accountType } = body;
 
-    if (!email || !password || !fullName) {
-      return apiError("Missing required fields (email, password, fullName)", 400);
+    if (!email || !password) {
+      return apiError("Missing required fields (email, password)", 400);
     }
 
-    const result = await signUpAction(email, password, fullName, accountType);
+    const effectiveFullName = (fullName && typeof fullName === "string" && fullName.trim().length > 0)
+      ? fullName.trim()
+      : email.split("@")[0];
+
+    const result = await signUpAction(email, password, effectiveFullName, accountType);
 
     if (!result.success) {
       return apiError(result.error || "Failed to create account", 400);
