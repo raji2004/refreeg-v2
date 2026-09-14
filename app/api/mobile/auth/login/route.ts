@@ -18,18 +18,27 @@ export async function POST(request: NextRequest) {
       return apiError("Missing required fields (email, password)", 400);
     }
 
+    const normalizedEmail = (email as string).trim().toLowerCase();
+
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
-    if (!user || !user.password) {
-      return apiError("Invalid credentials", 401);
+    if (!user) {
+      return apiError("No account found with this email address.", 404);
+    }
+
+    if (!user.password) {
+      return apiError(
+        "This account was created using Google Sign-In. Please sign in with Google.",
+        400,
+      );
     }
 
     const valid = await bcrypt.compare(password, user.password);
 
     if (!valid) {
-      return apiError("Invalid credentials", 401);
+      return apiError("Incorrect password. Please try again.", 401);
     }
 
     if (user.isBlocked) {

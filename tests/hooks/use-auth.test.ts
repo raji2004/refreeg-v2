@@ -77,7 +77,7 @@ describe("useAuth", () => {
     );
   });
 
-  it("shows error toast when sign in fails", async () => {
+  it("shows error toast when sign in fails with generic CredentialsSignin", async () => {
     (signIn as jest.Mock).mockResolvedValue({ error: "CredentialsSignin" });
 
     const { result } = renderHook(() => useAuth());
@@ -89,10 +89,65 @@ describe("useAuth", () => {
     expect(toast).toHaveBeenCalledWith(
       expect.objectContaining({
         title: "Error signing in",
+        description: "Invalid email or password.",
         variant: "destructive",
       }),
     );
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("shows specific error toast when user is not found", async () => {
+    (signIn as jest.Mock).mockResolvedValue({ error: "CredentialsSignin", code: "user_not_found" });
+
+    const { result } = renderHook(() => useAuth());
+
+    await act(async () => {
+      await result.current.signIn("nonexistent@example.com", "wrong");
+    });
+
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Error signing in",
+        description: "No account found with this email address.",
+        variant: "destructive",
+      }),
+    );
+  });
+
+  it("shows specific error toast when password is incorrect", async () => {
+    (signIn as jest.Mock).mockResolvedValue({ error: "CredentialsSignin", code: "incorrect_password" });
+
+    const { result } = renderHook(() => useAuth());
+
+    await act(async () => {
+      await result.current.signIn("existing@example.com", "wrongpassword");
+    });
+
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Error signing in",
+        description: "Incorrect password. Please try again.",
+        variant: "destructive",
+      }),
+    );
+  });
+
+  it("shows specific error toast when account was created with Google", async () => {
+    (signIn as jest.Mock).mockResolvedValue({ error: "CredentialsSignin", code: "missing_password" });
+
+    const { result } = renderHook(() => useAuth());
+
+    await act(async () => {
+      await result.current.signIn("googleuser@example.com", "anypassword");
+    });
+
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Error signing in",
+        description: "This account was created using Google Sign-In. Please sign in with Google.",
+        variant: "destructive",
+      }),
+    );
   });
 
   it("signs up, auto signs in, and redirects to onboarding", async () => {

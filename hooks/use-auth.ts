@@ -34,8 +34,20 @@ export function useAuth() {
       });
 
       if (res?.error) {
+        const errorCode = res.code || res.error;
+        if (errorCode === "user_not_found") {
+          throw new Error("No account found with this email address.");
+        }
+        if (errorCode === "missing_password") {
+          throw new Error(
+            "This account was created using Google Sign-In. Please sign in with Google."
+          );
+        }
+        if (errorCode === "incorrect_password") {
+          throw new Error("Incorrect password. Please try again.");
+        }
         if (res.error === "CredentialsSignin") {
-          throw new Error("Invalid credentials");
+          throw new Error("Invalid email or password.");
         }
         throw new Error(`Auth Error: ${res.error}`);
       }

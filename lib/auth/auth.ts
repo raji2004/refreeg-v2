@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { Adapter, AdapterUser } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
@@ -8,6 +8,18 @@ import type { UserRole } from "@/types/role-types";
 import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
 import { createReferralRecord } from "@/lib/referral-utils";
+
+export class UserNotFoundError extends CredentialsSignin {
+  code = "user_not_found";
+}
+
+export class MissingPasswordError extends CredentialsSignin {
+  code = "missing_password";
+}
+
+export class IncorrectPasswordError extends CredentialsSignin {
+  code = "incorrect_password";
+}
 
 // Idle timeout: session cookie/JWT expiry, renewed on activity (sliding window).
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
@@ -170,41 +182,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         try {
+          const normalizedEmail = (credentials.email as string).trim().toLowerCase();
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email as string },
+            where: { email: normalizedEmail },
             include: { roles: { select: { role: true } } },
           });
 
-        if (!user) {
-          console.error(`[NextAuth] user not found for email: ${credentials.email}`);
-          return null;
-        }
-        if (!user.password) {
-          console.error(`[NextAuth] user has no password for email: ${credentials.email}`);
-          return null;
-        }
+          if (!user) {
+            console.error(`[NextAuth] user not found for email: ${normalizedEmail}`);
+            throw new UserNotFoundError();
+          }
+          if (!user.password) {
+            console.error(`[NextAuth] user has no password for email: ${normalizedEmail}`);
+            throw new MissingPasswordError();
+          }
 
-        const valid = await bcrypt.compare(
-          credentials.password as string,
-          user.password,
-        );
+          const valid = await bcrypt.compare(
+            credentials.password as string,
+            user.password,
+          );
 
-        if (!valid) {
-          console.error(`[NextAuth] password mismatch for email: ${credentials.email}`);
-          return null;
-        }
+          if (!valid) {
+            console.error(`[NextAuth] password mismatch for email: ${credentials.email}`);
+            throw new IncorrectPasswordError();
+          }
 
-        console.error(`[NextAuth] user authenticated successfully: ${credentials.email}`);
-        return { 
-          id: user.id, 
-          email: user.email, 
-          name: user.fullName,
-          onboarding_completed: user.onboarding_completed,
-          roles: user.roles,
-          role: user.roles?.[0]?.role || "user",
-          tier: user.current_tier || "Explorer",
-        };
+          console.error(`[NextAuth] user authenticated successfully: ${credentials.email}`);
+          return { 
+            id: user.id, 
+            email: user.email, 
+            name: user.fullName,
+            onboarding_completed: user.onboarding_completed,
+            roles: user.roles,
+            role: user.roles?.[0]?.role || "user",
+            tier: user.current_tier || "Explorer",
+          };
         } catch (error) {
+          if (error instanceof CredentialsSignin) {
+            throw error;
+          }
           console.error("[NextAuth] ERROR in authorize:", error);
           return null;
         }
