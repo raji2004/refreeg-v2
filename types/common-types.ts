@@ -19,6 +19,10 @@ export interface ProfileFormData {
   profile_photo?: string | null;
   email: string;
   bio: string;
+  location?: string | null;
+  display_name?: string | null;
+  donation_preference?: "named" | "anonymous" | null;
+  interests?: string[];
   account_type?:
     | "individual"
     | "creator"

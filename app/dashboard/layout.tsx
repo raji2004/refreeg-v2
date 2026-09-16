@@ -38,7 +38,7 @@ export default async function DashboardLayout({
 
   return (
     <ClientLayoutWrapper>
-      <ClaimBanner />
+      {/* <ClaimBanner /> */}
       {children}
     </ClientLayoutWrapper>
   );

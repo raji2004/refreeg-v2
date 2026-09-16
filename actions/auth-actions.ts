@@ -321,3 +321,204 @@ export async function updatePasswordAction(
     return { success: false, error: "Failed to update password" };
   }
 }
+
+const EMAIL_CHANGE_MAX_ATTEMPTS = 3;
+const emailChangeAttempts = new Map<string, number>();
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+/**
+ * Starts an email change: verifies password, stores a confirmation token, and
+ * emails a link to the *new* address. Current email stays active until confirm.
+ */
+export async function requestEmailChangeAction(
+  newEmailRaw: string,
+  password: string,
+): Promise<
+  | { success: true }
+  | {
+      success: false;
+      error: string;
+      code?: "bad_password" | "no_password" | "taken" | "same" | "invalid";
+      attemptsLeft?: number;
+    }
+> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be signed in to do this." };
+  }
+
+  const userId = session.user.id;
+  const newEmail = newEmailRaw.trim().toLowerCase();
+
+  if (!isValidEmail(newEmail)) {
+    return {
+      success: false,
+      error: "Enter a valid email address.",
+      code: "invalid",
+    };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      email: true,
+      password: true,
+      fullName: true,
+    },
+  });
+
+  if (!user) {
+    return { success: false, error: "Account not found." };
+  }
+
+  if (!user.password) {
+    return {
+      success: false,
+      error:
+        "Set a password in Security first — we need it to confirm email changes.",
+      code: "no_password",
+    };
+  }
+
+  if (newEmail === (user.email ?? "").toLowerCase()) {
+    return {
+      success: false,
+      error: "That is already your email address.",
+      code: "same",
+    };
+  }
+
+  const failed = emailChangeAttempts.get(userId) ?? 0;
+  if (failed >= EMAIL_CHANGE_MAX_ATTEMPTS) {
+    return {
+      success: false,
+      error: "Too many incorrect password attempts. Try again later.",
+      code: "bad_password",
+      attemptsLeft: 0,
+    };
+  }
+
+  const passwordOk = await bcrypt.compare(password, user.password);
+  if (!passwordOk) {
+    const nextFailed = failed + 1;
+    emailChangeAttempts.set(userId, nextFailed);
+    const attemptsLeft = Math.max(0, EMAIL_CHANGE_MAX_ATTEMPTS - nextFailed);
+    return {
+      success: false,
+      error:
+        attemptsLeft > 0
+          ? `That password is not right. ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left.`
+          : "That password is not right. No attempts left.",
+      code: "bad_password",
+      attemptsLeft,
+    };
+  }
+
+  emailChangeAttempts.delete(userId);
+
+  const taken = await prisma.user.findUnique({
+    where: { email: newEmail },
+    select: { id: true },
+  });
+  if (taken) {
+    return {
+      success: false,
+      error: "That email is already used by another account.",
+      code: "taken",
+    };
+  }
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  const identifier = `email-change:${userId}:${newEmail}`;
+
+  await prisma.verificationToken.deleteMany({
+    where: { identifier: { startsWith: `email-change:${userId}:` } },
+  });
+
+  await prisma.verificationToken.create({
+    data: { identifier, token, expires },
+  });
+
+  const baseUrl =
+    process.env.AUTH_URL?.replace("/api/auth", "") ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
+  const confirmUrl = `${baseUrl}/auth/confirm-email-change?token=${token}`;
+
+  const { sendEmailChangeConfirmEmail } = await import("@/services/mail");
+  await sendEmailChangeConfirmEmail({
+    email: newEmail,
+    userName: user.fullName?.split(" ")[0] || "there",
+    newEmail,
+    confirmUrl,
+  });
+
+  return { success: true };
+}
+
+export async function confirmEmailChangeAction(token: string): Promise<{
+  success: boolean;
+  error?: string;
+  email?: string;
+}> {
+  if (!token) {
+    return { success: false, error: "Missing confirmation token." };
+  }
+
+  try {
+    const record = await prisma.verificationToken.findUnique({
+      where: { token },
+    });
+
+    if (!record || record.expires < new Date()) {
+      return {
+        success: false,
+        error: "This confirmation link is invalid or has expired.",
+      };
+    }
+
+    if (!record.identifier.startsWith("email-change:")) {
+      return { success: false, error: "Invalid confirmation token." };
+    }
+
+    const parts = record.identifier.split(":");
+    const userId = parts[1];
+    const newEmail = parts.slice(2).join(":").toLowerCase();
+
+    if (!userId || !newEmail) {
+      return { success: false, error: "Invalid confirmation token." };
+    }
+
+    const taken = await prisma.user.findFirst({
+      where: { email: newEmail, NOT: { id: userId } },
+      select: { id: true },
+    });
+    if (taken) {
+      await prisma.verificationToken.delete({ where: { token } }).catch(() => undefined);
+      return {
+        success: false,
+        error: "That email is already used by another account.",
+      };
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          email: newEmail,
+          emailVerified: new Date(),
+        },
+      }),
+      prisma.verificationToken.delete({ where: { token } }),
+    ]);
+
+    return { success: true, email: newEmail };
+  } catch (error) {
+    console.error("Confirm email change error:", error);
+    return { success: false, error: "Failed to confirm email change." };
+  }
+}

@@ -35,6 +35,7 @@ interface QuickDonateFormProps {
   subaccount?: string;
   defaultName?: string;
   defaultEmail?: string;
+  defaultAnonymous?: boolean;
   userId?: string;
   /** "modal" drops the full-viewport wrapper and the "view full campaign" link, for use inside a Dialog. */
   variant?: "page" | "modal";
@@ -51,6 +52,7 @@ export default function QuickDonateForm({
   subaccount,
   defaultName = "",
   defaultEmail = "",
+  defaultAnonymous = false,
   userId,
   variant = "page",
 }: QuickDonateFormProps) {
@@ -60,7 +62,7 @@ export default function QuickDonateForm({
   const [name, setName] = useState(defaultName);
   const [email, setEmail] = useState(defaultEmail);
   const [message, setMessage] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(defaultAnonymous);
   const [amountError, setAmountError] = useState("");
 
   const donationAmount = Number(amount) || 0;

@@ -30,7 +30,7 @@ const navItems: NavItem[] = [
   { title: "Petitions", href: "/petitions", icon: Flag, requiresAuth: false },
   { title: "Bounties", href: "/bounties", icon: Trophy, requiresAuth: true },
   { title: "Saved", href: "/saved", icon: Bookmark, requiresAuth: true },
-  { title: "Settings", href: "/dashboard/settings", icon: Settings, requiresAuth: true },
+  { title: "Settings", href: "/dashboard/settings/profile", icon: Settings, requiresAuth: true },
 ];
 
 const isPathActive = (pathname: string, href: string) => {

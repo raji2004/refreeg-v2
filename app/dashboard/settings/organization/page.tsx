@@ -7,7 +7,7 @@ export default async function OrganizationSettingsPage() {
   const result = await getOrganizationWorkspace();
 
   return (
-    <SettingsShell>
+    <SettingsShell isOrganization>
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <span className="rounded-xl bg-blue-50 p-2 text-blue-700">

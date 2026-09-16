@@ -46,3 +46,5 @@ skills-lock.json
 /lib/generated/prisma
 .agent
 .DS_Store
+.pnpm-store
+playwright/.auth/

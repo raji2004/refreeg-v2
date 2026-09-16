@@ -100,9 +100,9 @@ export function useProfile(userId: string | undefined) {
     isLoading,
     isUploading: updateProfilePhotoMutation.isPending,
     error: error as string | null,
-    updateProfile: updateProfileMutation.mutate,
-    updateProfilePhoto: updateProfilePhotoMutation.mutate,
-    updateBankDetails: updateBankDetailsMutation.mutate,
+    updateProfile: updateProfileMutation.mutateAsync,
+    updateProfilePhoto: updateProfilePhotoMutation.mutateAsync,
+    updateBankDetails: updateBankDetailsMutation.mutateAsync,
     hasBankDetails: profile
       ? !!(profile.account_number && profile.bank_name)
       : false,

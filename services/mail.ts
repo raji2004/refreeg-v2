@@ -124,6 +124,25 @@ export async function sendPasswordResetEmail(context: {
   });
 }
 
+export async function sendEmailChangeConfirmEmail(context: {
+  email: string;
+  userName: string;
+  newEmail: string;
+  confirmUrl: string;
+}) {
+  return sendMail({
+    to: context.email,
+    subject: "Confirm your new RefreeG email",
+    templateName: "email-change-confirm",
+    context: {
+      userName: context.userName,
+      newEmail: context.newEmail,
+      confirmUrl: context.confirmUrl,
+      currentYear: new Date().getFullYear(),
+    },
+  });
+}
+
 export async function sendCauseUnderReviewEmail(context: {
   causeName: string;
   reviewTimeframe?: string;

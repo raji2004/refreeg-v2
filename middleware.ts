@@ -91,6 +91,8 @@ export default auth(async (req) => {
     "/auth/callback",
     "/auth/signin",
     "/auth/signup",
+    "/auth/confirm-email-change",
+    "/auth/update-password",
   ];
   if (
     user &&

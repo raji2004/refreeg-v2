@@ -25,6 +25,31 @@ export async function signIn(
   }
 
   const emailInput = page.locator("#email");
+
+  // Wait for either dashboard redirect or the sign-in form (retry once if blank)
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await Promise.race([
+        page.waitForURL(/\/dashboard/, { timeout: 20_000 }),
+        emailInput.waitFor({ state: "visible", timeout: 20_000 }),
+      ]);
+      break;
+    } catch {
+      if (attempt === 0) {
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
+        continue;
+      }
+      throw new Error(
+        `Sign-in page did not render (url=${page.url()}). Is the app running?`,
+      );
+    }
+  }
+
+  if (page.url().includes("/dashboard")) {
+    console.log("Already authenticated; using existing session.");
+    return;
+  }
+
   await emailInput.waitFor({ state: "visible", timeout: 30_000 });
   await emailInput.fill(email);
   await page.locator("#password").fill(password);

@@ -187,6 +187,17 @@ const config: Config = {
           DEFAULT: "hsl(var(--parchment))",
           foreground: "hsl(var(--parchment-foreground))",
         },
+        forest: {
+          DEFAULT: "hsl(var(--forest))",
+          foreground: "hsl(var(--forest-foreground))",
+        },
+        azure: {
+          DEFAULT: "hsl(var(--azure))",
+          foreground: "hsl(var(--azure-foreground))",
+        },
+        "cream-muted": "hsl(var(--cream-muted))",
+        hairline: "hsl(var(--hairline))",
+        "verified-soft": "hsl(var(--verified-soft))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar))",
           foreground: "hsl(var(--sidebar-foreground))",

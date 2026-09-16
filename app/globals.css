@@ -19,9 +19,12 @@ textarea:-webkit-autofill:focus,
 select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px white inset !important; /* keep white background */
-  -webkit-text-fill-color: #000 !important; /* keep black text */
-  transition: background-color 5000s ease-in-out 0s; /* disable flashing */
+  -webkit-box-shadow: 0 0 0px 1000px white inset !important;
+  /* keep white background */
+  -webkit-text-fill-color: #000 !important;
+  /* keep black text */
+  transition: background-color 5000s ease-in-out 0s;
+  /* disable flashing */
 }
 
 /* Ensure focus does not change bg/text */
@@ -32,7 +35,8 @@ select:focus {
   color: #000 !important;
   outline: none !important;
   box-shadow: none !important;
-  border-color: #003366 !important; /* optional: keep blue border, or set your brand */
+  border-color: #003366 !important;
+  /* optional: keep blue border, or set your brand */
 }
 
 @layer base {
@@ -87,24 +91,41 @@ select:focus {
 
     /* Fintech surface system (see docs/DESIGN_GUIDE.md) — additive, opt-in
        tokens for new/rebuilt screens. Do not repoint --background/--primary
-       at these; existing pages keep the navy/white theme until re-themed. */
-    --ink: 220 25% 8%;
-    --ink-foreground: 60 20% 96%;
+       at these; existing pages keep the navy/white theme until re-themed.
+       Hex anchors from Refreeg_web_app Figma (Settings / Profile, node 209:17911). */
+    --ink: 0 0% 10%;
+    /* #1a1a1a */
+    --ink-foreground: 40 20% 98%;
 
-    --cream: 40 27% 96%;
-    --cream-foreground: 220 25% 8%;
+    --cream: 30 28.6% 97.25%;
+    /* #faf8f6 */
+    --cream-foreground: 0 0% 10%;
 
     --lime: 74 78% 58%;
-    --lime-foreground: 220 25% 8%;
+    --lime-foreground: 0 0% 10%;
 
     --gold: 38 72% 78%;
-    --gold-foreground: 220 25% 8%;
+    --gold-foreground: 0 0% 10%;
 
     /* Petition surfaces only — see docs/DESIGN_GUIDE.md. Warmer/tanner than
        --cream, reads as paper. Text/borders/buttons on it still use
        ink/lime/gold as usual, just this one background token differs. */
     --parchment: 40 38% 91%;
-    --parchment-foreground: 220 25% 8%;
+    --parchment-foreground: 0 0% 10%;
+
+    /* Settings mockup accents (same Figma file) */
+    --forest: 155 80% 20%;
+    /* #0a5c3a avatar / deep green */
+    --forest-foreground: 0 0% 100%;
+    --azure: 223 55.2% 49%;
+    /* #3860c2 */
+    --azure-foreground: 0 0% 100%;
+    --cream-muted: 60 13% 94%;
+    /* #f2f2ee active nav pill */
+    --hairline: 60 6% 87%;
+    /* #e0e0dc soft card/row borders */
+    --verified-soft: 150 20% 91.8%;
+    /* #e6eeea VERIFIED chip fill */
   }
 
   /* Dark theme commented out
@@ -337,9 +358,11 @@ select:focus {
   0% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-10px);
   }
+
   100% {
     transform: translateY(0px);
   }
@@ -353,6 +376,7 @@ select:focus {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -377,20 +401,16 @@ select:focus {
 }
 
 .marquee-edge-fade {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    black 4%,
-    black 96%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    black 4%,
-    black 96%,
-    transparent 100%
-  );
+  -webkit-mask-image: linear-gradient(to right,
+      transparent 0,
+      black 4%,
+      black 96%,
+      transparent 100%);
+  mask-image: linear-gradient(to right,
+      transparent 0,
+      black 4%,
+      black 96%,
+      transparent 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {

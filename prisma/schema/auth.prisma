@@ -25,7 +25,10 @@ model User {
   firstName                   String?                  @map("first_name")
   lastName                    String?                  @map("last_name")
   username                    String?                  @unique
+  displayName                 String?                  @map("display_name")
   location                    String?
+  /// How the donor appears on funded campaigns: "named" | "anonymous"
+  donationPreference          String?                  @default("named") @map("donation_preference")
   email                       String?                  @unique
   onboarding_completed        Boolean?                 @default(false)
   fullName                    String?                  @map("full_name")
