@@ -41,10 +41,16 @@ skills-lock.json
 /coverage
 /playwright-report
 /test-results
-
+.playwright-mcp/
 
 /lib/generated/prisma
 .agent
 .DS_Store
 .pnpm-store
 playwright/.auth/
+
+# editor / local tooling (keep .github + project eslint config tracked)
+.vscode/
+.idea/
+.cursor/
+.claude/
