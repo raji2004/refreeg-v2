@@ -22,7 +22,7 @@ import {
 } from "@/lib/media/cause-cover";
 import {
   resolveCampaignLocation,
-  resolveDeviceCampaignLocation,
+  // resolveDeviceCampaignLocation,
 } from "@/lib/locations/campaign-location";
 import { allocateUniqueCauseSlug } from "@/lib/causes/slug";
 
@@ -262,11 +262,13 @@ export async function createCause(
   userId: string,
   causeData: CauseFormData,
 ): Promise<Cause> {
-  // The display label is always derived again on the server. Do not trust a
-  // location string supplied by the browser.
-  const location = await resolveDeviceCampaignLocation(
-    causeData.deviceLocation,
-  );
+  // GPS verification temporarily disabled while live location data is restored.
+  // const location = await resolveDeviceCampaignLocation(causeData.deviceLocation);
+  const location = causeData.location?.trim();
+  if (!location) throw new Error("Campaign location is required");
+  if (location.length > 100) {
+    throw new Error("Campaign location must be less than 100 characters");
+  }
   const causeId = crypto.randomUUID();
   let coverImageUrl = null;
   if (causeData.coverImage) {

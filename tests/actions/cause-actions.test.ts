@@ -218,6 +218,13 @@ describe("cause-actions", () => {
   });
 
   describe("createCause", () => {
+    it.each([undefined, "   ", "x".repeat(101)])(
+      "rejects invalid manual location %s",
+      async (location) => {
+        await expect(createCause("owner-1", { location } as any)).rejects.toThrow(/location/i);
+        expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+      },
+    );
     it("creates a cause without media uploads", async () => {
       const createdCause = {
         ...basePrismaCause,
@@ -225,11 +232,12 @@ describe("cause-actions", () => {
         goal: 5000,
         slug: "new-cause",
       };
+      const createRecord = jest.fn().mockResolvedValue(createdCause);
       mockPrisma.cause.findFirst.mockResolvedValue(null);
       mockPrisma.$transaction.mockImplementation(async (callback) =>
         callback({
           cause: {
-            create: jest.fn().mockResolvedValue(createdCause),
+            create: createRecord,
           },
           cause_sections: { createMany: jest.fn() },
         }),
@@ -244,12 +252,7 @@ describe("cause-actions", () => {
         category: "health",
         goal: 5000,
         sections: [],
-        deviceLocation: {
-          latitude: 6.5244,
-          longitude: 3.3792,
-          accuracy: 50,
-          capturedAt: Date.now(),
-        },
+        location: "  My town, Nigeria  ",
       } as any);
 
       expect(result).toEqual(
@@ -260,8 +263,11 @@ describe("cause-actions", () => {
         }),
       );
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard/causes");
-      expect(resolveDeviceCampaignLocation).toHaveBeenCalledWith(
-        expect.objectContaining({ latitude: 6.5244, longitude: 3.3792 }),
+      expect(resolveDeviceCampaignLocation).not.toHaveBeenCalled();
+      expect(createRecord).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ location: "My town, Nigeria" }),
+        }),
       );
     });
   });
