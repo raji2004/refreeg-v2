@@ -63,18 +63,26 @@ function getDeviceLabel(userAgent: string | null): string {
   return "Unknown Device";
 }
 
-// Wrap PrismaAdapter to map NextAuth's default `name`/`image` fields
-// to our schema's `fullName`/`profilePhoto` fields
+// Wrap PrismaAdapter to map NextAuth's default `name`/`image` fields to our
+// schema's `fullName`/`profilePhoto` fields, and split `name` into
+// firstName/lastName up front. Without this, firstName/lastName stayed
+// blank until the user manually completed the onboarding form — fine
+// normally, but for an account that never properly reaches onboarding
+// (e.g. onboarding_completed already true from a data-recovery
+// reconstruction), it left those fields permanently empty.
 const baseAdapter = PrismaAdapter(prisma);
 const customAdapter: Adapter = {
   ...baseAdapter,
   createUser: async (data: any) => {
     const { name, image, ...rest } = data;
+    const [firstName, ...lastNameParts] = (name || "").trim().split(/\s+/);
     const user = await prisma.user.create({
       data: {
         ...rest,
         fullName: name || null,
         profilePhoto: image || null,
+        firstName: firstName || null,
+        lastName: lastNameParts.length ? lastNameParts.join(" ") : null,
       },
     });
     return user as unknown as AdapterUser;
