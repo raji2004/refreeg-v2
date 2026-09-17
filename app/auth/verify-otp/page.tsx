@@ -1,14 +1,18 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, MailCheck } from "lucide-react";
+import { Loader2, Timer, Mail } from "lucide-react";
 
-export default function VerifyOtpPage() {
+import { AuthBrandPanel } from "@/components/auth/auth-brand-panel";
+import { AuthLogo } from "@/components/auth/auth-logo";
+import { BeatOtpInput } from "@/components/ui/beat-otp-input";
+import { Button } from "@/components/ui/button";
+
+function VerifyOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
@@ -18,17 +22,11 @@ export default function VerifyOtpPage() {
       ? requestedRedirect
       : null;
 
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpCode, setOtpCode] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const inputRefs = [
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-  ];
+  const [cooldown, setCooldown] = useState(60);
 
   useEffect(() => {
     if (!email) {
@@ -36,75 +34,41 @@ export default function VerifyOtpPage() {
     }
   }, [email, router]);
 
-  const handleChange = (index: number, value: string) => {
-    if (!/^[0-9]*$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value.substring(value.length - 1);
-    setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      inputRefs[index + 1].current?.focus();
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown((prev) => prev - 1), 1000);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [cooldown]);
 
-  const handleKeyDown = (
-    index: number,
-    e: React.KeyboardEvent<HTMLInputElement>,
-  ) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      inputRefs[index - 1].current?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData
-      .getData("text")
-      .replace(/[^0-9]/g, "")
-      .substring(0, 6);
-    if (pastedData) {
-      const newOtp = [...otp];
-      for (let i = 0; i < pastedData.length; i++) {
-        newOtp[i] = pastedData[i];
-      }
-      setOtp(newOtp);
-      const focusIndex = pastedData.length < 6 ? pastedData.length : 5;
-      inputRefs[focusIndex].current?.focus();
-    }
-  };
-
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const otpCode = otp.join("");
-
-    if (otpCode.length !== 6) {
-      toast.error("Please enter the full 6-digit code");
+  const executeVerify = async (codeToVerify: string) => {
+    if (codeToVerify.length !== 6) {
+      setErrorMessage("Please enter the full 6-character code");
       return;
     }
 
     setIsVerifying(true);
+    setErrorMessage(null);
 
     try {
-      // 1. Verify OTP with the backend
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otpCode }),
+        body: JSON.stringify({ email, otpCode: codeToVerify }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Verification failed");
+        const errorMsg = data.error || "That code doesn't match. Please try again.";
+        setErrorMessage(errorMsg);
+        toast.error(errorMsg);
         setIsVerifying(false);
         return;
       }
 
-      toast.success("Email verified successfully!");
+      toast.success("Account verified successfully!");
 
-      // 2. Auto login using the secure token returned from the backend
       if (data.loginToken) {
         const loginRes = await signIn("otp-login", {
           email,
@@ -130,24 +94,22 @@ export default function VerifyOtpPage() {
         );
       }
     } catch (error) {
+      setErrorMessage("An unexpected network error occurred.");
       toast.error("An unexpected error occurred");
       setIsVerifying(false);
     }
   };
 
-  const [cooldown, setCooldown] = useState(60);
-
-  useEffect(() => {
-    if (cooldown > 0) {
-      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [cooldown]);
+  const handleVerifySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    executeVerify(otpCode);
+  };
 
   const handleResend = async () => {
-    if (cooldown > 0) return;
+    if (cooldown > 0 || isResending) return;
 
     setIsResending(true);
+    setErrorMessage(null);
     try {
       const res = await fetch("/api/auth/resend-otp", {
         method: "POST",
@@ -164,96 +126,141 @@ export default function VerifyOtpPage() {
         setCooldown(60);
       }
     } catch (error) {
-      toast.error("An unexpected error occurred while resending");
+      toast.error("An error occurred while resending the code");
     } finally {
       setIsResending(false);
     }
   };
 
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? `0${secs}` : secs}`;
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] p-4 sm:p-6 relative overflow-hidden">
-      {/* Background accents for a premium feel */}
-      <div className="absolute top-[-5%] right-[-5%] w-[50%] h-[50%] bg-blue-50 rounded-full blur-[120px] pointer-events-none opacity-60" />
-      <div className="absolute bottom-[-5%] left-[-5%] w-[50%] h-[50%] bg-slate-100 rounded-full blur-[120px] pointer-events-none opacity-60" />
+    <div className="flex min-h-screen w-full bg-[#FCFBFA]">
+      {/* Left Brand Panel (Desktop) */}
+      <AuthBrandPanel
+        headline="One code, three characters at a time."
+        subtitle="Letters and numbers, read in two beats. Paste it whole or type it — we strip spaces and the dash for you."
+        bottomCard={{
+          eyebrow: "WHAT WE SENT",
+          text: `RefreeG: your 6-digit verification code was sent to ${email || "your email"}. It expires in 10 minutes. We will never ask you for it.`,
+        }}
+      />
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[440px] relative z-10"
-      >
-        <Link
-          href="/auth/signup"
-          className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-[#002B5B] transition-colors mb-6 sm:mb-8 group"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
-          Back to Sign Up
-        </Link>
+      {/* Right Content Panel */}
+      <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-10 sm:px-10 lg:px-16">
+        <div className="w-full max-w-md">
+          {/* Mobile Logo */}
+          <div className="mb-6 lg:hidden">
+            <AuthLogo variant="dark" />
+          </div>
 
-        <div className="bg-white border border-slate-200 rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-[0_20px_70px_-10px_rgba(0,0,0,0.08)]">
-          <div className="flex justify-center mb-6 sm:mb-8">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#002B5B]/5 rounded-2xl sm:rounded-3xl flex items-center justify-center border border-[#002B5B]/10 shadow-sm">
-              <MailCheck className="w-8 h-8 sm:w-10 sm:h-10 text-[#002B5B]" />
+          {/* Stepper Progress Bar */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold tracking-wide text-neutral-900 whitespace-nowrap">
+                Step 2 of 3
+              </span>
+              <div className="h-1 flex-1 bg-neutral-200 rounded-full overflow-hidden">
+                <div className="h-full w-2/3 bg-blue-600 rounded-full transition-all duration-300" />
+              </div>
             </div>
           </div>
 
-          <div className="text-center mb-8 sm:mb-10">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2 sm:mb-3 tracking-tight">
-              Verify your email
+          {/* Screen Title & Target Email */}
+          <div className="mb-8">
+            <h1 className="font-fraunces text-3xl sm:text-4xl font-normal text-neutral-900 tracking-tight">
+              Enter your code
             </h1>
-            <p className="text-slate-500 text-sm sm:text-base leading-relaxed px-2">
-              We&apos;ve sent a 6-digit verification code to
-              <br />
-              <span className="text-[#002B5B] font-semibold break-all">
-                {email}
-              </span>
+            <p className="mt-2 text-sm text-neutral-600 leading-relaxed">
+              Sent to <span className="font-medium text-neutral-900">{email}</span>{" "}
+              ·{" "}
+              <Link
+                href={`/auth/signup?email=${encodeURIComponent(email)}`}
+                className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                Change email
+              </Link>
             </p>
           </div>
 
-          <form onSubmit={handleVerify}>
-            <div className="flex justify-between gap-2 sm:gap-3 mb-8 sm:mb-10">
-              {otp.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={inputRefs[index]}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  onPaste={index === 0 ? handlePaste : undefined}
-                  className="flex-1 min-w-0 h-12 sm:h-16 text-center text-xl sm:text-2xl font-bold bg-slate-50 border border-[#002B5B] rounded-xl sm:rounded-2xl text-slate-900 focus:border-[#002B5B] focus:ring-4 focus:ring-[#002B5B]/10 transition-all outline-none"
-                />
-              ))}
+          {/* Form */}
+          <form onSubmit={handleVerifySubmit} className="space-y-6">
+            {/* Reusable Beat OTP Component */}
+            <div>
+              <BeatOtpInput
+                value={otpCode}
+                onChange={(val) => {
+                  setOtpCode(val);
+                  setErrorMessage(null);
+                }}
+                onComplete={(code) => executeVerify(code)}
+                error={errorMessage}
+                disabled={isVerifying}
+                autoFocus
+                placeholder="K4T9PQ"
+                onPasteSuccess={() => {
+                  toast.success("Code pasted from clipboard");
+                }}
+              />
             </div>
 
-            <button
+            {/* Resend Cooldown Counter */}
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-500">
+              <Timer className="w-4 h-4 shrink-0 text-neutral-400" />
+              {cooldown > 0 ? (
+                <span>Resend code in {formatTimer(cooldown)}</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={isResending}
+                  className="font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  {isResending ? "Sending new code..." : "Resend code now"}
+                </button>
+              )}
+            </div>
+
+            {/* Primary Action Button */}
+            <Button
               type="submit"
-              disabled={isVerifying || otp.join("").length !== 6}
-              className="w-full h-12 sm:h-14 bg-[#002B5B] text-white hover:bg-[#001D3D] shadow-lg shadow-[#002B5B]/20 font-bold rounded-xl sm:rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mb-6 active:scale-[0.98]"
+              disabled={isVerifying || otpCode.length !== 6}
+              className="w-full h-13 rounded-2xl bg-[#0D1E16] text-white hover:bg-neutral-900 font-medium text-sm sm:text-base shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isVerifying ? (
-                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                "Verify and Continue"
+                "Verify and continue"
               )}
-            </button>
-          </form>
+            </Button>
 
-          <div className="text-center">
-            <p className="text-xs sm:text-sm text-slate-500">
-              Didn&apos;t receive the code?{" "}
+            {/* Secondary Resend / Contact Action */}
+            <div className="text-center pt-2">
               <button
+                type="button"
                 onClick={handleResend}
                 disabled={isResending || cooldown > 0}
-                className="text-[#002B5B] hover:text-blue-700 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline underline underline-offset-4"
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-neutral-500 hover:text-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend now"}
+                <Mail className="w-3.5 h-3.5" />
+                <span>Send it by email instead</span>
               </button>
-            </p>
-          </div>
+            </div>
+          </form>
         </div>
-      </motion.div>
+      </div>
     </div>
+  );
+}
+
+export default function VerifyOtpPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen w-screen bg-[#FCFBFA]" />}>
+      <VerifyOtpContent />
+    </Suspense>
   );
 }
