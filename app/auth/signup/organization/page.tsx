@@ -31,11 +31,15 @@ function normalizeRedirect(target: string | null): string | null {
   return target;
 }
 
-export default function SignUpPage() {
+export default function OrganizationSignUpPage() {
   const router = useRouter();
   const { user, isLoading, signInWithGoogle } = useAuth();
 
   const [fullName, setFullName] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
+  const [organizationIndustry, setOrganizationIndustry] = useState("");
+  const [organizationPhone, setOrganizationPhone] = useState("");
+  const [organizationAddress, setOrganizationAddress] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -66,7 +70,7 @@ export default function SignUpPage() {
       setUtmCampaign(params.get("utm_campaign"));
 
       router.prefetch("/auth/verify-otp");
-      router.prefetch("/auth/signup/organization");
+      router.prefetch("/auth/signup");
     }
   }, [router]);
 
@@ -105,11 +109,15 @@ export default function SignUpPage() {
     }
 
     const registration = normalizeRegistrationInput({
-      accountType: "individual",
+      accountType: "organization",
       fullName,
       email,
       password,
       confirmPassword,
+      organizationName,
+      organizationPhone,
+      organizationAddress,
+      organizationIndustry,
     });
 
     const validationErrors = validateRegistrationInput(registration);
@@ -130,7 +138,7 @@ export default function SignUpPage() {
       } else {
         toast({
           title: "Please review the highlighted fields",
-          description: "Correct the signup information and try again.",
+          description: "Correct the organization details and try again.",
           variant: "destructive",
         });
       }
@@ -140,8 +148,8 @@ export default function SignUpPage() {
     setLoadingType("manual");
 
     toast({
-      title: "Creating your account...",
-      description: "Setting up your RefreeG account.",
+      title: "Creating organization account...",
+      description: "Setting up your workspace.",
     });
 
     try {
@@ -168,7 +176,7 @@ export default function SignUpPage() {
 
       toast({
         title: "Check your email!",
-        description: "We've sent a 6-digit code to verify your email.",
+        description: "We've sent a 6-digit code to verify your admin email.",
       });
 
       const redirectParam = redirectFromUrl
@@ -180,7 +188,7 @@ export default function SignUpPage() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error?.message || "Could not create account",
+        description: error?.message || "Could not create organization account",
         variant: "destructive",
       });
     } finally {
@@ -200,29 +208,26 @@ export default function SignUpPage() {
           />
         </div>
         <AuthBrandPanel
-          headline="You'll see exactly where it went."
-          subtitle="Two minutes to set up. Nothing is charged until you choose a campaign and an amount."
+          headline="Built for verified, transparent impact."
+          subtitle="Empower your organization with verifiable disbursement milestones and real-time public accounting."
           checklist={[
             {
-              title: "Receipts, not promises",
-              description:
-                "Organisers upload proof before the next tranche unlocks.",
+              title: "Transparent accountability",
+              description: "Publish proof of impact before project tranches unlock.",
             },
             {
-              title: "Pledge now, pay on trigger",
-              description:
-                "Your card is only charged when a campaign can actually work.",
+              title: "Community trust & pledges",
+              description: "Pledges are only charged when milestones are verified.",
             },
             {
-              title: "150 EIZA to start",
-              description: "Credited once your email is verified.",
+              title: "Instant verification",
+              description: "Admin workspace ready immediately after email confirmation.",
             },
           ]}
           testimonial={{
-            avatarInitials: "NB",
-            quote:
-              "My aunt trades at Mile-12. She got the grant. I saw the receipt.",
-            author: "Ngozi B. · Lagos",
+            avatarInitials: "HI",
+            quote: "RefreeG gave our NGO the transparency we needed to raise funds with absolute credibility.",
+            author: "Hope Initiative · Abuja",
           }}
         />
       </div>
@@ -233,29 +238,26 @@ export default function SignUpPage() {
     <div className="flex min-h-screen w-full bg-[#FCFBFA]">
       {/* Left Brand Panel (Desktop) */}
       <AuthBrandPanel
-        headline="You'll see exactly where it went."
-        subtitle="Two minutes to set up. Nothing is charged until you choose a campaign and an amount."
+        headline="Built for verified, transparent impact."
+        subtitle="Empower your organization with verifiable disbursement milestones and real-time public accounting."
         checklist={[
           {
-            title: "Receipts, not promises",
-            description:
-              "Organisers upload proof before the next tranche unlocks.",
+            title: "Transparent accountability",
+            description: "Publish proof of impact before project tranches unlock.",
           },
           {
-            title: "Pledge now, pay on trigger",
-            description:
-              "Your card is only charged when a campaign can actually work.",
+            title: "Community trust & pledges",
+            description: "Pledges are only charged when milestones are verified.",
           },
           {
-            title: "150 EIZA to start",
-            description: "Credited once your email is verified.",
+            title: "Instant verification",
+            description: "Admin workspace ready immediately after email confirmation.",
           },
         ]}
         testimonial={{
-          avatarInitials: "NB",
-          quote:
-            "My aunt trades at Mile-12. She got the grant. I saw the receipt.",
-          author: "Ngozi B. · Lagos",
+          avatarInitials: "HI",
+          quote: "RefreeG gave our NGO the transparency we needed to raise funds with absolute credibility.",
+          author: "Hope Initiative · Abuja",
         }}
       />
 
@@ -282,7 +284,7 @@ export default function SignUpPage() {
           {/* Screen Title & Subtitle */}
           <div className="mb-7">
             <h1 className="font-fraunces text-3xl sm:text-4xl font-normal text-neutral-900 tracking-tight">
-              Create your account
+              Create an organization account
             </h1>
             <p className="mt-2 text-sm text-neutral-600">
               Already have one?{" "}
@@ -294,12 +296,12 @@ export default function SignUpPage() {
               </Link>
             </p>
             <p className="mt-1 text-sm text-neutral-600">
-              Registering as an organization?{" "}
+              Signing up as an individual?{" "}
               <Link
-                href="/auth/signup/organization"
+                href="/auth/signup"
                 className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
               >
-                Create an organization account
+                Sign up here
               </Link>
             </p>
           </div>
@@ -353,23 +355,23 @@ export default function SignUpPage() {
               <div className="w-full border-t border-neutral-200" />
             </div>
             <span className="relative bg-[#FCFBFA] px-3 text-[11px] font-bold uppercase tracking-widest text-neutral-400">
-              Or use your email
+              Or use your organization details
             </span>
           </div>
 
           {/* Signup Form */}
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
-            {/* Full Name */}
+            {/* Primary Contact Name */}
             <div className="space-y-1.5">
               <label
                 htmlFor="fullName"
                 className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
               >
-                Full Name
+                Admin / Primary Contact Name
               </label>
               <Input
                 id="fullName"
-                placeholder="As it appears on your ID"
+                placeholder="Name of the workspace owner"
                 value={fullName}
                 onChange={(e) => {
                   setFullName(e.target.value);
@@ -388,13 +390,133 @@ export default function SignUpPage() {
               )}
             </div>
 
-            {/* Email Address */}
+            {/* Organization Name */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="organizationName"
+                className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
+              >
+                Organization Name
+              </label>
+              <Input
+                id="organizationName"
+                placeholder="Hope & Health Initiative"
+                value={organizationName}
+                onChange={(e) => {
+                  setOrganizationName(e.target.value);
+                  clearError("organizationName");
+                }}
+                aria-invalid={!!errors.organizationName}
+                className={cn(
+                  "h-12 rounded-xl bg-[#F0EEE9]/70 border border-neutral-200/80 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-blue-600 transition-colors",
+                  errors.organizationName && "border-red-500 bg-red-50/20",
+                )}
+              />
+              {errors.organizationName && (
+                <p role="alert" className="text-xs text-red-600 mt-1">
+                  {errors.organizationName}
+                </p>
+              )}
+            </div>
+
+            {/* Industry & Phone */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="organizationIndustry"
+                  className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
+                >
+                  Industry
+                </label>
+                <Input
+                  id="organizationIndustry"
+                  placeholder="e.g. Healthcare, Education"
+                  value={organizationIndustry}
+                  onChange={(e) => {
+                    setOrganizationIndustry(e.target.value);
+                    clearError("organizationIndustry");
+                  }}
+                  aria-invalid={!!errors.organizationIndustry}
+                  className={cn(
+                    "h-12 rounded-xl bg-[#F0EEE9]/70 border border-neutral-200/80 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-blue-600 transition-colors",
+                    errors.organizationIndustry &&
+                      "border-red-500 bg-red-50/20",
+                  )}
+                />
+                {errors.organizationIndustry && (
+                  <p role="alert" className="text-xs text-red-600 mt-1">
+                    {errors.organizationIndustry}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="organizationPhone"
+                  className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
+                >
+                  Organization Phone
+                </label>
+                <Input
+                  id="organizationPhone"
+                  type="tel"
+                  placeholder="+234 801 234 5678"
+                  value={organizationPhone}
+                  onChange={(e) => {
+                    setOrganizationPhone(e.target.value);
+                    clearError("organizationPhone");
+                  }}
+                  aria-invalid={!!errors.organizationPhone}
+                  className={cn(
+                    "h-12 rounded-xl bg-[#F0EEE9]/70 border border-neutral-200/80 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-blue-600 transition-colors",
+                    errors.organizationPhone && "border-red-500 bg-red-50/20",
+                  )}
+                />
+                {errors.organizationPhone && (
+                  <p role="alert" className="text-xs text-red-600 mt-1">
+                    {errors.organizationPhone}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Organization Address */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="organizationAddress"
+                className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
+              >
+                Organization Address
+              </label>
+              <Input
+                id="organizationAddress"
+                placeholder="Street, City, State"
+                value={organizationAddress}
+                onChange={(e) => {
+                  setOrganizationAddress(e.target.value);
+                  clearError("organizationAddress");
+                }}
+                aria-invalid={!!errors.organizationAddress}
+                className={cn(
+                  "h-12 rounded-xl bg-[#F0EEE9]/70 border border-neutral-200/80 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-blue-600 transition-colors",
+                  errors.organizationAddress &&
+                    "border-red-500 bg-red-50/20",
+                )}
+              />
+              {errors.organizationAddress && (
+                <p role="alert" className="text-xs text-red-600 mt-1">
+                  {errors.organizationAddress}
+                </p>
+              )}
+            </div>
+
+            {/* Admin Email Address */}
             <div className="space-y-1.5">
               <label
                 htmlFor="email"
                 className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
               >
-                Email Address
+                Admin Email Address
               </label>
               <Input
                 id="email"
@@ -543,7 +665,7 @@ export default function SignUpPage() {
             <div className="pt-2">
               <Button
                 type="submit"
-                aria-label="Sign Up"
+                aria-label="Create organization account"
                 disabled={loadingType !== null}
                 className="w-full h-13 rounded-2xl bg-[#0D1E16] text-white hover:bg-neutral-900 font-medium text-sm sm:text-base shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
@@ -559,8 +681,8 @@ export default function SignUpPage() {
             <div className="pt-2 flex items-start gap-2 text-xs text-neutral-500 leading-relaxed">
               <ShieldCheck className="w-4 h-4 shrink-0 text-neutral-400 mt-0.5" />
               <span>
-                Your email secures your account and confirms petition
-                signatures. It is never shown publicly.
+                Your email secures your workspace and verifies organization actions.
+                It is never shown publicly.
               </span>
             </div>
           </form>
