@@ -26,24 +26,30 @@ describe("organization registration validation", () => {
     expect(input.organizationName).toBe("Hope & Health Initiative (QA)");
   });
 
-  it("reports every missing organization field", () => {
+  it("accepts streamlined organization registration with only core credentials", () => {
+    const streamlined = {
+      accountType: "organization" as const,
+      fullName: "Ada Lovelace",
+      email: "admin@example.org",
+      password: "Strong!Pass2026",
+      confirmPassword: "Strong!Pass2026",
+    };
+    const input = normalizeRegistrationInput(streamlined);
+    expect(validateRegistrationInput(input)).toEqual({});
+  });
+
+  it("reports missing core credentials for organization signup", () => {
     const errors = validateRegistrationInput({
       ...validOrganization,
       fullName: "",
       email: "",
-      organizationName: "",
-      organizationPhone: "",
-      organizationAddress: "",
-      organizationIndustry: "",
+      password: "",
     });
 
     expect(errors).toMatchObject({
       fullName: expect.any(String),
       email: expect.any(String),
-      organizationName: expect.any(String),
-      organizationPhone: expect.any(String),
-      organizationAddress: expect.any(String),
-      organizationIndustry: expect.any(String),
+      password: expect.any(String),
     });
   });
 

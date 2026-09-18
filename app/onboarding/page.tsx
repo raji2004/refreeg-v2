@@ -283,14 +283,18 @@ export default function OnboardingPage() {
     );
 
     if (!isProfileComplete) {
-      setCurrentStepId("account-type");
+      setCurrentStepId(
+        onboardingData.accountType === "organization"
+          ? "profile"
+          : "account-type",
+      );
       toast({
         title: "Complete your profile first",
         description: "Please complete earlier steps before proceeding.",
         variant: "destructive",
       });
     }
-  }, [user, currentStepId, onboardingData.profile]);
+  }, [user, currentStepId, onboardingData.profile, onboardingData.accountType]);
 
   // ──── Step handlers ─────────────────────────────────────────────────
 

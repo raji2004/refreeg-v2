@@ -191,20 +191,7 @@ export default function Step3BOrgSetup({
 
     setIsSaving(true);
     try {
-      // Upload logo if a new one was selected
-      if (logoFile) {
-        const logoResult = await updateOrganizationLogo(logoFile);
-        if (!logoResult.success) {
-          toast({
-            title: "Logo upload failed",
-            description: logoResult.error,
-            variant: "destructive",
-          });
-          // Continue anyway — logo is optional
-        }
-      }
-
-      // Save org details + preferences
+      // 1. Save org details + preferences (creates or updates organization)
       const updateResult = await updateOrganization({
         name: formData.name.trim(),
         adminEmail: user.email || "",
@@ -227,6 +214,19 @@ export default function Step3BOrgSetup({
 
       if (!updateResult.success) {
         throw new Error(updateResult.error);
+      }
+
+      // 2. Upload logo if a new one was selected (now organization is guaranteed to exist)
+      if (logoFile) {
+        const logoResult = await updateOrganizationLogo(logoFile);
+        if (!logoResult.success) {
+          toast({
+            title: "Logo upload failed",
+            description: logoResult.error,
+            variant: "destructive",
+          });
+          // Continue anyway — logo is optional
+        }
       }
 
       onNext();

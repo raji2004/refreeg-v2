@@ -36,10 +36,6 @@ export default function OrganizationSignUpPage() {
   const { user, isLoading, signInWithGoogle } = useAuth();
 
   const [fullName, setFullName] = useState("");
-  const [organizationName, setOrganizationName] = useState("");
-  const [organizationIndustry, setOrganizationIndustry] = useState("");
-  const [organizationPhone, setOrganizationPhone] = useState("");
-  const [organizationAddress, setOrganizationAddress] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -81,6 +77,10 @@ export default function OrganizationSignUpPage() {
   const handleGoogleSignIn = async () => {
     try {
       setLoadingType("google");
+      if (typeof document !== "undefined") {
+        document.cookie =
+          "auth_org_intent=true; path=/; max-age=600; SameSite=Lax";
+      }
       await signInWithGoogle(redirectFromUrl);
     } catch (error) {
       console.error("Google Sign In Error:", error);
@@ -114,10 +114,6 @@ export default function OrganizationSignUpPage() {
       email,
       password,
       confirmPassword,
-      organizationName,
-      organizationPhone,
-      organizationAddress,
-      organizationIndustry,
     });
 
     const validationErrors = validateRegistrationInput(registration);
@@ -355,7 +351,7 @@ export default function OrganizationSignUpPage() {
               <div className="w-full border-t border-neutral-200" />
             </div>
             <span className="relative bg-[#FCFBFA] px-3 text-[11px] font-bold uppercase tracking-widest text-neutral-400">
-              Or use your organization details
+              Or register with work email
             </span>
           </div>
 
@@ -371,7 +367,7 @@ export default function OrganizationSignUpPage() {
               </label>
               <Input
                 id="fullName"
-                placeholder="Name of the workspace owner"
+                placeholder="e.g. Jane Doe"
                 value={fullName}
                 onChange={(e) => {
                   setFullName(e.target.value);
@@ -390,138 +386,18 @@ export default function OrganizationSignUpPage() {
               )}
             </div>
 
-            {/* Organization Name */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="organizationName"
-                className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
-              >
-                Organization Name
-              </label>
-              <Input
-                id="organizationName"
-                placeholder="Hope & Health Initiative"
-                value={organizationName}
-                onChange={(e) => {
-                  setOrganizationName(e.target.value);
-                  clearError("organizationName");
-                }}
-                aria-invalid={!!errors.organizationName}
-                className={cn(
-                  "h-12 rounded-xl bg-[#F0EEE9]/70 border border-neutral-200/80 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-blue-600 transition-colors",
-                  errors.organizationName && "border-red-500 bg-red-50/20",
-                )}
-              />
-              {errors.organizationName && (
-                <p role="alert" className="text-xs text-red-600 mt-1">
-                  {errors.organizationName}
-                </p>
-              )}
-            </div>
-
-            {/* Industry & Phone */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="organizationIndustry"
-                  className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
-                >
-                  Industry
-                </label>
-                <Input
-                  id="organizationIndustry"
-                  placeholder="e.g. Healthcare, Education"
-                  value={organizationIndustry}
-                  onChange={(e) => {
-                    setOrganizationIndustry(e.target.value);
-                    clearError("organizationIndustry");
-                  }}
-                  aria-invalid={!!errors.organizationIndustry}
-                  className={cn(
-                    "h-12 rounded-xl bg-[#F0EEE9]/70 border border-neutral-200/80 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-blue-600 transition-colors",
-                    errors.organizationIndustry &&
-                      "border-red-500 bg-red-50/20",
-                  )}
-                />
-                {errors.organizationIndustry && (
-                  <p role="alert" className="text-xs text-red-600 mt-1">
-                    {errors.organizationIndustry}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="organizationPhone"
-                  className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
-                >
-                  Organization Phone
-                </label>
-                <Input
-                  id="organizationPhone"
-                  type="tel"
-                  placeholder="+234 801 234 5678"
-                  value={organizationPhone}
-                  onChange={(e) => {
-                    setOrganizationPhone(e.target.value);
-                    clearError("organizationPhone");
-                  }}
-                  aria-invalid={!!errors.organizationPhone}
-                  className={cn(
-                    "h-12 rounded-xl bg-[#F0EEE9]/70 border border-neutral-200/80 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-blue-600 transition-colors",
-                    errors.organizationPhone && "border-red-500 bg-red-50/20",
-                  )}
-                />
-                {errors.organizationPhone && (
-                  <p role="alert" className="text-xs text-red-600 mt-1">
-                    {errors.organizationPhone}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Organization Address */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="organizationAddress"
-                className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
-              >
-                Organization Address
-              </label>
-              <Input
-                id="organizationAddress"
-                placeholder="Street, City, State"
-                value={organizationAddress}
-                onChange={(e) => {
-                  setOrganizationAddress(e.target.value);
-                  clearError("organizationAddress");
-                }}
-                aria-invalid={!!errors.organizationAddress}
-                className={cn(
-                  "h-12 rounded-xl bg-[#F0EEE9]/70 border border-neutral-200/80 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-blue-600 transition-colors",
-                  errors.organizationAddress &&
-                    "border-red-500 bg-red-50/20",
-                )}
-              />
-              {errors.organizationAddress && (
-                <p role="alert" className="text-xs text-red-600 mt-1">
-                  {errors.organizationAddress}
-                </p>
-              )}
-            </div>
-
             {/* Admin Email Address */}
             <div className="space-y-1.5">
               <label
                 htmlFor="email"
                 className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
               >
-                Admin Email Address
+                Work Email Address
               </label>
               <Input
                 id="email"
                 type="email"
-                placeholder="name@example.com"
+                placeholder="admin@organization.org"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);

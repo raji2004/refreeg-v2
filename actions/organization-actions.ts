@@ -260,6 +260,18 @@ export async function searchOrganizations(query: string, limit = 4) {
   }
 }
 
+function createOrganizationSlug(name: string) {
+  const base = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+
+  return `${base || "organization"}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
 export async function updateOrganization(input: {
   name: string;
   adminEmail: string;
@@ -276,7 +288,23 @@ export async function updateOrganization(input: {
   preferences: OrganizationPreferences;
 }) {
   try {
-    const { organization } = await requireOrganizationAccess(true);
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("You must be signed in.");
+
+    let organization: any = null;
+    const membership = await prisma.organizationMember.findFirst({
+      where: { userId: session.user.id },
+      include: { organization: true },
+      orderBy: { joinedAt: "asc" },
+    });
+
+    if (membership) {
+      if (!MANAGER_ROLES.has(membership.role)) {
+        throw new Error("Only organization owners and admins can make this change.");
+      }
+      organization = membership.organization;
+    }
+
     const name = input.name?.trim();
     const adminEmail = input.adminEmail?.trim().toLowerCase();
 
@@ -316,24 +344,60 @@ export async function updateOrganization(input: {
         ? undefined
         : normalizeOptionalWhatsAppNumber(input.whatsappNumber);
 
-    await prisma.organization.update({
-      where: { id: organization.id },
-      data: {
-        name,
-        adminEmail,
-        phone: input.phone?.trim() || null,
-        address: input.address?.trim() || null,
-        industry: input.industry?.trim() || null,
-        ...(bio !== undefined ? { bio } : {}),
-        ...(websiteUrl !== undefined ? { websiteUrl } : {}),
-        ...(instagramUrl !== undefined ? { instagramUrl } : {}),
-        ...(twitterUrl !== undefined ? { twitterUrl } : {}),
-        ...(tiktokUrl !== undefined ? { tiktokUrl } : {}),
-        ...(facebookUrl !== undefined ? { facebookUrl } : {}),
-        ...(whatsappNumber !== undefined ? { whatsappNumber } : {}),
-        preferences: mapPreferences(input.preferences),
-      },
-    });
+    if (!organization) {
+      // First-time setup during onboarding: create the organization and assign ownership
+      organization = await prisma.organization.create({
+        data: {
+          name,
+          slug: createOrganizationSlug(name),
+          adminEmail,
+          phone: input.phone?.trim() || null,
+          address: input.address?.trim() || null,
+          industry: input.industry?.trim() || null,
+          bio: bio ?? null,
+          websiteUrl: websiteUrl ?? null,
+          instagramUrl: instagramUrl ?? null,
+          twitterUrl: twitterUrl ?? null,
+          tiktokUrl: tiktokUrl ?? null,
+          facebookUrl: facebookUrl ?? null,
+          whatsappNumber: whatsappNumber ?? null,
+          ownerId: session.user.id,
+          preferences: mapPreferences(input.preferences),
+        },
+      });
+
+      await prisma.organizationMember.create({
+        data: {
+          organizationId: organization.id,
+          userId: session.user.id,
+          role: "owner",
+        },
+      });
+
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { accountType: "organization" },
+      });
+    } else {
+      await prisma.organization.update({
+        where: { id: organization.id },
+        data: {
+          name,
+          adminEmail,
+          phone: input.phone?.trim() || null,
+          address: input.address?.trim() || null,
+          industry: input.industry?.trim() || null,
+          ...(bio !== undefined ? { bio } : {}),
+          ...(websiteUrl !== undefined ? { websiteUrl } : {}),
+          ...(instagramUrl !== undefined ? { instagramUrl } : {}),
+          ...(twitterUrl !== undefined ? { twitterUrl } : {}),
+          ...(tiktokUrl !== undefined ? { tiktokUrl } : {}),
+          ...(facebookUrl !== undefined ? { facebookUrl } : {}),
+          ...(whatsappNumber !== undefined ? { whatsappNumber } : {}),
+          preferences: mapPreferences(input.preferences),
+        },
+      });
+    }
 
     revalidatePath("/dashboard/settings");
     revalidatePath("/dashboard/settings/organization");

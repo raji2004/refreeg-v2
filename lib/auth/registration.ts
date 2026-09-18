@@ -89,33 +89,27 @@ export function validateRegistrationInput(
   }
 
   if (input.accountType === "organization") {
-    const organizationName = input.organizationName?.trim() || "";
-    const organizationPhone = input.organizationPhone?.trim() || "";
-    const organizationAddress = input.organizationAddress?.trim() || "";
-    const organizationIndustry = input.organizationIndustry?.trim() || "";
+    const organizationName = input.organizationName?.trim();
+    const organizationPhone = input.organizationPhone?.trim();
+    const organizationAddress = input.organizationAddress?.trim();
+    const organizationIndustry = input.organizationIndustry?.trim();
 
-    if (!organizationName) {
-      errors.organizationName = "Organization name is required";
-    } else if (organizationName.length > 160) {
+    // Organization details are now primarily collected during onboarding (Step 3B).
+    // If provided during initial registration, validate length and format.
+    if (organizationName && organizationName.length > 160) {
       errors.organizationName =
         "Organization name must be 160 characters or fewer";
     }
 
-    if (!organizationPhone) {
-      errors.organizationPhone = "Organization phone number is required";
-    } else if (!/^\+?[\d\s\-()]{7,24}$/.test(organizationPhone)) {
+    if (organizationPhone && !/^\+?[\d\s\-()]{7,24}$/.test(organizationPhone)) {
       errors.organizationPhone = "Enter a valid phone number";
     }
 
-    if (!organizationAddress) {
-      errors.organizationAddress = "Organization address is required";
-    } else if (organizationAddress.length > 240) {
+    if (organizationAddress && organizationAddress.length > 240) {
       errors.organizationAddress = "Address must be 240 characters or fewer";
     }
 
-    if (!organizationIndustry) {
-      errors.organizationIndustry = "Industry is required";
-    } else if (organizationIndustry.length > 100) {
+    if (organizationIndustry && organizationIndustry.length > 100) {
       errors.organizationIndustry = "Industry must be 100 characters or fewer";
     }
   }
