@@ -135,6 +135,30 @@ export function useAuth() {
     }
   };
 
+  const signInWithApple = async (redirectTo?: string | null) => {
+    try {
+      const safeRedirect = normalizeRedirectPath(redirectTo);
+      const callbackUrl = safeRedirect
+        ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(safeRedirect)}`
+        : `${window.location.origin}/auth/callback`;
+
+      await fetch("/api/auth/pre-signin-cleanup", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+
+      await nextAuthSignIn("apple", {
+        callbackUrl,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error signing in with Apple",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const signOut = async () => {
     try {
       await nextAuthSignOut({ redirect: false });
@@ -209,6 +233,7 @@ export function useAuth() {
     signUp,
     signOut,
     signInWithGoogle,
+    signInWithApple,
     resetPassword,
     updatePassword,
   };
