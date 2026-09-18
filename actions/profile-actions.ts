@@ -194,7 +194,7 @@ export async function createOnboardingProfile(
 ): Promise<any> {
   const existingProfile = await prisma.user.findUnique({
     where: { id: userId },
-    select: { profilePhoto: true },
+    select: { profilePhoto: true, accountType: true },
   });
 
   let profilePhotoUrl: string | null = existingProfile?.profilePhoto ?? null;
@@ -241,7 +241,12 @@ export async function createOnboardingProfile(
   if (profileData.lastName) updateData.lastName = profileData.lastName;
   if (profileData.username) updateData.username = profileData.username;
   if (profileData.location) updateData.location = profileData.location;
-  if (profileData.accountType) updateData.accountType = profileData.accountType;
+  if (profileData.accountType) {
+    updateData.accountType =
+      existingProfile?.accountType === "individual"
+        ? "individual"
+        : profileData.accountType;
+  }
   if (profileData.gender) updateData.gender = profileData.gender;
 
   try {
@@ -439,10 +444,19 @@ export async function saveStep1Progress(
   accountType: string,
 ): Promise<void> {
   try {
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountType: true },
+    });
+
+    if (existing?.accountType === "individual" && accountType === "organization") {
+      throw new Error("Individual accounts cannot be converted to organization accounts.");
+    }
+
     await prisma.user.update({
       where: { id: userId },
       data: {
-        accountType: accountType,
+        accountType: existing?.accountType === "organization" ? "organization" : accountType,
       },
     });
 
