@@ -292,7 +292,7 @@ describe("auth-actions", () => {
 
       const result = await resetPasswordAction("valid-token", "newpass");
 
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ success: true, email: "test@example.com" });
       expect(mockPrisma.$transaction).toHaveBeenCalled();
     });
   });
