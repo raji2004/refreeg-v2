@@ -267,10 +267,111 @@ export async function resetPasswordAction(token: string, password: string) {
       }),
     ]);
 
-    return { success: true };
+    return { success: true, email: resetToken.email };
   } catch (error) {
     console.error("Password reset error:", error);
     return { success: false, error: "Failed to reset password" };
+  }
+}
+
+/**
+ * Checks whether a user attempting to log in owns an existing cause
+ * (either directly or via recovered_owner_email) but has not yet completed
+ * profile details or has no password set.
+ *
+ * If true, issues a password setup token so they can be routed to set up
+ * a new password and then seamlessly complete the profile flow.
+ */
+export async function checkCauseUserLoginAction(email: string) {
+  try {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      return { isCauseUserWithoutProfile: false };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      include: {
+        causes: { select: { id: true, title: true } },
+      },
+    });
+
+    const recoveredCause = await prisma.cause.findFirst({
+      where: { recovered_owner_email: normalizedEmail },
+      select: { id: true, title: true, userId: true },
+    });
+
+    const hasCause =
+      (user?.causes && user.causes.length > 0) || !!recoveredCause;
+    if (!hasCause) {
+      return { isCauseUserWithoutProfile: false };
+    }
+
+    // Profile is missing if:
+    // - No user record exists yet (e.g. only recovered_owner_email on a cause)
+    // - OR user has no password
+    // - OR onboarding_completed is false or null
+    // - OR firstName or lastName is missing
+    const hasNoProfile =
+      !user ||
+      !user.password ||
+      !user.onboarding_completed ||
+      !user.firstName ||
+      !user.lastName;
+
+    if (!hasNoProfile) {
+      return { isCauseUserWithoutProfile: false };
+    }
+
+    let targetUser = user;
+    if (!targetUser) {
+      targetUser = await prisma.user.create({
+        data: {
+          email: normalizedEmail,
+          onboarding_completed: false,
+        },
+        include: {
+          causes: { select: { id: true, title: true } },
+        },
+      });
+    }
+
+    // Link recovered cause to user if needed
+    if (
+      recoveredCause &&
+      targetUser.id &&
+      recoveredCause.userId !== targetUser.id
+    ) {
+      await prisma.cause.update({
+        where: { id: recoveredCause.id },
+        data: { userId: targetUser.id },
+      });
+    }
+
+    // Generate secure setup token
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+
+    await prisma.passwordResetToken.upsert({
+      where: { email: normalizedEmail },
+      update: { token, expires },
+      create: { email: normalizedEmail, token, expires },
+    });
+
+    const causeTitle =
+      user?.causes?.[0]?.title ||
+      recoveredCause?.title ||
+      "your campaign";
+
+    return {
+      isCauseUserWithoutProfile: true,
+      token,
+      email: normalizedEmail,
+      causeTitle,
+    };
+  } catch (error) {
+    console.error("Error in checkCauseUserLoginAction:", error);
+    return { isCauseUserWithoutProfile: false };
   }
 }
 

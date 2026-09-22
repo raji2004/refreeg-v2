@@ -29,10 +29,10 @@ export default async function DashboardLayout({
     );
   }
 
-  // Use the flag from the JWT session to avoid redundant DB hits
+  // Ensure users with incomplete onboarding are routed to the profile flow
   const completedOnboarding = (session.user as any).onboardingCompleted;
 
-  if (completedOnboarding === false) {
+  if (!completedOnboarding) {
     redirect("/onboarding");
   }
 

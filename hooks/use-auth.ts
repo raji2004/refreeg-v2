@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
 import { signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/react";
 import { useAuthContext } from "@/components/auth-provider";
-import { signUpAction, requestPasswordResetAction, resetPasswordAction } from "@/actions/auth-actions";
+import {
+  signUpAction,
+  requestPasswordResetAction,
+  resetPasswordAction,
+  checkCauseUserLoginAction,
+} from "@/actions/auth-actions";
 
 function normalizeRedirectPath(target?: string | null): string | null {
   if (!target) return null;
@@ -26,6 +31,34 @@ export function useAuth() {
   ) => {
     try {
       const normalizedEmail = email.trim().toLowerCase();
+
+      // If user on login attempt has a cause but no profile details (or no password set),
+      // direct them to set up a new password first, then the profile flow.
+      const causeCheck = await checkCauseUserLoginAction(normalizedEmail);
+      if (causeCheck?.isCauseUserWithoutProfile && causeCheck.token) {
+        toast({
+          title: "Account setup required",
+          description: `We found your campaign "${causeCheck.causeTitle}". Please set up a new password to continue.`,
+        });
+
+        const targetUrl = `/auth/update-password?token=${encodeURIComponent(
+          causeCheck.token,
+        )}&flow=cause-profile&email=${encodeURIComponent(normalizedEmail)}${
+          redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : ""
+        }`;
+
+        window.location.href = targetUrl;
+        return;
+      }
+
+      if (!password) {
+        toast({
+          title: "Password required",
+          description: "Please enter your password to sign in.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const res = await nextAuthSignIn("credentials", {
         redirect: false,
@@ -199,7 +232,15 @@ export function useAuth() {
     }
   };
 
-  const updatePassword = async (password: string, token: string) => {
+  const updatePassword = async (
+    password: string,
+    token: string,
+    options?: {
+      flow?: string | null;
+      email?: string | null;
+      redirect?: string | null;
+    },
+  ) => {
     try {
       const res = await resetPasswordAction(token, password);
       if (!res.success) {
@@ -210,6 +251,31 @@ export function useAuth() {
         });
         return false;
       }
+
+      const email = options?.email || res.email;
+
+      // If this is the cause-profile flow, auto-authenticate and direct to profile flow (onboarding)
+      if (options?.flow === "cause-profile" && email) {
+        toast({
+          title: "Password set successfully!",
+          description: "Proceeding to complete your profile...",
+        });
+
+        const loginRes = await nextAuthSignIn("credentials", {
+          redirect: false,
+          email,
+          password,
+        });
+
+        if (!loginRes?.error) {
+          const safeRedirect = normalizeRedirectPath(options?.redirect);
+          window.location.href = safeRedirect
+            ? `/onboarding?redirect=${encodeURIComponent(safeRedirect)}`
+            : "/onboarding";
+          return true;
+        }
+      }
+
       toast({
         title: "Success",
         description: "Your password has been reset successfully.",
