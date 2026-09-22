@@ -15,6 +15,12 @@ const cardVariants = cva("text-card-foreground", {
       // Petition cards/surfaces only — same flat black-bordered treatment as
       // `outlined`, on the warmer `parchment` background. See docs/DESIGN_GUIDE.md.
       parchment: "rounded-xl border-2 border-ink bg-parchment shadow-none",
+      // Forest card for total raised / trust stats (Design System Navigation & Containers)
+      forest: "rounded-xl bg-forest text-forest-foreground border-transparent shadow-none",
+      // Sand callout card / container
+      sand: "rounded-xl border border-sand bg-sand/30 text-ink shadow-none",
+      // Pure white surface card with subtle hairline border
+      surface: "rounded-xl border border-hairline bg-surface text-ink shadow-sm",
     },
   },
   defaultVariants: {

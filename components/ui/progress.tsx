@@ -5,10 +5,24 @@ import * as ProgressPrimitive from "@radix-ui/react-progress";
 
 import { cn } from "@/lib/utils";
 
+export interface ProgressProps
+  extends React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> {
+  indicatorVariant?: "default" | "cyan" | "forest" | "lime" | "blue"
+  indicatorClassName?: string
+}
+
+const indicatorVariants: Record<string, string> = {
+  default: "bg-blue-700",
+  cyan: "bg-cyan",
+  forest: "bg-forest",
+  lime: "bg-lime",
+  blue: "bg-blue-accent",
+}
+
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>
->(({ className, value, ...props }, ref) => (
+  ProgressProps
+>(({ className, value, indicatorVariant = "default", indicatorClassName, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
     value={value}
@@ -19,7 +33,11 @@ const Progress = React.forwardRef<
     {...props}
   >
     <ProgressPrimitive.Indicator
-      className="h-full w-full flex-1 bg-blue-700 transition-all"
+      className={cn(
+        "h-full w-full flex-1 transition-all",
+        indicatorVariants[indicatorVariant] || indicatorVariants.default,
+        indicatorClassName
+      )}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />
   </ProgressPrimitive.Root>

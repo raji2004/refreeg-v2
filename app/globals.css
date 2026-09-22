@@ -91,35 +91,67 @@ select:focus {
 
     /* Fintech surface system (see docs/DESIGN_GUIDE.md) — additive, opt-in
        tokens for new/rebuilt screens. Do not repoint --background/--primary
-       at these; existing pages keep the navy/white theme until re-themed.
-       Hex anchors from Refreeg_web_app Figma (Settings / Profile, node 209:17911). */
-    --ink: 0 0% 10%;
-    /* #1a1a1a */
-    --ink-foreground: 40 20% 98%;
+       at these; existing pages keep the navy/white theme until re-themed. */
 
-    --cream: 30 28.6% 97.25%;
-    /* #faf8f6 */
-    --cream-foreground: 0 0% 10%;
+    /* Primary Palette */
+    --ink: 148 32% 8%;
+    /* #0e1b14 near-black dark surfaces, headers, borders, strong text */
+    --ink-foreground: 0 0% 100%;
 
-    --lime: 74 78% 58%;
-    --lime-foreground: 0 0% 10%;
-
-    --gold: 38 72% 78%;
-    --gold-foreground: 0 0% 10%;
-
-    /* Petition surfaces only — see docs/DESIGN_GUIDE.md. Warmer/tanner than
-       --cream, reads as paper. Text/borders/buttons on it still use
-       ink/lime/gold as usual, just this one background token differs. */
-    --parchment: 40 38% 91%;
-    --parchment-foreground: 0 0% 10%;
-
-    /* Settings mockup accents (same Figma file) */
-    --forest: 155 80% 20%;
-    /* #0a5c3a avatar / deep green */
+    --forest: 155 79% 20%;
+    /* #0b5d3b trust, primary brand identity, active elements, success states */
     --forest-foreground: 0 0% 100%;
-    --azure: 223 55.2% 49%;
-    /* #3860c2 */
-    --azure-foreground: 0 0% 100%;
+
+    --lime: 74 88% 64%;
+    /* #cff454 single primary action / submit button, active progress indicator */
+    --lime-foreground: 148 32% 8%;
+
+    --blue-accent: 222 90% 37%;
+    /* #0a3cb5 hyperlinks, informational icons, system notices */
+    --blue-accent-foreground: 0 0% 100%;
+
+    /* Secondary Palette */
+    --sand: 44 69% 81%;
+    /* #f0deae secondary warm neutral, soft callouts */
+    --sand-foreground: 148 32% 8%;
+
+    --gold: 43 88% 66%;
+    /* #f4c95d pending, in-review, waiting on user action, held balances */
+    --gold-foreground: 148 32% 8%;
+
+    --amber: 42 73% 45%;
+    /* #c7951f secondary warnings, held funds, warm accents */
+    --amber-foreground: 0 0% 100%;
+
+    --rust: 13 75% 45%;
+    /* #c8401c urgent warnings, destructive, critical notifications */
+    --rust-foreground: 0 0% 100%;
+
+    --cyan: 195 90% 50%;
+    /* #0eb7f1 light info badges, tech tags, public verify indicators */
+    --cyan-foreground: 0 0% 100%;
+
+    /* Neutrals */
+    --cream: 36 25% 97.5%;
+    /* #faf9f6 page background (warm off-white) */
+    --cream-foreground: 148 32% 8%;
+
+    --bone: 45 20% 96%;
+    /* #f7f6f2 secondary surface, subtle card backgrounds */
+    --bone-foreground: 148 32% 8%;
+
+    --surface: 0 0% 100%;
+    /* #ffffff card surface, modals, input backgrounds */
+    --surface-foreground: 148 32% 8%;
+
+    --warm-neutral: 43 25% 91%;
+    /* #efebe1 soft panels, tags */
+    --warm-neutral-foreground: 148 32% 8%;
+
+    --parchment: 38 27% 92%;
+    /* #f0ece4 petition surfaces only (warm paper aesthetic) */
+    --parchment-foreground: 148 32% 8%;
+
     --cream-muted: 60 13% 94%;
     /* #f2f2ee active nav pill */
     --hairline: 60 6% 87%;

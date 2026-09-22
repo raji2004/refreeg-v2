@@ -18,6 +18,9 @@ const calloutBannerVariants = cva("flex items-start gap-3 rounded-xl border p-4 
       gold: "border-gold/40 bg-gold/30 text-ink",
       lime: "border-lime/40 bg-lime/20 text-ink",
       neutral: "border-ink/15 bg-ink/[0.03] text-ink",
+      rust: "border-rust/30 bg-rust/10 text-ink",
+      forest: "border-forest/30 bg-forest/10 text-ink",
+      sand: "border-sand bg-sand/30 text-ink",
     },
   },
   defaultVariants: {

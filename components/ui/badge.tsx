@@ -14,9 +14,15 @@ const badgeVariants = cva(
         outline: "text-foreground",
         brand: "border-transparent bg-brand text-brand-foreground hover:bg-brand/80",
         // Fintech surface system status chips, see docs/DESIGN_GUIDE.md
+        live: "border-transparent bg-ink text-ink-foreground",
         cleared: "border-transparent bg-lime text-lime-foreground",
         pending: "border-transparent bg-gold text-gold-foreground",
         held: "border border-ink/20 bg-transparent text-ink",
+        critical: "border border-rust/30 bg-rust/10 text-rust",
+        forest: "border border-forest/30 bg-forest/10 text-forest",
+        cyan: "border border-cyan/30 bg-cyan/15 text-cyan-800",
+        blue: "border border-blue-accent/30 bg-blue-accent/10 text-blue-accent",
+        verified: "border border-forest/20 bg-verified-soft text-forest",
       },
     },
     defaultVariants: {
