@@ -140,7 +140,6 @@ export default function SignInPage() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    required
                     className="pr-10"
                   />
                   <button
