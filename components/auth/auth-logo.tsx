@@ -50,7 +50,10 @@ export function AuthLogo({
 
   if (href) {
     return (
-      <Link href={href} className="inline-block transition-opacity hover:opacity-80">
+      <Link
+        href={href}
+        className="inline-block transition-opacity hover:opacity-80"
+      >
         {content}
       </Link>
     );

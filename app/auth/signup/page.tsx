@@ -35,7 +35,6 @@ export default function SignUpPage() {
   const router = useRouter();
   const { user, isLoading, signInWithGoogle } = useAuth();
 
-  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -106,7 +105,6 @@ export default function SignUpPage() {
 
     const registration = normalizeRegistrationInput({
       accountType: "individual",
-      fullName,
       email,
       password,
       confirmPassword,
@@ -359,35 +357,6 @@ export default function SignUpPage() {
 
           {/* Signup Form */}
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
-            {/* Full Name */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="fullName"
-                className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
-              >
-                Full Name
-              </label>
-              <Input
-                id="fullName"
-                placeholder="As it appears on your ID"
-                value={fullName}
-                onChange={(e) => {
-                  setFullName(e.target.value);
-                  clearError("fullName");
-                }}
-                aria-invalid={!!errors.fullName}
-                className={cn(
-                  "h-12 rounded-xl bg-[#F0EEE9]/70 border border-neutral-200/80 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-blue-600 transition-colors",
-                  errors.fullName && "border-red-500 bg-red-50/20",
-                )}
-              />
-              {errors.fullName && (
-                <p role="alert" className="text-xs text-red-600 mt-1">
-                  {errors.fullName}
-                </p>
-              )}
-            </div>
-
             {/* Email Address */}
             <div className="space-y-1.5">
               <label

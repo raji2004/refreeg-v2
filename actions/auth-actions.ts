@@ -12,6 +12,7 @@ import {
 } from "@/services/mail";
 import { subscribeToConvertKit } from "@/services/convertkit";
 import crypto from "crypto";
+import { deriveFullNameFromEmail } from "@/lib/auth/registration";
 
 /**
  * Get the current user
@@ -48,7 +49,7 @@ export async function getHasPasswordAction() {
 export async function signUpAction(
   email: string,
   password: string,
-  fullName: string,
+  fullName?: string | null,
   accountType?: "individual" | "organization" | null,
 ) {
   try {
@@ -60,6 +61,7 @@ export async function signUpAction(
       };
     }
 
+    const effectiveFullName = fullName?.trim() || deriveFullNameFromEmail(email);
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create new profile record
@@ -67,14 +69,14 @@ export async function signUpAction(
       data: {
         email,
         password: hashedPassword,
-        fullName,
+        fullName: effectiveFullName,
         accountType,
       },
     });
 
     // Handle post-signup routines asynchronously
     try {
-      const firstName = fullName.split(" ")[0];
+      const firstName = effectiveFullName.split(" ")[0];
       await subscribeToConvertKit({
         email,
         first_name: firstName,
@@ -85,7 +87,7 @@ export async function signUpAction(
       });
 
       const profileSetupUrl = `${process.env.NEXTAUTH_URL}/dashboard/settings`;
-      await sendWelcomeEmailToUser(email, fullName, profileSetupUrl);
+      await sendWelcomeEmailToUser(email, effectiveFullName, profileSetupUrl);
     } catch (e) {
       console.error("Post-signup external actions failed:", e);
     }
