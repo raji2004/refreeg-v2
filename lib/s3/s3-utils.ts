@@ -21,26 +21,23 @@ export function generateS3Key(params: {
   filename: string;
 }) {
   const { entityType, userId, entityId, mediaType, filename } = params;
-  
-  // Base: uploads/entity/userId
+
   let parts = ["uploads", entityType, userId];
-  
-  // Add entityId if provided (for causes, petitions, kyc)
+
   if (entityId) {
     parts.push(entityId);
   }
-  
-  // Add mediaType and filename
+
   parts.push(mediaType, filename);
-  
+
   return parts.join("/");
 }
 
-/**
- * Uploads a file buffer directly to S3.
- * Used primary for server-side uploads (e.g. migration script)
- */
-export async function uploadToS3(buffer: Buffer, key: string, contentType: string) {
+export async function uploadToS3(
+  buffer: Buffer,
+  key: string,
+  contentType: string,
+) {
   const command = new PutObjectCommand({
     Bucket: getBucketName(),
     Key: key,
@@ -51,13 +48,8 @@ export async function uploadToS3(buffer: Buffer, key: string, contentType: strin
   return s3Client.send(command);
 }
 
-/**
- * Generates a presigned URL to securely download a private object from S3.
- * Default expiration is 1 hour (3600 seconds)
- */
 export async function generatePresignedGetUrl(key: string, expiresIn = 3600) {
-  // If the key is already a full URL (e.g., from old supabase or placeholder), return it
-  if (key.startsWith('http://') || key.startsWith('https://')) {
+  if (key.startsWith("http://") || key.startsWith("https://")) {
     return key;
   }
 
@@ -69,11 +61,11 @@ export async function generatePresignedGetUrl(key: string, expiresIn = 3600) {
   return getSignedUrl(s3Client, command, { expiresIn });
 }
 
-/**
- * Generates a presigned URL to allow direct file upload to S3 from the browser.
- * Default expiration is 15 minutes (900 seconds)
- */
-export async function generatePresignedPutUrl(key: string, contentType: string, expiresIn = 900) {
+export async function generatePresignedPutUrl(
+  key: string,
+  contentType: string,
+  expiresIn = 900,
+) {
   const command = new PutObjectCommand({
     Bucket: getBucketName(),
     Key: key,

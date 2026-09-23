@@ -15,9 +15,7 @@ interface Step1Props {
 const accountOptions = [
   { id: "individual", label: "I’m an individual" },
   { id: "creator", label: "I’m a creator" },
-  { id: "non-profit", label: "I’m a non-profit" },
-  { id: "organization", label: "I’m an organisation" },
-  { id: "community", label: "I’m a community" },
+  { id: "community", label: "I’m a community member" },
   { id: "developer", label: "I’m a developer" },
 ];
 
@@ -39,22 +37,27 @@ export default function Step1({
 
   return (
     <div className="flex flex-col items-center justify-center py-8">
-      {/* Illustration */}
+      {}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
         className="mb-6"
       >
-        <Image src="/onboarding1.png" alt="Illustration" width={128} height={128} />
+        <Image
+          src="/onboarding1.png"
+          alt="Illustration"
+          width={128}
+          height={128}
+        />
       </motion.div>
 
-      {/* Title */}
+      {}
       <h2 className="text-center text-2xl font-semibold text-gray-900">
         What kind of account best fits you?
       </h2>
 
-      {/* Options */}
+      {}
       <div className="mt-8 w-full max-w-md space-y-3">
         {accountOptions.map((opt) => {
           const isSelected = selectedType === opt.id;

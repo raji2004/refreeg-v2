@@ -184,7 +184,9 @@ export function UserNav() {
                   className="rounded-lg object-contain p-0.5"
                 />
                 <AvatarFallback className="rounded-lg bg-white text-[10px] font-semibold">
-                  {organizationInitials || <Building2 className="h-3.5 w-3.5" />}
+                  {organizationInitials || (
+                    <Building2 className="h-3.5 w-3.5" />
+                  )}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
@@ -287,7 +289,7 @@ export function UserNav() {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link
-                  href="/dashboard/settings"
+                  href="/dashboard/settings/profile"
                   className="group flex h-10 cursor-pointer items-center gap-3 rounded-lg px-2.5 text-sm text-slate-700 focus:bg-blue-50 focus:text-blue-800"
                 >
                   <Settings2 className="h-4 w-4 text-slate-400 group-focus:text-blue-600" />
@@ -345,7 +347,10 @@ export function UserNav() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/admin/users/kyc" className="cursor-pointer">
+                  <Link
+                    href="/dashboard/admin/users/kyc"
+                    className="cursor-pointer"
+                  >
                     KYC Reviews
                   </Link>
                 </DropdownMenuItem>

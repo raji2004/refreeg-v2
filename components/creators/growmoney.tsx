@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 export default function GrowMoney() {
   return (
     <div className="w-full h-auto flex flex-col lg:flex-row justify-center items-center px-6 lg:px-10 py-10 gap-4 overflow-hidden">
-      {/* Text Section */}
+      {}
       <motion.div
         className="w-full lg:w-3/4 h-auto flex flex-col justify-center items-start gap-6"
         initial={{ opacity: 0, x: -80 }}
@@ -22,12 +22,13 @@ export default function GrowMoney() {
           funds remain yours — always.
         </p>
         <h1 className="text-4xl lg:text-5xl font-bold text-black leading-tight">
-          Don’t Just Raise Money — <span className="text-gray-500"> Grow It!</span>
+          Don’t Just Raise Money —{" "}
+          <span className="text-gray-500"> Grow It!</span>
         </h1>
         <p className="text-lg text-gray-600">
-          With RefreeG Boost, creators can stake part of their 
-          raised funds in secure liquidity <br /> pools and earn 
-          yield — making every donation work harder for them.
+          With RefreeG Boost, creators can stake part of their raised funds in
+          secure liquidity <br /> pools and earn yield — making every donation
+          work harder for them.
         </p>
 
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -38,7 +39,7 @@ export default function GrowMoney() {
         </motion.div>
       </motion.div>
 
-      {/* Image Section */}
+      {}
       <motion.div
         className="w-full lg:w-1/4 h-auto flex justify-center items-center"
         initial={{ opacity: 0, scale: 0.8, rotate: -5 }}

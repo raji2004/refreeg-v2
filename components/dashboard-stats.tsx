@@ -26,12 +26,12 @@ export async function DashboardStats({
   initialPetitionStats?: any;
 }) {
   if (!userId) return null;
-  
+
   let stats = initialStats;
   if (!stats && (type === "cause" || type === "all")) {
     stats = await getDashboardStats(userId);
   }
-  
+
   let petitionStats = initialPetitionStats;
   if (!petitionStats && (type === "petition" || type === "all")) {
     petitionStats = await getPetitionDashboardStats(userId);

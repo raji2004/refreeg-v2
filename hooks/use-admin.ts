@@ -21,7 +21,7 @@ import { logAdminActivity } from "@/actions/database-actions";
 import { toast } from "@/components/ui/use-toast";
 import type { CauseStatus, UserRole, UserWithRole } from "@/types";
 
-// Petition status type (doesn't have "expired")
+
 export type PetitionStatus = "pending" | "approved" | "rejected";
 
 export function useAdmin(
@@ -222,7 +222,7 @@ export function useAdmin(
     enabled: isAdminUser || isManagerUser,
   });
 
-  // Causes query - uses CauseStatus directly
+  
   const { data: causes = [], isLoading: isCausesLoading } = useQuery({
     queryKey: ["adminCauses", status],
     queryFn: () => listAdminCauses(status as CauseStatus),
@@ -235,7 +235,7 @@ export function useAdmin(
     enabled: isAdminUser || isManagerUser,
   });
 
-  // Petitions query - convert "expired" to undefined since Petition doesn't have expired
+  
   const petitionStatus =
     status === "expired" ? undefined : (status as PetitionStatus);
 
@@ -252,7 +252,7 @@ export function useAdmin(
       enabled: isAdminUser || isManagerUser,
     });
 
-  // Combine causes and edits for pending tab
+  
   const combinedPendingItems =
     status === "pending"
       ? [
@@ -265,7 +265,7 @@ export function useAdmin(
         ]
       : causes.map((cause) => ({ ...cause, type: "cause" }));
 
-  // Combine petitions and edits for pending tab
+  
   const combinedPendingPetitions =
     status === "pending"
       ? [

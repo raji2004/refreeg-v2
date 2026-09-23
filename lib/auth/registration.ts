@@ -1,8 +1,23 @@
 export type SignupAccountType = "individual" | "organization";
 
+export function deriveFullNameFromEmail(email?: string | null): string {
+  if (!email || !email.includes("@")) return "User";
+  const prefix = email.split("@")[0].trim();
+  if (!prefix) return "User";
+
+  const parts = prefix.split(/[._-]+/).filter(Boolean);
+  if (parts.length > 0) {
+    return parts
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  }
+
+  return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+}
+
 export type RegistrationInput = {
   accountType: SignupAccountType;
-  fullName: string;
+  fullName?: string;
   email: string;
   password: string;
   confirmPassword?: string;
@@ -58,15 +73,11 @@ export function validateRegistrationInput(
   input: RegistrationInput,
 ): RegistrationErrors {
   const errors: RegistrationErrors = {};
-  const fullName = input.fullName.trim();
-  const email = input.email.trim();
+  const email = (input.email || "").trim();
+  const rawFullName = input.fullName ? input.fullName.trim() : "";
+  const fullName = rawFullName || deriveFullNameFromEmail(email);
 
-  if (!fullName) {
-    errors.fullName =
-      input.accountType === "organization"
-        ? "Admin or primary contact name is required"
-        : "Full name is required";
-  } else if (fullName.length > 120) {
+  if (fullName.length > 120) {
     errors.fullName = "Name must be 120 characters or fewer";
   }
 
@@ -89,33 +100,25 @@ export function validateRegistrationInput(
   }
 
   if (input.accountType === "organization") {
-    const organizationName = input.organizationName?.trim() || "";
-    const organizationPhone = input.organizationPhone?.trim() || "";
-    const organizationAddress = input.organizationAddress?.trim() || "";
-    const organizationIndustry = input.organizationIndustry?.trim() || "";
+    const organizationName = input.organizationName?.trim();
+    const organizationPhone = input.organizationPhone?.trim();
+    const organizationAddress = input.organizationAddress?.trim();
+    const organizationIndustry = input.organizationIndustry?.trim();
 
-    if (!organizationName) {
-      errors.organizationName = "Organization name is required";
-    } else if (organizationName.length > 160) {
+    if (organizationName && organizationName.length > 160) {
       errors.organizationName =
         "Organization name must be 160 characters or fewer";
     }
 
-    if (!organizationPhone) {
-      errors.organizationPhone = "Organization phone number is required";
-    } else if (!/^\+?[\d\s\-()]{7,24}$/.test(organizationPhone)) {
+    if (organizationPhone && !/^\+?[\d\s\-()]{7,24}$/.test(organizationPhone)) {
       errors.organizationPhone = "Enter a valid phone number";
     }
 
-    if (!organizationAddress) {
-      errors.organizationAddress = "Organization address is required";
-    } else if (organizationAddress.length > 240) {
+    if (organizationAddress && organizationAddress.length > 240) {
       errors.organizationAddress = "Address must be 240 characters or fewer";
     }
 
-    if (!organizationIndustry) {
-      errors.organizationIndustry = "Industry is required";
-    } else if (organizationIndustry.length > 100) {
+    if (organizationIndustry && organizationIndustry.length > 100) {
       errors.organizationIndustry = "Industry must be 100 characters or fewer";
     }
   }
@@ -123,16 +126,25 @@ export function validateRegistrationInput(
   return errors;
 }
 
+export type NormalizedRegistration = Omit<RegistrationInput, "fullName"> & {
+  fullName: string;
+};
+
 export function normalizeRegistrationInput(
   input: RegistrationInput,
-): RegistrationInput {
+): NormalizedRegistration {
+  const email =
+    typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
+  const rawFullName =
+    typeof input.fullName === "string" ? input.fullName.trim() : "";
+  const fullName = rawFullName || deriveFullNameFromEmail(email);
+
   return {
     ...input,
     accountType:
       input.accountType === "organization" ? "organization" : "individual",
-    fullName: typeof input.fullName === "string" ? input.fullName.trim() : "",
-    email:
-      typeof input.email === "string" ? input.email.trim().toLowerCase() : "",
+    fullName,
+    email,
     password: typeof input.password === "string" ? input.password : "",
     confirmPassword:
       typeof input.confirmPassword === "string"

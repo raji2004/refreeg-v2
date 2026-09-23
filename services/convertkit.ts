@@ -1,11 +1,6 @@
 "use server";
 
-/**
- * ConvertKit API Integration
- *
- * This service handles subscribing users to ConvertKit email lists.
- * ConvertKit API Documentation: https://developers.convertkit.com/
- */
+
 
 interface ConvertKitSubscriberData {
   email: string;
@@ -20,13 +15,7 @@ interface ConvertKitResponse {
   error?: string;
 }
 
-/**
- * Subscribe a user to a ConvertKit form
- * @param email - User's email address
- * @param firstName - User's first name (optional)
- * @param tags - Array of tag IDs to apply (optional)
- * @param customFields - Custom field data (optional)
- */
+
 export async function subscribeToConvertKit({
   email,
   first_name,
@@ -37,7 +26,7 @@ export async function subscribeToConvertKit({
     const apiKey = process.env.CONVERTKIT_API_KEY;
     const formId = process.env.CONVERTKIT_FORM_ID;
 
-    // Validate environment variables
+    
     if (!apiKey) {
       console.error("ConvertKit API key not configured");
       return {
@@ -54,7 +43,7 @@ export async function subscribeToConvertKit({
       };
     }
 
-    // ConvertKit API endpoint for subscribing to a form
+    
     const url = `https://api.convertkit.com/v3/forms/${formId}/subscribe`;
 
     const requestBody = {
@@ -116,7 +105,7 @@ export async function addTagsToSubscriber(
       };
     }
 
-    const url = `https://api.convertkit.com/v3/tags/${tagIds[0]}/subscribe`;
+    const url = `https:
 
     const response = await fetch(url, {
       method: "POST",
@@ -152,11 +141,7 @@ export async function addTagsToSubscriber(
   }
 }
 
-/**
- * Update subscriber custom fields
- * @param email - Subscriber's email address
- * @param fields - Custom field data
- */
+
 export async function updateSubscriberFields(
   email: string,
   fields: Record<string, string>

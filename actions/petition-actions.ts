@@ -76,13 +76,13 @@ export async function uploadFileToS3(
   petitionId: string,
   type: "cover" | "additional",
 ): Promise<string> {
-  const ext = file.name.split('.').pop() || 'file';
+  const ext = file.name.split(".").pop() || "file";
   const uniqueId = Math.random().toString(36).substring(2, 15);
   const isVideo = file.type.startsWith("video/");
-  
+
   try {
     const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
-    
+
     const s3Key = generateS3Key({
       entityType: "petitions",
       userId,
@@ -221,7 +221,12 @@ export async function updatePetition(
   petitionData: Partial<PetitionFormData>,
 ): Promise<Petition> {
   let coverImageUrl = petitionData.coverImage
-    ? await uploadFileToS3(petitionData.coverImage as File, userId, petitionId, "cover")
+    ? await uploadFileToS3(
+        petitionData.coverImage as File,
+        userId,
+        petitionId,
+        "cover",
+      )
     : petitionData.image;
 
   let daysActive = null;

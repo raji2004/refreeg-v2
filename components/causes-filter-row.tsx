@@ -35,19 +35,14 @@ export default function CausesFilterRow({ className }: CausesFilterRowProps) {
     setIsFilterOpen(searchParams.get("filter") === "true");
   }, [searchParams]);
 
-  // Sync search input when URL changes externally
   useEffect(() => {
     setSearchInput(search);
   }, [search]);
 
-  /**
-   * Push new params to the URL, always resetting to page 1.
-   */
   const pushParams = useCallback(
     (updates: Record<string, string | undefined>) => {
       const next = new URLSearchParams(searchParams.toString());
 
-      // Always reset to page 1 when filters change
       next.delete("page");
 
       for (const [key, value] of Object.entries(updates)) {

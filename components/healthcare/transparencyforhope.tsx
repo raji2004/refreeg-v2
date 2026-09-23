@@ -39,13 +39,12 @@ export default function HopeTransparency() {
       whileInView="show"
       viewport={{ once: true, amount: 0.3 }}
     >
-      {/* Headings */}
+      {}
       <motion.div
         className="text-center w-full text-2xl md:text-3xl lg:text-5xl font-bold"
         variants={item}
       >
-        Transparency That{" "}
-        <span className="text-gray-500">Builds Hope</span>
+        Transparency That <span className="text-gray-500">Builds Hope</span>
       </motion.div>
 
       <motion.div
@@ -55,7 +54,7 @@ export default function HopeTransparency() {
         Because Donors Deserve Proof. Patients Deserve Trust.
       </motion.div>
 
-      {/* Animated Image */}
+      {}
       <motion.div
         className="w-full flex justify-center items-center mt-6"
         variants={imageAnim}

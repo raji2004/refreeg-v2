@@ -170,7 +170,8 @@ function readWebpDimensions(bytes: Uint8Array): ImageDimensions | null {
       const byte4 = bytes[payload + 4];
       return {
         width: 1 + (((byte2 & 0x3f) << 8) | byte1),
-        height: 1 + (((byte4 & 0x0f) << 10) | (byte3 << 2) | ((byte2 & 0xc0) >> 6)),
+        height:
+          1 + (((byte4 & 0x0f) << 10) | (byte3 << 2) | ((byte2 & 0xc0) >> 6)),
       };
     }
 
@@ -197,7 +198,9 @@ async function validateCauseImage(
     return `${label} must be a JPG, PNG, or WebP file.`;
   }
 
-  const dimensions = readImageDimensions(new Uint8Array(await file.arrayBuffer()));
+  const dimensions = readImageDimensions(
+    new Uint8Array(await file.arrayBuffer()),
+  );
   if (!dimensions) {
     return `Could not read the ${label.toLowerCase()}. Choose a valid JPG, PNG, or WebP file.`;
   }

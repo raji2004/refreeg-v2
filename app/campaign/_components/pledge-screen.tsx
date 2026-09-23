@@ -11,7 +11,6 @@ import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/pledge-constants";
 import { getMediaUrl } from "@/lib/s3/media";
 import Image from "next/image";
 
-/** Local calendar YYYY-MM-DD (avoids UTC shifts from toISOString). */
 function formatLocalYYYYMMDD(date: Date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");

@@ -124,6 +124,25 @@ export async function sendPasswordResetEmail(context: {
   });
 }
 
+export async function sendEmailChangeConfirmEmail(context: {
+  email: string;
+  userName: string;
+  newEmail: string;
+  confirmUrl: string;
+}) {
+  return sendMail({
+    to: context.email,
+    subject: "Confirm your new RefreeG email",
+    templateName: "email-change-confirm",
+    context: {
+      userName: context.userName,
+      newEmail: context.newEmail,
+      confirmUrl: context.confirmUrl,
+      currentYear: new Date().getFullYear(),
+    },
+  });
+}
+
 export async function sendCauseUnderReviewEmail(context: {
   causeName: string;
   reviewTimeframe?: string;
@@ -466,9 +485,9 @@ export async function sendLoginNotificationEmail(context: {
 
   const currentYear = new Date().getFullYear();
 
-  // Resolve IP server-side from the request headers instead of
-  // relying on a client-side fetch to api.ipify.org.
-  // This is faster and more secure for production.
+  
+  
+  
   let ipAddress = "Unknown IP";
   try {
     const headersList = await headers();
@@ -477,7 +496,7 @@ export async function sendLoginNotificationEmail(context: {
 
     let detectedIp = (xff?.split(",")[0] || xri || "Unknown IP").trim();
 
-    // Label localhost clearly for local development
+    
     if (detectedIp === "::1" || detectedIp === "127.0.0.1") {
       detectedIp = `${detectedIp} (Localhost)`;
     }

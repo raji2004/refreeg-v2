@@ -5,8 +5,10 @@ export interface Profile {
   first_name?: string | null;
   last_name?: string | null;
   username?: string | null;
+  display_name?: string | null;
   phone: string | null;
   location?: string | null;
+  donation_preference?: string | null;
   account_number: string | null;
   bank_name: string | null;
   account_name: string | null;
@@ -22,7 +24,6 @@ export interface Profile {
   bvn?: number;
   nin?: number;
   pin?: number;
-  donation_preference?: string;
   is_verified?: boolean;
   total_points?: number;
   interests?: string[];

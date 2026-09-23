@@ -2,19 +2,19 @@
 
 import React from "react";
 import SidebarItem from "./SidebarItem";
-import { 
-  X, 
-  Home, 
-  FileText, 
-  Users, 
-  HeartHandshake, 
+import {
+  X,
+  Home,
+  FileText,
+  Users,
+  HeartHandshake,
   LifeBuoy,
   Zap,
   Key,
   Terminal,
   Activity,
   ShieldAlert,
-  Play
+  Play,
 } from "lucide-react";
 
 export default function MobileSidebar({

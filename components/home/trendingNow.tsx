@@ -5,12 +5,11 @@ import UrgentCausesCarousel from "./UrgentCausesCarousel";
 
 import { calculateDaysLeft, isCauseExpired } from "@/utils/cause/cause-utils";
 
-// ✅ Optional: helper to normalize backend data
 function normalizeCause(cause: any) {
   return {
     ...cause,
     image: cause.image ?? undefined,
-    days_active: calculateDaysLeft(cause), // Return dynamic days left
+    days_active: calculateDaysLeft(cause),
     goal: cause.goal ?? 0,
     raised: cause.raised ?? 0,
   };
@@ -39,16 +38,14 @@ export async function TrendingCauses() {
   );
 
   const combinedCauses = [...urgentCauses, ...normalCauses]
-    .map(normalizeCause) // ✅ FIX: normalize all causes
+    .map(normalizeCause)
     .sort((a, b) => {
       const percentA = a.goal > 0 ? a.raised / a.goal : 0;
       const percentB = b.goal > 0 ? b.raised / b.goal : 0;
 
-      // ✅ Push 0% to bottom
       if (percentA === 0 && percentB !== 0) return 1;
       if (percentB === 0 && percentA !== 0) return -1;
 
-      // ✅ Sort by amount raised
       return (b.raised || 0) - (a.raised || 0);
     });
 

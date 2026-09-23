@@ -21,7 +21,7 @@ export default function SidebarItem({
       onClick={() => onSelect(label)}
       className="relative flex items-center cursor-pointer px-3 py-2 rounded-md overflow-hidden"
     >
-      {/* Animated highlight bar */}
+      {}
       {active && (
         <motion.div
           layoutId="sidebar-highlight"
@@ -30,11 +30,13 @@ export default function SidebarItem({
         />
       )}
 
-      {/* Content */}
+      {}
       <div className="relative z-10 flex items-center">
         <Icon
           className={`w-4 h-4 mr-2 transition-colors ${
-            active ? "text-[#0A2A5C]" : "text-gray-500 group-hover:text-[#0A2A5C]"
+            active
+              ? "text-[#0A2A5C]"
+              : "text-gray-500 group-hover:text-[#0A2A5C]"
           }`}
         />
         <span

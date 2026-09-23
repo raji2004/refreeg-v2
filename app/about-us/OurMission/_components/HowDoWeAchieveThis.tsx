@@ -63,7 +63,7 @@ export const HowDoWeAchieveThis: FC = () => {
                 "seamless-inclusive-giving",
                 "community-first-approach",
                 "empowering-local-changemakers",
-              ].includes(blog.slug)
+              ].includes(blog.slug),
             )
             .map(({ slug, title, img, content }) => (
               <FeatureCard

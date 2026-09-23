@@ -31,9 +31,6 @@ type AdminPetitionRow = {
   };
 };
 
-/**
- * List petitions for admin with filters
- */
 export async function listAdminPetitions(
   status?: PetitionStatus,
 ): Promise<AdminPetitionRow[]> {
@@ -113,9 +110,6 @@ export async function listAdminPetitions(
   }));
 }
 
-/**
- * Get pending petition edits
- */
 export async function getPetitionEdits() {
   const session = await auth();
 
@@ -191,9 +185,6 @@ export async function getPetitionEdits() {
   return result;
 }
 
-/**
- * Update petition status
- */
 export async function updatePetitionStatus(
   petitionId: string,
   status: "approved" | "rejected",

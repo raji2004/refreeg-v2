@@ -228,11 +228,14 @@ export default function AIAgentBot() {
   }, [deferredSearch]);
 
   const selectedTopic = selectedId
-    ? filteredTopics.find((topic) => topic.id === selectedId) ?? null
+    ? (filteredTopics.find((topic) => topic.id === selectedId) ?? null)
     : null;
 
   useEffect(() => {
-    if (selectedId && !filteredTopics.some((topic) => topic.id === selectedId)) {
+    if (
+      selectedId &&
+      !filteredTopics.some((topic) => topic.id === selectedId)
+    ) {
       setSelectedId(null);
     }
   }, [filteredTopics, selectedId]);
@@ -393,19 +396,23 @@ export default function AIAgentBot() {
                       <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-600">
                         <p>No FAQ matched that search.</p>
                         <div className="mt-3 flex flex-wrap gap-2">
-                          {["KYC", "create campaign", "donations"].map((suggestion) => (
-                            <button
-                              key={suggestion}
-                              type="button"
-                              onClick={() => {
-                                setSearch(suggestion);
-                                trackEvent("search_suggestion", { query: suggestion });
-                              }}
-                              className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px] font-medium text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
-                            >
-                              Try {suggestion}
-                            </button>
-                          ))}
+                          {["KYC", "create campaign", "donations"].map(
+                            (suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => {
+                                  setSearch(suggestion);
+                                  trackEvent("search_suggestion", {
+                                    query: suggestion,
+                                  });
+                                }}
+                                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px] font-medium text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
+                              >
+                                Try {suggestion}
+                              </button>
+                            ),
+                          )}
                         </div>
                       </div>
                     )}
@@ -470,7 +477,9 @@ export default function AIAgentBot() {
                     <Link
                       href={selectedTopic.href}
                       onClick={() =>
-                        trackEvent("primary_cta", { href: selectedTopic.href || "" })
+                        trackEvent("primary_cta", {
+                          href: selectedTopic.href || "",
+                        })
                       }
                       className="mt-4 inline-flex items-center gap-2 rounded-full bg-blue-600 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-blue-700"
                     >
@@ -527,7 +536,9 @@ export default function AIAgentBot() {
                   </Link>
                   <Link
                     href="/faq"
-                    onClick={() => trackEvent("footer_help_center", { href: "/faq" })}
+                    onClick={() =>
+                      trackEvent("footer_help_center", { href: "/faq" })
+                    }
                     className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-[12px] font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
                   >
                     Help center
@@ -585,7 +596,8 @@ export default function AIAgentBot() {
         }
 
         .home-bot-float {
-          animation: botPulse 3.4s ease-in-out infinite,
+          animation:
+            botPulse 3.4s ease-in-out infinite,
             botFloat 4.8s ease-in-out infinite;
         }
 

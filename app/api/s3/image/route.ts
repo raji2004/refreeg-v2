@@ -3,10 +3,7 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { findLegacyNormalizedCenterCrop } from "@/lib/media/legacy-normalized-image";
 import { s3Client } from "@/lib/s3/s3-client";
-import {
-  generatePresignedGetUrl,
-  getBucketName,
-} from "@/lib/s3/s3-utils";
+import { generatePresignedGetUrl, getBucketName } from "@/lib/s3/s3-utils";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -54,7 +51,7 @@ async function presentCauseImage(key: string) {
   return new Response(new Uint8Array(output), {
     headers: {
       "Cache-Control":
-        "public, max-age=3600, s-maxage=604800, stale-while-revalidate=86400",
+        "public, max-age=2592000, s-maxage=31536000, stale-while-revalidate=86400",
       "Content-Type": object.ContentType || "image/jpeg",
       "X-RefreeG-Media-Presentation": presentation,
     },
@@ -67,25 +64,23 @@ export async function GET(req: Request) {
     let key = searchParams.get("key");
 
     if (!key) {
-      return NextResponse.json({ error: "Missing key parameter" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing key parameter" },
+        { status: 400 },
+      );
     }
 
-    // If the key looks like an encoded proxy URL (double-wrapped), normalize it.
-    // Example problematic value: "/api/s3/image?key=uploads%2F..." or the encoded form of that.
     try {
-      // decode once to handle encoded values
       const decoded = decodeURIComponent(key);
 
-      if (decoded.includes('/api/s3/image')) {
-        const inner = new URL(decoded, 'http://localhost');
-        const innerKey = inner.searchParams.get('key');
+      if (decoded.includes("/api/s3/image")) {
+        const inner = new URL(decoded, "http://localhost");
+        const innerKey = inner.searchParams.get("key");
         if (innerKey) key = decodeURIComponent(innerKey);
       } else {
         key = decoded;
       }
-    } catch (e) {
-      // decoding failed; fall back to original key
-    }
+    } catch (e) {}
 
     if (
       searchParams.get("presentation") === CLEAN_PRESENTATION &&
@@ -95,17 +90,21 @@ export async function GET(req: Request) {
       try {
         return await presentCauseImage(key);
       } catch (error) {
-        console.error("Cause image presentation failed, serving original:", error);
+        console.error(
+          "Cause image presentation failed, serving original:",
+          error,
+        );
       }
     }
 
-    // Generate the presigned URL
     const url = await generatePresignedGetUrl(key);
 
-    // Redirect the browser to the actual S3 presigned URL
     return NextResponse.redirect(url);
   } catch (error: any) {
     console.error("S3 Image Proxy Error:", error);
-    return NextResponse.json({ error: "Failed to load image" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to load image" },
+      { status: 500 },
+    );
   }
 }

@@ -8,7 +8,15 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, ExternalLink, ImageIcon, Maximize2, Play, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  ImageIcon,
+  Maximize2,
+  Play,
+  X,
+} from "lucide-react";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { Button } from "@/components/ui/button";
 
@@ -32,30 +40,28 @@ export default function MultimediaCarousel({
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const didSwipe = useRef(false);
 
-  // Helpers to normalize and extract IDs from popular providers
   const extractYouTubeId = (rawUrl: string): string | null => {
     try {
       const url = new URL(rawUrl);
-      // youtube.com/watch?v=ID or other params
+
       const vParam = url.searchParams.get("v");
       if (vParam) return vParam;
-      // youtu.be/ID (may include extra path or params)
+
       if (url.hostname.includes("youtu.be")) {
         const path = url.pathname.replace(/^\//, "");
         return path ? path.split("/")[0] : null;
       }
-      // youtube.com/shorts/ID
+
       const shortsMatch = url.pathname.match(/\/shorts\/([^/?#]+)/);
       if (shortsMatch) return shortsMatch[1];
-      // youtube.com/embed/ID already embedded
+
       const embedMatch = url.pathname.match(/\/embed\/([^/?#]+)/);
       if (embedMatch) return embedMatch[1];
-      // youtube.com/v/ID (legacy)
+
       const legacyMatch = url.pathname.match(/\/v\/([^/?#]+)/);
       if (legacyMatch) return legacyMatch[1];
       return null;
     } catch {
-      // Fallback regex if URL constructor fails
       const direct = rawUrl.match(
         /(?:v=|be\/|embed\/|shorts\/)([A-Za-z0-9_-]{6,})/,
       );
@@ -66,7 +72,7 @@ export default function MultimediaCarousel({
   const extractTikTokId = (rawUrl: string): string | null => {
     try {
       const url = new URL(rawUrl);
-      // https://www.tiktok.com/@user/video/1234567890123456789
+
       const match = url.pathname.match(/\/video\/(\d+)/);
       return match ? match[1] : null;
     } catch {
@@ -76,7 +82,6 @@ export default function MultimediaCarousel({
   };
 
   const buildDrivePreviewUrl = (rawUrl: string): string | null => {
-    // Support: /file/d/{id}/view, /file/d/{id}/, open?id=, uc?id=
     const dMatch = rawUrl.match(/\/d\/([^/]+)\//);
     if (dMatch) return `https://drive.google.com/file/d/${dMatch[1]}/preview`;
     const idParamMatch = rawUrl.match(/[?&]id=([^&#]+)/);
@@ -86,12 +91,10 @@ export default function MultimediaCarousel({
   };
 
   const slides = useMemo(() => {
-    const urls = [coverImage, ...media].filter(
-      (url): url is string => Boolean(url?.trim()),
+    const urls = [coverImage, ...media].filter((url): url is string =>
+      Boolean(url?.trim()),
     );
 
-    // The cause screen used to pass the cover as both `coverImage` and the
-    // media fallback. De-duplicate here so every consumer gets sane controls.
     return Array.from(new Set(urls)).map<MediaItem>((url) => ({
       type:
         url.match(/\.(mp4|mov|webm)(?:[?#].*)?$/i) ||
@@ -104,7 +107,9 @@ export default function MultimediaCarousel({
   }, [coverImage, media]);
 
   useEffect(() => {
-    setCurrent((selected) => Math.min(selected, Math.max(slides.length - 1, 0)));
+    setCurrent((selected) =>
+      Math.min(selected, Math.max(slides.length - 1, 0)),
+    );
   }, [slides.length]);
 
   const imageIndexes = useMemo(
@@ -193,16 +198,15 @@ export default function MultimediaCarousel({
     else previous();
   };
 
-  // Shown when a video can't be embedded directly (no extractable ID, or the
-  // provider refuses to be framed) — a styled card instead of a bare text
-  // link, consistent with the rest of the carousel's visual language.
   const renderExternalVideoFallback = (url: string, platform: string) => (
     <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-slate-950 p-6 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10">
         <Play className="h-6 w-6 fill-white text-white" />
       </div>
       <div className="space-y-1">
-        <p className="text-sm font-medium text-white">Video preview unavailable</p>
+        <p className="text-sm font-medium text-white">
+          Video preview unavailable
+        </p>
         <p className="text-xs text-white/60">
           This {platform} video can&apos;t be embedded directly
         </p>
@@ -225,7 +229,6 @@ export default function MultimediaCarousel({
     if (item.type === "video") {
       const url = item.url;
 
-      // YouTube embed
       if (url.includes("youtube.com") || url.includes("youtu.be")) {
         const videoId = extractYouTubeId(url);
         if (videoId) {
@@ -245,10 +248,7 @@ export default function MultimediaCarousel({
         // falling back to the raw url here would always render a broken
         // frame. Link out instead, matching the TikTok/Drive fallback below.
         return renderExternalVideoFallback(url, "YouTube");
-      }
-
-      // TikTok embed (requires /embed/VIDEO_ID)
-      else if (url.includes("tiktok.com")) {
+      } else if (url.includes("tiktok.com")) {
         const videoId = extractTikTokId(url);
         if (videoId) {
           return (
@@ -263,10 +263,7 @@ export default function MultimediaCarousel({
           );
         }
         return renderExternalVideoFallback(url, "TikTok");
-      }
-
-      // Google Drive embed (/file/{id}/preview)
-      else if (url.includes("drive.google.com")) {
+      } else if (url.includes("drive.google.com")) {
         const previewUrl = buildDrivePreviewUrl(url);
         if (previewUrl) {
           return (
@@ -280,10 +277,7 @@ export default function MultimediaCarousel({
           );
         }
         return renderExternalVideoFallback(url, "Google Drive");
-      }
-
-      // Direct video file
-      else {
+      } else {
         return (
           <video
             src={url}
@@ -357,10 +351,8 @@ export default function MultimediaCarousel({
     current === 0 && coverImage
       ? 16 / 9
       : currentSlide?.type === "image"
-      ? imageRatios[currentSlide.url]
-      : 16 / 9;
-  // Keep unusual uploads usable on a phone while closely following the
-  // source image's actual shape.
+        ? imageRatios[currentSlide.url]
+        : 16 / 9;
   const mobileRatio = currentRatio
     ? Math.min(Math.max(currentRatio, 0.8), 2)
     : 4 / 3;
@@ -383,106 +375,106 @@ export default function MultimediaCarousel({
   return (
     <>
       <div className="rounded-[22px] border border-slate-200/80 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-3">
-      <div
-        className="relative mx-auto aspect-[var(--mobile-media-ratio)] max-h-[68svh] w-full touch-pan-y overflow-hidden rounded-[14px] bg-slate-100 transition-[aspect-ratio] duration-200 sm:aspect-video sm:max-h-none sm:rounded-[18px]"
-        style={
-          {
-            "--mobile-media-ratio": String(mobileRatio),
-          } as React.CSSProperties
-        }
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        {slides.map((item, idx) => (
-          <div
-            key={idx}
-            className={`absolute inset-0 transition-opacity duration-500 ${
-              idx === current ? "opacity-100 z-10" : "opacity-0 z-0"
-            }`}
-          >
-            {renderMediaItem(item, idx)}
-          </div>
-        ))}
-        <div className="pointer-events-none absolute inset-0 rounded-[18px] ring-1 ring-inset ring-black/10" />
-        {slides.length > 1 && (
-          <>
-            <button
-              onClick={previous}
-              className="absolute left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/25 text-white opacity-60 shadow-sm backdrop-blur-sm transition-all hover:bg-slate-950/50 hover:opacity-100 focus-visible:opacity-100 sm:flex"
-              aria-label="Show previous media"
-              type="button"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              onClick={next}
-              className="absolute right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/25 text-white opacity-60 shadow-sm backdrop-blur-sm transition-all hover:bg-slate-950/50 hover:opacity-100 focus-visible:opacity-100 sm:flex"
-              aria-label="Show next media"
-              type="button"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-            <div className="absolute right-3 top-3 z-20 hidden rounded-full bg-slate-950/70 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md sm:block">
-              {current + 1} / {slides.length}
-            </div>
-            <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5 rounded-full bg-slate-950/35 px-2.5 py-2 backdrop-blur-sm sm:hidden">
-              {slides.map((item, idx) => (
-                <button
-                  key={`indicator-${item.url}-${idx}`}
-                  onClick={() => goTo(idx)}
-                  className={`h-2 rounded-full transition-all ${
-                    idx === current ? "w-5 bg-white" : "w-2 bg-white/60"
-                  }`}
-                  aria-label={`Show media ${idx + 1}`}
-                  aria-current={idx === current}
-                  type="button"
-                />
-              ))}
-            </div>
-            <span className="sr-only" aria-live="polite">
-              Showing media {current + 1} of {slides.length}. Swipe left or
-              right to browse.
-            </span>
-          </>
-        )}
-      </div>
-
-      {slides.length > 1 && (
         <div
-          className="mt-3 hidden gap-2 overflow-x-auto px-1 pb-1 sm:flex"
-          aria-label="Campaign media"
+          className="relative mx-auto aspect-[var(--mobile-media-ratio)] max-h-[68svh] w-full touch-pan-y overflow-hidden rounded-[14px] bg-slate-100 transition-[aspect-ratio] duration-200 sm:aspect-video sm:max-h-none sm:rounded-[18px]"
+          style={
+            {
+              "--mobile-media-ratio": String(mobileRatio),
+            } as React.CSSProperties
+          }
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           {slides.map((item, idx) => (
-            <button
-              key={`${item.url}-${idx}`}
-              onClick={() => goTo(idx)}
-              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-slate-100 transition sm:h-20 sm:w-20 ${
-                idx === current
-                  ? "border-blue-600 ring-2 ring-blue-100"
-                  : "border-transparent opacity-70 hover:opacity-100"
+            <div
+              key={idx}
+              className={`absolute inset-0 transition-opacity duration-500 ${
+                idx === current ? "opacity-100 z-10" : "opacity-0 z-0"
               }`}
-              aria-label={`Show ${item.type} ${idx + 1} of ${slides.length}`}
-              aria-current={idx === current}
-              type="button"
             >
-              {item.type === "image" ? (
-                <Image
-                  src={item.url}
-                  alt=""
-                  fill
-                  sizes="80px"
-                  className="object-cover"
-                  unoptimized={isProxyMediaUrl(item.url)}
-                />
-              ) : (
-                <span className="flex h-full w-full items-center justify-center bg-slate-900 text-white">
-                  <Play className="h-5 w-5 fill-current" />
-                </span>
-              )}
-            </button>
+              {renderMediaItem(item, idx)}
+            </div>
           ))}
+          <div className="pointer-events-none absolute inset-0 rounded-[18px] ring-1 ring-inset ring-black/10" />
+          {slides.length > 1 && (
+            <>
+              <button
+                onClick={previous}
+                className="absolute left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/25 text-white opacity-60 shadow-sm backdrop-blur-sm transition-all hover:bg-slate-950/50 hover:opacity-100 focus-visible:opacity-100 sm:flex"
+                aria-label="Show previous media"
+                type="button"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={next}
+                className="absolute right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/25 text-white opacity-60 shadow-sm backdrop-blur-sm transition-all hover:bg-slate-950/50 hover:opacity-100 focus-visible:opacity-100 sm:flex"
+                aria-label="Show next media"
+                type="button"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <div className="absolute right-3 top-3 z-20 hidden rounded-full bg-slate-950/70 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md sm:block">
+                {current + 1} / {slides.length}
+              </div>
+              <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5 rounded-full bg-slate-950/35 px-2.5 py-2 backdrop-blur-sm sm:hidden">
+                {slides.map((item, idx) => (
+                  <button
+                    key={`indicator-${item.url}-${idx}`}
+                    onClick={() => goTo(idx)}
+                    className={`h-2 rounded-full transition-all ${
+                      idx === current ? "w-5 bg-white" : "w-2 bg-white/60"
+                    }`}
+                    aria-label={`Show media ${idx + 1}`}
+                    aria-current={idx === current}
+                    type="button"
+                  />
+                ))}
+              </div>
+              <span className="sr-only" aria-live="polite">
+                Showing media {current + 1} of {slides.length}. Swipe left or
+                right to browse.
+              </span>
+            </>
+          )}
         </div>
-      )}
+
+        {slides.length > 1 && (
+          <div
+            className="mt-3 hidden gap-2 overflow-x-auto px-1 pb-1 sm:flex"
+            aria-label="Campaign media"
+          >
+            {slides.map((item, idx) => (
+              <button
+                key={`${item.url}-${idx}`}
+                onClick={() => goTo(idx)}
+                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-slate-100 transition sm:h-20 sm:w-20 ${
+                  idx === current
+                    ? "border-blue-600 ring-2 ring-blue-100"
+                    : "border-transparent opacity-70 hover:opacity-100"
+                }`}
+                aria-label={`Show ${item.type} ${idx + 1} of ${slides.length}`}
+                aria-current={idx === current}
+                type="button"
+              >
+                {item.type === "image" ? (
+                  <Image
+                    src={item.url}
+                    alt=""
+                    fill
+                    sizes="80px"
+                    className="object-cover"
+                    unoptimized={isProxyMediaUrl(item.url)}
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center bg-slate-900 text-white">
+                    <Play className="h-5 w-5 fill-current" />
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {lightboxSlide?.type === "image" &&

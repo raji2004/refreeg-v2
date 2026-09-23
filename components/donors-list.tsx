@@ -13,10 +13,9 @@ interface DonorsListProps {
 }
 
 export function DonorsList({ donors }: DonorsListProps) {
-  // Sort donors by date (most recent first)
   const sortedDonors = [...donors].sort(
     (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
 
   return (

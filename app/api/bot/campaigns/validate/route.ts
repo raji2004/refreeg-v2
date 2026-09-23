@@ -1,24 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateApiKey, rateLimit, handlePreflight } from "@/utils/api-bot/api-auth";
+import {
+  validateApiKey,
+  rateLimit,
+  handlePreflight,
+} from "@/utils/api-bot/api-auth";
 import { CreateCampaignSchema } from "@/utils/api-bot/schemas";
 import { logApiRequest } from "@/utils/api-bot/request-logger";
-import { 
-  successResponse, 
-  errorResponse, 
-  ApiErrorCode 
+import {
+  successResponse,
+  errorResponse,
+  ApiErrorCode,
 } from "@/utils/api-bot/response-utils";
 
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
   const limitRes = rateLimit(request);
   if (limitRes?.errorResponse) {
-    await logApiRequest({ request, statusCode: 429, errorCode: ApiErrorCode.RATE_LIMIT_EXCEEDED, startedAt });
+    await logApiRequest({
+      request,
+      statusCode: 429,
+      errorCode: ApiErrorCode.RATE_LIMIT_EXCEEDED,
+      startedAt,
+    });
     return limitRes.errorResponse;
   }
 
   const authRes = await validateApiKey(request);
   if (authRes.errorResponse) {
-    await logApiRequest({ request, statusCode: 401, errorCode: ApiErrorCode.UNAUTHORIZED, startedAt });
+    await logApiRequest({
+      request,
+      statusCode: 401,
+      errorCode: ApiErrorCode.UNAUTHORIZED,
+      startedAt,
+    });
     return authRes.errorResponse;
   }
 
@@ -27,7 +41,12 @@ export async function POST(request: NextRequest) {
     const result = CreateCampaignSchema.safeParse(body);
 
     if (!result.success) {
-      const response = errorResponse("Validation failed", ApiErrorCode.VALIDATION_ERROR, 400, result.error.format());
+      const response = errorResponse(
+        "Validation failed",
+        ApiErrorCode.VALIDATION_ERROR,
+        400,
+        result.error.format(),
+      );
 
       await logApiRequest({
         request,
@@ -42,7 +61,10 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
-    const response = successResponse({ valid: true, message: "Campaign data is valid" });
+    const response = successResponse({
+      valid: true,
+      message: "Campaign data is valid",
+    });
 
     await logApiRequest({
       request,
@@ -55,7 +77,11 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err) {
-    const response = errorResponse("Invalid JSON format", ApiErrorCode.BAD_REQUEST, 400);
+    const response = errorResponse(
+      "Invalid JSON format",
+      ApiErrorCode.BAD_REQUEST,
+      400,
+    );
 
     await logApiRequest({
       request,

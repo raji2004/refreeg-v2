@@ -55,7 +55,9 @@ export function DiscoverFilterRail({
   // Dragging (or arrow-keying) the slider fires onValueChange on every
   // step — debounce before it triggers a fetch, same as location above,
   // instead of refetching on every pixel/keystroke.
-  const [pendingAmountRange, setPendingAmountRange] = useState<[number, number]>([
+  const [pendingAmountRange, setPendingAmountRange] = useState<
+    [number, number]
+  >([
     filters.minAmountNeeded ?? AMOUNT_MIN,
     filters.maxAmountNeeded ?? AMOUNT_MAX,
   ]);
@@ -65,7 +67,10 @@ export function DiscoverFilterRail({
     const [min, max] = debouncedAmountRange;
     const nextMin = min > AMOUNT_MIN ? min : undefined;
     const nextMax = max < AMOUNT_MAX ? max : undefined;
-    if (nextMin !== filters.minAmountNeeded || nextMax !== filters.maxAmountNeeded) {
+    if (
+      nextMin !== filters.minAmountNeeded ||
+      nextMax !== filters.maxAmountNeeded
+    ) {
       onChange({ minAmountNeeded: nextMin, maxAmountNeeded: nextMax });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -78,7 +83,8 @@ export function DiscoverFilterRail({
     ]);
   }, [filters.minAmountNeeded, filters.maxAmountNeeded]);
 
-  const facetFor = (id: string) => facets.find((f) => f.category === id)?.count ?? null;
+  const facetFor = (id: string) =>
+    facets.find((f) => f.category === id)?.count ?? null;
   const visibleCategories = expanded
     ? campaignCategoryStyles
     : campaignCategoryStyles.slice(0, VISIBLE_CATEGORY_COUNT);

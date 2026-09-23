@@ -25,8 +25,8 @@ interface LocationSelectorProps {
   mode: "country" | "state" | "city";
   label?: string;
   placeholder?: string;
-  countryName?: string; // Required for state mode
-  stateName?: string; // Required for city mode
+  countryName?: string;
+  stateName?: string;
 }
 
 const fetchLocations = async (url: string): Promise<string[]> => {

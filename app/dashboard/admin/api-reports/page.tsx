@@ -259,10 +259,11 @@ export default function AdminApiReportsPage() {
                             Takedown
                           </DialogTitle>
                           <DialogDescription>
-                            Are you sure you want to takedown the campaign &quot;
-                            {report.api_campaigns?.title}&quot;? This will cancel the
-                            campaign and notify the developer. This action
-                            cannot be easily undone.
+                            Are you sure you want to takedown the campaign
+                            &quot;
+                            {report.api_campaigns?.title}&quot;? This will
+                            cancel the campaign and notify the developer. This
+                            action cannot be easily undone.
                           </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>

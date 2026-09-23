@@ -25,37 +25,6 @@ import {
   Briefcase,
 } from "lucide-react";
 
-// Mock data for featured causes
-// const featuredCauses = [
-//   {
-//     id: 1,
-//     title: "Clean Water Initiative",
-//     description: "Providing clean water to communities in rural areas.",
-//     category: "Environment",
-//     raised: 12500,
-//     goal: 20000,
-//     image: "/placeholder.svg?height=200&width=400",
-//   },
-//   {
-//     id: 2,
-//     title: "Education for All",
-//     description: "Supporting education for underprivileged children.",
-//     category: "Education",
-//     raised: 8700,
-//     goal: 15000,
-//     image: "/placeholder.svg?height=200&width=400",
-//   },
-//   {
-//     id: 3,
-//     title: "Medical Supplies Drive",
-//     description: "Collecting medical supplies for local clinics.",
-//     category: "Healthcare",
-//     raised: 5300,
-//     goal: 10000,
-//     image: "/placeholder.svg?height=200&width=400",
-//   },
-// ]
-
 export async function FeaturedCauses() {
   const featuredCauses = await listCauses();
 
@@ -136,7 +105,6 @@ export async function FeaturedCauses() {
   return (
     <div className="grid gap-6 pt-8 md:grid-cols-2 lg:grid-cols-3">
       {featuredCauses.map((cause) => {
-        // Find the category based on the cause's category id
         const category = categoriesWithIcons.find(
           (cat) => cat.id === cause.category,
         );
@@ -158,16 +126,7 @@ export async function FeaturedCauses() {
                 <CardTitle className="font-medium text-base md:text-xl lg:text-2xl">
                   {cause.title}
                 </CardTitle>
-                {/* <CardDescription>
-                  {cause.description.split(" ").length > 25
-                    ? (
-                        <>
-                          {cause.description.split(" ").slice(0, 25).join(" ")}...{" "}
-                          <span className="text-blue-600 group-hover:underline">see more</span>
-                        </>
-                      )
-                    : cause.description}
-                </CardDescription> */}
+                {}
                 <div className="flex items-center gap-2 pt-2">
                   <Badge
                     variant="outline"
@@ -181,7 +140,7 @@ export async function FeaturedCauses() {
                   </Badge>
                 </div>
               </CardHeader>
-              {/* This div will push itself to the bottom */}
+              {}
               <div className="mt-auto w-full">
                 <CardContent className="flex-1">
                   <div className="space-y-2">

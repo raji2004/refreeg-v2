@@ -6,14 +6,6 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 
-/**
- * Quick-action dialogs (Give/Pledge/Sign) dock to the bottom of the screen
- * on mobile — spec: "Rules that hold at every width" — and become a
- * centered modal from `sm` up. Built as its own component rather than a
- * className override on the shared DialogContent, since its base classes
- * bake in centered positioning and a slide-from-top animation that a
- * className merge can't reliably flip to slide-from-bottom.
- */
 const ResponsiveDialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {

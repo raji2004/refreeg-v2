@@ -36,7 +36,7 @@ export default function InvestEasy() {
 
   return (
     <div className="w-full h-auto flex flex-col lg:flex-row justify-between items-start px-6 lg:px-10 py-10 gap-10 overflow-hidden">
-      {/* Text Section */}
+      {}
       <motion.div
         className="w-full lg:w-2/4 flex flex-col justify-start items-start gap-6"
         initial={{ opacity: 0, x: -80 }}
@@ -48,20 +48,24 @@ export default function InvestEasy() {
           Investing made easier!
         </h1>
         <p className="text-lg text-gray-600">
-           Sign up today and unlock the power of earning while 
-           you create.
+          Sign up today and unlock the power of earning while you create.
         </p>
 
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button className="bg-secondary hover:bg-blue-500 border px-10 py-4 flex items-center gap-2 rounded-full">
-            <Image src="/images/plasticpricetag.png" height={20} width={20} alt="get started" />
+            <Image
+              src="/images/plasticpricetag.png"
+              height={20}
+              width={20}
+              alt="get started"
+            />
             Claim your tag today
             <ArrowRight size={16} />
           </Button>
         </motion.div>
       </motion.div>
 
-      {/* Steps Section */}
+      {}
       <div className="w-full lg:w-2/4 flex flex-col justify-start items-center gap-10">
         {steps.map((step, index) => (
           <motion.div

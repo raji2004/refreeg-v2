@@ -17,7 +17,8 @@ function details(error: unknown) {
 
   return {
     name: "Error",
-    message: typeof error === "string" ? error : "An unexpected error occurred.",
+    message:
+      typeof error === "string" ? error : "An unexpected error occurred.",
     stack: undefined,
   };
 }
@@ -39,7 +40,9 @@ export function reportClientError(error: unknown, context: ClientErrorContext) {
       : undefined,
   });
 
-  const stack = [report.stack, context.componentStack].filter(Boolean).join("\n");
+  const stack = [report.stack, context.componentStack]
+    .filter(Boolean)
+    .join("\n");
   void fetch("/api/error-report", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

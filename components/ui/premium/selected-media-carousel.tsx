@@ -60,12 +60,7 @@ export function SelectedMediaCarousel({
 
   if (variant === "refreeg") {
     return (
-      <div
-        className={cn(
-          "grid grid-cols-2 gap-3 sm:grid-cols-3",
-          className,
-        )}
-      >
+      <div className={cn("grid grid-cols-2 gap-3 sm:grid-cols-3", className)}>
         {previews.map((item, index) => (
           <div
             key={`${item.url}-${index}`}
@@ -115,7 +110,10 @@ export function SelectedMediaCarousel({
           <CarouselContent>
             <AnimatePresence mode="popLayout">
               {previews.map((item, index) => (
-                <CarouselItem key={`${item.url}-${index}`} className="basis-full">
+                <CarouselItem
+                  key={`${item.url}-${index}`}
+                  className="basis-full"
+                >
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -157,8 +155,7 @@ export function SelectedMediaCarousel({
                     <div className="absolute bottom-4 left-4 glass-morphism px-4 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
                       <span className="text-white text-sm font-semibold tracking-tight">
-                        {item.isVideo ? "Video" : "Image"}{" "}
-                        {index + 1}{" "}
+                        {item.isVideo ? "Video" : "Image"} {index + 1}{" "}
                         <span className="opacity-60 mx-1">/</span>{" "}
                         {files.length}
                       </span>

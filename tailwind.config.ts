@@ -33,7 +33,7 @@ const config: Config = {
         ],
         // Editorial display serif for page/section titles in the fintech
         // surface system (docs/DESIGN_GUIDE.md). Body and UI stay Montserrat.
-        fraunces: ["Fraunces", "Georgia", "Cambria", "serif"],
+        fraunces: ["var(--font-fraunces)", "Georgia", "Cambria", "serif"],
       },
       colors: {
         customBlueGray: "#323F49",
@@ -187,6 +187,50 @@ const config: Config = {
           DEFAULT: "hsl(var(--parchment))",
           foreground: "hsl(var(--parchment-foreground))",
         },
+        forest: {
+          DEFAULT: "hsl(var(--forest))",
+          foreground: "hsl(var(--forest-foreground))",
+        },
+        "blue-accent": {
+          DEFAULT: "hsl(var(--blue-accent))",
+          foreground: "hsl(var(--blue-accent-foreground))",
+        },
+        azure: {
+          DEFAULT: "hsl(var(--azure, var(--blue-accent)))",
+          foreground:
+            "hsl(var(--azure-foreground, var(--blue-accent-foreground)))",
+        },
+        sand: {
+          DEFAULT: "hsl(var(--sand))",
+          foreground: "hsl(var(--sand-foreground))",
+        },
+        amber: {
+          DEFAULT: "hsl(var(--amber))",
+          foreground: "hsl(var(--amber-foreground))",
+        },
+        rust: {
+          DEFAULT: "hsl(var(--rust))",
+          foreground: "hsl(var(--rust-foreground))",
+        },
+        cyan: {
+          DEFAULT: "hsl(var(--cyan))",
+          foreground: "hsl(var(--cyan-foreground))",
+        },
+        bone: {
+          DEFAULT: "hsl(var(--bone))",
+          foreground: "hsl(var(--bone-foreground))",
+        },
+        surface: {
+          DEFAULT: "hsl(var(--surface))",
+          foreground: "hsl(var(--surface-foreground))",
+        },
+        "warm-neutral": {
+          DEFAULT: "hsl(var(--warm-neutral))",
+          foreground: "hsl(var(--warm-neutral-foreground))",
+        },
+        "cream-muted": "hsl(var(--cream-muted))",
+        hairline: "hsl(var(--hairline))",
+        "verified-soft": "hsl(var(--verified-soft))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -197,9 +241,20 @@ const config: Config = {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
+        xs: "2px",
         sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 2px)",
+        lg: "var(--radius)",
+        xl: "16px",
+        "2xl": "20px",
+        "3xl": "24px",
+      },
+      boxShadow: {
+        flat: "0 0 0 1px hsl(var(--hairline))",
+        subtle: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+        card: "0 2px 8px -2px rgba(14, 27, 20, 0.08)",
+        elevated: "0 8px 24px -4px rgba(14, 27, 20, 0.12)",
+        sheet: "0 16px 32px -8px rgba(14, 27, 20, 0.16)",
       },
       keyframes: {
         "accordion-down": {

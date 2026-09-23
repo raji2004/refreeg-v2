@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { causePublicPath } from "@/lib/causes/slug";
 
-// TYPES
 interface ExpandableCardItem {
   id: string;
   slug?: string | null;
@@ -38,7 +37,6 @@ export function ExpandableCard({ items, type }: ExpandableCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // CTA TEXT
   const getCTA = (item: ExpandableCardItem) => {
     if (type === "petition") return "Sign Now";
     if (item.action === "pledge") return "Make a Pledge";
@@ -46,7 +44,6 @@ export function ExpandableCard({ items, type }: ExpandableCardProps) {
     return "Donate Now";
   };
 
-  // NAVIGATION LOGIC
   const handleNavigation = (item: ExpandableCardItem) => {
     const causePath = causePublicPath(item);
     if (item.action === "pledge") {

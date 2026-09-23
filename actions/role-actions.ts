@@ -98,7 +98,6 @@ export async function listUsersWithRoles(): Promise<UserWithRole[]> {
     throw new Error("Only admins or managers can list users");
   }
 
-  // Get all users
   const users = await prisma.user.findMany({
     select: {
       id: true,
@@ -111,7 +110,6 @@ export async function listUsersWithRoles(): Promise<UserWithRole[]> {
     orderBy: { createdAt: "desc" },
   });
 
-  // Get all roles separately
   const allRoles = await prisma.role.findMany({
     select: {
       user_id: true,

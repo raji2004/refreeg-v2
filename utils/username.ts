@@ -1,20 +1,11 @@
-/**
- * Generate a username suggestion from a name or email.
- *
- * Priority:
- *  1. Name-based: "john_doe_482"
- *  2. Email-prefix: "john_482"
- *
- * Always appends a short random suffix to minimise collisions.
- * Output is sanitised to [a-zA-Z0-9_] and lowercased.
- */
+
 export function suggestUsername(
   email?: string | null,
   fullName?: string | null,
 ): string {
-  const suffix = Math.floor(100 + Math.random() * 900).toString(); // 3-digit
+  const suffix = Math.floor(100 + Math.random() * 900).toString(); 
 
-  // Try name-based first
+  
   if (fullName && fullName.trim().length >= 2) {
     const parts = fullName
       .trim()

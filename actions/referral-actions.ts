@@ -91,12 +91,14 @@ export async function getReferralDashboardData(): Promise<ReferralDashboardData 
     referee_email: row.referee_email_v1,
     created_at: row.created_at_v1?.toISOString() ?? null,
     reward: row.reward_v1,
-    profiles: row.referee_id_v1 ? profileMap.get(row.referee_id_v1) ?? null : null,
+    profiles: row.referee_id_v1
+      ? (profileMap.get(row.referee_id_v1) ?? null)
+      : null,
     reward_status: row.reward_status_v1,
   }));
 
   const rewardedReferrals = referrals.filter(
-    (row) => row.reward_status === "ISSUED"
+    (row) => row.reward_status === "ISSUED",
   ).length;
 
   const signUps = referrals.filter((row) => row.registered).length;

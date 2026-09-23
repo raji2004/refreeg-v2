@@ -27,7 +27,10 @@ export async function signPetitionQuick(input: {
   } catch (error) {
     return {
       data: null,
-      error: error instanceof Error ? error.message : "Could not sign this petition.",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not sign this petition.",
     };
   }
 }

@@ -14,10 +14,10 @@ export default async function EditPetitionPage({
   params: Promise<{ id: string }> | { id: string };
 }) {
   const myParams = await params;
-  
-  const [ session, petition ] = await Promise.all([
+
+  const [session, petition] = await Promise.all([
     auth(),
-    getPetition(myParams.id)
+    getPetition(myParams.id),
   ]);
 
   if (!session?.user) {

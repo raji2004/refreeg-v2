@@ -141,7 +141,11 @@ export function CampaignLocationAutocomplete({
                 setIsOpen(false);
               }
             }}
-            className={cn("pl-10 pr-10", className, invalid && "border-red-500")}
+            className={cn(
+              "pl-10 pr-10",
+              className,
+              invalid && "border-red-500",
+            )}
           />
           {isLoading ? (
             <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-blue-600" />

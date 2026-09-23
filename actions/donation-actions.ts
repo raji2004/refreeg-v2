@@ -2,7 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import type { Donation, DonationWithCause, DonationFormData, PaymentProviderType } from "@/types";
+import type {
+  Donation,
+  DonationWithCause,
+  DonationFormData,
+  PaymentProviderType,
+} from "@/types";
 import { recordEvent } from "@/actions/event-reward-actions";
 import { sendDonationReceivedEmail } from "@/services/mail";
 import { syncMilestoneRequirements } from "@/lib/proof-milestones";
@@ -34,8 +39,6 @@ export async function createDonation(
 
   let data;
   try {
-    // Idempotency: if a paystack reference is provided and we've already recorded
-    // a donation with that reference, skip creating a duplicate record.
     if (paystackReference) {
       const existing = await prisma.donation.findFirst({
         where: { paystack_reference: paystackReference },
@@ -43,7 +46,6 @@ export async function createDonation(
       });
 
       if (existing) {
-        // Fetch and return the existing donation
         const existingDonation = await prisma.donation.findUnique({
           where: { id: existing.id },
         });
@@ -69,7 +71,6 @@ export async function createDonation(
       },
     });
 
-    // Increment the cause raised amount
     await prisma.cause.update({
       where: { id: causeId },
       data: { raised: { increment: donationAmount } },
@@ -84,12 +85,10 @@ export async function createDonation(
     throw error;
   }
 
-  // Record donor referral attribution if referral code is present
   if (referrerCode) {
     try {
-      const { recordDonorReferralAttribution } = await import(
-        "@/actions/referral-attribution"
-      );
+      const { recordDonorReferralAttribution } =
+        await import("@/actions/referral-attribution");
       await recordDonorReferralAttribution({
         donationId: data.id,
         causeId,
@@ -102,7 +101,6 @@ export async function createDonation(
     }
   }
 
-  // Record event for reward tracking (only if user is logged in)
   if (userId) {
     try {
       await recordEvent({
@@ -117,11 +115,9 @@ export async function createDonation(
       });
     } catch (eventError) {
       console.error("Error recording donation event:", eventError);
-      // Don't throw - event tracking shouldn't break the main action
     }
   }
 
-  // Emit SSE event
   try {
     const { eventBus } = await import("@/lib/event-bus");
     eventBus.emit("donation", {
@@ -133,7 +129,6 @@ export async function createDonation(
     console.error("Error emitting fiat donation SSE:", e);
   }
 
-  // Auto-fulfill any pending pledge from the same donor for this cause
   if (donationData.email) {
     try {
       await prisma.pledges.updateMany({
@@ -146,11 +141,9 @@ export async function createDonation(
       });
     } catch (pledgeError) {
       console.error("Error fulfilling pledge:", pledgeError);
-      // Non-fatal — don't break the donation flow
     }
   }
 
-  // Milestone notifications for followers (50% and 100%)
   try {
     const cause = await prisma.cause.findUnique({
       where: { id: causeId },
@@ -174,7 +167,6 @@ export async function createDonation(
         }
 
         if (milestoneReached) {
-          // Fetch followers
           const followers = await prisma.campaign_follows.findMany({
             where: { cause_id: causeId },
             select: { email: true },
@@ -185,7 +177,6 @@ export async function createDonation(
             const appUrl =
               process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
 
-            // Call the follower-update API bridge (fire and forget)
             fetch(`${appUrl}/api/mail/follower-update`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },

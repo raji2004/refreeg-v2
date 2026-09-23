@@ -11,13 +11,13 @@ export default function MoreOnHealthcare() {
         scale: 0.95,
         marginLeft: "1rem",
         marginRight: "1rem",
-        borderRadius: "1.5rem", // same as rounded-3xl
+        borderRadius: "1.5rem",
       }}
       whileInView={{
         scale: 1,
         marginLeft: "0rem",
         marginRight: "0rem",
-        borderRadius: "0rem", // remove rounding
+        borderRadius: "0rem",
       }}
       viewport={{ amount: 0.6, once: false }}
       transition={{ type: "spring", stiffness: 100, damping: 20 }}

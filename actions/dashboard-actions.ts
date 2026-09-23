@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function getDashboardStats(userId: string) {
   try {
@@ -39,7 +40,6 @@ export async function getDashboardStats(userId: string) {
   }
 }
 
-/** Platform-wide donation total for the last 7 days — used by the first-run dashboard's "Delivered this week" callout. */
 export async function getPlatformWeeklyDelivered(): Promise<number> {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -75,20 +75,23 @@ export async function getDonationTrends(userId: string) {
       orderBy: { createdAt: "asc" },
     });
 
-    const monthlyDonations = donations.reduce((acc, donation) => {
-      if (!donation.createdAt) return acc;
-      const date = new Date(donation.createdAt);
-      const month = date.toLocaleString("default", {
-        month: "short",
-        year: "numeric",
-      });
+    const monthlyDonations = donations.reduce(
+      (acc, donation) => {
+        if (!donation.createdAt) return acc;
+        const date = new Date(donation.createdAt);
+        const month = date.toLocaleString("default", {
+          month: "short",
+          year: "numeric",
+        });
 
-      if (!acc[month]) {
-        acc[month] = 0;
-      }
-      acc[month] += Number(donation.amount || 0);
-      return acc;
-    }, {} as Record<string, number>);
+        if (!acc[month]) {
+          acc[month] = 0;
+        }
+        acc[month] += Number(donation.amount || 0);
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return Object.entries(monthlyDonations).map(([month, amount]) => ({
       month,
@@ -194,12 +197,12 @@ export async function getCauseAnalytics(causeId: string) {
 
     const totalDonations = donations.reduce(
       (sum, d) => sum + Number(d.amount || 0),
-      0
+      0,
     );
-    const uniqueDonors = new Set(
-      donations.map((d) => d.userId).filter(Boolean)
-    ).size;
-    const averageDonation = uniqueDonors > 0 ? totalDonations / uniqueDonors : 0;
+    const uniqueDonors = new Set(donations.map((d) => d.userId).filter(Boolean))
+      .size;
+    const averageDonation =
+      uniqueDonors > 0 ? totalDonations / uniqueDonors : 0;
 
     const cause = await prisma.cause.findUnique({
       where: { id: causeId },
@@ -218,7 +221,7 @@ export async function getCauseAnalytics(causeId: string) {
     if (cause.createdAt) {
       daysActive = Math.ceil(
         (new Date().getTime() - new Date(cause.createdAt).getTime()) /
-          (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24),
       );
     }
 
@@ -227,20 +230,25 @@ export async function getCauseAnalytics(causeId: string) {
 
     const dailyDonations = donations
       .filter((d) => d.createdAt && new Date(d.createdAt) >= thirtyDaysAgo)
-      .reduce((acc, donation) => {
-        const date = new Date(donation.createdAt!).toISOString().split("T")[0];
-        if (!acc[date]) {
-          acc[date] = 0;
-        }
-        acc[date] += Number(donation.amount || 0);
-        return acc;
-      }, {} as Record<string, number>);
+      .reduce(
+        (acc, donation) => {
+          const date = new Date(donation.createdAt!)
+            .toISOString()
+            .split("T")[0];
+          if (!acc[date]) {
+            acc[date] = 0;
+          }
+          acc[date] += Number(donation.amount || 0);
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
     const dailyDonationsArray = Object.entries(dailyDonations).map(
       ([date, amount]) => ({
         date,
         amount,
-      })
+      }),
     );
 
     const engagement = {
@@ -336,20 +344,23 @@ export async function getPetitionSignatureTrends(userId: string) {
       orderBy: { created_at: "asc" },
     });
 
-    const monthlySignatures = signatures.reduce((acc, signature) => {
-      if (!signature.created_at) return acc;
-      const date = new Date(signature.created_at);
-      const month = date.toLocaleString("default", {
-        month: "short",
-        year: "numeric",
-      });
+    const monthlySignatures = signatures.reduce(
+      (acc, signature) => {
+        if (!signature.created_at) return acc;
+        const date = new Date(signature.created_at);
+        const month = date.toLocaleString("default", {
+          month: "short",
+          year: "numeric",
+        });
 
-      if (!acc[month]) {
-        acc[month] = 0;
-      }
-      acc[month] += Number(signature.amount || 0);
-      return acc;
-    }, {} as Record<string, number>);
+        if (!acc[month]) {
+          acc[month] = 0;
+        }
+        acc[month] += Number(signature.amount || 0);
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return Object.entries(monthlySignatures).map(([month, amount]) => ({
       month,
@@ -391,10 +402,10 @@ export async function getPetitionAnalytics(petitionId: string) {
 
     const totalSignatures = signatures.reduce(
       (sum, s) => sum + Number(s.amount || 0),
-      0
+      0,
     );
     const uniqueSigners = new Set(
-      signatures.map((s) => s.user_id).filter(Boolean)
+      signatures.map((s) => s.user_id).filter(Boolean),
     ).size;
     const averageSignature =
       uniqueSigners > 0 ? totalSignatures / uniqueSigners : 0;
@@ -416,7 +427,7 @@ export async function getPetitionAnalytics(petitionId: string) {
     if (petition.created_at) {
       daysActive = Math.ceil(
         (new Date().getTime() - new Date(petition.created_at).getTime()) /
-          (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24),
       );
     }
 
@@ -425,20 +436,25 @@ export async function getPetitionAnalytics(petitionId: string) {
 
     const dailySignatures = signatures
       .filter((d) => d.created_at && new Date(d.created_at) >= thirtyDaysAgo)
-      .reduce((acc, signature) => {
-        const date = new Date(signature.created_at!).toISOString().split("T")[0];
-        if (!acc[date]) {
-          acc[date] = 0;
-        }
-        acc[date] += Number(signature.amount || 0);
-        return acc;
-      }, {} as Record<string, number>);
+      .reduce(
+        (acc, signature) => {
+          const date = new Date(signature.created_at!)
+            .toISOString()
+            .split("T")[0];
+          if (!acc[date]) {
+            acc[date] = 0;
+          }
+          acc[date] += Number(signature.amount || 0);
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
     const dailySignaturesArray = Object.entries(dailySignatures).map(
       ([date, amount]) => ({
         date,
         amount,
-      })
+      }),
     );
 
     const engagement = {
@@ -446,8 +462,7 @@ export async function getPetitionAnalytics(petitionId: string) {
       comments: signatures.filter((s) => s.message && s.message.trim() !== "")
         .length,
       views: 0,
-      conversionRate:
-        sharedNum > 0 ? (uniqueSigners / sharedNum) * 100 : 0,
+      conversionRate: sharedNum > 0 ? (uniqueSigners / sharedNum) * 100 : 0,
     };
 
     return {
@@ -475,4 +490,3 @@ export async function getPetitionAnalytics(petitionId: string) {
     return null;
   }
 }
-
