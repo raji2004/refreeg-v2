@@ -1,4 +1,4 @@
-import { Montserrat } from "next/font/google";
+import { Montserrat, Fraunces } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "./providers";
@@ -8,8 +8,15 @@ import { Metadata } from "next";
 const montserrat = Montserrat({
   subsets: ["latin"],
   variable: "--font-montserrat",
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.refreeg.com"),
   title: {
@@ -64,7 +71,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${montserrat.variable} font-montserrat antialiased`}
+        className={`${montserrat.variable} ${fraunces.variable} font-montserrat antialiased`}
         suppressHydrationWarning
       >
         <Providers>
