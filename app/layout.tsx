@@ -56,6 +56,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Sentry ingest — opened early to reduce TLS handshake cost.
+            Google Fonts preconnects are injected automatically by next/font. */}
+        <link
+          rel="preconnect"
+          href="https://o4511981856948224.ingest.sentry.io"
+          crossOrigin="anonymous"
+        />
+      </head>
       {/* suppressHydrationWarning: browser extensions (Grammarly, etc.) inject
           data-gr-* attributes onto <body> before React hydrates — a false
           positive, not an actual server/client mismatch. */}
