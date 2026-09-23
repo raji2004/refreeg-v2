@@ -33,7 +33,7 @@ async function isCauseSlugTaken(
     select: { id: true },
   });
   return !!existing;
-};
+}
 
 type AdminCauseRow = {
   id: string;
@@ -54,9 +54,6 @@ type AdminCauseRow = {
   };
 };
 
-/**
- * List causes for admin with filters
- */
 export async function listAdminCauses(
   status?: CauseStatus,
 ): Promise<AdminCauseRow[]> {
@@ -91,10 +88,9 @@ export async function listAdminCauses(
     LEFT JOIN profiles p ON c.user_id = p.id
   `;
 
-  // ✅ FIXED (no string interpolation)
   const causes = await prisma.$queryRaw<any[]>(
-  status
-    ? Prisma.sql`
+    status
+      ? Prisma.sql`
         SELECT 
           c.id,
           c.title,
@@ -115,7 +111,7 @@ export async function listAdminCauses(
         WHERE c.status = ${status}
         ORDER BY c.created_at DESC
       `
-    : Prisma.sql`
+      : Prisma.sql`
         SELECT 
           c.id,
           c.title,
@@ -134,8 +130,8 @@ export async function listAdminCauses(
         FROM causes c
         LEFT JOIN profiles p ON c.user_id = p.id
         ORDER BY c.created_at DESC
-      `
-);
+      `,
+  );
 
   return causes.map((cause) => ({
     id: cause.id,
@@ -157,9 +153,6 @@ export async function listAdminCauses(
   }));
 }
 
-/**
- * Get pending cause edits for admin review
- */
 export async function getCauseEdits() {
   const session = await auth();
 
@@ -172,7 +165,6 @@ export async function getCauseEdits() {
     throw new Error("Unauthorized: Admin or Manager role required");
   }
 
-  // ✅ FIXED
   const edits = await prisma.$queryRaw<any[]>(Prisma.sql`
     SELECT 
       ce.id,
@@ -202,7 +194,6 @@ export async function getCauseEdits() {
 
   const result = await Promise.all(
     edits.map(async (edit) => {
-      // ✅ FIXED
       const sections = await prisma.$queryRaw<any[]>(Prisma.sql`
         SELECT id, heading, description
         FROM cause_edit_sections
@@ -239,9 +230,6 @@ export async function getCauseEdits() {
   return result;
 }
 
-/**
- * Update cause status (approve/reject)
- */
 export async function updateCauseStatus(
   causeId: string,
   status: "approved" | "rejected",

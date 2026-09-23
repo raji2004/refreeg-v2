@@ -21,7 +21,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
       {
-        // Allow Google to crawl Next.js static assets & images
         userAgent: "Googlebot-Image",
         allow: ["/_next/image", "/images/", "/api/s3/image"],
       },

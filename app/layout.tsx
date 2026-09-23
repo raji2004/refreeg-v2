@@ -11,7 +11,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://refreeg.com"),
+  metadataBase: new URL("https://www.refreeg.com"),
   title: {
     default: "RefreeG | Secure Crowdfunding & Petitions",
     template: "%s | RefreeG",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://refreeg.com",
+    url: "https://www.refreeg.com",
     siteName: "RefreeG",
     images: [
       {
@@ -57,17 +57,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Sentry ingest — opened early to reduce TLS handshake cost.
-            Google Fonts preconnects are injected automatically by next/font. */}
         <link
           rel="preconnect"
           href="https://o4511981856948224.ingest.sentry.io"
           crossOrigin="anonymous"
         />
       </head>
-      {/* suppressHydrationWarning: browser extensions (Grammarly, etc.) inject
-          data-gr-* attributes onto <body> before React hydrates — a false
-          positive, not an actual server/client mismatch. */}
       <body
         className={`${montserrat.variable} font-montserrat antialiased`}
         suppressHydrationWarning

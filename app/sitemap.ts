@@ -7,7 +7,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     process.env.NEXT_PUBLIC_SITE_URL ||
     "https://www.refreeg.com";
 
-  // Static pages
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${baseUrl}/`, changeFrequency: "daily", priority: 1 },
     { url: `${baseUrl}/causes`, changeFrequency: "hourly", priority: 0.9 },
@@ -47,12 +46,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/terms`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
-  // Dynamic routes — fetch approved causes & petitions.
-  // Wrapped in try/catch so a DB hiccup doesn't break the sitemap.
-  //
-  // NOTE: `cause` uses camelCase (`updatedAt`), `petitions` uses snake_case
-  // (`updated_at`) — schema inconsistency across prisma/schema/*.prisma.
-  // Do not "fix" without a migration + touching every consumer.
   try {
     const [causes, petitions] = await Promise.all([
       prisma.cause.findMany({
