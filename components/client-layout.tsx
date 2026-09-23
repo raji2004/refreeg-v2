@@ -24,9 +24,8 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     "/onboarding",
     "/docs/api",
     "/auth/verify-otp",
+    // Full-screen KYC flow — keeps the AppShell chrome out of the way
     "/dashboard/settings/kyc-setup",
-    "/dashboard/settings/kyc",
-    "/dashboard/settings/",
   ];
   const hideLayout = noLayoutRoutes.some((route) => pathname.startsWith(route));
 
@@ -60,7 +59,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
       <AppShell>
         {isRouteLoading && <NavigationLoader />}
         {children}
-        <AIAgentBot />
+        {/* <AIAgentBot /> */}
       </AppShell>
     );
   }

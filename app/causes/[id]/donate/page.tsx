@@ -58,8 +58,11 @@ export default async function QuickDonatePage({
       goal={cause.goal}
       raised={cause.raised}
       subaccount={(cause as any).user?.sub_account_code ?? undefined}
-      defaultName={profile?.full_name ?? ""}
+      defaultName={
+        profile?.display_name || profile?.full_name || ""
+      }
       defaultEmail={profile?.email ?? ""}
+      defaultAnonymous={profile?.donation_preference === "anonymous"}
       userId={user?.id}
     />
   );

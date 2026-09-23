@@ -1,56 +1,89 @@
 import {
+  deriveFullNameFromEmail,
   getPasswordErrors,
   isStrongPassword,
   normalizeRegistrationInput,
   validateRegistrationInput,
 } from "@/lib/auth/registration";
 
-describe("organization registration validation", () => {
-  const validOrganization = {
-    accountType: "organization" as const,
-    fullName: "Ada Lovelace",
-    email: "ADMIN@EXAMPLE.ORG ",
-    password: "Strong!Pass2026",
-    confirmPassword: "Strong!Pass2026",
-    organizationName: "Hope & Health Initiative (QA)",
-    organizationPhone: "+234 801 234 5678",
-    organizationAddress: "12 Unity Road, Lagos",
-    organizationIndustry: "Public Health",
-  };
-
-  it("accepts complete organization details including special characters", () => {
-    const input = normalizeRegistrationInput(validOrganization);
-
-    expect(validateRegistrationInput(input)).toEqual({});
-    expect(input.email).toBe("admin@example.org");
-    expect(input.organizationName).toBe("Hope & Health Initiative (QA)");
+describe("deriveFullNameFromEmail", () => {
+  it("derives readable capitalized names from dotted emails", () => {
+    expect(deriveFullNameFromEmail("john.doe@example.com")).toBe("John Doe");
+    expect(deriveFullNameFromEmail("ada.lovelace@charity.org")).toBe("Ada Lovelace");
   });
 
-  it("reports every missing organization field", () => {
+  it("derives names from underscores and hyphens", () => {
+    expect(deriveFullNameFromEmail("sandra_smith@domain.com")).toBe("Sandra Smith");
+    expect(deriveFullNameFromEmail("david-miller@company.org")).toBe("David Miller");
+  });
+
+  it("capitalizes single-word usernames", () => {
+    expect(deriveFullNameFromEmail("alex123@domain.com")).toBe("Alex123");
+  });
+
+  it("handles empty or invalid inputs gracefully", () => {
+    expect(deriveFullNameFromEmail(null)).toBe("User");
+    expect(deriveFullNameFromEmail("")).toBe("User");
+    expect(deriveFullNameFromEmail("no-at-sign")).toBe("User");
+  });
+});
+
+describe("streamlined registration validation", () => {
+  it("accepts signup with only email and password (auto-deriving fullName)", () => {
+    const input = normalizeRegistrationInput({
+      accountType: "individual",
+      email: "jane.doe@example.com",
+      password: "Strong!Pass2026",
+      confirmPassword: "Strong!Pass2026",
+    });
+
+    expect(input.fullName).toBe("Jane Doe");
+    expect(validateRegistrationInput(input)).toEqual({});
+  });
+
+  it("accepts organization signup with only work email and password", () => {
+    const input = normalizeRegistrationInput({
+      accountType: "organization",
+      email: "founder@myngo.org",
+      password: "Strong!Pass2026",
+      confirmPassword: "Strong!Pass2026",
+    });
+
+    expect(input.fullName).toBe("Founder");
+    expect(validateRegistrationInput(input)).toEqual({});
+  });
+
+  it("preserves explicit fullName if supplied", () => {
+    const input = normalizeRegistrationInput({
+      accountType: "individual",
+      fullName: "Custom Full Name",
+      email: "user@example.com",
+      password: "Strong!Pass2026",
+      confirmPassword: "Strong!Pass2026",
+    });
+
+    expect(input.fullName).toBe("Custom Full Name");
+    expect(validateRegistrationInput(input)).toEqual({});
+  });
+
+  it("reports missing email and password", () => {
     const errors = validateRegistrationInput({
-      ...validOrganization,
-      fullName: "",
+      accountType: "individual",
       email: "",
-      organizationName: "",
-      organizationPhone: "",
-      organizationAddress: "",
-      organizationIndustry: "",
+      password: "",
     });
 
     expect(errors).toMatchObject({
-      fullName: expect.any(String),
       email: expect.any(String),
-      organizationName: expect.any(String),
-      organizationPhone: expect.any(String),
-      organizationAddress: expect.any(String),
-      organizationIndustry: expect.any(String),
+      password: expect.any(String),
     });
   });
 
   it("rejects invalid email and mismatched confirmation", () => {
     const errors = validateRegistrationInput({
-      ...validOrganization,
+      accountType: "individual",
       email: "not-an-email",
+      password: "Strong!Pass2026",
       confirmPassword: "Different!Pass2026",
     });
 

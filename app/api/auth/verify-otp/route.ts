@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createReferralRecord } from "@/lib/referral-utils";
+import { deriveFullNameFromEmail } from "@/lib/auth/registration";
 
 // Flat one-time EIZA credit granted on email verification (no ledger/history
 // for this pass — matches a single "150 EIZA" welcome credit, not itemized).
@@ -84,7 +85,9 @@ export async function POST(req: Request) {
 
     // 5. Create the user/workspace and delete pending registration atomically.
     const newProfile = await prisma.$transaction(async (tx) => {
-      const nameParts = pending.fullName.trim().split(/\s+/).filter(Boolean);
+      const effectiveFullName =
+        pending.fullName?.trim() || deriveFullNameFromEmail(pending.email);
+      const nameParts = effectiveFullName.split(/\s+/).filter(Boolean);
       const firstName = nameParts[0] || null;
       const lastName = nameParts.slice(1).join(" ") || null;
 
@@ -92,7 +95,7 @@ export async function POST(req: Request) {
         data: {
           email: pending.email,
           password: pending.password,
-          fullName: pending.fullName,
+          fullName: effectiveFullName,
           firstName,
           lastName,
           phone:

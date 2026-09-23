@@ -3,11 +3,13 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { Adapter, AdapterUser } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import Apple from "next-auth/providers/apple";
 import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@/types/role-types";
 import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
 import { createReferralRecord } from "@/lib/referral-utils";
+import { deriveFullNameFromEmail } from "@/lib/auth/registration";
 
 // Idle timeout: session cookie/JWT expiry, renewed on activity (sliding window).
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
@@ -75,11 +77,13 @@ const customAdapter: Adapter = {
   ...baseAdapter,
   createUser: async (data: any) => {
     const { name, image, ...rest } = data;
-    const [firstName, ...lastNameParts] = (name || "").trim().split(/\s+/);
+    const effectiveName =
+      name || (rest.email ? deriveFullNameFromEmail(rest.email) : null);
+    const [firstName, ...lastNameParts] = (effectiveName || "").trim().split(/\s+/);
     const user = await prisma.user.create({
       data: {
         ...rest,
-        fullName: name || null,
+        fullName: effectiveName,
         profilePhoto: image || null,
         firstName: firstName || null,
         lastName: lastNameParts.length ? lastNameParts.join(" ") : null,
@@ -102,6 +106,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       allowDangerousEmailAccountLinking: true,
     }),
+    ...(process.env.APPLE_ID && process.env.APPLE_SECRET
+      ? [
+          Apple({
+            clientId: process.env.APPLE_ID,
+            clientSecret: process.env.APPLE_SECRET,
+            allowDangerousEmailAccountLinking: true,
+          }),
+        ]
+      : []),
     Credentials({
       id: "otp-login",
       name: "OTP Auto Login",

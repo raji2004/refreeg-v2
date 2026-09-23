@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth/auth";
 import { type NextRequest, NextResponse } from "next/server";
 import { hasCompletedOnboarding } from "@/actions/profile-actions";
+import { prisma } from "@/lib/prisma";
 
 function normalizeRedirectPath(target: string | null): string | null {
   if (!target) return null;
@@ -34,19 +35,40 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(absoluteUrl("/auth/signin", request));
   }
 
+  const isOrgIntent = request.cookies.get("auth_org_intent")?.value === "true";
+  if (isOrgIntent && session.user.id) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { accountType: true },
+    });
+
+    // Only tag as organization if not already set, protecting existing individual accounts
+    if (!dbUser?.accountType) {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { accountType: "organization" },
+      });
+    }
+  }
+
   const completedOnboarding =
     session.user.onboardingCompleted ??
     (await hasCompletedOnboarding(session.user.id));
 
+  let redirectUrl: URL;
   if (!completedOnboarding) {
-    const onboardingUrl = absoluteUrl("/onboarding", request);
+    redirectUrl = absoluteUrl("/onboarding", request);
     if (requestedRedirect) {
-      onboardingUrl.searchParams.set("redirect", requestedRedirect);
+      redirectUrl.searchParams.set("redirect", requestedRedirect);
     }
-    return NextResponse.redirect(onboardingUrl);
+  } else {
+    redirectUrl = absoluteUrl(requestedRedirect || "/dashboard", request);
   }
 
-  return NextResponse.redirect(
-    absoluteUrl(requestedRedirect || "/dashboard", request),
-  );
+  const response = NextResponse.redirect(redirectUrl);
+  if (isOrgIntent) {
+    response.cookies.delete("auth_org_intent");
+  }
+
+  return response;
 }

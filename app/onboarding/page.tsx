@@ -68,7 +68,6 @@ const INDIVIDUAL_STEPS: StepId[] = [
 ];
 
 const ORGANIZATION_STEPS: StepId[] = [
-  "account-type",
   "profile",
   "org-setup",
   "invite-team",
@@ -78,10 +77,6 @@ const ORGANIZATION_STEPS: StepId[] = [
 ];
 
 const ORGANIZATION_STEP_DETAILS = [
-  {
-    id: "account-type" as const,
-    label: "Account type",
-  },
   {
     id: "profile" as const,
     label: "Owner profile",
@@ -113,11 +108,14 @@ const ORGANIZATION_STEP_DETAILS = [
  * include 3.5 for org-setup) to the appropriate StepId.
  */
 function dbStepToStepId(dbStep: number, accountType: string): StepId {
+  if (accountType === "organization") {
+    if (dbStep <= 3) return "profile";
+    if (dbStep === 3.5) return "org-setup";
+    return "kyc";
+  }
   if (dbStep <= 1) return "account-type";
-  if (dbStep === 2) return accountType === "organization" ? "profile" : "gender";
+  if (dbStep === 2) return "gender";
   if (dbStep === 3) return "profile";
-  if (dbStep === 3.5) return "org-setup";
-  // dbStep >= 4 means profile + org-setup are done → KYC
   return "kyc";
 }
 
@@ -285,30 +283,37 @@ export default function OnboardingPage() {
     );
 
     if (!isProfileComplete) {
-      setCurrentStepId("account-type");
+      setCurrentStepId(
+        onboardingData.accountType === "organization"
+          ? "profile"
+          : "account-type",
+      );
       toast({
         title: "Complete your profile first",
         description: "Please complete earlier steps before proceeding.",
         variant: "destructive",
       });
     }
-  }, [user, currentStepId, onboardingData.profile]);
+  }, [user, currentStepId, onboardingData.profile, onboardingData.accountType]);
 
   // ──── Step handlers ─────────────────────────────────────────────────
 
   const handleStep1Next = async (accountType: string) => {
     try {
+      if (accountType === "organization") {
+        toast({
+          title: "Invalid account type",
+          description: "Organization accounts must be registered through the dedicated organization page.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       await saveStep1Progress(user.id, accountType);
       updateOnboardingData("accountType", accountType);
 
-      // Organization → skip gender, go to profile
-      if (accountType === "organization") {
-        setDirection(1);
-        setCurrentStepId("profile");
-      } else {
-        setDirection(1);
-        setCurrentStepId("gender");
-      }
+      setDirection(1);
+      setCurrentStepId("gender");
     } catch (error) {
       console.error("Error saving step 1 progress:", error);
       toast({

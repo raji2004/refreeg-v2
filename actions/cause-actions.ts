@@ -96,8 +96,9 @@ export async function getQuickDonateProps(causeId: string) {
     goal: cause.goal,
     raised: cause.raised,
     subaccount: cause.user?.sub_account_code ?? undefined,
-    defaultName: profile?.full_name ?? "",
+    defaultName: profile?.display_name || profile?.full_name || "",
     defaultEmail: profile?.email ?? "",
+    defaultAnonymous: profile?.donation_preference === "anonymous",
     userId: user?.id,
     // Real gate against paying into a paused campaign — the card/detail-page
     // UI already hides the Give button, but this is the server-side check

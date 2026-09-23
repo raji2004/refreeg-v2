@@ -287,7 +287,7 @@ export function UserNav() {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link
-                  href="/dashboard/settings"
+                  href="/dashboard/settings/profile"
                   className="group flex h-10 cursor-pointer items-center gap-3 rounded-lg px-2.5 text-sm text-slate-700 focus:bg-blue-50 focus:text-blue-800"
                 >
                   <Settings2 className="h-4 w-4 text-slate-400 group-focus:text-blue-600" />
