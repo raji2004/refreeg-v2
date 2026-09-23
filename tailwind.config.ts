@@ -33,7 +33,7 @@ const config: Config = {
         ],
         // Editorial display serif for page/section titles in the fintech
         // surface system (docs/DESIGN_GUIDE.md). Body and UI stay Montserrat.
-        fraunces: ["Fraunces", "Georgia", "Cambria", "serif"],
+        fraunces: ["var(--font-fraunces)", "Georgia", "Cambria", "serif"],
       },
       colors: {
         customBlueGray: "#323F49",
@@ -197,7 +197,8 @@ const config: Config = {
         },
         azure: {
           DEFAULT: "hsl(var(--azure, var(--blue-accent)))",
-          foreground: "hsl(var(--azure-foreground, var(--blue-accent-foreground)))",
+          foreground:
+            "hsl(var(--azure-foreground, var(--blue-accent-foreground)))",
         },
         sand: {
           DEFAULT: "hsl(var(--sand))",

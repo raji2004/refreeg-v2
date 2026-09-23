@@ -411,7 +411,7 @@ export default function ManageCauses() {
         </TabsContent>
       </Tabs>
 
-      {/* Reject Dialog */}
+      {}
       <Dialog
         open={rejectDialog.open}
         onOpenChange={(open) => setRejectDialog((prev) => ({ ...prev, open }))}
@@ -420,8 +420,8 @@ export default function ManageCauses() {
           <DialogHeader>
             <DialogTitle>Reject Cause</DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejecting &quot;{rejectDialog.title}&quot;. This
-              will be shown to the user.
+              Please provide a reason for rejecting &quot;{rejectDialog.title}
+              &quot;. This will be shown to the user.
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -689,7 +689,7 @@ export default function ManageCauses() {
                   </div>
                 )}
 
-              {/* Sections (handle sections on both main cause and edit rows) */}
+              {}
               {Array.isArray((detailDialog.cause as any).cause_edit_sections) &&
               (detailDialog.cause as any).cause_edit_sections.length > 0 ? (
                 <div className="space-y-4">
@@ -710,7 +710,7 @@ export default function ManageCauses() {
                 </div>
               ) : null}
 
-              {/* Multimedia Preview */}
+              {}
               {(((detailDialog.cause as any).multimedia &&
                 (detailDialog.cause as any).multimedia.length > 0) ||
                 ((detailDialog.cause as any).video_links &&

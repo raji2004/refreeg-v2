@@ -53,7 +53,6 @@ temp_auto_push.bat
 temp_interactive_push.bat
 
 # editor / local tooling (keep .github + project eslint config tracked)
-.vscode/
 .idea/
 .cursor/
 .claude/

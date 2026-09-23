@@ -5,12 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 interface DonateButtonProps {
-  type?: "cause" | "petition"; // optional override
-  id?: string; // optional ID
-  href?: string; // optional direct href
+  type?: "cause" | "petition";
+  id?: string;
+  href?: string;
   fullWidth?: boolean;
-  onClick?: () => void; // fallback for modal usage
-  disableLink?: boolean; // ✅ prevent nested <a>
+  onClick?: () => void;
+  disableLink?: boolean;
 }
 
 export function DonateButton({
@@ -23,7 +23,6 @@ export function DonateButton({
 }: DonateButtonProps) {
   const pathname = usePathname();
 
-  // Auto-detect type if not passed
   const detectedType: "cause" | "petition" | null =
     type ||
     (pathname.includes("/causes")
@@ -39,10 +38,8 @@ export function DonateButton({
     return null;
   }
 
-  // Auto-detect id
   const detectedId = id || pathname.split("/").filter(Boolean).pop();
 
-  // Final href
   const finalHref =
     href ||
     (detectedId

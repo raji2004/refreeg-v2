@@ -18,10 +18,6 @@ export interface RecordDonorReferralResult {
   reason?: string;
 }
 
-/**
- * Records referral attribution for a completed donation.
- * Idempotent on donationId. Non-fatal (catches all errors).
- */
 export async function recordDonorReferralAttribution(
   params: RecordDonorReferralParams,
 ): Promise<RecordDonorReferralResult> {
@@ -32,7 +28,6 @@ export async function recordDonorReferralAttribution(
   }
 
   try {
-    // 1. Idempotency check on donation_id
     const existing = await (prisma as any).donorReferralAttribution.findUnique({
       where: { donation_id: donationId },
       select: { id: true, status: true, referrer_id: true },
@@ -46,7 +41,6 @@ export async function recordDonorReferralAttribution(
       };
     }
 
-    // 2. Lookup referrer by referralCode, fallback to user id
     let referrer = await prisma.user.findUnique({
       where: { referralCode },
       select: { id: true },
@@ -63,7 +57,6 @@ export async function recordDonorReferralAttribution(
       return { recorded: false, reason: "referrer_not_found" };
     }
 
-    // 3. Determine status (self-referral vs own-campaign vs confirmed)
     let status: "confirmed" | "self_referral" | "own_campaign" = "confirmed";
 
     if (donorUserId && donorUserId === referrer.id) {
@@ -79,7 +72,6 @@ export async function recordDonorReferralAttribution(
       }
     }
 
-    // 4. Create attribution record
     await (prisma as any).donorReferralAttribution.create({
       data: {
         referrer_id: referrer.id,
@@ -92,7 +84,6 @@ export async function recordDonorReferralAttribution(
       },
     });
 
-    // 5. Backfill referrer_id on the donation table if possible
     await (prisma as any).donation
       .update({
         where: { id: donationId },
@@ -105,7 +96,6 @@ export async function recordDonorReferralAttribution(
         );
       });
 
-    // 6. Revalidate leaderboard paths if confirmed
     if (status === "confirmed") {
       try {
         revalidatePath("/leaderboard");

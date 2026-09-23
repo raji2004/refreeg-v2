@@ -1,6 +1,6 @@
-// utils/countryUtils.ts
 
-// Comprehensive list of all countries in the world
+
+
 export const ALL_COUNTRIES = [
   "Afghanistan",
   "Albania",
@@ -200,32 +200,32 @@ export const ALL_COUNTRIES = [
   "Zimbabwe",
 ];
 
-// Function to get countries with fallback
+
 export const getCountries = async (): Promise<string[]> => {
   try {
-    // Try to fetch from API first
+    
     const response = await fetch("/api/countries");
     if (response.ok) {
       const data = await response.json();
-      // If API returns valid data with countries, use it
+      
       if (Array.isArray(data) && data.length > 0) {
         return data.map((item: any) =>
           typeof item === "string" ? item : item.name,
         );
       }
     }
-    // If response is not OK or returns empty array, use fallback
+    
     console.warn("Country API returned invalid data, using fallback list");
   } catch (error) {
     console.warn("Country API failed, using fallback list:", error);
   }
 
-  // Always fallback to static list - this ensures countries are always available
+  
 
   return ALL_COUNTRIES;
 };
 
-// Function to search countries (for future use with search functionality)
+
 export const searchCountries = (query: string): string[] => {
   const lowercaseQuery = query.toLowerCase();
   return ALL_COUNTRIES.filter((country) =>
@@ -233,12 +233,12 @@ export const searchCountries = (query: string): string[] => {
   );
 };
 
-// Function to validate if a country exists
+
 export const isValidCountry = (country: string): boolean => {
   return ALL_COUNTRIES.includes(country);
 };
 
-// Function to get country by partial name (case insensitive)
+
 export const findCountry = (partialName: string): string | null => {
   const lowercasePartial = partialName.toLowerCase();
   const found = ALL_COUNTRIES.find((country) =>

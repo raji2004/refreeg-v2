@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 export function EditCommentForm({
   initialContent,
   onSave,
-  onCancel
+  onCancel,
 }: {
   initialContent: string;
   onSave: (content: string) => void;
@@ -16,10 +16,13 @@ export function EditCommentForm({
   const [content, setContent] = useState(initialContent);
 
   return (
-    <form onSubmit={(e) => {
-      e.preventDefault();
-      onSave(content);
-    }} className="mt-2 space-y-2">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(content);
+      }}
+      className="mt-2 space-y-2"
+    >
       <Textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
@@ -35,12 +38,7 @@ export function EditCommentForm({
         >
           Save Changes
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onCancel}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
           Cancel
         </Button>
       </div>

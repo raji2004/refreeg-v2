@@ -191,7 +191,7 @@ export default function PublicProfile({
               )}
             </div>
 
-            {/* Identity */}
+            {}
             <div className="flex-1 min-w-0 pt-1 md:pt-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl md:text-3xl font-bold text-[#003366] tracking-tight">
@@ -225,7 +225,7 @@ export default function PublicProfile({
               )}
             </div>
 
-            {/* CTA for non-owners */}
+            {}
             {!isOwner && (
               <div className="flex gap-2 flex-wrap shrink-0 mt-2 md:mt-0">
                 <Link href={`/causes?userId=${userId}&action=pledge`}>

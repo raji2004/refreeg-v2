@@ -39,8 +39,9 @@ export function ClaimBanner() {
   return (
     <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
       <P className="text-sm font-medium text-amber-900 mb-3">
-        We recovered {visible.length === 1 ? "a campaign" : `${visible.length} campaigns`} that
-        may belong to you after a data incident. Is this yours?
+        We recovered{" "}
+        {visible.length === 1 ? "a campaign" : `${visible.length} campaigns`}{" "}
+        that may belong to you after a data incident. Is this yours?
       </P>
       <div className="space-y-2">
         {visible.map((cause) => (
@@ -60,9 +61,12 @@ export function ClaimBanner() {
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-900">{cause.title}</p>
+              <p className="truncate text-sm font-medium text-slate-900">
+                {cause.title}
+              </p>
               <p className="text-xs text-muted-foreground">
-                ₦{Number(cause.raised).toLocaleString()} of ₦{Number(cause.goal).toLocaleString()}
+                ₦{Number(cause.raised).toLocaleString()} of ₦
+                {Number(cause.goal).toLocaleString()}
               </p>
             </div>
             <Button

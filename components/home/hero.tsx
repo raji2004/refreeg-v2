@@ -3,9 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-
 import gsap from "gsap";
-
 import { Button } from "@/components/ui/button";
 
 const Hero = () => {
@@ -58,18 +56,13 @@ const Hero = () => {
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-background px-4 sm:px-6">
-      {/* Background Glow */}
       <div className="absolute top-[-200px] left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#0A3CB5]/20 blur-3xl" />
-
-      {/* Overlay Gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/40 to-background z-0" />
 
-      {/* Content */}
       <div
         ref={heroRef}
         className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center text-center md:pt-0 sm:pt-28"
       >
-        {/* Badge */}
         <div className="hero-badge flex items-center gap-2 rounded-full border border-border bg-[#CFF454] px-4 py-2 text-xs sm:text-sm font-semibold text-[#0B1410] shadow-md">
           <Image src="/dot.svg" alt="On-chain Icon" width={8} height={8} />
           <span className="whitespace-nowrap">
@@ -77,21 +70,18 @@ const Hero = () => {
           </span>
         </div>
 
-        {/* Heading */}
         <h1 className="hero-title mt-4 max-w-4xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl">
           Give and see <br className="hidden sm:block" />
           exactly where <br className="hidden sm:block" />
           it <span className="italic text-[#0A3CB5]">lands.</span>
         </h1>
 
-        {/* Description */}
         <p className="hero-description mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
           RefreeG puts every naira on-chain. Donors get a receipt, not a
           brochure. Causes get funded in seconds, not weeks. No black box, no
           trust tax — just verifiable giving.
         </p>
 
-        {/* Buttons */}
         <div className="hero-buttons mt-6 flex flex-col items-center gap-4 sm:flex-row">
           <Button
             size="lg"
@@ -118,7 +108,6 @@ const Hero = () => {
           </Button>
         </div>
 
-        {/* Hero Image */}
         <div className="hero-image w-full max-w-4xl px-2 sm:px-6">
           <Image
             src="/heropage.png"
@@ -126,7 +115,8 @@ const Hero = () => {
             width={1400}
             height={900}
             priority
-            className=" w-full object-contain"
+            sizes="(max-width: 896px) 100vw, 896px"
+            className="w-full object-contain"
           />
         </div>
       </div>

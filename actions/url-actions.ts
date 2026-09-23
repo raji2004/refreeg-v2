@@ -20,7 +20,6 @@ export async function createShortUrl(
 ): Promise<string> {
   const baseUrl = getBaseURL();
 
-  // Check if a short URL already exists for this entity
   const existing = await prisma.short_urls.findFirst({
     where: { entity_id: entityId, entity_type: entityType },
     select: { short_code: true },

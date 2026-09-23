@@ -15,14 +15,17 @@ import { AuthBrandPanel } from "@/components/auth/auth-brand-panel";
 import { AuthLogo } from "@/components/auth/auth-logo";
 
 function normalizeRedirect(target: string | null): string | null {
-  if (!target || !target.startsWith("/") || target.startsWith("//")) return null;
+  if (!target || !target.startsWith("/") || target.startsWith("//"))
+    return null;
   return target;
 }
 
 function SignInContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loadingType, setLoadingType] = useState<"manual" | "google" | "apple" | null>(null);
+  const [loadingType, setLoadingType] = useState<
+    "manual" | "google" | "apple" | null
+  >(null);
   const [showPassword, setShowPassword] = useState(false);
   const { user, isLoading, signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
@@ -62,7 +65,8 @@ function SignInContent() {
   const handleAppleSignIn = () => {
     toast({
       title: "Apple Sign In",
-      description: "Apple sign in is coming soon. Please continue with Google or Email.",
+      description:
+        "Apple sign in is coming soon. Please continue with Google or Email.",
     });
   };
 
@@ -88,7 +92,6 @@ function SignInContent() {
     try {
       await signIn(email.trim().toLowerCase(), password, redirectTo);
     } catch (error: any) {
-      // Handled in useAuth, but if unhandled:
       console.error("Sign in failed:", error);
     } finally {
       setLoadingType(null);
@@ -120,7 +123,8 @@ function SignInContent() {
             },
             {
               title: "Verified receipts",
-              description: "View milestone verifications and project disbursements.",
+              description:
+                "View milestone verifications and project disbursements.",
             },
             {
               title: "100% transparent",
@@ -129,7 +133,8 @@ function SignInContent() {
           ]}
           testimonial={{
             avatarInitials: "TA",
-            quote: "I can always see the exact progress and milestone proof of every project I've backed.",
+            quote:
+              "I can always see the exact progress and milestone proof of every project I've backed.",
             author: "Tunde A. · Lagos",
           }}
         />
@@ -139,7 +144,7 @@ function SignInContent() {
 
   return (
     <div className="flex min-h-screen w-full bg-[#FCFBFA]">
-      {/* Left Brand Panel (Desktop) */}
+      {}
       <AuthBrandPanel
         headline="Welcome back to transparent impact."
         subtitle="Every donation tracked, every receipt verified. Continue supporting campaigns that matter."
@@ -150,7 +155,8 @@ function SignInContent() {
           },
           {
             title: "Verified receipts",
-            description: "View milestone verifications and project disbursements.",
+            description:
+              "View milestone verifications and project disbursements.",
           },
           {
             title: "100% transparent",
@@ -159,20 +165,21 @@ function SignInContent() {
         ]}
         testimonial={{
           avatarInitials: "TA",
-          quote: "I can always see the exact progress and milestone proof of every project I've backed.",
+          quote:
+            "I can always see the exact progress and milestone proof of every project I've backed.",
           author: "Tunde A. · Lagos",
         }}
       />
 
-      {/* Right Form Panel */}
+      {}
       <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-10 sm:px-10 lg:px-16">
         <div className="w-full max-w-lg">
-          {/* Mobile Logo */}
+          {}
           <div className="mb-6 lg:hidden">
             <AuthLogo variant="dark" />
           </div>
 
-          {/* Screen Title & Subtitle */}
+          {}
           <div className="mb-7">
             <h1 className="font-fraunces text-3xl sm:text-4xl font-normal text-neutral-900 tracking-tight">
               Welcome back
@@ -343,7 +350,8 @@ function SignInContent() {
             <div className="pt-2 flex items-start gap-2 text-xs text-neutral-500 leading-relaxed">
               <ShieldCheck className="w-4 h-4 shrink-0 text-neutral-400 mt-0.5" />
               <span>
-                Protected by end-to-end cryptographic verification. Your data is never shared.
+                Protected by end-to-end cryptographic verification. Your data is
+                never shared.
               </span>
             </div>
 

@@ -249,7 +249,10 @@ export default function EditPetitionForm({ petition }: EditPetitionFormProps) {
       formData.multimedia && formData.multimedia.length > 0
         ? formData.multimedia.reduce((acc, file) => acc + file.size, 0)
         : 0;
-    const newFilesSize = processedFiles.reduce((acc, file) => acc + file.size, 0);
+    const newFilesSize = processedFiles.reduce(
+      (acc, file) => acc + file.size,
+      0,
+    );
 
     if (currentSize + newFilesSize > MAX_TOTAL_SIZE) {
       setErrors((prev) => ({
@@ -785,9 +788,7 @@ export default function EditPetitionForm({ petition }: EditPetitionFormProps) {
 
             <div className="space-y-2">
               <h4 className="font-medium">Signature Goal</h4>
-              <p className="text-sm">
-                {formData.goal} Signatures
-              </p>
+              <p className="text-sm">{formData.goal} Signatures</p>
             </div>
 
             <div className="space-y-2">

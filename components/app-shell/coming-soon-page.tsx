@@ -1,7 +1,6 @@
 import { EmptyState } from "@/components/ui/empty-state";
 import type { LucideIcon } from "lucide-react";
 
-/** Shared placeholder for app-shell nav destinations that don't have a real page yet. */
 export function ComingSoonPage({
   title,
   description,

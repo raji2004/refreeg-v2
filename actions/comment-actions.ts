@@ -3,7 +3,6 @@ import { Comment } from "@/types/common-types";
 import { recordEvent } from "@/actions/event-reward-actions";
 import { sendNewCommentEmail } from "@/services/mail";
 
-/** Helper to map Prisma's camelCase User fields to the snake_case shape the Comment type expects */
 function mapUserToCommentUser(user: {
   fullName: string | null;
   profilePhoto: string | null;
@@ -22,7 +21,6 @@ export async function createComment(
   content: string,
   parentId?: string,
 ) {
-  // Normalize userId for DB: use null for guest/unauthenticated users
   const dbUserId = userId && userId !== "" ? userId : null;
 
   const comment = await prisma.comments.create({
@@ -40,11 +38,8 @@ export async function createComment(
     },
   });
 
-  // Record event for reward tracking only for authenticated users
   if (dbUserId) {
     try {
-      // Rate-limit rewarding: prevent rapid repeated comment rewards.
-      // If the user has a recent 'comment' event within the last 60 seconds, skip recording a new reward event.
       const recent = await prisma.events.findFirst({
         where: { user_id: dbUserId, event_type: "comment" },
         orderBy: { created_at: "desc" },
@@ -55,7 +50,7 @@ export async function createComment(
       if (recent?.created_at) {
         const last = new Date(recent.created_at).getTime();
         const now = Date.now();
-        const windowMs = 60 * 1000; // 60 seconds
+        const windowMs = 60 * 1000;
         if (now - last < windowMs) {
           shouldRecord = false;
         }
@@ -74,11 +69,9 @@ export async function createComment(
       }
     } catch (eventError) {
       console.error("Error recording comment event:", eventError);
-      // Don't throw - event tracking shouldn't break the main action
     }
   }
 
-  // Emit SSE event
   try {
     const { eventBus } = await import("@/lib/event-bus");
     eventBus.emit("comment", {
@@ -90,8 +83,6 @@ export async function createComment(
     console.error("Error emitting comment SSE:", e);
   }
 
-  // Notify the cause owner about the new comment (skip if they commented on
-  // their own cause — no point emailing yourself).
   try {
     const causeWithOwner = await prisma.cause.findUnique({
       where: { id: causeId },
@@ -158,7 +149,9 @@ export async function updateComment(
   });
 
   if (result.count === 0) {
-    throw new Error("Comment not found or you don't have permission to edit it");
+    throw new Error(
+      "Comment not found or you don't have permission to edit it",
+    );
   }
 
   const updated = await prisma.comments.findUnique({

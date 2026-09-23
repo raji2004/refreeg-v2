@@ -30,10 +30,7 @@ function KycSettingsContent() {
 
       const kycResult = await getVerificationStatus(user.id);
       const kycStatus = (kycResult?.status ?? undefined) as
-        | "pending"
-        | "approved"
-        | "rejected"
-        | undefined;
+        "pending" | "approved" | "rejected" | undefined;
 
       if (searchParams.get("error") === "kyc_required") {
         if (!hasShownToast.current) {

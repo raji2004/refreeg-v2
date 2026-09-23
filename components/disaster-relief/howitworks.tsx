@@ -49,7 +49,7 @@ export default function HowItWorks() {
 
   return (
     <div className="w-full h-auto text-black flex flex-col px-6 lg:px-10 py-16 gap-6">
-      {/* Animated Heading */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -70,7 +70,7 @@ export default function HowItWorks() {
         From Need to Care, Faster.
       </motion.div>
 
-      {/* Animated Steps */}
+      {}
       <div className="w-full flex flex-col gap-16 mb-12 text-lg">
         {steps.map((step, i) => (
           <motion.div
@@ -100,15 +100,15 @@ export default function HowItWorks() {
         viewport={{ once: true }}
       >
         <Link href="/dashboard/causes/create">
-        <Button className="bg-[#FAFAFA] border text-black px-10 py-4 flex items-center gap-2 rounded-full hover:bg-gray-100 transition">
-          Get Started
-          <Image
-            src="/images/arrow-right.png"
-            height={20}
-            width={20}
-            alt="get started"
-          />
-        </Button>
+          <Button className="bg-[#FAFAFA] border text-black px-10 py-4 flex items-center gap-2 rounded-full hover:bg-gray-100 transition">
+            Get Started
+            <Image
+              src="/images/arrow-right.png"
+              height={20}
+              width={20}
+              alt="get started"
+            />
+          </Button>
         </Link>
       </motion.div>
     </div>

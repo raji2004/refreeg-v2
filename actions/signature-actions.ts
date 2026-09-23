@@ -8,11 +8,6 @@ import type {
   SignatureFormData,
 } from "@/types";
 
-/**
- * Check if a user has already signed a petition
- * @param petitionId - The ID of the petition to check
- * @param userId - The ID of the user to check
- */
 export async function checkUserSignature(
   petitionId: string,
   userId: string,
@@ -25,18 +20,11 @@ export async function checkUserSignature(
   return !!existing;
 }
 
-/**
- * Create a new signature for a petition
- * Note: Signatures can continue even after the petition goal is reached.
- * There are no restrictions based on the number of signatures vs goal.
- * @param petitionId - The ID of the petition to sign
- */
 export async function createSignature(
   petitionId: string,
   userId: string | null,
   signatureData: SignatureFormData,
 ): Promise<Signature> {
-  // Check if user is logged in and has already signed
   if (userId) {
     const hasSigned = await checkUserSignature(petitionId, userId);
     if (hasSigned) {
@@ -44,10 +32,8 @@ export async function createSignature(
     }
   }
 
-  // Use a transaction to prevent race conditions
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // Double-check for existing signature with same email and name
       const existing = await tx.signatures.findFirst({
         where: {
           petition_id: petitionId,
@@ -62,7 +48,6 @@ export async function createSignature(
         );
       }
 
-      // Create the signature
       return await tx.signatures.create({
         data: {
           petition_id: petitionId,

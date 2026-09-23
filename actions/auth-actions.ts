@@ -14,10 +14,6 @@ import { subscribeToConvertKit } from "@/services/convertkit";
 import crypto from "crypto";
 import { deriveFullNameFromEmail } from "@/lib/auth/registration";
 
-/**
- * Get the current user
- * Cached to prevent multiple fetch calls during a single request/render.
- */
 export const getCurrentUser = cache(async () => {
   const session = await auth();
 
@@ -30,11 +26,6 @@ export const getCurrentUser = cache(async () => {
   });
 });
 
-/**
- * Whether the signed-in user has a password set — false for a Google-only
- * signup. Drives whether Settings > Account asks for a current password
- * before allowing a change (see updatePasswordAction below).
- */
 export async function getHasPasswordAction() {
   const session = await auth();
   if (!session?.user?.id) return false;
@@ -61,10 +52,10 @@ export async function signUpAction(
       };
     }
 
-    const effectiveFullName = fullName?.trim() || deriveFullNameFromEmail(email);
+    const effectiveFullName =
+      fullName?.trim() || deriveFullNameFromEmail(email);
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create new profile record
     const user = await prisma.user.create({
       data: {
         email,
@@ -74,7 +65,6 @@ export async function signUpAction(
       },
     });
 
-    // Handle post-signup routines asynchronously
     try {
       const firstName = effectiveFullName.split(" ")[0];
       await subscribeToConvertKit({
@@ -100,7 +90,6 @@ export async function signUpAction(
     return { success: false, error: "Database error" };
   }
 }
-
 
 /**
  * Track user login and update streaks
@@ -133,7 +122,7 @@ export async function initializeUserWallet(
   try {
     const existingWallet = await prisma.userWallet.findUnique({
       where: { userId },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (existingWallet) {
@@ -146,7 +135,7 @@ export async function initializeUserWallet(
       data: {
         userId,
         balance: signupBonus,
-      }
+      },
     });
 
     // Initialize user streaks
@@ -156,7 +145,7 @@ export async function initializeUserWallet(
         weeklyStreak: 0,
         isMonthlyActive: false,
         lastActiveDate: new Date(),
-      }
+      },
     });
 
     return newWallet;
@@ -173,7 +162,7 @@ export async function recordSignupReward(userId: string, amount: number = 1) {
   try {
     const existingReward = await prisma.rewardTransaction.findFirst({
       where: { userId, transactionType: "signup" },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (existingReward) {
@@ -186,13 +175,13 @@ export async function recordSignupReward(userId: string, amount: number = 1) {
         amount,
         transactionType: "signup",
         status: "completed",
-      }
+      },
     });
 
     // Update user's wallet balance
     const wallet = await prisma.userWallet.findUnique({
       where: { userId },
-      select: { balance: true }
+      select: { balance: true },
     });
 
     const currentBalance = Number(wallet?.balance || 0);
@@ -201,7 +190,7 @@ export async function recordSignupReward(userId: string, amount: number = 1) {
     await prisma.userWallet.upsert({
       where: { userId },
       update: { balance: newBalance },
-      create: { userId, balance: newBalance }
+      create: { userId, balance: newBalance },
     });
 
     return newReward;
@@ -213,9 +202,12 @@ export async function recordSignupReward(userId: string, amount: number = 1) {
 export async function requestPasswordResetAction(email: string) {
   try {
     const user = await prisma.user.findUnique({ where: { email } });
-    
+
     if (!user) {
-      return { success: false, error: "No account found with this email address." };
+      return {
+        success: false,
+        error: "No account found with this email address.",
+      };
     }
 
     // Generate a secure random token
@@ -230,7 +222,8 @@ export async function requestPasswordResetAction(email: string) {
     });
 
     // Use AUTH_URL from env, default to localhost if not set
-    const baseUrl = process.env.AUTH_URL?.replace("/api/auth", "") || "http://localhost:3000";
+    const baseUrl =
+      process.env.AUTH_URL?.replace("/api/auth", "") || "http://localhost:3000";
     const resetUrl = `${baseUrl}/auth/update-password?token=${token}`;
 
     await sendPasswordResetEmail({
@@ -359,9 +352,7 @@ export async function checkCauseUserLoginAction(email: string) {
     });
 
     const causeTitle =
-      user?.causes?.[0]?.title ||
-      recoveredCause?.title ||
-      "your campaign";
+      user?.causes?.[0]?.title || recoveredCause?.title || "your campaign";
 
     return {
       isCauseUserWithoutProfile: true,
@@ -601,7 +592,9 @@ export async function confirmEmailChangeAction(token: string): Promise<{
       select: { id: true },
     });
     if (taken) {
-      await prisma.verificationToken.delete({ where: { token } }).catch(() => undefined);
+      await prisma.verificationToken
+        .delete({ where: { token } })
+        .catch(() => undefined);
       return {
         success: false,
         error: "That email is already used by another account.",

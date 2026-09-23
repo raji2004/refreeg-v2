@@ -81,7 +81,8 @@ export default function OrganizationPublicProfile({
     0,
   );
   const activeCauses = causes.filter(
-    (cause) => !cause.ended && Number(cause.raised || 0) < Number(cause.goal || 1),
+    (cause) =>
+      !cause.ended && Number(cause.raised || 0) < Number(cause.goal || 1),
   ).length;
   const isVerified = profile.is_verified || false;
   const organizationHandle = organization.slug || "";
@@ -277,14 +278,20 @@ export default function OrganizationPublicProfile({
 
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row md:flex-col lg:flex-row">
               {isOwner ? (
-                <Button asChild className="bg-blue-700 text-white hover:bg-blue-800">
+                <Button
+                  asChild
+                  className="bg-blue-700 text-white hover:bg-blue-800"
+                >
                   <Link href="/dashboard/settings/organization">
                     <Settings className="mr-2 h-4 w-4" />
                     Edit organisation
                   </Link>
                 </Button>
               ) : (
-                <Button asChild className="bg-blue-700 text-white hover:bg-blue-800">
+                <Button
+                  asChild
+                  className="bg-blue-700 text-white hover:bg-blue-800"
+                >
                   <Link href={`/causes?userId=${userId}&action=donate`}>
                     Support this organisation
                   </Link>
@@ -297,9 +304,14 @@ export default function OrganizationPublicProfile({
             {metrics.map((metric) => {
               const Icon = metric.icon;
               return (
-                <div key={metric.label} className="border-b border-slate-200 p-5 last:border-b-0 sm:border-r lg:border-b-0">
+                <div
+                  key={metric.label}
+                  className="border-b border-slate-200 p-5 last:border-b-0 sm:border-r lg:border-b-0"
+                >
                   <Icon className="h-4 w-4 text-blue-700" />
-                  <p className="mt-3 text-2xl font-semibold text-slate-950">{metric.value}</p>
+                  <p className="mt-3 text-2xl font-semibold text-slate-950">
+                    {metric.value}
+                  </p>
                   <p className="mt-1 text-xs font-medium uppercase tracking-[0.1em] text-slate-500">
                     {metric.label}
                   </p>

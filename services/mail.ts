@@ -485,9 +485,9 @@ export async function sendLoginNotificationEmail(context: {
 
   const currentYear = new Date().getFullYear();
 
-  // Resolve IP server-side from the request headers instead of
-  // relying on a client-side fetch to api.ipify.org.
-  // This is faster and more secure for production.
+  
+  
+  
   let ipAddress = "Unknown IP";
   try {
     const headersList = await headers();
@@ -496,7 +496,7 @@ export async function sendLoginNotificationEmail(context: {
 
     let detectedIp = (xff?.split(",")[0] || xri || "Unknown IP").trim();
 
-    // Label localhost clearly for local development
+    
     if (detectedIp === "::1" || detectedIp === "127.0.0.1") {
       detectedIp = `${detectedIp} (Localhost)`;
     }

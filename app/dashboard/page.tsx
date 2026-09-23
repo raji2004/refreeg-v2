@@ -24,7 +24,10 @@ import {
 } from "@/actions/dashboard-actions";
 import { getProfile, hasBankDetails } from "@/actions/profile-actions";
 import { getOrganizationWorkspace } from "@/actions/organization-actions";
-import { getMatchedCauses, getMatchedCausesCount } from "@/actions/interest-actions";
+import {
+  getMatchedCauses,
+  getMatchedCausesCount,
+} from "@/actions/interest-actions";
 import { getPlatformWeeklyDelivered } from "@/actions/dashboard-actions";
 import { getMediaUrl } from "@/lib/s3/media";
 import { OrganizationDashboard } from "@/components/organization-dashboard";
@@ -130,7 +133,11 @@ export default async function DashboardPage({
     ]);
   const checklist = [
     { label: "Email confirmed", done: true },
-    { label: "Add a payment method", done: hasBank, href: "/dashboard/settings" },
+    {
+      label: "Add a payment method",
+      done: hasBank,
+      href: "/dashboard/settings",
+    },
     {
       label: "Verify your identity",
       done: !!profile?.is_verified,

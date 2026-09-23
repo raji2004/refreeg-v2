@@ -21,7 +21,7 @@ export default function LifeMatters() {
     show: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.8, ease: "easeOut" as any},
+      transition: { duration: 0.8, ease: "easeOut" as any },
     },
   };
 
@@ -42,7 +42,7 @@ export default function LifeMatters() {
       whileInView="show"
       viewport={{ once: true, amount: 0.3 }}
     >
-      {/* Left Text Section */}
+      {}
       <motion.div
         className="w-full lg:w-3/4 h-auto flex flex-col justify-center items-start gap-6"
         variants={item}
@@ -66,13 +66,10 @@ export default function LifeMatters() {
         </motion.div>
 
         <Link href="/cause/create">
-        <motion.p
-          className="text-lg text-gray-600"
-          variants={item}
-        >
-          Don’t wait. Start your cause today and turn support into 
-          real impact.
-        </motion.p>
+          <motion.p className="text-lg text-gray-600" variants={item}>
+            Don’t wait. Start your cause today and turn support into real
+            impact.
+          </motion.p>
         </Link>
 
         <motion.div variants={item}>
@@ -83,7 +80,7 @@ export default function LifeMatters() {
         </motion.div>
       </motion.div>
 
-      {/* Right Image Section */}
+      {}
       <motion.div
         className="w-full lg:w-1/4 h-auto flex justify-center items-center"
         variants={imageAnim}

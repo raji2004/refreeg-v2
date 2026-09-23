@@ -23,7 +23,11 @@ export async function processPledgeAuthorizationSuccess(reference: string) {
   }
 
   const meta = full.metadata;
-  if (!meta || String(meta.pledge_flow) !== "authorization" || !meta.pledge_id) {
+  if (
+    !meta ||
+    String(meta.pledge_flow) !== "authorization" ||
+    !meta.pledge_id
+  ) {
     return { ok: false as const, reason: "not_pledge_auth" };
   }
 
@@ -50,8 +54,7 @@ export async function processPledgeAuthorizationSuccess(reference: string) {
     return { ok: true as const, reason: "already_processed" };
   }
 
-  const authEmail =
-    full.customer?.email || String(meta.email || "");
+  const authEmail = full.customer?.email || String(meta.email || "");
 
   await prisma.pledges.update({
     where: { id: pledgeId },
@@ -61,7 +64,10 @@ export async function processPledgeAuthorizationSuccess(reference: string) {
       first_transaction_reference: reference,
       paystack_payment_status: "authorized",
       ...(auth.reusable === false
-        ? { last_charge_error: "Card marked non-reusable; charge on date may fail." }
+        ? {
+            last_charge_error:
+              "Card marked non-reusable; charge on date may fail.",
+          }
         : {}),
     },
   });
@@ -73,8 +79,7 @@ export async function processPledgeAuthorizationSuccess(reference: string) {
   });
 
   const futureAmount = Number(meta.future_pledge_amount ?? meta.amount);
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
 
   await sendPledgeConfirmationEmail({
     to: String(meta.email),
@@ -111,13 +116,21 @@ export async function processPledgeScheduledChargeSuccess(reference: string) {
 
   const pledge = await prisma.pledges.findUnique({
     where: { id: pledgeId },
-    select: { id: true, status: true, user_id: true, paystack_payment_status: true },
+    select: {
+      id: true,
+      status: true,
+      user_id: true,
+      paystack_payment_status: true,
+    },
   });
 
   if (!pledge) {
     return { ok: false as const, reason: "pledge_not_found" };
   }
-  if (pledge.status === "fulfilled" || pledge.paystack_payment_status === "charged") {
+  if (
+    pledge.status === "fulfilled" ||
+    pledge.paystack_payment_status === "charged"
+  ) {
     return { ok: true as const, reason: "already_fulfilled" };
   }
 

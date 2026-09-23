@@ -5,7 +5,6 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
-// Animation variants
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
   show: (i: number) => ({
@@ -41,7 +40,7 @@ export default function ReliefPowered() {
 
   return (
     <section className="w-full h-auto px-6 md:px-0 mt-16 overflow-hidden">
-      {/* Header */}
+      {}
       <motion.div
         className="text-center w-full text-2xl md:text-3xl lg:text-5xl font-bold mb-12"
         initial={{ opacity: 0, y: 40 }}
@@ -55,7 +54,7 @@ export default function ReliefPowered() {
         </p>
       </motion.div>
 
-      {/* Features Grid */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
         {features.slice(0, 3).map((item, index) => (
           <motion.div
@@ -74,9 +73,9 @@ export default function ReliefPowered() {
           </motion.div>
         ))}
 
-        {/* Last row */}
+        {}
         <div className="flex flex-col gap-8 md:col-span-3 md:flex-row">
-          {/* Last Card */}
+          {}
           <motion.div
             className="flex flex-col border items-start gap-4 p-6 rounded-2xl shadow-sm bg-white md:w-1/3 cursor-pointer"
             custom={3}
@@ -98,7 +97,7 @@ export default function ReliefPowered() {
             </p>
           </motion.div>
 
-          {/* Button fills remaining space */}
+          {}
           <motion.div
             className="flex justify-center items-center w-full md:w-2/3"
             initial={{ opacity: 0, scale: 0.9 }}

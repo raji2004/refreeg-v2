@@ -67,7 +67,8 @@ export default function ResetPasswordPage() {
                 <Icons.mail className="h-12 w-12 text-muted-foreground" />
               </div>
               <p className="text-sm text-muted-foreground">
-                If you don&apos;t see the email, check your spam folder or try again.
+                If you don&apos;t see the email, check your spam folder or try
+                again.
               </p>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
@@ -103,8 +104,8 @@ export default function ResetPasswordPage() {
               Reset password
             </CardTitle>
             <CardDescription className="text-center">
-              Enter your email address and we&apos;ll send you a link to reset your
-              password
+              Enter your email address and we&apos;ll send you a link to reset
+              your password
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -21,13 +21,12 @@ export async function CausesList({
   search,
   sortBy,
 }: CausesListProps) {
-  // Build filter options
   const filterOptions: any = {
     category: category === "all" ? undefined : category,
     limit: pageSize,
     offset: (page - 1) * pageSize,
     search: search || undefined,
-    // ↓↓↓ DEFAULT CHANGED HERE
+
     sortBy: sortBy || "most-funded",
   };
 
@@ -35,20 +34,17 @@ export async function CausesList({
     filterOptions.userId = userId;
   }
 
-  // Count options must mirror filter options (without limit/offset)
   const countOptions: any = {
     category: category === "all" ? undefined : category,
     search: search || undefined,
     ...(userId ? { userId } : {}),
   };
 
-  // Fetch causes and total count in parallel
   const [causes, totalCount] = await Promise.all([
     listCauses(filterOptions),
     countCauses(countOptions),
   ]);
 
-  // If user-specific, filter by userId (belt-and-suspenders)
   const filteredCauses = userId
     ? causes.filter((cause) => cause.user_id === userId)
     : causes;
@@ -94,7 +90,7 @@ export async function CausesList({
 
   return (
     <div className="space-y-8">
-      {/* Results count */}
+      {}
       {search && (
         <p className="text-sm text-muted-foreground">
           Showing {filteredCauses.length} of {totalCount} results for &ldquo;
@@ -102,14 +98,14 @@ export async function CausesList({
         </p>
       )}
 
-      {/* Cause Cards Grid */}
+      {}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredCauses.map((cause) => (
           <CauseCard key={cause.id} cause={cause} action={action} />
         ))}
       </div>
 
-      {/* Pagination */}
+      {}
       {totalPages > 1 && (
         <div className="flex justify-center pt-4">
           <PaginationButton currentPage={page} totalPages={totalPages} />

@@ -39,13 +39,15 @@ const campaignParameters = [
     name: "category_id",
     type: "string",
     required: false,
-    description: "UUID from /campaigns/categories. Helps in discovery and search weighting.",
+    description:
+      "UUID from /campaigns/categories. Helps in discovery and search weighting.",
   },
   {
     name: "bank_id",
     type: "string",
     required: false,
-    description: "UUID of a saved bank profile. Use this to skip providing direct bank details.",
+    description:
+      "UUID of a saved bank profile. Use this to skip providing direct bank details.",
   },
   {
     name: "bank_account_number",
@@ -57,7 +59,8 @@ const campaignParameters = [
     name: "bank_code",
     type: "string",
     required: false,
-    description: "3-digit code (e.g., '058'). Required if bank_id is not provided.",
+    description:
+      "3-digit code (e.g., '058'). Required if bank_id is not provided.",
   },
   {
     name: "bank_account_name",
@@ -67,20 +70,28 @@ const campaignParameters = [
   },
 ];
 
-const updateParameters = campaignParameters.map(p => ({ ...p, required: false }));
+const updateParameters = campaignParameters.map((p) => ({
+  ...p,
+  required: false,
+}));
 updateParameters.push({
   name: "status",
   type: "string",
   required: false,
-  description: "Manually set status: 'active', 'paused', 'completed', 'cancelled'.",
+  description:
+    "Manually set status: 'active', 'paused', 'completed', 'cancelled'.",
 });
 
 export function SectionCreateCampaign() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <header className="space-y-4">
-        <h1 className="text-3xl font-extrabold text-slate-900">Create Campaign</h1>
-        <p className="text-slate-500 text-lg">Initializes a new fundraising campaign with direct bank settlement.</p>
+        <h1 className="text-3xl font-extrabold text-slate-900">
+          Create Campaign
+        </h1>
+        <p className="text-slate-500 text-lg">
+          Initializes a new fundraising campaign with direct bank settlement.
+        </p>
       </header>
 
       <div className="bg-blue-50/50 p-6 rounded-3xl border border-blue-100 flex flex-col gap-6">
@@ -89,26 +100,29 @@ export function SectionCreateCampaign() {
           Flexible Settlement
         </h3>
         <p className="text-slate-600 text-sm leading-relaxed">
-          You can provide bank details **directly** in the creation request, or use a pre-registered **bank_id** 
-          for better reuse and cleaner payloads. If direct details are used, we automatically save them to your profile.
+          You can provide bank details **directly** in the creation request, or
+          use a pre-registered **bank_id** for better reuse and cleaner
+          payloads. If direct details are used, we automatically save them to
+          your profile.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div className="p-5 bg-white rounded-2xl border border-blue-100/50 space-y-2">
-             <div className="flex items-center gap-2 text-blue-600 font-bold mb-2">
-                <Zap className="w-4 h-4" /> manual
-             </div>
-             <p className="text-slate-600 leading-relaxed">
-                Funds are pushed to your bank account as soon as donations are verified. 
-                Perfect for urgent needs.
-             </p>
+            <div className="flex items-center gap-2 text-blue-600 font-bold mb-2">
+              <Zap className="w-4 h-4" /> manual
+            </div>
+            <p className="text-slate-600 leading-relaxed">
+              Funds are pushed to your bank account as soon as donations are
+              verified. Perfect for urgent needs.
+            </p>
           </div>
           <div className="p-5 bg-white rounded-2xl border border-blue-100/50 space-y-2">
-             <div className="flex items-center gap-2 font-bold mb-2 text-indigo-600">
-                <Info className="w-4 h-4" /> automated
-             </div>
-             <p className="text-slate-600 leading-relaxed">
-                Funds are held by RefreeG and settled in a single lump sum after the deadline.
-             </p>
+            <div className="flex items-center gap-2 font-bold mb-2 text-indigo-600">
+              <Info className="w-4 h-4" /> automated
+            </div>
+            <p className="text-slate-600 leading-relaxed">
+              Funds are held by RefreeG and settled in a single lump sum after
+              the deadline.
+            </p>
           </div>
         </div>
       </div>
@@ -144,8 +158,12 @@ export function SectionRetrieveCampaign() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <header className="space-y-4">
-        <h1 className="text-3xl font-extrabold text-slate-900">Retrieve Campaign</h1>
-        <p className="text-slate-500 text-lg">Fetch the full details and current progress of a specific campaign.</p>
+        <h1 className="text-3xl font-extrabold text-slate-900">
+          Retrieve Campaign
+        </h1>
+        <p className="text-slate-500 text-lg">
+          Fetch the full details and current progress of a specific campaign.
+        </p>
       </header>
 
       <ApiEndpointDoc
@@ -173,8 +191,12 @@ export function SectionUpdateCampaign() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <header className="space-y-4">
-        <h1 className="text-3xl font-extrabold text-slate-900">Update Campaign</h1>
-        <p className="text-slate-500 text-lg">Modifies an existing campaign. Only specified fields will be updated.</p>
+        <h1 className="text-3xl font-extrabold text-slate-900">
+          Update Campaign
+        </h1>
+        <p className="text-slate-500 text-lg">
+          Modifies an existing campaign. Only specified fields will be updated.
+        </p>
       </header>
 
       <ApiEndpointDoc
@@ -201,8 +223,12 @@ export function SectionListCampaigns() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <header className="space-y-4">
-        <h1 className="text-3xl font-extrabold text-slate-900">List Campaigns</h1>
-        <p className="text-slate-500 text-lg">Retrieves a paginated list of all campaigns owned by your API key.</p>
+        <h1 className="text-3xl font-extrabold text-slate-900">
+          List Campaigns
+        </h1>
+        <p className="text-slate-500 text-lg">
+          Retrieves a paginated list of all campaigns owned by your API key.
+        </p>
       </header>
 
       <ApiEndpointDoc
@@ -211,10 +237,30 @@ export function SectionListCampaigns() {
         url="/api/bot/campaigns"
         description="Filter campaigns by status or category."
         parameters={[
-          { name: "status", type: "string", required: false, description: "Filter by status." },
-          { name: "category", type: "string", required: false, description: "Filter by category ID." },
-          { name: "limit", type: "number", required: false, description: "Max results (10-100)." },
-          { name: "offset", type: "number", required: false, description: "Pagination offset." },
+          {
+            name: "status",
+            type: "string",
+            required: false,
+            description: "Filter by status.",
+          },
+          {
+            name: "category",
+            type: "string",
+            required: false,
+            description: "Filter by category ID.",
+          },
+          {
+            name: "limit",
+            type: "number",
+            required: false,
+            description: "Max results (10-100).",
+          },
+          {
+            name: "offset",
+            type: "number",
+            required: false,
+            description: "Pagination offset.",
+          },
         ]}
         responseExample={`{ 
   "status": "success", 
@@ -243,7 +289,10 @@ export function SectionBanks() {
     <div className="space-y-10 animate-in fade-in duration-500">
       <header className="space-y-4">
         <h1 className="text-3xl font-extrabold text-slate-900">Banks API</h1>
-        <p className="text-slate-500 text-lg">Register and manage settlement bank accounts separately from campaigns.</p>
+        <p className="text-slate-500 text-lg">
+          Register and manage settlement bank accounts separately from
+          campaigns.
+        </p>
       </header>
 
       <ApiEndpointDoc
@@ -252,9 +301,24 @@ export function SectionBanks() {
         url="/api/bot/banks"
         description="Saves a bank account profile for future reuse in campaign settlement."
         parameters={[
-          { name: "bank_account_number", type: "string", required: true, description: "10-digit NUBAN." },
-          { name: "bank_code", type: "string", required: true, description: "3-digit bank code." },
-          { name: "bank_account_name", type: "string", required: true, description: "Legal account name." },
+          {
+            name: "bank_account_number",
+            type: "string",
+            required: true,
+            description: "10-digit NUBAN.",
+          },
+          {
+            name: "bank_code",
+            type: "string",
+            required: true,
+            description: "3-digit bank code.",
+          },
+          {
+            name: "bank_account_name",
+            type: "string",
+            required: true,
+            description: "Legal account name.",
+          },
         ]}
         requestExample={`{
   "bank_account_number": "0022334455",
@@ -293,8 +357,12 @@ export function SectionListCampaignDonations() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <header className="space-y-4">
-        <h1 className="text-3xl font-extrabold text-slate-900">List Campaign Donations</h1>
-        <p className="text-slate-500 text-lg">Retrieve all donations associated with a specific campaign.</p>
+        <h1 className="text-3xl font-extrabold text-slate-900">
+          List Campaign Donations
+        </h1>
+        <p className="text-slate-500 text-lg">
+          Retrieve all donations associated with a specific campaign.
+        </p>
       </header>
 
       <ApiEndpointDoc
@@ -323,8 +391,12 @@ export function SectionPauseResumeCampaign() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <header className="space-y-4">
-        <h1 className="text-3xl font-extrabold text-slate-900">Pause/Resume Campaign</h1>
-        <p className="text-slate-500 text-lg">Temporarily pause or resume accepting donations for a campaign.</p>
+        <h1 className="text-3xl font-extrabold text-slate-900">
+          Pause/Resume Campaign
+        </h1>
+        <p className="text-slate-500 text-lg">
+          Temporarily pause or resume accepting donations for a campaign.
+        </p>
       </header>
 
       <ApiEndpointDoc
@@ -366,8 +438,12 @@ export function SectionCancelCampaign() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <header className="space-y-4">
-        <h1 className="text-3xl font-extrabold text-slate-900">Cancel Campaign</h1>
-        <p className="text-slate-500 text-lg">Permanently cancel a campaign, changing its status to cancelled.</p>
+        <h1 className="text-3xl font-extrabold text-slate-900">
+          Cancel Campaign
+        </h1>
+        <p className="text-slate-500 text-lg">
+          Permanently cancel a campaign, changing its status to cancelled.
+        </p>
       </header>
 
       <ApiEndpointDoc

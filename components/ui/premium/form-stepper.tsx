@@ -77,34 +77,34 @@ export function FormStepper({
                     disabled={!isCompleted || !onStepSelect}
                     onClick={() => onStepSelect?.(stepNumber)}
                     aria-current={isActive ? "step" : undefined}
-                    aria-label={
-                      isCompleted ? `Go back to ${step}` : undefined
-                    }
-                  className={cn(
+                    aria-label={isCompleted ? `Go back to ${step}` : undefined}
+                    className={cn(
                       "flex h-full w-full min-w-0 items-center gap-2 rounded-xl px-3 py-3 text-left text-xs font-semibold",
-                    isActive
-                      ? "bg-white text-[#10233F]"
-                      : "bg-white/[0.045] text-[#B8C5D5]",
+                      isActive
+                        ? "bg-white text-[#10233F]"
+                        : "bg-white/[0.045] text-[#B8C5D5]",
                       isCompleted &&
                         onStepSelect &&
                         "cursor-pointer hover:bg-white/15 hover:text-white",
-                  )}
-                  >
-                  <span
-                    className={cn(
-                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-extrabold",
-                      isCompleted && "bg-[#D9FF5B] text-[#10233F]",
-                      isActive && "bg-[#235DA7] text-white",
-                      !isCompleted && !isActive && "bg-white/10 text-[#B8C5D5]",
                     )}
                   >
-                    {isCompleted ? (
-                      <Check className="h-4 w-4" strokeWidth={3} />
-                    ) : (
-                      stepNumber
-                    )}
-                  </span>
-                  <span className="truncate">{step}</span>
+                    <span
+                      className={cn(
+                        "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-extrabold",
+                        isCompleted && "bg-[#D9FF5B] text-[#10233F]",
+                        isActive && "bg-[#235DA7] text-white",
+                        !isCompleted &&
+                          !isActive &&
+                          "bg-white/10 text-[#B8C5D5]",
+                      )}
+                    >
+                      {isCompleted ? (
+                        <Check className="h-4 w-4" strokeWidth={3} />
+                      ) : (
+                        stepNumber
+                      )}
+                    </span>
+                    <span className="truncate">{step}</span>
                   </button>
                 </li>
               );

@@ -88,7 +88,9 @@ async function requireOrganizationAccess(managersOnly = false) {
     throw new Error("No organization workspace is linked to this account.");
   }
   if (managersOnly && !MANAGER_ROLES.has(membership.role)) {
-    throw new Error("Only organization owners and admins can make this change.");
+    throw new Error(
+      "Only organization owners and admins can make this change.",
+    );
   }
 
   return { user, membership, organization: membership.organization };
@@ -164,7 +166,8 @@ export async function getOrganizationWorkspace() {
   } catch (error) {
     return {
       success: false as const,
-      error: error instanceof Error ? error.message : "Unable to load workspace.",
+      error:
+        error instanceof Error ? error.message : "Unable to load workspace.",
     };
   }
 }
@@ -300,7 +303,9 @@ export async function updateOrganization(input: {
 
     if (membership) {
       if (!MANAGER_ROLES.has(membership.role)) {
-        throw new Error("Only organization owners and admins can make this change.");
+        throw new Error(
+          "Only organization owners and admins can make this change.",
+        );
       }
       organization = membership.organization;
     }
@@ -309,13 +314,14 @@ export async function updateOrganization(input: {
     const adminEmail = input.adminEmail?.trim().toLowerCase();
 
     if (!name || name.length < 2 || name.length > 120) {
-      throw new Error("Organization name must be between 2 and 120 characters.");
+      throw new Error(
+        "Organization name must be between 2 and 120 characters.",
+      );
     }
     if (!/^\S+@\S+\.\S+$/.test(adminEmail)) {
       throw new Error("Enter a valid admin email address.");
     }
-    const bio =
-      input.bio === undefined ? undefined : input.bio.trim() || null;
+    const bio = input.bio === undefined ? undefined : input.bio.trim() || null;
     if (bio && bio.length > 600) {
       throw new Error("Organization bio must be 600 characters or fewer.");
     }
@@ -535,7 +541,8 @@ export async function inviteOrganizationMember(input: {
   } catch (error) {
     return {
       success: false as const,
-      error: error instanceof Error ? error.message : "Unable to send invitation.",
+      error:
+        error instanceof Error ? error.message : "Unable to send invitation.",
     };
   }
 }
@@ -558,7 +565,8 @@ export async function revokeOrganizationInvitation(invitationId: string) {
   } catch (error) {
     return {
       success: false as const,
-      error: error instanceof Error ? error.message : "Unable to revoke invitation.",
+      error:
+        error instanceof Error ? error.message : "Unable to revoke invitation.",
     };
   }
 }
@@ -580,7 +588,8 @@ export async function removeOrganizationMember(memberId: string) {
   } catch (error) {
     return {
       success: false as const,
-      error: error instanceof Error ? error.message : "Unable to remove member.",
+      error:
+        error instanceof Error ? error.message : "Unable to remove member.",
     };
   }
 }
@@ -590,7 +599,8 @@ export async function getOrganizationInvitation(token: string) {
     where: { token },
     include: { organization: { select: { name: true, logoUrl: true } } },
   });
-  if (!invitation) return { success: false as const, error: "Invitation not found." };
+  if (!invitation)
+    return { success: false as const, error: "Invitation not found." };
 
   return {
     success: true as const,
@@ -618,10 +628,17 @@ export async function acceptOrganizationInvitation(token: string) {
         where: { id: invitation.id },
         data: { status: "expired" },
       });
-      throw new Error("This invitation has expired. Ask an admin to send a new one.");
+      throw new Error(
+        "This invitation has expired. Ask an admin to send a new one.",
+      );
     }
-    if (!user.email || user.email.toLowerCase() !== invitation.email.toLowerCase()) {
-      throw new Error(`Sign in with ${invitation.email} to accept this invitation.`);
+    if (
+      !user.email ||
+      user.email.toLowerCase() !== invitation.email.toLowerCase()
+    ) {
+      throw new Error(
+        `Sign in with ${invitation.email} to accept this invitation.`,
+      );
     }
 
     await prisma.$transaction([
@@ -655,7 +672,8 @@ export async function acceptOrganizationInvitation(token: string) {
   } catch (error) {
     return {
       success: false as const,
-      error: error instanceof Error ? error.message : "Unable to accept invitation.",
+      error:
+        error instanceof Error ? error.message : "Unable to accept invitation.",
     };
   }
 }

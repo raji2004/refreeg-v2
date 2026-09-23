@@ -1,18 +1,10 @@
 export type SignupAccountType = "individual" | "organization";
 
-/**
- * Derives a human-friendly full name from an email address before the '@'.
- * e.g., "john.doe@example.com" -> "John Doe"
- * "ada_lovelace@domain.com" -> "Ada Lovelace"
- * "sandra-smith@domain.com" -> "Sandra Smith"
- * "user123@domain.com" -> "User123"
- */
 export function deriveFullNameFromEmail(email?: string | null): string {
   if (!email || !email.includes("@")) return "User";
   const prefix = email.split("@")[0].trim();
   if (!prefix) return "User";
 
-  // Split by dots, underscores, or hyphens if present
   const parts = prefix.split(/[._-]+/).filter(Boolean);
   if (parts.length > 0) {
     return parts
@@ -113,8 +105,6 @@ export function validateRegistrationInput(
     const organizationAddress = input.organizationAddress?.trim();
     const organizationIndustry = input.organizationIndustry?.trim();
 
-    // Organization details are now primarily collected during onboarding (Step 3B).
-    // If provided during initial registration, validate length and format.
     if (organizationName && organizationName.length > 160) {
       errors.organizationName =
         "Organization name must be 160 characters or fewer";

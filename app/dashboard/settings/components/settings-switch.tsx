@@ -5,13 +5,9 @@ import * as SwitchPrimitives from "@radix-ui/react-switch";
 import { cn } from "@/lib/utils";
 
 type SettingsSwitchProps = ComponentProps<typeof SwitchPrimitives.Root> & {
-  /** Locked “always on” — muted forest, non-interactive. */
   locked?: boolean;
 };
 
-/**
- * Settings toggle matching Figma Notifications: forest ON, cream-muted OFF.
- */
 export function SettingsSwitch({
   className,
   locked = false,

@@ -10,7 +10,9 @@ export default function PythonSdkDocsPage() {
 
       <section className="rounded-lg border p-5">
         <h2 className="font-semibold">Install</h2>
-        <pre className="mt-3 overflow-x-auto rounded-md bg-slate-950 p-4 text-sm text-slate-50">pip install refreeg-python</pre>
+        <pre className="mt-3 overflow-x-auto rounded-md bg-slate-950 p-4 text-sm text-slate-50">
+          pip install refreeg-python
+        </pre>
       </section>
 
       <section className="rounded-lg border p-5">

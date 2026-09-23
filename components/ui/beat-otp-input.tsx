@@ -37,15 +37,19 @@ export function BeatOtpInput({
   const [isFocused, setIsFocused] = React.useState(false);
   const inputRef = React.useRef<any>(null);
 
-  // Clean placeholder into 6 characters
-  const cleanPlaceholder = (placeholder.replace(/[^A-Za-z0-9]/g, "") + "••••••").slice(0, 6).toUpperCase();
+  const cleanPlaceholder = (placeholder.replace(/[^A-Za-z0-9]/g, "") + "••••••")
+    .slice(0, 6)
+    .toUpperCase();
 
   const handlePasteClick = async () => {
     if (disabled) return;
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
         const text = await navigator.clipboard.readText();
-        const cleaned = text.replace(/[^A-Za-z0-9]/g, "").slice(0, 6).toUpperCase();
+        const cleaned = text
+          .replace(/[^A-Za-z0-9]/g, "")
+          .slice(0, 6)
+          .toUpperCase();
         if (cleaned) {
           onChange(cleaned);
           if (cleaned.length === 6 && onComplete) {
@@ -95,7 +99,7 @@ export function BeatOtpInput({
                 disabled && "opacity-50 cursor-not-allowed",
               )}
             >
-              {/* Beat 1 (first 3 chars) */}
+              {}
               <div className="flex items-center gap-2 sm:gap-4">
                 {slots.slice(0, 3).map((slot, index) => (
                   <SlotView
@@ -110,7 +114,7 @@ export function BeatOtpInput({
                 ))}
               </div>
 
-              {/* Beat separator */}
+              {}
               <span
                 className={cn(
                   "mx-3 sm:mx-6 text-xl sm:text-3xl font-light select-none transition-colors",
@@ -127,7 +131,7 @@ export function BeatOtpInput({
                 —
               </span>
 
-              {/* Beat 2 (last 3 chars) */}
+              {}
               <div className="flex items-center gap-2 sm:gap-4">
                 {slots.slice(3, 6).map((slot, index) => (
                   <SlotView
@@ -146,7 +150,7 @@ export function BeatOtpInput({
         />
       </div>
 
-      {/* Error text state with warning icon */}
+      {}
       {error && (
         <div className="flex items-center gap-1.5 text-xs sm:text-sm text-red-600 font-medium animate-in fade-in-50 duration-200">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -154,7 +158,7 @@ export function BeatOtpInput({
         </div>
       )}
 
-      {/* Helper text and quick paste link */}
+      {}
       {showHelper && (
         <div className="flex items-center justify-between text-xs sm:text-sm text-neutral-500 pt-0.5">
           <span>Six characters. Case doesn&apos;t matter.</span>
@@ -209,7 +213,7 @@ function SlotView({
         </span>
       )}
 
-      {/* Fake caret for current active slot */}
+      {}
       {slot.hasFakeCaret && !disabled && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div

@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { validateApiKey, rateLimit, handlePreflight } from "@/utils/api-bot/api-auth";
+import {
+  validateApiKey,
+  rateLimit,
+  handlePreflight,
+} from "@/utils/api-bot/api-auth";
 import { ReportCampaignSchema } from "@/utils/api-bot/schemas";
 import { dispatchWebhook } from "@/utils/api-bot/webhook-utils";
-import { 
-  successResponse, 
-  errorResponse, 
-  ApiErrorCode 
+import {
+  successResponse,
+  errorResponse,
+  ApiErrorCode,
 } from "@/utils/api-bot/response-utils";
-
-
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const limitRes = rateLimit(request, 30, 60000);
@@ -28,14 +30,18 @@ export async function GET(
     try {
       campaign = await prisma.api_campaigns.findFirst({
         where: { id: params.id, developer_id: developerId! },
-        select: { id: true }
+        select: { id: true },
       });
     } catch (err) {
       campaignError = err;
     }
 
     if (campaignError || !campaign) {
-      return errorResponse("Campaign not found or unauthorized to view its reports", ApiErrorCode.NOT_FOUND, 404);
+      return errorResponse(
+        "Campaign not found or unauthorized to view its reports",
+        ApiErrorCode.NOT_FOUND,
+        404,
+      );
     }
 
     let reports: any[] = [];
@@ -43,7 +49,7 @@ export async function GET(
     try {
       reports = await prisma.api_campaign_reports.findMany({
         where: { api_campaign_id: params.id },
-        orderBy: { created_at: "desc" }
+        orderBy: { created_at: "desc" },
       });
     } catch (err) {
       reportsError = err;
@@ -51,19 +57,27 @@ export async function GET(
 
     if (reportsError) {
       console.error("Error fetching reports:", reportsError);
-      return errorResponse("Failed to fetch reports", ApiErrorCode.INTERNAL_ERROR, 500);
+      return errorResponse(
+        "Failed to fetch reports",
+        ApiErrorCode.INTERNAL_ERROR,
+        500,
+      );
     }
 
     return successResponse({ reports });
   } catch (error) {
     console.error("Fetch reports error:", error);
-    return errorResponse("Internal server error", ApiErrorCode.INTERNAL_ERROR, 500);
+    return errorResponse(
+      "Internal server error",
+      ApiErrorCode.INTERNAL_ERROR,
+      500,
+    );
   }
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const limitRes = rateLimit(request, 10, 60000);
@@ -77,7 +91,7 @@ export async function POST(
     try {
       campaign = await prisma.api_campaigns.findFirst({
         where: { id: params.id },
-        select: { id: true, developer_id: true }
+        select: { id: true, developer_id: true },
       });
     } catch (err) {
       campaignError = err;
@@ -91,7 +105,12 @@ export async function POST(
     const result = ReportCampaignSchema.safeParse(body);
 
     if (!result.success) {
-      return errorResponse("Validation failed", ApiErrorCode.VALIDATION_ERROR, 400, result.error.format());
+      return errorResponse(
+        "Validation failed",
+        ApiErrorCode.VALIDATION_ERROR,
+        400,
+        result.error.format(),
+      );
     }
 
     const { reason, message } = result.data;
@@ -107,7 +126,7 @@ export async function POST(
           reason,
           message: message || "",
           status: "pending",
-        }
+        },
       });
     } catch (err) {
       insertError = err;
@@ -115,27 +134,33 @@ export async function POST(
 
     if (insertError || !report) {
       console.error("Error inserting report:", insertError);
-      return errorResponse("Failed to submit report", ApiErrorCode.INTERNAL_ERROR, 500);
+      return errorResponse(
+        "Failed to submit report",
+        ApiErrorCode.INTERNAL_ERROR,
+        500,
+      );
     }
 
-    // Notify the developer whose campaign was reported via webhook
-    await dispatchWebhook(
-      campaign.developer_id,
-      "campaign.reported",
-      {
-        campaign_id: campaign.id,
-        report_id: report.id,
-        reason: report.reason,
-        status: report.status,
-        message: report.message,
-        created_at: report.created_at
-      }
-    );
+    await dispatchWebhook(campaign.developer_id, "campaign.reported", {
+      campaign_id: campaign.id,
+      report_id: report.id,
+      reason: report.reason,
+      status: report.status,
+      message: report.message,
+      created_at: report.created_at,
+    });
 
-    return successResponse({ message: "Report submitted successfully", report }, 201);
+    return successResponse(
+      { message: "Report submitted successfully", report },
+      201,
+    );
   } catch (error) {
     console.error("Report error:", error);
-    return errorResponse("Internal server error", ApiErrorCode.INTERNAL_ERROR, 500);
+    return errorResponse(
+      "Internal server error",
+      ApiErrorCode.INTERNAL_ERROR,
+      500,
+    );
   }
 }
 

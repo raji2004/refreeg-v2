@@ -37,7 +37,7 @@ interface QuickDonateFormProps {
   defaultEmail?: string;
   defaultAnonymous?: boolean;
   userId?: string;
-  /** "modal" drops the full-viewport wrapper and the "view full campaign" link, for use inside a Dialog. */
+
   variant?: "page" | "modal";
 }
 
@@ -108,195 +108,195 @@ export default function QuickDonateForm({
 
   const content = (
     <div className="w-full max-w-md space-y-6">
-        {/* Header */}
-        <div className="text-center">
-          <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">
-            Quick donate
-          </p>
-          <h1 className="text-xl font-bold text-slate-900 leading-snug">
-            {causeTitle}
-          </h1>
-          <p className="mt-2 text-xs text-slate-400">
-            ₦{raised.toLocaleString()} raised of ₦{goal.toLocaleString()} goal
-          </p>
-          <Progress value={percent} className="mt-2 h-1.5" />
+      {/* Header */}
+      <div className="text-center">
+        <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">
+          Quick donate
+        </p>
+        <h1 className="text-xl font-bold text-slate-900 leading-snug">
+          {causeTitle}
+        </h1>
+        <p className="mt-2 text-xs text-slate-400">
+          ₦{raised.toLocaleString()} raised of ₦{goal.toLocaleString()} goal
+        </p>
+        <Progress value={percent} className="mt-2 h-1.5" />
+      </div>
+
+      {/* Carousel Header */}
+      {images.length > 0 && (
+        <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-200">
+          <Carousel className="w-full">
+            <CarouselContent>
+              {images.map((img, index) => (
+                <CarouselItem key={index}>
+                  <div className="relative aspect-video w-full bg-slate-100">
+                    <Image
+                      src={getMediaUrl(img)}
+                      alt={`${causeTitle} image ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      unoptimized={isProxyMediaUrl(getMediaUrl(img))}
+                    />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {images.length > 1 && (
+              <>
+                <CarouselPrevious className="left-3 h-9 w-9 rounded-full border-white/15 bg-black/35 text-white shadow-lg backdrop-blur-md hover:bg-black/55 hover:text-white focus-visible:border-white/25 focus-visible:bg-black/55 focus-visible:text-white focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-0 disabled:border-white/10 disabled:bg-black/15 disabled:text-white/45" />
+                <CarouselNext className="right-3 h-9 w-9 rounded-full border-white/15 bg-black/35 text-white shadow-lg backdrop-blur-md hover:bg-black/55 hover:text-white focus-visible:border-white/25 focus-visible:bg-black/55 focus-visible:text-white focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-0 disabled:border-white/10 disabled:bg-black/15 disabled:text-white/45" />
+              </>
+            )}
+          </Carousel>
+        </div>
+      )}
+
+      {/* Back link */}
+      {variant === "page" && (
+        <p className="text-center text-xs text-slate-400">
+          Want to learn more?{" "}
+          <Link
+            href={`/causes/${causeSlug || causeId}`}
+            className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700"
+          >
+            View full campaign →
+          </Link>
+        </p>
+      )}
+
+      {/* Form */}
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg space-y-5"
+      >
+        {/* Preset amounts */}
+        <div>
+          <Label className="text-xs text-slate-500 uppercase tracking-widest mb-2 block">
+            Choose amount (₦)
+          </Label>
+          <div className="grid grid-cols-4 gap-2">
+            {PRESETS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setAmount(String(p))}
+                className={`rounded-xl border py-2 text-sm font-semibold transition-all ${
+                  amount === String(p)
+                    ? "border-blue-600 bg-blue-600 text-white"
+                    : "border-slate-200 bg-slate-50 text-slate-700 hover:border-blue-300"
+                }`}
+              >
+                {p >= 1000 ? `${p / 1000}k` : p}
+              </button>
+            ))}
+          </div>
+          <Input
+            type="number"
+            placeholder="Or enter custom amount"
+            value={amount}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              if (amountError) {
+                setAmountError("");
+              }
+            }}
+            className="mt-2"
+            min={MIN_DONATION_AMOUNT}
+          />
+          {amountError ? (
+            <p className="mt-2 text-xs font-medium text-rose-600">
+              {amountError}
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-slate-500">
+              Minimum donation is ₦{MIN_DONATION_AMOUNT}.
+            </p>
+          )}
         </div>
 
-        {/* Carousel Header */}
-        {images.length > 0 && (
-          <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-200">
-            <Carousel className="w-full">
-              <CarouselContent>
-                {images.map((img, index) => (
-                  <CarouselItem key={index}>
-                    <div className="relative aspect-video w-full bg-slate-100">
-                      <Image
-                        src={getMediaUrl(img)}
-                        alt={`${causeTitle} image ${index + 1}`}
-                        fill
-                        className="object-cover"
-                        unoptimized={isProxyMediaUrl(getMediaUrl(img))}
-                      />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              {images.length > 1 && (
-                <>
-                  <CarouselPrevious className="left-3 h-9 w-9 rounded-full border-white/15 bg-black/35 text-white shadow-lg backdrop-blur-md hover:bg-black/55 hover:text-white focus-visible:border-white/25 focus-visible:bg-black/55 focus-visible:text-white focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-0 disabled:border-white/10 disabled:bg-black/15 disabled:text-white/45" />
-                  <CarouselNext className="right-3 h-9 w-9 rounded-full border-white/15 bg-black/35 text-white shadow-lg backdrop-blur-md hover:bg-black/55 hover:text-white focus-visible:border-white/25 focus-visible:bg-black/55 focus-visible:text-white focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-0 disabled:border-white/10 disabled:bg-black/15 disabled:text-white/45" />
-                </>
-              )}
-            </Carousel>
+        {/* Name */}
+        <div>
+          <Label htmlFor="name">Your Name</Label>
+          <Input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
+            disabled={isAnonymous}
+            required={!isAnonymous}
+          />
+        </div>
+
+        {/* Email */}
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            required
+          />
+        </div>
+
+        {/* Message */}
+        <div>
+          <Label htmlFor="message">Message (optional)</Label>
+          <Textarea
+            id="message"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Leave a message of support…"
+            rows={2}
+          />
+        </div>
+
+        {/* Anonymous */}
+        <div className="flex items-center gap-3">
+          <Switch
+            id="anon"
+            checked={isAnonymous}
+            onCheckedChange={setIsAnonymous}
+          />
+          <Label htmlFor="anon">Donate anonymously</Label>
+        </div>
+
+        {/* Fee breakdown */}
+        {donationAmount > 0 && (
+          <div className="rounded-xl bg-slate-50 p-3 space-y-1 text-xs text-slate-500">
+            <div className="flex justify-between">
+              <span>Donation</span>
+              <span>₦{donationAmount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Service fee (max ₦10,000)</span>
+              <span>₦{serviceFee.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between border-t border-slate-200 pt-1 font-semibold text-slate-700">
+              <span>Total</span>
+              <span>₦{total.toLocaleString()}</span>
+            </div>
           </div>
         )}
 
-        {/* Back link */}
-        {variant === "page" && (
-          <p className="text-center text-xs text-slate-400">
-            Want to learn more?{" "}
-            <Link
-              href={`/causes/${causeSlug || causeId}`}
-              className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700"
-            >
-              View full campaign →
-            </Link>
-          </p>
-        )}
-
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg space-y-5"
+        <Button
+          type="submit"
+          variant="lime"
+          disabled={isLoading || donationAmount < MIN_DONATION_AMOUNT}
+          className="w-full rounded-full"
         >
-          {/* Preset amounts */}
-          <div>
-            <Label className="text-xs text-slate-500 uppercase tracking-widest mb-2 block">
-              Choose amount (₦)
-            </Label>
-            <div className="grid grid-cols-4 gap-2">
-              {PRESETS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setAmount(String(p))}
-                  className={`rounded-xl border py-2 text-sm font-semibold transition-all ${
-                    amount === String(p)
-                      ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-slate-200 bg-slate-50 text-slate-700 hover:border-blue-300"
-                  }`}
-                >
-                  {p >= 1000 ? `${p / 1000}k` : p}
-                </button>
-              ))}
-            </div>
-            <Input
-              type="number"
-              placeholder="Or enter custom amount"
-              value={amount}
-              onChange={(e) => {
-                setAmount(e.target.value);
-                if (amountError) {
-                  setAmountError("");
-                }
-              }}
-              className="mt-2"
-              min={MIN_DONATION_AMOUNT}
-            />
-            {amountError ? (
-              <p className="mt-2 text-xs font-medium text-rose-600">
-                {amountError}
-              </p>
-            ) : (
-              <p className="mt-2 text-xs text-slate-500">
-                Minimum donation is ₦{MIN_DONATION_AMOUNT}.
-              </p>
-            )}
-          </div>
-
-          {/* Name */}
-          <div>
-            <Label htmlFor="name">Your Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
-              disabled={isAnonymous}
-              required={!isAnonymous}
-            />
-          </div>
-
-          {/* Email */}
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-
-          {/* Message */}
-          <div>
-            <Label htmlFor="message">Message (optional)</Label>
-            <Textarea
-              id="message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Leave a message of support…"
-              rows={2}
-            />
-          </div>
-
-          {/* Anonymous */}
-          <div className="flex items-center gap-3">
-            <Switch
-              id="anon"
-              checked={isAnonymous}
-              onCheckedChange={setIsAnonymous}
-            />
-            <Label htmlFor="anon">Donate anonymously</Label>
-          </div>
-
-          {/* Fee breakdown */}
-          {donationAmount > 0 && (
-            <div className="rounded-xl bg-slate-50 p-3 space-y-1 text-xs text-slate-500">
-              <div className="flex justify-between">
-                <span>Donation</span>
-                <span>₦{donationAmount.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Service fee (max ₦10,000)</span>
-                <span>₦{serviceFee.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between border-t border-slate-200 pt-1 font-semibold text-slate-700">
-                <span>Total</span>
-                <span>₦{total.toLocaleString()}</span>
-              </div>
-            </div>
+          {isLoading ? (
+            <>
+              <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+              Processing…
+            </>
+          ) : (
+            `Donate ₦${total > 0 ? total.toLocaleString() : "Now"}`
           )}
-
-          <Button
-            type="submit"
-            variant="lime"
-            disabled={isLoading || donationAmount < MIN_DONATION_AMOUNT}
-            className="w-full rounded-full"
-          >
-            {isLoading ? (
-              <>
-                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                Processing…
-              </>
-            ) : (
-              `Donate ₦${total > 0 ? total.toLocaleString() : "Now"}`
-            )}
-          </Button>
-        </form>
-      </div>
+        </Button>
+      </form>
+    </div>
   );
 
   if (variant === "modal") return content;

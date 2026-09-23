@@ -67,7 +67,9 @@ export default async function CauseDetailPage({
 
   const isOwner = user?.id === cause.user_id;
   if (cause.paused && !isOwner) {
-    const isAdmin = user?.id ? await isAdminOrManager(user.id as string) : false;
+    const isAdmin = user?.id
+      ? await isAdminOrManager(user.id as string)
+      : false;
     if (!isAdmin) {
       return <CausePausedNotice title={cause.title} />;
     }

@@ -5,7 +5,14 @@ import { useProfile } from "@/hooks/use-profile";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SettingsItem } from "./components/settings-item";
 import { SettingsNav } from "./components/settings-nav";
-import { User, CreditCard, Shield, Bell, Trash2, Building2 } from "lucide-react";
+import {
+  User,
+  CreditCard,
+  Shield,
+  Bell,
+  Trash2,
+  Building2,
+} from "lucide-react";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -53,7 +60,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* Desktop: left rail matches Figma; mobile: flat routed list (DESIGN_GUIDE §6) */}
+      {}
       <div className="hidden lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-10">
         <SettingsNav isOrganization={isOrganization} />
         <div className="rounded-xl border-2 border-ink/10 bg-white p-6">

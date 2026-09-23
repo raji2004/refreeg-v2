@@ -10,7 +10,11 @@ const NAV_ITEMS = [
   { title: "Profile", href: "/dashboard/settings/profile" },
   { title: "Notifications", href: "/dashboard/settings/notifications" },
   { title: "Payments", href: "/dashboard/settings/bank" },
-  { title: "Organization", href: "/dashboard/settings/organization", orgOnly: true },
+  {
+    title: "Organization",
+    href: "/dashboard/settings/organization",
+    orgOnly: true,
+  },
   { title: "Security", href: "/dashboard/settings/account" },
   {
     title: "Verification",

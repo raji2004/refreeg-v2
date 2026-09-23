@@ -10,7 +10,7 @@ const Hero = () => {
       className="w-full md:px-[50px] px-[10px] py-[15px] md:py-[25px] md:flex justify-between relative min-h-[90vh] bg-background"
       id="home"
     >
-      {/* african map  */}
+      {}
       <Image
         src={"/map.jpg"}
         alt="African Map"
@@ -22,7 +22,7 @@ const Hero = () => {
       <div className="md:px-0 px-[30px]">
         <HeroComponent img1={"/heropic1.png"} img2={"/heropic2.png"} />
       </div>
-      {/* hero caption  */}
+      {}
       <div className="md:pt-10 mt-12 md:mt-0 text-center">
         <p className="text-[12px] md:text-[14px] font-semibold text-center text-foreground">
           Building Africa&apos;s number 1 crowd funding platform.

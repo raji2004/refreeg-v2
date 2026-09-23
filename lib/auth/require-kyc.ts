@@ -1,16 +1,8 @@
 import { prisma } from "@/lib/prisma";
 
-/**
- * Server-side helper to verify that a user has approved KYC and a complete
- * profile. Returns a redirect path string if the user fails a check, or
- * `null` if all requirements are met.
- *
- * Used by create-route layouts (causes, petitions) to gate access.
- */
 export async function requireKycAndProfile(
-  userId: string
+  userId: string,
 ): Promise<string | null> {
-  // 1. Check KYC status via Prisma (fetch most recent)
   const kycVerification = await prisma.kyc_verifications.findFirst({
     where: { user_id: userId },
     orderBy: { created_at: "desc" },
