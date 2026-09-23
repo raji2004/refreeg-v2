@@ -112,22 +112,23 @@ export function UserNav() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="relative h-10 w-10 rounded-full border border-slate-200 bg-white p-0 shadow-sm transition-all hover:border-blue-300 hover:bg-white hover:ring-4 hover:ring-blue-50 data-[state=open]:border-blue-500 data-[state=open]:ring-4 data-[state=open]:ring-blue-50"
+            className="flex items-center gap-1.5 h-10 px-1 rounded-full border border-ink/10 bg-white shadow-sm transition-all hover:bg-ink/5"
             aria-label="Open profile menu"
           >
-            <Avatar className="h-9 w-9 rounded-full border-2 border-white">
+            <Avatar className="h-8 w-8 rounded-full">
               <AvatarImage
                 src={personalAvatarUrl}
                 alt={personalDisplayName || user.email || ""}
                 className="object-cover"
               />
-              <AvatarFallback className="rounded-full">
+              <AvatarFallback className="rounded-full bg-[#0b5d3b] text-white font-semibold text-xs">
                 {personalInitials}
               </AvatarFallback>
             </Avatar>
+            <ChevronRight className="h-3 w-3 rotate-90 text-ink/60" />
             {isVerified && (
               <span
-                className="pointer-events-none absolute -bottom-1 -right-1 z-10 rounded-full border border-slate-300 bg-white p-0.5 shadow-sm"
+                className="pointer-events-none absolute -bottom-1 -right-1 z-10 rounded-full border border-ink/10 bg-white p-0.5 shadow-sm"
                 title="Verified account"
               >
                 <CheckCircle

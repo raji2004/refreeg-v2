@@ -31,17 +31,14 @@ export function SidebarCtaCard({
   }
 
   return (
-    <div className="rounded-2xl border border-ink/15 bg-white p-4">
-      <div className="flex items-center gap-2 text-ink">
-        <ShieldCheck className="h-4 w-4" />
-        <p className="text-sm font-semibold">Raising for something?</p>
-      </div>
-      <p className="mt-1.5 text-xs text-ink/60">
-        Verify your identity to start a campaign.
+    <div className="rounded-2xl bg-ink p-4 text-white">
+      <p className="text-sm font-semibold text-white">Raising for something?</p>
+      <p className="mt-1 text-xs text-white/70">
+        Complete KYC to start a campaign.
       </p>
       <Link href="/dashboard/settings/kyc-setup" className="mt-3 block">
-        <Button variant="lime" size="sm" className="w-full">
-          Verify identity
+        <Button variant="lime" size="sm" className="w-full font-semibold text-ink">
+          Complete KYC
         </Button>
       </Link>
     </div>

@@ -19,8 +19,8 @@ export default function ClientLayoutWrapper({
 }) {
   const pathname = usePathname();
   const hideNav = pathname.startsWith("/dashboard/settings/kyc-setup");
-  const isSettings =
-    pathname.startsWith("/dashboard/settings") && !hideNav;
+  const isSettings = pathname.startsWith("/dashboard/settings") && !hideNav;
+  const isDashboardRoot = pathname === "/dashboard";
 
   if (hideNav) {
     return (
@@ -32,7 +32,7 @@ export default function ClientLayoutWrapper({
     );
   }
 
-  if (isSettings) {
+  if (isSettings || isDashboardRoot) {
     return <div className="min-h-full w-full bg-cream">{children}</div>;
   }
 

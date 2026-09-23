@@ -7,6 +7,7 @@ import { Logo } from "@/components/logo";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { getProfile } from "@/actions/profile-actions";
+import { listBookmarkedIds } from "@/actions/bookmark-actions";
 import { AppShellNav } from "./app-shell-nav";
 import { AppShellHeader } from "./app-shell-header";
 import { SidebarCtaCard } from "./sidebar-cta-card";
@@ -23,12 +24,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAuthenticated = !!user;
   const [isVerified, setIsVerified] = useState(false);
   const [totalPoints, setTotalPoints] = useState(0);
+  const [savedCount, setSavedCount] = useState<number | undefined>(undefined);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     if (!user?.id) {
       setIsVerified(false);
       setTotalPoints(0);
+      setSavedCount(undefined);
       return;
     }
     let cancelled = false;
@@ -37,6 +40,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setIsVerified(!!profile?.is_verified);
       setTotalPoints(profile?.total_points || 0);
     });
+    listBookmarkedIds()
+      .then((bookmarks) => {
+        if (cancelled) return;
+        setSavedCount(bookmarks.length);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -49,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Logo />
         </Link>
         <div className="flex-1 overflow-y-auto">
-          <AppShellNav isAuthenticated={isAuthenticated} />
+          <AppShellNav isAuthenticated={isAuthenticated} savedCount={savedCount} />
         </div>
         <div className="mt-4">
           <SidebarCtaCard isAuthenticated={isAuthenticated} isVerified={isVerified} />
@@ -73,7 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Logo />
           </Link>
           <div onClick={() => setMobileNavOpen(false)}>
-            <AppShellNav isAuthenticated={isAuthenticated} />
+            <AppShellNav isAuthenticated={isAuthenticated} savedCount={savedCount} />
           </div>
           <div className="mt-4">
             <SidebarCtaCard isAuthenticated={isAuthenticated} isVerified={isVerified} />

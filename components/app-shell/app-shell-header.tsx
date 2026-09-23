@@ -33,31 +33,35 @@ export function AppShellHeader({
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        {/* EIZA Coins Pill (commented out per user request)
         {isAuthenticated && (
-          <span className="hidden items-center gap-1.5 rounded-full bg-gold/20 px-3 py-1.5 text-sm font-semibold text-ink sm:flex">
-            <Coins className="h-4 w-4" />
+          <span className="hidden items-center gap-1.5 rounded-full bg-[#fdf3d9] border border-amber/30 px-3 py-1.5 text-sm font-semibold text-ink sm:flex">
+            <Coins className="h-4 w-4 text-amber" />
             {totalPoints.toLocaleString()}
           </span>
         )}
+        */}
+
+        {isAuthenticated && (
+          <button
+            type="button"
+            aria-label="Notifications"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-ink/15 bg-white text-ink/70 hover:bg-ink/5"
+          >
+            <Bell className="h-4 w-4" />
+            <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-rust" />
+          </button>
+        )}
 
         <Link href="/causes">
-          <Button size="sm" variant="lime" className="gap-1.5">
+          <Button size="sm" variant="ink" className="gap-1.5 rounded-xl px-4 py-2 font-medium">
             <Plus className="h-4 w-4" />
             Give
           </Button>
         </Link>
 
         {isAuthenticated ? (
-          <>
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-ink/15 bg-white text-ink/70 hover:bg-ink/5"
-            >
-              <Bell className="h-4 w-4" />
-            </button>
-            <UserNav />
-          </>
+          <UserNav />
         ) : !isLoading ? (
           <div className="hidden items-center gap-2 sm:flex">
             <Link href="/auth/signin">

@@ -18,12 +18,17 @@ jest.mock("@/lib/prisma", () => ({
       findMany: jest.fn(),
       groupBy: jest.fn(),
     },
+    pledges: {
+      count: jest.fn(),
+    },
   },
 }));
 
 import { prisma } from "@/lib/prisma";
 import {
   getDashboardStats,
+  getUserDonorGivingStats,
+  getPlatformWeeklyDeliveredStats,
   getDonationTrends,
   getUserCauses,
   getUserCausesWithStats,
@@ -53,6 +58,9 @@ const mockPrisma = prisma as unknown as {
     aggregate: jest.Mock;
     findMany: jest.Mock;
     groupBy: jest.Mock;
+  };
+  pledges: {
+    count: jest.Mock;
   };
 };
 
@@ -316,6 +324,50 @@ describe("dashboard-actions", () => {
           }),
         }),
       );
+    });
+  });
+
+  describe("getUserDonorGivingStats", () => {
+    it("returns zero stats when user has no donations or pledges", async () => {
+      mockPrisma.donation.aggregate.mockResolvedValue({ _sum: { amount: null } });
+      mockPrisma.donation.findMany.mockResolvedValue([]);
+      mockPrisma.pledges.count.mockResolvedValue(0);
+
+      const stats = await getUserDonorGivingStats("user-1");
+      expect(stats).toEqual({
+        givenSoFar: 0,
+        campaignsBacked: 0,
+        livePledges: 0,
+      });
+    });
+
+    it("aggregates donor statistics correctly", async () => {
+      mockPrisma.donation.aggregate.mockResolvedValue({ _sum: { amount: 50000 } });
+      mockPrisma.donation.findMany.mockResolvedValue([
+        { causeId: "cause-1" },
+        { causeId: "cause-2" },
+      ]);
+      mockPrisma.pledges.count.mockResolvedValue(3);
+
+      const stats = await getUserDonorGivingStats("user-1");
+      expect(stats).toEqual({
+        givenSoFar: 50000,
+        campaignsBacked: 2,
+        livePledges: 3,
+      });
+    });
+  });
+
+  describe("getPlatformWeeklyDeliveredStats", () => {
+    it("returns weekly delivered amount and campaigns count", async () => {
+      mockPrisma.donation.aggregate.mockResolvedValue({ _sum: { amount: 18400000 } });
+      mockPrisma.donation.findMany.mockResolvedValue(Array(62).fill({ causeId: "c" }));
+
+      const stats = await getPlatformWeeklyDeliveredStats();
+      expect(stats).toEqual({
+        amount: 18400000,
+        campaignsCount: 62,
+      });
     });
   });
 });

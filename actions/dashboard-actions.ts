@@ -39,6 +39,40 @@ export async function getDashboardStats(userId: string) {
   }
 }
 
+export async function getUserDonorGivingStats(userId: string) {
+  try {
+    const [donationAgg, donations, livePledgesCount] = await Promise.all([
+      prisma.donation.aggregate({
+        _sum: { amount: true },
+        where: { userId },
+      }),
+      prisma.donation.findMany({
+        where: { userId },
+        select: { causeId: true },
+        distinct: ["causeId"],
+      }),
+      (prisma as any).pledges
+        ? (prisma as any).pledges.count({
+            where: { user_id: userId, status: { not: "cancelled" } },
+          })
+        : Promise.resolve(0),
+    ]);
+
+    return {
+      givenSoFar: Number(donationAgg._sum.amount || 0),
+      campaignsBacked: donations.length,
+      livePledges: Number(livePledgesCount || 0),
+    };
+  } catch (error) {
+    console.error("Error fetching user donor giving stats:", error);
+    return {
+      givenSoFar: 0,
+      campaignsBacked: 0,
+      livePledges: 0,
+    };
+  }
+}
+
 /** Platform-wide donation total for the last 7 days — used by the first-run dashboard's "Delivered this week" callout. */
 export async function getPlatformWeeklyDelivered(): Promise<number> {
   const sevenDaysAgo = new Date();
@@ -50,6 +84,53 @@ export async function getPlatformWeeklyDelivered(): Promise<number> {
   });
 
   return Number(agg._sum.amount || 0);
+}
+
+export async function getPlatformWeeklyDeliveredStats(): Promise<{ amount: number; campaignsCount: number }> {
+  try {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const [agg, distinctCauses] = await Promise.all([
+      prisma.donation.aggregate({
+        _sum: { amount: true },
+        where: { createdAt: { gte: sevenDaysAgo } },
+      }),
+      prisma.donation.findMany({
+        where: { createdAt: { gte: sevenDaysAgo } },
+        select: { causeId: true },
+        distinct: ["causeId"],
+      }),
+    ]);
+
+    const weeklyAmount = Number(agg._sum.amount || 0);
+    const weeklyCount = distinctCauses.length;
+
+    if (weeklyAmount > 0) {
+      return {
+        amount: weeklyAmount,
+        campaignsCount: weeklyCount,
+      };
+    }
+
+    // Fall back to all-time platform delivered donations if no donations were made this week
+    const [allTimeAgg, totalApprovedCauses] = await Promise.all([
+      prisma.donation.aggregate({
+        _sum: { amount: true },
+      }),
+      prisma.cause.count({
+        where: { status: "approved" },
+      }),
+    ]);
+
+    return {
+      amount: Number(allTimeAgg._sum.amount || 0),
+      campaignsCount: totalApprovedCauses || 0,
+    };
+  } catch (error) {
+    console.error("Error fetching weekly delivered stats:", error);
+    return { amount: 0, campaignsCount: 0 };
+  }
 }
 
 export async function getDonationTrends(userId: string) {
