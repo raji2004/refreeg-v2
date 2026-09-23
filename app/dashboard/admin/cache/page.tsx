@@ -64,7 +64,7 @@ export default function AdminCachePage() {
               <h3 className="font-semibold text-lg leading-none tracking-tight">Global Purge</h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              This will clear the entire site's layout cache. It ensures everyone sees the absolute latest version of the site, but may cause the next immediate page loads to be slightly slower as they rebuild.
+              This will clear the entire site&apos;s layout cache. It ensures everyone sees the absolute latest version of the site, but may cause the next immediate page loads to be slightly slower as they rebuild.
             </p>
             <button
               onClick={handleGlobalClear}
@@ -90,7 +90,7 @@ export default function AdminCachePage() {
               <h3 className="font-semibold text-lg leading-none tracking-tight">Targeted Purge</h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              Only clear the cache for a specific route. Best if you just pushed a fix to one specific page (e.g., <code className="bg-muted px-1 rounded">/causes/save-the-whales</code>) and don't want to affect the whole site.
+              Only clear the cache for a specific route. Best if you just pushed a fix to one specific page (e.g., <code className="bg-muted px-1 rounded">/causes/save-the-whales</code>) and don&apos;t want to affect the whole site.
             </p>
             <form onSubmit={handlePathClear} className="flex flex-col gap-3 mt-4">
               <input
