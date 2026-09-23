@@ -44,8 +44,6 @@ export default function LiveCampaigns() {
     async function fetchCampaigns() {
       try {
         const allCauses = await listCauses();
-
-        // ↓↓↓ THE ALGORITHM: most-funded first, ₦0 last, ties → % of goal → newest
         const rankedCauses = sortCausesByFunding(allCauses);
 
         const transformedCampaigns = rankedCauses.map((cause) => ({
@@ -125,9 +123,7 @@ export default function LiveCampaigns() {
     };
 
     container.addEventListener("scroll", handleScroll);
-    // Check initially
     checkScrollButtons();
-    // Check on resize
     window.addEventListener("resize", checkScrollButtons);
 
     return () => {
@@ -284,7 +280,6 @@ export default function LiveCampaigns() {
                     className="group cursor-pointer flex-shrink-0 w-[280px] md:w-[320px]"
                   >
                     <div className="bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative">
-                      {/* Image */}
                       <div className="aspect-[4/3] w-full overflow-hidden relative bg-gray-100">
                         <Image
                           src={
