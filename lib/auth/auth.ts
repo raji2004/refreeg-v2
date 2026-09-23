@@ -63,18 +63,26 @@ function getDeviceLabel(userAgent: string | null): string {
   return "Unknown Device";
 }
 
-// Wrap PrismaAdapter to map NextAuth's default `name`/`image` fields
-// to our schema's `fullName`/`profilePhoto` fields
+// Wrap PrismaAdapter to map NextAuth's default `name`/`image` fields to our
+// schema's `fullName`/`profilePhoto` fields, and split `name` into
+// firstName/lastName up front. Without this, firstName/lastName stayed
+// blank until the user manually completed the onboarding form — fine
+// normally, but for an account that never properly reaches onboarding
+// (e.g. onboarding_completed already true from a data-recovery
+// reconstruction), it left those fields permanently empty.
 const baseAdapter = PrismaAdapter(prisma);
 const customAdapter: Adapter = {
   ...baseAdapter,
   createUser: async (data: any) => {
     const { name, image, ...rest } = data;
+    const [firstName, ...lastNameParts] = (name || "").trim().split(/\s+/);
     const user = await prisma.user.create({
       data: {
         ...rest,
         fullName: name || null,
         profilePhoto: image || null,
+        firstName: firstName || null,
+        lastName: lastNameParts.length ? lastNameParts.join(" ") : null,
       },
     });
     return user as unknown as AdapterUser;
@@ -88,24 +96,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     maxAge: SESSION_MAX_AGE_SECONDS,
     updateAge: SESSION_UPDATE_AGE_SECONDS,
   },
-  // Without this, Auth.js's cookies default to host-only (no Domain
-  // attribute) — scoped to whichever hostname actually set them. Since
-  // middleware.ts routes every /auth page to apps.refreeg.com, sign-in
-  // always happens there, so the session cookie would only ever be sent
-  // back on requests to apps.refreeg.com — not to www.refreeg.com, a
-  // sibling subdomain, not a parent/child of it. A user signed in on
-  // apps would show as signed out on www. The leading dot on the domain
-  // makes the cookie valid for refreeg.com and every subdomain of it.
-  // Left undefined outside production so cookies still work normally on
-  // localhost (a dot-prefixed domain isn't valid for a bare hostname).
-  cookies:
-    process.env.NODE_ENV === "production"
-      ? {
-          sessionToken: { options: { domain: ".refreeg.com" } },
-          callbackUrl: { options: { domain: ".refreeg.com" } },
-          csrfToken: { options: { domain: ".refreeg.com" } },
-        }
-      : undefined,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,

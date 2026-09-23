@@ -19,10 +19,15 @@ import { Icons } from "@/components/icons";
 function UpdatePasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const flow = searchParams.get("flow");
+  const email = searchParams.get("email");
+  const redirect = searchParams.get("redirect");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { updatePassword } = useAuth();
+
+  const isCauseProfileFlow = flow === "cause-profile";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +42,11 @@ function UpdatePasswordForm() {
 
     setIsLoading(true);
     try {
-      await updatePassword(password, token);
+      await updatePassword(password, token, {
+        flow,
+        email,
+        redirect,
+      });
     } catch (error) {
     } finally {
       setIsLoading(false);
@@ -65,9 +74,13 @@ function UpdatePasswordForm() {
   return (
     <Card>
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">New Password</CardTitle>
+        <CardTitle className="text-2xl text-center">
+          {isCauseProfileFlow ? "Set Your New Password" : "New Password"}
+        </CardTitle>
         <CardDescription className="text-center">
-          Please enter your new password below.
+          {isCauseProfileFlow
+            ? "Welcome back! Set a secure password to access your campaign, then we'll guide you to complete your profile."
+            : "Please enter your new password below."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -105,8 +118,10 @@ function UpdatePasswordForm() {
               {isLoading ? (
                 <>
                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                  Updating password...
+                  {isCauseProfileFlow ? "Setting password..." : "Updating password..."}
                 </>
+              ) : isCauseProfileFlow ? (
+                "Set Password & Complete Profile"
               ) : (
                 "Update password"
               )}
