@@ -24,10 +24,14 @@ export default async function ConfirmEmailChangePage({
             </h1>
             <p className="mt-3 text-sm leading-6 text-ink/65">
               Your account email is now{" "}
-              <span className="font-medium text-ink">{result.email}</span>.
-              Sign in again with the new address if your session looks stale.
+              <span className="font-medium text-ink">{result.email}</span>. Sign
+              in again with the new address if your session looks stale.
             </p>
-            <Button asChild variant="lime" className="mt-8 h-11 rounded-full px-6">
+            <Button
+              asChild
+              variant="lime"
+              className="mt-8 h-11 rounded-full px-6"
+            >
               <Link href="/dashboard/settings/profile">Back to profile</Link>
             </Button>
           </>
@@ -40,7 +44,11 @@ export default async function ConfirmEmailChangePage({
               {result.error ||
                 "This confirmation link is invalid or has expired."}
             </p>
-            <Button asChild variant="outline" className="mt-8 h-11 rounded-full px-6">
+            <Button
+              asChild
+              variant="outline"
+              className="mt-8 h-11 rounded-full px-6"
+            >
               <Link href="/dashboard/settings/profile">Back to profile</Link>
             </Button>
           </>

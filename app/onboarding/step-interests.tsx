@@ -7,8 +7,15 @@ import { Button } from "@/components/ui/button";
 import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { cn } from "@/lib/utils";
-import { interestOptions, MIN_INTERESTS_REQUIRED } from "@/lib/interest-categories";
-import { getInterestOptions, saveUserInterests, type InterestOptionWithCount } from "@/actions/interest-actions";
+import {
+  interestOptions,
+  MIN_INTERESTS_REQUIRED,
+} from "@/lib/interest-categories";
+import {
+  getInterestOptions,
+  saveUserInterests,
+  type InterestOptionWithCount,
+} from "@/actions/interest-actions";
 
 interface StepInterestsProps {
   user: any;
@@ -28,14 +35,17 @@ export default function StepInterests({
   const [options, setOptions] = useState<InterestOptionWithCount[]>(
     interestOptions.map((o) => ({ id: o.id, label: o.label, count: null })),
   );
-  const [selected, setSelected] = useState<string[]>(onboardingData.interests || []);
+  const [selected, setSelected] = useState<string[]>(
+    onboardingData.interests || [],
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     getInterestOptions().then(setOptions);
   }, []);
 
-  const iconFor = (id: string) => interestOptions.find((o) => o.id === id)?.icon;
+  const iconFor = (id: string) =>
+    interestOptions.find((o) => o.id === id)?.icon;
 
   const toggle = (id: string) => {
     setSelected((prev) =>
@@ -70,8 +80,8 @@ export default function StepInterests({
           What do you want to fund?
         </h1>
         <p className="mt-2 text-sm leading-6 text-ink/70">
-          Pick at least {MIN_INTERESTS_REQUIRED} — we&apos;ll use these to show you campaigns
-          worth your attention first.
+          Pick at least {MIN_INTERESTS_REQUIRED} — we&apos;ll use these to show
+          you campaigns worth your attention first.
         </p>
 
         <CalloutBanner
@@ -109,7 +119,9 @@ export default function StepInterests({
                     isSelected ? "text-ink-foreground/70" : "text-ink/50",
                   )}
                 >
-                  {option.count != null ? `${option.count} campaigns` : "Coming soon"}
+                  {option.count != null
+                    ? `${option.count} campaigns`
+                    : "Coming soon"}
                 </span>
               </button>
             );
@@ -117,7 +129,8 @@ export default function StepInterests({
         </div>
 
         <p className="mt-4 text-xs text-ink/50">
-          {selected.length} of {options.length} chosen · Minimum {MIN_INTERESTS_REQUIRED}
+          {selected.length} of {options.length} chosen · Minimum{" "}
+          {MIN_INTERESTS_REQUIRED}
         </p>
 
         <div className="mt-8 flex flex-col gap-3 border-t border-ink/10 pt-6 sm:flex-row-reverse">

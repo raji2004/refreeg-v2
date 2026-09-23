@@ -8,8 +8,6 @@ import {
   ApiErrorCode,
 } from "@/utils/api-bot/response-utils";
 
-
-
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } },
@@ -37,7 +35,6 @@ export async function GET(
     return authRes.errorResponse;
   }
 
-  // Verify campaign ownership
   let campaign;
   let campaignError;
   try {
@@ -45,9 +42,9 @@ export async function GET(
       where: {
         id: params.id,
         developer_id: authRes.userId!,
-        mode: authRes.mode!
+        mode: authRes.mode!,
       },
-      select: { id: true }
+      select: { id: true },
     });
   } catch (err) {
     campaignError = err;
@@ -88,7 +85,7 @@ export async function GET(
         skip: offset,
         take: limit,
       }),
-      prisma.api_donations.count({ where: whereClause })
+      prisma.api_donations.count({ where: whereClause }),
     ]);
   } catch (err) {
     error = err;

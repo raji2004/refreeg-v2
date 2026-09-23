@@ -6,7 +6,6 @@ import { Button } from "../ui/button";
 import { motion } from "framer-motion";
 
 export default function Hero() {
-  // Floating animation for corner images
   const floatTransition = {
     y: {
       duration: 2,
@@ -17,7 +16,7 @@ export default function Hero() {
 
   return (
     <div className="relative w-full h-[367px] flex justify-center text-white overflow-hidden">
-      {/* Main content */}
+      {}
       <motion.div
         className="relative z-10 text-center md:mt-12 lg:mt-20 text-black max-w-3xl px-6"
         initial={{ opacity: 0, y: 40 }}
@@ -55,9 +54,9 @@ export default function Hero() {
           transition={{ delay: 0.7 }}
           className="text-lg md:text-xl mb-6"
         >
-         On RefreeG, every creator gets a unique tag and URL — 
-         your digital identity <br /> where people can discover, follow, 
-         and support your cause.
+          On RefreeG, every creator gets a unique tag and URL — your digital
+          identity <br /> where people can discover, follow, and support your
+          cause.
         </motion.p>
 
         <motion.div

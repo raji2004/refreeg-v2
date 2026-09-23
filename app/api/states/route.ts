@@ -9,11 +9,10 @@ export async function GET(request: Request) {
     if (!countryName) {
       return NextResponse.json(
         { error: "Country name is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // 1. Fetch country and its states in a single query
     const country = await prisma.country.findFirst({
       where: {
         name: { equals: countryName, mode: "insensitive" },
@@ -27,10 +26,7 @@ export async function GET(request: Request) {
     });
 
     if (!country) {
-      return NextResponse.json(
-        { error: "Country not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Country not found" }, { status: 404 });
     }
 
     return NextResponse.json(country.states.map((s) => s.name));
@@ -39,7 +35,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

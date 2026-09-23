@@ -30,7 +30,7 @@ export async function FeaturedPetitions() {
         return {
           ...petition,
           image: petition.image ?? undefined,
-          days_active: petition.days_active ?? undefined, // ✅ FIX
+          days_active: petition.days_active ?? undefined,
           signers,
           signerCount,
           totalAmount,
@@ -39,26 +39,21 @@ export async function FeaturedPetitions() {
       }),
     )
   ).sort((a, b) => {
-    // ✅ Push 0% to bottom
     if (a.percentRaised === 0 && b.percentRaised !== 0) return 1;
     if (b.percentRaised === 0 && a.percentRaised !== 0) return -1;
 
-    // ✅ Higher percentage first
     if (b.percentRaised !== a.percentRaised) {
       return b.percentRaised - a.percentRaised;
     }
 
-    // ✅ Then most signed
     if (b.signerCount !== a.signerCount) {
       return b.signerCount - a.signerCount;
     }
 
-    // ✅ Then highest amount raised
     if (b.totalAmount !== a.totalAmount) {
       return b.totalAmount - a.totalAmount;
     }
 
-    // ✅ Then newest
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 

@@ -2,7 +2,6 @@
 
 import { prisma } from "@/lib/prisma";
 
-/** Helper to map Prisma's camelCase User fields to the snake_case shape the frontend expects */
 function mapUserToCommentUser(user: {
   fullName: string | null;
   profilePhoto: string | null;
@@ -48,7 +47,6 @@ export async function updatePetitionComment(
   userId: string,
   content: string,
 ) {
-  // petition_comments has no updated_at column — only update content & is_edited
   const result = await prisma.petition_comments.updateMany({
     where: { id: commentId, user_id: userId },
     data: {
@@ -58,7 +56,9 @@ export async function updatePetitionComment(
   });
 
   if (result.count === 0) {
-    throw new Error("Comment not found or you don't have permission to edit it");
+    throw new Error(
+      "Comment not found or you don't have permission to edit it",
+    );
   }
 
   const updated = await prisma.petition_comments.findUnique({
@@ -79,10 +79,7 @@ export async function updatePetitionComment(
   };
 }
 
-export async function deletePetitionComment(
-  commentId: string,
-  userId: string,
-) {
+export async function deletePetitionComment(commentId: string, userId: string) {
   const result = await prisma.petition_comments.deleteMany({
     where: { id: commentId, user_id: userId },
   });
@@ -97,7 +94,6 @@ export async function deletePetitionComment(
 }
 
 export async function listPetitionComments(petitionId: string) {
-  // Fetch top-level comments
   const comments = await prisma.petition_comments.findMany({
     where: { petition_id: petitionId, parent_id: null },
     orderBy: { created_at: "desc" },
@@ -108,7 +104,6 @@ export async function listPetitionComments(petitionId: string) {
     },
   });
 
-  // Batch-count replies using groupBy instead of N+1 queries
   const commentIds = comments.map((c) => c.id);
   const replyCounts =
     commentIds.length > 0

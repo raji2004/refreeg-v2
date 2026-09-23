@@ -10,24 +10,10 @@ import Numbers from "@/components/numbers";
 export default function Hero() {
   return (
     <div className="relative w-full h-[600px] flex flex-col lg:mt-20 justify-center text-white overflow-hidden">
-      {/* Background image with zoom-in animation */}
-      {/* <motion.div
-        initial={{ scale: 1.1, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 2, ease: "easeOut" }}
-        className="absolute inset-0"
-      >
-        <Image
-          src="/healthcarehero.png"
-          alt="healthcare hero"
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-black/10" />
-      </motion.div> */}
+      {}
+      {}
 
-      {/* Animated Content Layer */}
+      {}
       <motion.div
         initial="hidden"
         animate="visible"
@@ -49,8 +35,7 @@ export default function Hero() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="text-4xl md:text-5xl font-bold mb-4"
         >
-          Starting a Cause on RefreeG is Simple, Fast, 
-          and Transparent
+          Starting a Cause on RefreeG is Simple, Fast, and Transparent
         </motion.h1>
 
         <motion.p
@@ -61,10 +46,9 @@ export default function Hero() {
           transition={{ duration: 1, ease: "easeOut" }}
           className="text-lg md:text-xl mb-6"
         >
-          Whether you’re raising money for a loved one, a 
-          business idea, or your community, RefreeG gives you the 
-          tools to launch a campaign that inspires trust and 
-          attracts support.
+          Whether you’re raising money for a loved one, a business idea, or your
+          community, RefreeG gives you the tools to launch a campaign that
+          inspires trust and attracts support.
         </motion.p>
 
         <motion.div

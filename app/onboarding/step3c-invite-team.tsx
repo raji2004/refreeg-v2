@@ -54,7 +54,7 @@ export default function Step3CInviteTeam({
       setEmailError("Enter a valid email address");
       return false;
     }
-    // Check if already invited
+
     if (
       sentInvitations.some(
         (inv) =>
@@ -290,8 +290,14 @@ export default function Step3CInviteTeam({
           )}
 
           <div className="mt-7 grid gap-3 border-l-2 border-blue-700 bg-slate-50 px-4 py-3 text-sm text-slate-600 sm:grid-cols-2">
-            <p><span className="font-semibold text-slate-900">Admins</span> can manage workspace settings and members.</p>
-            <p><span className="font-semibold text-slate-900">Members</span> can collaborate on organisation activity.</p>
+            <p>
+              <span className="font-semibold text-slate-900">Admins</span> can
+              manage workspace settings and members.
+            </p>
+            <p>
+              <span className="font-semibold text-slate-900">Members</span> can
+              collaborate on organisation activity.
+            </p>
           </div>
 
           {/* Action Buttons */}
@@ -309,7 +315,6 @@ export default function Step3CInviteTeam({
             </button>
           </div>
         </motion.div>
-
       </div>
     </div>
   );

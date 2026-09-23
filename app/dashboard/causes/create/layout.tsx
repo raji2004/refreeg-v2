@@ -3,10 +3,6 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/actions/auth-actions";
 import { requireKycAndProfile } from "@/lib/auth/require-kyc";
 
-/**
- * Layout that gates cause creation behind KYC approval and profile
- * completeness. Replaces the old middleware-level check.
- */
 export default async function CreateCauseLayout({
   children,
 }: {

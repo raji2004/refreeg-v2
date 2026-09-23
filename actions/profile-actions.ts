@@ -10,7 +10,6 @@ import type {
 } from "@/types";
 import { KycStatus, KycVerification } from "@/types/kyc-types";
 
-// Helper function to map Prisma Profile to the expected Profile type
 function mapPrismaToProfile(p: any): Profile {
   return {
     id: p.id,
@@ -449,14 +448,22 @@ export async function saveStep1Progress(
       select: { accountType: true },
     });
 
-    if (existing?.accountType === "individual" && accountType === "organization") {
-      throw new Error("Individual accounts cannot be converted to organization accounts.");
+    if (
+      existing?.accountType === "individual" &&
+      accountType === "organization"
+    ) {
+      throw new Error(
+        "Individual accounts cannot be converted to organization accounts.",
+      );
     }
 
     await prisma.user.update({
       where: { id: userId },
       data: {
-        accountType: existing?.accountType === "organization" ? "organization" : accountType,
+        accountType:
+          existing?.accountType === "organization"
+            ? "organization"
+            : accountType,
       },
     });
 

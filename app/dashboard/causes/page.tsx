@@ -7,7 +7,6 @@ import { MyCausesList } from "@/components/my-causes-list";
 import { getCurrentUser } from "@/actions/auth-actions";
 import { ProofComplianceBanner } from "@/components/proof/proof-compliance-banner";
 
-
 const validStatuses = ["all", "approved", "pending", "rejected", "suspended"];
 
 export default async function MyCausesPage({
@@ -71,7 +70,7 @@ export default async function MyCausesPage({
           >
             <Link href="/dashboard/causes?status=approved">Active</Link>
           </TabsTrigger>
-          {/* 👇 ADDED SUSPENDED TAB 👇 */}
+          {}
           <TabsTrigger
             value="suspended"
             asChild

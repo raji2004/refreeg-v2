@@ -66,7 +66,7 @@ export function BankDetailsForm({ profile, user }: BankDetailsFormProps) {
     e.preventDefault();
     try {
       await handleBankSubmit(e);
-      // Send email notification after successful submission
+
       await sendBankAccountAddedEmail({
         bankName: formData.bankName,
         accountNumber: formData.accountNumber,

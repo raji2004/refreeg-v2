@@ -68,7 +68,7 @@ const HowItWorksSection = () => {
   return (
     <section className="relative bg-white py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div className="max-w-6xl mx-auto">
-        {/* Header Section */}
+        {}
         <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: 30 }}
@@ -105,7 +105,7 @@ const HowItWorksSection = () => {
           />
         </motion.div>
 
-        {/* Steps Grid */}
+        {}
         <motion.div
           className="grid grid-cols-1 lg:grid-cols-2 gap-8"
           variants={containerVariants}
@@ -120,7 +120,7 @@ const HowItWorksSection = () => {
               variants={itemVariants}
             >
               <div className="flex gap-6">
-                {/* Number Circle */}
+                {}
                 <motion.div
                   className="flex-shrink-0 relative"
                   variants={numberVariants}
@@ -144,7 +144,7 @@ const HowItWorksSection = () => {
                   </div>
                 </motion.div>
 
-                {/* Content */}
+                {}
                 <div className="flex-1">
                   <motion.h3
                     className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-purple-600 transition-colors duration-300"
@@ -166,7 +166,7 @@ const HowItWorksSection = () => {
                     {step.description}
                   </motion.p>
 
-                  {/* Tip with hover animation */}
+                  {}
                   <motion.p
                     className="text-purple-500 text-sm font-medium flex items-center gap-2 cursor-pointer"
                     whileHover={{ x: 5, color: "#7c3aed" }}
@@ -192,7 +192,7 @@ const HowItWorksSection = () => {
                 </div>
               </div>
 
-              {/* Connector Line */}
+              {}
               {index < steps.length - 2 && (
                 <motion.div
                   className="ml-8 mt-4 mb-4 relative"
@@ -211,7 +211,7 @@ const HowItWorksSection = () => {
         </motion.div>
       </div>
 
-      {/* Background Decorative Elements */}
+      {}
       <div className="absolute top-20 left-10 w-32 h-32 bg-purple-100 rounded-full opacity-50 blur-xl"></div>
       <div className="absolute bottom-20 right-10 w-40 h-40 bg-blue-100 rounded-full opacity-50 blur-xl"></div>
     </section>

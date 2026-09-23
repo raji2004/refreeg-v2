@@ -3,12 +3,6 @@
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 
-/**
- * Persists a Discover filter snapshot as an alert. This does NOT match new
- * campaigns against the saved filters or notify the user — there's no
- * job/cron infrastructure in this codebase for that yet. It only saves the
- * filter set so that piece can be built as a fast-follow.
- */
 export async function createSavedSearchAlert(input: {
   label: string;
   query: Record<string, unknown>;

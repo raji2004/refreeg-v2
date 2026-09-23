@@ -20,10 +20,7 @@ import {
   validateCauseCoverImage,
   validateCauseGalleryImage,
 } from "@/lib/media/cause-cover";
-import {
-  resolveCampaignLocation,
-  // resolveDeviceCampaignLocation,
-} from "@/lib/locations/campaign-location";
+import { resolveCampaignLocation } from "@/lib/locations/campaign-location";
 import { allocateUniqueCauseSlug } from "@/lib/causes/slug";
 
 const UUID_REGEX =
@@ -47,7 +44,7 @@ const mapPrismaToCause = (prismaCause: any): Cause => {
   return {
     ...prismaCause,
     user_id: prismaCause.userId,
-    // Convert Prisma Decimal to number for the frontend
+
     goal: prismaCause.goal ? Number(prismaCause.goal) : 0,
     raised: prismaCause.raised ? Number(prismaCause.raised) : 0,
     shared: prismaCause.shared ? Number(prismaCause.shared) : 0,
@@ -75,10 +72,6 @@ const mapPrismaToCause = (prismaCause: any): Cause => {
   } as unknown as Cause;
 };
 
-/**
- * Get a cause by ID or public slug
- */
-/** Fetches exactly what QuickDonateForm needs, for opening it inside a modal from the grid. */
 export async function getQuickDonateProps(causeId: string) {
   const { getProfile } = await import("./profile-actions");
   const cause = await getCause(causeId);
@@ -100,9 +93,7 @@ export async function getQuickDonateProps(causeId: string) {
     defaultEmail: profile?.email ?? "",
     defaultAnonymous: profile?.donation_preference === "anonymous",
     userId: user?.id,
-    // Real gate against paying into a paused campaign — the card/detail-page
-    // UI already hides the Give button, but this is the server-side check
-    // that actually matters (a client could otherwise call this directly).
+
     paused: !!cause.paused,
   };
 }
@@ -161,7 +152,6 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
 
   const isAdmin = user?.id ? await isAdminOrManager(user.id) : false;
 
-  // Block access if pending, rejected, OR compliance_paused (unless owner or admin)
   if (
     (data.status === "pending" ||
       data.status === "rejected" ||
@@ -173,7 +163,6 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
     return null;
   }
 
-  // Check if current user is following this cause
   let isFollowing = false;
   if (user?.id) {
     const followData = await prisma.campaign_follows.findFirst({
@@ -210,9 +199,6 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
   return cause;
 }
 
-/**
- * Upload a file to S3 storage
- */
 async function uploadFileToS3(
   file: File,
   userId: string,
@@ -625,9 +611,8 @@ export const listCauses = cache(
     // candidate slice and trim in JS when that filter is active.
     const hasAmountRange =
       options.minAmountNeeded != null || options.maxAmountNeeded != null;
-    const fetchTake = hasAmountRange && options.limit
-      ? options.limit * 4
-      : options.limit;
+    const fetchTake =
+      hasAmountRange && options.limit ? options.limit * 4 : options.limit;
 
     try {
       const data = await prisma.cause.findMany({
@@ -675,7 +660,10 @@ export const listCauses = cache(
           return true;
         });
         const offset = options.offset || 0;
-        causes = causes.slice(offset, offset + (options.limit || causes.length));
+        causes = causes.slice(
+          offset,
+          offset + (options.limit || causes.length),
+        );
       }
 
       const isOwnerScoped = !!options.userId;

@@ -42,7 +42,7 @@ export default function Accountability() {
             duration: 0.7,
             ease: "power3.out",
           },
-          "-=0.4", // overlaps slightly with headline
+          "-=0.4",
         )
         .from(
           buttonsRef.current?.children || [],
@@ -51,7 +51,7 @@ export default function Accountability() {
             y: 16,
             duration: 0.6,
             ease: "power3.out",
-            stagger: 0.15, // cascade effect for buttons
+            stagger: 0.15,
           },
           "-=0.3",
         );

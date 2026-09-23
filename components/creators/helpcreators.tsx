@@ -46,21 +46,22 @@ export default function HelpCreators() {
 
   return (
     <div className="w-full px-10 py-12 flex flex-col items-center text-center">
-      {/* Header */}
+      {}
       <div className="mb-12">
         <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
-          Designed to help creators {" "} <span className="text-gray-500"> earn more</span>
+          Designed to help creators{" "}
+          <span className="text-gray-500"> earn more</span>
         </h2>
         <p className="text-gray-600 text-lg leading-relaxed">
-          With RefreeG, you’re never alone. Claim your tag, share your story, and
-          watch your community grow in just a few simple steps.
+          With RefreeG, you’re never alone. Claim your tag, share your story,
+          and watch your community grow in just a few simple steps.
           <br />
           Our step-by-step process makes your cause transparent, trustworthy,
           and ready to attract real support.
         </p>
       </div>
 
-      {/* Steps Section */}
+      {}
       <div className="w-full flex flex-wrap justify-between gap-y-10 ">
         {steps.map((step) => (
           <div
@@ -86,7 +87,7 @@ export default function HelpCreators() {
       <Button className="mt-12 bg-secondary hover:bg-blue-500 text-white px-8 py-4 rounded-full flex items-center gap-2">
         <Image
           src="/images/plasticpricetag.png"
-          height={20} 
+          height={20}
           width={20}
           alt="get started"
           className="ml-2"

@@ -22,41 +22,44 @@ export function MilestoneNotifications({
   const { showNotification } = useNotifications();
   const [lastMilestone, setLastMilestone] = useState<number | null>(null);
 
-  const triggerMilestoneNotification = useCallback((milestone: number) => {
-    let title = "";
-    let body = "";
-    let icon = "/icons/icon-192x192.png";
+  const triggerMilestoneNotification = useCallback(
+    (milestone: number) => {
+      let title = "";
+      let body = "";
+      let icon = "/icons/icon-192x192.png";
 
-    switch (milestone) {
-      case 25:
-        title = `25% Funded! You're Off to a Strong Start 🚀`;
-        body = `Your cause "${causeTitle}" just crossed the 25% funding mark. Keep the momentum going!`;
-        break;
-      case 50:
-        title = `Halfway There. Let's Amplify the Momentum ⚡`;
-        body = `Your cause "${causeTitle}" has reached 50% of its goal. Time to boost visibility!`;
-        break;
-      case 75:
-        title = `You're 75% Funded — Almost There! 🏁`;
-        body = `Incredible work — your cause "${causeTitle}" is 75% funded and nearly at the finish line!`;
-        break;
-      case 100:
-        title = `100% Funded! Your Cause is Fully Backed 🎉`;
-        body = `Congratulations ${userName}! Your cause "${causeTitle}" has reached 100% funding!`;
-        break;
-      default:
-        return;
-    }
+      switch (milestone) {
+        case 25:
+          title = `25% Funded! You're Off to a Strong Start 🚀`;
+          body = `Your cause "${causeTitle}" just crossed the 25% funding mark. Keep the momentum going!`;
+          break;
+        case 50:
+          title = `Halfway There. Let's Amplify the Momentum ⚡`;
+          body = `Your cause "${causeTitle}" has reached 50% of its goal. Time to boost visibility!`;
+          break;
+        case 75:
+          title = `You're 75% Funded — Almost There! 🏁`;
+          body = `Incredible work — your cause "${causeTitle}" is 75% funded and nearly at the finish line!`;
+          break;
+        case 100:
+          title = `100% Funded! Your Cause is Fully Backed 🎉`;
+          body = `Congratulations ${userName}! Your cause "${causeTitle}" has reached 100% funding!`;
+          break;
+        default:
+          return;
+      }
 
-    // Show browser notification if supported
-    showNotification(title, { body, icon });
+      // Show browser notification if supported
+      showNotification(title, { body, icon });
 
-    // Fallback to toast notification
-    toast({
-      title,
-      description: body,
-    });
-  }, [causeTitle, userName, showNotification]);
+      // Fallback to toast notification
+      toast({
+        title,
+        description: body,
+      });
+    },
+    [causeTitle, userName, showNotification],
+  );
 
   useEffect(() => {
     const percentage = Math.round((raised / goal) * 100);

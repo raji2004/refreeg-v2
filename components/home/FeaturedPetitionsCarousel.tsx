@@ -32,7 +32,6 @@ export default function FeaturedPetitionsCarousel({
 }: {
   petitions: Petition[];
 }) {
-
   const [api, setApi] = useState<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -54,11 +53,10 @@ export default function FeaturedPetitionsCarousel({
     startAutoplay();
     return () => stopAutoplay();
   }, [api, startAutoplay]);
-  
 
   return (
     <>
-      {/* ✅ MOBILE: Vertical (only 3) */}
+      {}
       <div className="flex flex-col gap-4 md:hidden mt-6 mb-6">
         {petitions.slice(0, 3).map((petition) => (
           <div key={petition.id}>
@@ -73,7 +71,7 @@ export default function FeaturedPetitionsCarousel({
         </Link>
       </div>
 
-      {/* ✅ DESKTOP: Carousel */}
+      {}
       <div className="hidden md:block">
         <Carousel
           setApi={setApi}

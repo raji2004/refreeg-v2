@@ -9,25 +9,22 @@ interface PaginationButtonProps {
   totalPages: number;
 }
 
-/**
- * Build a list of page numbers to display, collapsing middle ranges
- * with ellipsis so we never show more than ~7 clickable page buttons.
- */
-function getPageNumbers(currentPage: number, totalPages: number): (number | "ellipsis")[] {
+function getPageNumbers(
+  currentPage: number,
+  totalPages: number,
+): (number | "ellipsis")[] {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
 
   const pages: (number | "ellipsis")[] = [];
 
-  // Always show first page
   pages.push(1);
 
   if (currentPage > 3) {
     pages.push("ellipsis");
   }
 
-  // Pages around current
   const start = Math.max(2, currentPage - 1);
   const end = Math.min(totalPages - 1, currentPage + 1);
 
@@ -39,7 +36,6 @@ function getPageNumbers(currentPage: number, totalPages: number): (number | "ell
     pages.push("ellipsis");
   }
 
-  // Always show last page
   pages.push(totalPages);
 
   return pages;

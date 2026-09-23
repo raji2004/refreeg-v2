@@ -1,15 +1,15 @@
 "use client";
 
 import React from "react";
-import { 
-  BookOpen, 
-  Terminal, 
-  Zap, 
-  Settings, 
-  ShieldCheck, 
+import {
+  BookOpen,
+  Terminal,
+  Zap,
+  Settings,
+  ShieldCheck,
   AlertCircle,
   Play,
-  Box
+  Box,
 } from "lucide-react";
 
 interface SidebarItem {
@@ -36,61 +36,159 @@ export default function ApiSidebar({
     {
       title: "Getting Started",
       items: [
-        { id: "Introduction", label: "Introduction", icon: <BookOpen className="w-4 h-4" /> },
-        { id: "Authentication", label: "Authentication", icon: <ShieldCheck className="w-4 h-4" /> },
-        { id: "Quickstart Guide", label: "Quickstart Guide", icon: <Zap className="w-4 h-4" /> },
-        { id: "AI Integration Blueprint", label: "AI Integration Blueprint", icon: <Zap className="w-4 h-4" /> },
-        { id: "Best Practices", label: "Best Practices", icon: <ShieldCheck className="w-4 h-4" /> },
+        {
+          id: "Introduction",
+          label: "Introduction",
+          icon: <BookOpen className="w-4 h-4" />,
+        },
+        {
+          id: "Authentication",
+          label: "Authentication",
+          icon: <ShieldCheck className="w-4 h-4" />,
+        },
+        {
+          id: "Quickstart Guide",
+          label: "Quickstart Guide",
+          icon: <Zap className="w-4 h-4" />,
+        },
+        {
+          id: "AI Integration Blueprint",
+          label: "AI Integration Blueprint",
+          icon: <Zap className="w-4 h-4" />,
+        },
+        {
+          id: "Best Practices",
+          label: "Best Practices",
+          icon: <ShieldCheck className="w-4 h-4" />,
+        },
       ],
     },
     {
       title: "Campaigns API",
       items: [
-        { id: "Create Campaign", label: "Create Campaign", icon: <Terminal className="w-4 h-4" /> },
-        { id: "Retrieve Campaign", label: "Retrieve Campaign", icon: <Terminal className="w-4 h-4" /> },
-        { id: "List Campaigns", label: "List Campaigns", icon: <Settings className="w-4 h-4" /> },
-        { id: "List Campaign Donations", label: "List Campaign Donations", icon: <Settings className="w-4 h-4" /> },
-        { id: "Update Campaign", label: "Update Campaign", icon: <Settings className="w-4 h-4" /> },
-        { id: "Pause/Resume Campaign", label: "Pause/Resume Campaign", icon: <Settings className="w-4 h-4" /> },
-        { id: "Cancel Campaign", label: "Cancel Campaign", icon: <Settings className="w-4 h-4" /> },
-        { id: "AI Blueprint Validation", label: "Validate (AI)", icon: <Zap className="w-4 h-4" /> },
-        { id: "List Categories", label: "Categories", icon: <BookOpen className="w-4 h-4" /> },
-        { id: "Report Campaign", label: "Report Fraud", icon: <AlertCircle className="w-4 h-4" /> },
+        {
+          id: "Create Campaign",
+          label: "Create Campaign",
+          icon: <Terminal className="w-4 h-4" />,
+        },
+        {
+          id: "Retrieve Campaign",
+          label: "Retrieve Campaign",
+          icon: <Terminal className="w-4 h-4" />,
+        },
+        {
+          id: "List Campaigns",
+          label: "List Campaigns",
+          icon: <Settings className="w-4 h-4" />,
+        },
+        {
+          id: "List Campaign Donations",
+          label: "List Campaign Donations",
+          icon: <Settings className="w-4 h-4" />,
+        },
+        {
+          id: "Update Campaign",
+          label: "Update Campaign",
+          icon: <Settings className="w-4 h-4" />,
+        },
+        {
+          id: "Pause/Resume Campaign",
+          label: "Pause/Resume Campaign",
+          icon: <Settings className="w-4 h-4" />,
+        },
+        {
+          id: "Cancel Campaign",
+          label: "Cancel Campaign",
+          icon: <Settings className="w-4 h-4" />,
+        },
+        {
+          id: "AI Blueprint Validation",
+          label: "Validate (AI)",
+          icon: <Zap className="w-4 h-4" />,
+        },
+        {
+          id: "List Categories",
+          label: "Categories",
+          icon: <BookOpen className="w-4 h-4" />,
+        },
+        {
+          id: "Report Campaign",
+          label: "Report Fraud",
+          icon: <AlertCircle className="w-4 h-4" />,
+        },
       ],
     },
     {
       title: "Banks API",
       items: [
-        { id: "Manage Banks", label: "Manage Banks", icon: <Terminal className="w-4 h-4" /> },
+        {
+          id: "Manage Banks",
+          label: "Manage Banks",
+          icon: <Terminal className="w-4 h-4" />,
+        },
       ],
     },
     {
       title: "Donations API",
       items: [
-        { id: "Initialize Donation", label: "Initialize", icon: <Terminal className="w-4 h-4" /> },
-        { id: "Verify Donation", label: "Verify Payment", icon: <ShieldCheck className="w-4 h-4" /> },
-        { id: "Retrieve Donation", label: "Retrieve Donation", icon: <Terminal className="w-4 h-4" /> },
+        {
+          id: "Initialize Donation",
+          label: "Initialize",
+          icon: <Terminal className="w-4 h-4" />,
+        },
+        {
+          id: "Verify Donation",
+          label: "Verify Payment",
+          icon: <ShieldCheck className="w-4 h-4" />,
+        },
+        {
+          id: "Retrieve Donation",
+          label: "Retrieve Donation",
+          icon: <Terminal className="w-4 h-4" />,
+        },
       ],
     },
     {
       title: "Notifications",
       items: [
-        { id: "Webhooks & Events", label: "Webhooks & Events", icon: <Settings className="w-4 h-4" /> },
-        { id: "Manage Webhooks", label: "Manage Webhooks", icon: <Terminal className="w-4 h-4" /> },
+        {
+          id: "Webhooks & Events",
+          label: "Webhooks & Events",
+          icon: <Settings className="w-4 h-4" />,
+        },
+        {
+          id: "Manage Webhooks",
+          label: "Manage Webhooks",
+          icon: <Terminal className="w-4 h-4" />,
+        },
       ],
     },
     {
       title: "Resources",
       items: [
-        { id: "API Playground", label: "Interactive Playground", icon: <Play className="w-4 h-4" /> },
-        { id: "SDKs & Libraries", label: "SDKs & Libraries", icon: <Box className="w-4 h-4" /> },
-        { id: "Error Reference", label: "Error Reference", icon: <AlertCircle className="w-4 h-4" /> },
+        {
+          id: "API Playground",
+          label: "Interactive Playground",
+          icon: <Play className="w-4 h-4" />,
+        },
+        {
+          id: "SDKs & Libraries",
+          label: "SDKs & Libraries",
+          icon: <Box className="w-4 h-4" />,
+        },
+        {
+          id: "Error Reference",
+          label: "Error Reference",
+          icon: <AlertCircle className="w-4 h-4" />,
+        },
       ],
     },
   ];
 
   return (
-    <aside className={`w-full h-full overflow-y-auto pr-2 no-scrollbar ${className}`}>
+    <aside
+      className={`w-full h-full overflow-y-auto pr-2 no-scrollbar ${className}`}
+    >
       <div className="space-y-8">
         {sections.map((section) => (
           <div key={section.title}>
@@ -110,7 +208,9 @@ export default function ApiSidebar({
                           : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                       }`}
                     >
-                      <span className={`${isActive ? "text-white" : "text-gray-400"}`}>
+                      <span
+                        className={`${isActive ? "text-white" : "text-gray-400"}`}
+                      >
                         {item.icon}
                       </span>
                       {item.label}

@@ -40,7 +40,6 @@ export function ShareModal({
   const { user } = useAuth();
   const { profile } = useProfile(user?.id);
 
-  // If user is authenticated and sharing a cause, attach their referral code (?ref_v1=CODE)
   const refCode = profile?.referral_code || profile?.username || user?.id;
   const baseUrlWithRef =
     entityType === "cause" && refCode
@@ -60,19 +59,23 @@ export function ShareModal({
         : `${baseUrlWithRef.replace(/\/$/, "")}/donate`
       : baseUrlWithRef;
 
-  // Causes share the contextual slug URL directly. Petitions still use /s/ short codes.
   useEffect(() => {
     const generateUrl = async () => {
       if (entityType === "cause") {
         setShortUrl(baseUrlWithRef);
         setIsLoadingShortUrl(false);
-        // Keep short_urls analytics in sync with the slug destination.
-        createShortUrl(entityId, entityType, baseUrlWithRef).catch(() => undefined);
+        createShortUrl(entityId, entityType, baseUrlWithRef).catch(
+          () => undefined,
+        );
         return;
       }
 
       try {
-        const shortened = await createShortUrl(entityId, entityType, baseUrlWithRef);
+        const shortened = await createShortUrl(
+          entityId,
+          entityType,
+          baseUrlWithRef,
+        );
         setShortUrl(shortened);
       } catch {
         setShortUrl(baseUrlWithRef);
@@ -152,19 +155,22 @@ export function ShareModal({
       await saveCauseShare(entityId);
       window.open(shareUrl, "_blank");
     } catch {
-      toast({ title: "Error", description: "Failed to save share.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to save share.",
+        variant: "destructive",
+      });
     }
   };
-
-  // ── QR helpers ─────────────────────────────────────────────────────────────
 
   const downloadQR = async () => {
     const svg = qrRef.current?.querySelector("svg");
     if (!svg) return;
 
-    // Serialize SVG → data URL → canvas → PNG blob
     const svgData = new XMLSerializer().serializeToString(svg);
-    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const svgBlob = new Blob([svgData], {
+      type: "image/svg+xml;charset=utf-8",
+    });
     const svgUrl = URL.createObjectURL(svgBlob);
 
     const img = new Image();
@@ -202,7 +208,9 @@ export function ShareModal({
     if (!svg) return;
 
     const svgData = new XMLSerializer().serializeToString(svg);
-    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const svgBlob = new Blob([svgData], {
+      type: "image/svg+xml;charset=utf-8",
+    });
     const svgUrl = URL.createObjectURL(svgBlob);
 
     const img = new Image();
@@ -228,7 +236,6 @@ export function ShareModal({
             files: [file],
           });
         } catch {
-          // fallback
           navigator.clipboard.writeText(qrUrl);
           toast({ title: "Copied!", description: "Link copied to clipboard." });
         }
@@ -252,7 +259,7 @@ export function ShareModal({
           <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
 
-        {/* Tab switcher */}
+        {}
         <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
           {(["share", "qr"] as Tab[]).map((tab) => (
             <button
@@ -278,7 +285,6 @@ export function ShareModal({
           ))}
         </div>
 
-        {/* ── SHARE tab ─── */}
         {activeTab === "share" && (
           <div className="space-y-4">
             <div className="flex justify-center gap-6 py-2">
@@ -341,7 +347,9 @@ export function ShareModal({
             <div className="space-y-2">
               <label className="text-sm font-medium">Share Message</label>
               <div className="p-3 bg-gray-100 rounded-md max-h-32 overflow-y-auto">
-                <p className="text-sm text-gray-700 whitespace-pre-line">{shareMessage}</p>
+                <p className="text-sm text-gray-700 whitespace-pre-line">
+                  {shareMessage}
+                </p>
               </div>
               <Button
                 type="button"
@@ -357,14 +365,10 @@ export function ShareModal({
           </div>
         )}
 
-        {/* ── QR CODE tab ─── */}
         {activeTab === "qr" && (
           <div className="space-y-4">
-            <p className="text-center text-xs text-slate-500">
-              {qrText}
-            </p>
+            <p className="text-center text-xs text-slate-500">{qrText}</p>
 
-            {/* QR code */}
             <div
               ref={qrRef}
               className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-5"
@@ -382,7 +386,6 @@ export function ShareModal({
               {qrUrl}
             </p>
 
-            {/* Actions */}
             <div className="flex gap-2">
               <Button
                 type="button"

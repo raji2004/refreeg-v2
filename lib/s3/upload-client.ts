@@ -6,17 +6,11 @@ export type PresignUploadOptions = {
   mediaType: S3MediaType;
 };
 
-/**
- * Prefer direct browser → S3 PUT when CORS allows it
- * (NEXT_PUBLIC_S3_DIRECT_UPLOAD=true). Otherwise upload via
- * authenticated /api/s3/upload (works on localhost without bucket CORS).
- */
 export async function uploadFileWithPresign(
   file: File,
   options: PresignUploadOptions,
 ): Promise<{ key: string }> {
-  const preferDirect =
-    process.env.NEXT_PUBLIC_S3_DIRECT_UPLOAD === "true";
+  const preferDirect = process.env.NEXT_PUBLIC_S3_DIRECT_UPLOAD === "true";
 
   if (preferDirect) {
     try {
@@ -49,9 +43,7 @@ async function uploadViaServer(
 
   const body = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(
-      body?.error || `Server upload failed (${res.status})`,
-    );
+    throw new Error(body?.error || `Server upload failed (${res.status})`);
   }
 
   if (!body?.key) {

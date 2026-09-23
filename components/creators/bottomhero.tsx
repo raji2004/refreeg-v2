@@ -6,7 +6,6 @@ import { Button } from "../ui/button";
 import { motion } from "framer-motion";
 
 export default function BottomHero() {
-  // Floating animation for background images
   const floatVariants = {
     animate: {
       y: [0, -10, 0],
@@ -20,7 +19,7 @@ export default function BottomHero() {
 
   return (
     <div className="relative w-full h-[600px] flex items-center lg:pb-20 justify-center text-white overflow-hidden">
-      {/* Left floating background image */}
+      {}
       <motion.div
         variants={floatVariants as any}
         animate="animate"
@@ -35,7 +34,7 @@ export default function BottomHero() {
         />
       </motion.div>
 
-      {/* Right floating background image */}
+      {}
       <motion.div
         variants={floatVariants as any}
         animate="animate"
@@ -50,7 +49,7 @@ export default function BottomHero() {
         />
       </motion.div>
 
-      {/* Main content */}
+      {}
       <motion.div
         className="relative z-10 text-center md:mt-12 lg:mt-20 text-black max-w-3xl px-6"
         initial={{ opacity: 0, y: 40 }}
@@ -88,9 +87,8 @@ export default function BottomHero() {
           transition={{ delay: 0.7 }}
           className="text-lg md:text-xl mb-6"
         >
-          Real people. Real causes. Real impact. Here’s how 
-          creators are using RefreeG to fund their ideas and 
-          grow their communities.
+          Real people. Real causes. Real impact. Here’s how creators are using
+          RefreeG to fund their ideas and grow their communities.
         </motion.p>
 
         <motion.div

@@ -9,7 +9,7 @@ import type { Cause } from "@/types/cause-types";
 export interface InterestOptionWithCount {
   id: string;
   label: string;
-  /** Live count for tiles backed by a real cause category; null when there's no mapping yet. */
+
   count: number | null;
 }
 
@@ -25,11 +25,6 @@ export async function getInterestOptions(): Promise<InterestOptionWithCount[]> {
   );
 }
 
-/**
- * Causes matching the user's picked interests, for the dashboard's
- * matched-campaigns row. Only interests with a real campaign-category
- * mapping (see lib/interest-categories.ts) can match anything.
- */
 export async function getMatchedCauses(
   interests: string[],
   limit = 6,
@@ -55,8 +50,9 @@ export async function getMatchedCauses(
   return merged.slice(0, limit);
 }
 
-/** Total count behind getMatchedCauses, for a "See all N" link — causes only ever have one category, so summing per-category counts can't double-count. */
-export async function getMatchedCausesCount(interests: string[]): Promise<number> {
+export async function getMatchedCausesCount(
+  interests: string[],
+): Promise<number> {
   const categoryIds = interestOptions
     .filter((o) => interests.includes(o.id) && o.campaignCategoryId)
     .map((o) => o.campaignCategoryId!);

@@ -21,7 +21,6 @@ export async function createWebhook(url: string, events: string[]) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Unauthorized");
 
-  // Generate secret
   const secret = `wh_sec_${crypto.randomBytes(24).toString("hex")}`;
 
   const data = await prisma.api_webhooks.create({

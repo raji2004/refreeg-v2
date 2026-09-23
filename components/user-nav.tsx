@@ -184,7 +184,9 @@ export function UserNav() {
                   className="rounded-lg object-contain p-0.5"
                 />
                 <AvatarFallback className="rounded-lg bg-white text-[10px] font-semibold">
-                  {organizationInitials || <Building2 className="h-3.5 w-3.5" />}
+                  {organizationInitials || (
+                    <Building2 className="h-3.5 w-3.5" />
+                  )}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
@@ -345,7 +347,10 @@ export function UserNav() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/admin/users/kyc" className="cursor-pointer">
+                  <Link
+                    href="/dashboard/admin/users/kyc"
+                    className="cursor-pointer"
+                  >
                     KYC Reviews
                   </Link>
                 </DropdownMenuItem>

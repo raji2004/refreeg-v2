@@ -44,10 +44,13 @@ export function DiscoverPageClient({
   const pathname = usePathname();
   const [tab, setTab] = useState<DiscoverTab>(initialTab);
   const [filters, setFilters] = useState<DiscoverFilters>(initialFilters);
-  const [sortBy, setSortBy] = useState<DiscoverSortType>(initialFilters.sortBy || "newest");
+  const [sortBy, setSortBy] = useState<DiscoverSortType>(
+    initialFilters.sortBy || "newest",
+  );
   const [facets, setFacets] = useState(initialFacets);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [draftFilters, setDraftFilters] = useState<DiscoverFilters>(initialFilters);
+  const [draftFilters, setDraftFilters] =
+    useState<DiscoverFilters>(initialFilters);
   const [draftCount, setDraftCount] = useState<number | null>(null);
 
   const activeFilters = useMemo<DiscoverFilters>(
@@ -59,18 +62,15 @@ export function DiscoverPageClient({
     const { category, ...rest } = activeFilters;
     getDiscoverFacets(rest, CATEGORY_IDS)
       .then(setFacets)
-      .catch(() => {
-        // Non-critical — category counts just won't update this pass.
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      .catch(() => {});
   }, [JSON.stringify({ ...activeFilters, category: undefined })]);
 
-  // Keep the URL in sync so a shared or refreshed Discover link restores
-  // the same tab/filters/sort instead of resetting to defaults.
   useEffect(() => {
     const params = buildDiscoverSearchParams(tab, activeFilters);
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, JSON.stringify(activeFilters)]);
 
@@ -176,7 +176,11 @@ export function DiscoverPageClient({
                   />
                 </div>
                 <div className="border-t border-ink/10 px-4 py-3">
-                  <Button variant="ink" className="w-full" onClick={applyDraftFilters}>
+                  <Button
+                    variant="ink"
+                    className="w-full"
+                    onClick={applyDraftFilters}
+                  >
                     {draftCount == null
                       ? "Show results"
                       : `Show ${draftCount} result${draftCount === 1 ? "" : "s"}`}

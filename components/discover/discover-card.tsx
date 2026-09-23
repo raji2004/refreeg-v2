@@ -10,12 +10,6 @@ import { cn } from "@/lib/utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import type { DiscoverItem } from "@/actions/discover-actions";
 
-/**
- * Discover's merged campaign+petition card. `DiscoverItem` is a deliberately
- * slim projection (no category/summary/full Cause fields), so this renders
- * from it directly rather than reusing `CauseCard`/`PetitionCard`, which
- * expect the full `Cause`/petition shape.
- */
 export function DiscoverCard({
   item,
   view,
@@ -33,11 +27,15 @@ export function DiscoverCard({
   onPledgeClick: () => void;
   onSignClick: () => void;
 }) {
-  const href = item.type === "campaign" ? `/causes/${item.id}` : `/petitions/${item.id}`;
+  const href =
+    item.type === "campaign" ? `/causes/${item.id}` : `/petitions/${item.id}`;
   const imageUrl = getMediaUrl(item.image) || "/placeholder.svg";
 
   return (
-    <Link href={href} className={cn("group block", view === "list" && "w-full")}>
+    <Link
+      href={href}
+      className={cn("group block", view === "list" && "w-full")}
+    >
       <Card
         variant="outlined"
         className={cn(
@@ -48,7 +46,9 @@ export function DiscoverCard({
         <div
           className={cn(
             "relative shrink-0 overflow-hidden bg-ink/5",
-            view === "list" ? "h-32 w-32 sm:h-36 sm:w-48" : "aspect-video w-full",
+            view === "list"
+              ? "h-32 w-32 sm:h-36 sm:w-48"
+              : "aspect-video w-full",
           )}
         >
           <Image
@@ -73,11 +73,14 @@ export function DiscoverCard({
               {item.daysLeft} {item.daysLeft === 1 ? "day" : "days"} left
             </span>
           ) : null}
-          {!item.paused && !item.urgent && item.percent >= 90 && item.percent < 100 && (
-            <span className="absolute right-3 top-3 rounded-full bg-lime/90 px-2.5 py-1 text-xs font-medium text-lime-foreground">
-              Near goal
-            </span>
-          )}
+          {!item.paused &&
+            !item.urgent &&
+            item.percent >= 90 &&
+            item.percent < 100 && (
+              <span className="absolute right-3 top-3 rounded-full bg-lime/90 px-2.5 py-1 text-xs font-medium text-lime-foreground">
+                Near goal
+              </span>
+            )}
           <button
             type="button"
             onClick={(e) => {
@@ -89,10 +92,15 @@ export function DiscoverCard({
             aria-label={bookmarked ? "Remove bookmark" : "Save"}
             className={cn(
               "absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition-colors",
-              bookmarked ? "bg-ink text-ink-foreground" : "bg-white/90 text-ink hover:bg-white",
+              bookmarked
+                ? "bg-ink text-ink-foreground"
+                : "bg-white/90 text-ink hover:bg-white",
             )}
           >
-            <Bookmark className="h-4 w-4" fill={bookmarked ? "currentColor" : "none"} />
+            <Bookmark
+              className="h-4 w-4"
+              fill={bookmarked ? "currentColor" : "none"}
+            />
           </button>
         </div>
 
@@ -103,7 +111,9 @@ export function DiscoverCard({
             </h3>
             <div className="mt-1.5 flex items-center gap-1.5 text-xs text-ink/60">
               <span className="truncate">{item.orgName}</span>
-              {item.verified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-blue-600" />}
+              {item.verified && (
+                <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-blue-600" />
+              )}
             </div>
             {item.location && (
               <div className="mt-1 flex items-center gap-1 text-xs text-ink/50">
@@ -115,7 +125,9 @@ export function DiscoverCard({
 
           <div className="mt-3 space-y-2">
             <div className="flex items-center justify-between text-xs text-ink/70">
-              <span className="font-medium text-ink">{item.percent}% funded</span>
+              <span className="font-medium text-ink">
+                {item.percent}% funded
+              </span>
               <span>
                 {item.type === "campaign"
                   ? `₦${item.raised.toLocaleString()} raised`

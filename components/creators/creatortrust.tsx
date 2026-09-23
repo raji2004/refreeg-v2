@@ -15,7 +15,11 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 30 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as any } },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" as any },
+  },
 };
 
 export default function CreatorTrust() {
@@ -49,7 +53,7 @@ export default function CreatorTrust() {
 
   return (
     <div className="w-full h-auto px-6 md:px-0 mt-16">
-      {/* Header */}
+      {}
       <motion.div
         className="text-center w-full text-2xl md:text-3xl lg:text-5xl font-bold mb-4"
         initial={{ opacity: 0, y: 20 }}
@@ -66,14 +70,13 @@ export default function CreatorTrust() {
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
       >
-        RefreeG gives you more than just a fundraising page — 
-        it gives you a unique identity, transparent tools, and 
-        a direct line to <br /> your supporters. With your tag 
-        and URL, you’ll be easy to find, easier to trust, and 
-        unstoppable in growing your community.
+        RefreeG gives you more than just a fundraising page — it gives you a
+        unique identity, transparent tools, and a direct line to <br /> your
+        supporters. With your tag and URL, you’ll be easy to find, easier to
+        trust, and unstoppable in growing your community.
       </motion.div>
 
-      {/* Grid with 3 columns per row */}
+      {}
       <motion.div
         className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto"
         variants={containerVariants}
@@ -81,14 +84,17 @@ export default function CreatorTrust() {
         whileInView="show"
         viewport={{ once: true, amount: 0.3 }}
       >
-        {/* First row (3 cards) */}
+        {}
         {features.slice(0, 3).map((item, index) => (
           <motion.div
             key={index}
             variants={itemVariants}
             className="flex flex-col items-start gap-4 p-6 rounded-2xl border shadow-sm bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300"
           >
-            <motion.div whileHover={{ rotate: 10 }} transition={{ type: "spring" }}>
+            <motion.div
+              whileHover={{ rotate: 10 }}
+              transition={{ type: "spring" }}
+            >
               <Image src={item.image} width={60} height={60} alt={item.title} />
             </motion.div>
             <p className="font-semibold text-lg">{item.title}</p>
@@ -96,14 +102,17 @@ export default function CreatorTrust() {
           </motion.div>
         ))}
 
-        {/* Second row (2 cards + button as 3rd column) */}
+        {}
         {features.slice(3, 5).map((item, index) => (
           <motion.div
             key={index + 3}
             variants={itemVariants}
             className="flex flex-col items-start gap-4 p-6 rounded-2xl border shadow-sm bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300"
           >
-            <motion.div whileHover={{ rotate: 10 }} transition={{ type: "spring" }}>
+            <motion.div
+              whileHover={{ rotate: 10 }}
+              transition={{ type: "spring" }}
+            >
               <Image src={item.image} width={60} height={60} alt={item.title} />
             </motion.div>
             <p className="font-semibold text-lg">{item.title}</p>
@@ -111,14 +120,19 @@ export default function CreatorTrust() {
           </motion.div>
         ))}
 
-        {/* Button as third item in second row */}
+        {}
         <motion.div
           variants={itemVariants}
           className="flex justify-center items-center p-6"
         >
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button className="w-full bg-secondary hover:bg-blue-500 border px-6 py-6 flex items-center justify-center gap-2 rounded-full shadow">
-              <Image src="/images/plasticpricetag.png" height={20} width={20} alt="get started" />
+              <Image
+                src="/images/plasticpricetag.png"
+                height={20}
+                width={20}
+                alt="get started"
+              />
               Claim your tag today
               <Image
                 src="/images/arrow-right-1.png"

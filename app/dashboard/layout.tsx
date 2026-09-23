@@ -15,10 +15,6 @@ export default async function DashboardLayout({
     redirect("/auth/signin");
   }
 
-  // Forces a fresh sign-in for accounts flagged via
-  // sessions_invalidated_after (see scripts/invalidate-incident-sessions.ts)
-  // — a Server Component can't clear the cookie itself, so it redirects to a
-  // route handler that can (app/api/auth/force-signout).
   const invalidated = await isSessionInvalidated(
     session.user.id as string,
     (session.user as any).loginTime,

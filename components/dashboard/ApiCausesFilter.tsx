@@ -20,8 +20,8 @@ export function ApiCausesFilter({ search, modeFilter }: ApiCausesFilterProps) {
           defaultValue={search}
         />
       </div>
-      <select 
-        name="mode" 
+      <select
+        name="mode"
         defaultValue={modeFilter}
         className="h-9 w-full sm:w-40 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         onChange={(e) => e.target.form?.submit()}
@@ -30,7 +30,9 @@ export function ApiCausesFilter({ search, modeFilter }: ApiCausesFilterProps) {
         <option value="live">Live Campaigns</option>
         <option value="test">Test Campaigns</option>
       </select>
-      <button type="submit" className="hidden">Submit</button>
+      <button type="submit" className="hidden">
+        Submit
+      </button>
     </form>
   );
 }

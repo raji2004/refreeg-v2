@@ -70,10 +70,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // If the key looks like an encoded proxy URL (double-wrapped), normalize it.
-    // Example problematic value: "/api/s3/image?key=uploads%2F..." or the encoded form of that.
     try {
-      // decode once to handle encoded values
       const decoded = decodeURIComponent(key);
 
       if (decoded.includes("/api/s3/image")) {
@@ -83,9 +80,7 @@ export async function GET(req: Request) {
       } else {
         key = decoded;
       }
-    } catch (e) {
-      // decoding failed; fall back to original key
-    }
+    } catch (e) {}
 
     if (
       searchParams.get("presentation") === CLEAN_PRESENTATION &&
@@ -102,10 +97,8 @@ export async function GET(req: Request) {
       }
     }
 
-    // Generate the presigned URL
     const url = await generatePresignedGetUrl(key);
 
-    // Redirect the browser to the actual S3 presigned URL
     return NextResponse.redirect(url);
   } catch (error: any) {
     console.error("S3 Image Proxy Error:", error);

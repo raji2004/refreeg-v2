@@ -1,4 +1,8 @@
-import { AnnouncementItem, AnnouncementStatus, LiveAnnouncementRecord } from "@/types/announcement";
+import {
+  AnnouncementItem,
+  AnnouncementStatus,
+  LiveAnnouncementRecord,
+} from "@/types/announcement";
 
 export const ANNOUNCEMENT_PLACEHOLDER_ITEMS: AnnouncementItem[] = [
   {
@@ -61,14 +65,19 @@ function normalizeStatus(status?: string | null): AnnouncementStatus {
 function buildHeadline(record: LiveAnnouncementRecord): string {
   const base = record.campaignTitle || record.causeTitle || "Campaign Update";
 
-  if (typeof record.milestoneCurrent === "number" && typeof record.milestoneTotal === "number") {
+  if (
+    typeof record.milestoneCurrent === "number" &&
+    typeof record.milestoneTotal === "number"
+  ) {
     return `Milestone ${record.milestoneCurrent}/${record.milestoneTotal} complete · ${base}`;
   }
 
   return base;
 }
 
-export function mapLiveRecordsToAnnouncementItems(records: LiveAnnouncementRecord[]): AnnouncementItem[] {
+export function mapLiveRecordsToAnnouncementItems(
+  records: LiveAnnouncementRecord[],
+): AnnouncementItem[] {
   return records.map((record, index) => ({
     id: record.id || `live-${index}`,
     status: normalizeStatus(record.status),

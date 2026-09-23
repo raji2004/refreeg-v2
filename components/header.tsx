@@ -288,7 +288,7 @@ export function Header() {
           "overflow-visible transition-[background-color,backdrop-filter,box-shadow,border-color] duration-200",
           isScrolled
             ? "border-b border-slate-200/80 bg-white/70 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl"
-            : "border-b border-transparent bg-white/95 shadow-none"
+            : "border-b border-transparent bg-white/95 shadow-none",
         )}
       >
         <div className="mx-auto max-w-7xl">
@@ -349,7 +349,9 @@ export function Header() {
                         >
                           <div className="border-b border-slate-100 bg-slate-50/80 px-5 py-4">
                             <div className="flex items-center gap-3">
-                              <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${activeTheme.subtle}`}>
+                              <span
+                                className={`flex h-11 w-11 items-center justify-center rounded-2xl ${activeTheme.subtle}`}
+                              >
                                 <item.icon className="h-5 w-5" />
                               </span>
                               <div>
@@ -451,7 +453,10 @@ export function Header() {
                     </Button>
                   </Link>
                   <Link href="/auth/signup">
-                    <Button size="sm" className={`rounded-full text-white ${activeTheme.solid}`}>
+                    <Button
+                      size="sm"
+                      className={`rounded-full text-white ${activeTheme.solid}`}
+                    >
                       Sign Up
                     </Button>
                   </Link>
@@ -477,7 +482,9 @@ export function Header() {
 
           <div
             className={`overflow-hidden border-t border-slate-100 bg-white/95 transition-all duration-300 xl:hidden ${
-              isMenuOpen ? "max-h-[calc(100vh-5rem)] opacity-100" : "max-h-0 opacity-0"
+              isMenuOpen
+                ? "max-h-[calc(100vh-5rem)] opacity-100"
+                : "max-h-0 opacity-0"
             }`}
           >
             <div className="max-h-[calc(100vh-5rem)] overflow-y-auto px-4 py-4 sm:px-5">
@@ -620,7 +627,9 @@ export function Header() {
                           className="flex w-full items-center justify-between px-3 py-3 text-left text-sm font-medium text-slate-800 transition-colors hover:bg-slate-50"
                         >
                           <span className="flex items-center gap-3">
-                            <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${activeTheme.subtle}`}>
+                            <span
+                              className={`flex h-9 w-9 items-center justify-center rounded-xl ${activeTheme.subtle}`}
+                            >
                               <item.icon className="h-4 w-4" />
                             </span>
                             {item.title}
@@ -688,7 +697,9 @@ export function Header() {
                       </Button>
                     </Link>
                     <Link href="/auth/signup" className="w-full sm:flex-1">
-                      <Button className={`h-11 w-full rounded-2xl text-white ${activeTheme.solid}`}>
+                      <Button
+                        className={`h-11 w-full rounded-2xl text-white ${activeTheme.solid}`}
+                      >
                         Sign Up
                       </Button>
                     </Link>

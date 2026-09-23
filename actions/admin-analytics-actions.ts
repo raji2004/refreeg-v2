@@ -192,7 +192,6 @@ export async function getDonationTrends(
 
   const trendsMap = new Map<string, DonationTrend>();
 
-  // Initialize days
   for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
     const day = format(d, "MMM dd");
     trendsMap.set(day, {
@@ -258,7 +257,7 @@ export async function getUserGrowth(
     const growth = growthMap.get(day);
     if (growth) {
       growth.users += 1;
-      growth.active += 1; // Simplified
+      growth.active += 1;
     }
   });
 
@@ -316,7 +315,7 @@ export async function getKycAnalytics(
     total,
     pending,
     approvalRate: total > 0 ? (approved / total) * 100 : 0,
-    avgProcessingTimeHours: 24, // Mocked
+    avgProcessingTimeHours: 24,
   };
 }
 
@@ -361,7 +360,7 @@ export async function getCauseLifecycleAnalytics(
       pending,
       approved,
     },
-    avgApprovalTimeHours: 12, // Mocked
+    avgApprovalTimeHours: 12,
   };
 }
 
