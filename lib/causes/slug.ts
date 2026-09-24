@@ -1,8 +1,5 @@
 const MAX_SLUG_LENGTH = 60;
 
-/**
- * Normalize a cause title into a URL-safe slug base (no uniqueness suffix).
- */
 export function slugifyCauseTitle(title: string): string {
   const base = title
     .normalize("NFKD")
@@ -15,10 +12,6 @@ export function slugifyCauseTitle(title: string): string {
   return base || "cause";
 }
 
-/**
- * Build a unique slug for a cause title.
- * Tries base, then base-2, base-3, … then base-<shortId>.
- */
 export async function allocateUniqueCauseSlug(
   title: string,
   options: {

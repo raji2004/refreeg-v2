@@ -14,21 +14,17 @@ export async function PetitionsList({
   page,
   pageSize,
 }: PetitionsListProps) {
-  // Fetch ALL approved petitions to allow for custom sorting logic
   const petitions = await listPetitions();
 
-  // Filter by activity and status (matching FeaturedPetitions logic)
   const activePetitions = petitions.filter(
-    (p) => (p.days_active ?? 0) > 0 && p.status !== ("expired" as any)
+    (p) => (p.days_active ?? 0) > 0 && p.status !== ("expired" as any),
   );
 
-  // Filter by category if specified
   const categoryFiltered =
     category === "all"
       ? activePetitions
       : activePetitions.filter((p) => p.category === category);
 
-  // Fetch signature counts and calculate percentage/totals for each petition
   const petitionsWithSigners = await Promise.all(
     categoryFiltered.map(async (petition) => {
       const signers = await listSignaturesForPetition(petition.id);
@@ -48,48 +44,41 @@ export async function PetitionsList({
         totalAmount,
         percentRaised,
       };
-    })
+    }),
   );
 
-  // Sort based on the logic in FeaturedPetitions (percent -> signers -> amount -> date)
   const sortedPetitions = petitionsWithSigners.sort((a, b) => {
-    // ✅ Push 0% to bottom
     if (a.percentRaised === 0 && b.percentRaised !== 0) return 1;
     if (b.percentRaised === 0 && a.percentRaised !== 0) return -1;
 
-    // ✅ Higher percentage first
     if (b.percentRaised !== a.percentRaised) {
       return b.percentRaised - a.percentRaised;
     }
 
-    // ✅ Then most signed
     if (b.signerCount !== a.signerCount) {
       return b.signerCount - a.signerCount;
     }
 
-    // ✅ Then highest amount raised
     if (b.totalAmount !== a.totalAmount) {
       return b.totalAmount - a.totalAmount;
     }
 
-    // ✅ Then newest
-    return (
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
-  // Handle pagination
   const totalPetitions = sortedPetitions.length;
   const totalPages = Math.ceil(totalPetitions / pageSize);
   const paginatedPetitions = sortedPetitions.slice(
     (page - 1) * pageSize,
-    page * pageSize
+    page * pageSize,
   );
 
   if (paginatedPetitions.length === 0) {
     return (
       <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-300">
-        <h3 className="text-xl font-semibold text-gray-900">No petitions found</h3>
+        <h3 className="text-xl font-semibold text-gray-900">
+          No petitions found
+        </h3>
         <p className="text-muted-foreground mt-2">
           Try selecting a different category or check back later.
         </p>

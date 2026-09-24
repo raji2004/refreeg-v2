@@ -1,10 +1,4 @@
-/**
- * Payment Provider Dispatcher
- *
- * Single entry point that routes calls to Paystack or Flutterwave
- * based on the selected provider. Keeps API routes DRY by avoiding
- * duplicated if/else blocks.
- */
+
 import type { PaymentProviderType, ICreateSubaccount, TransactionData } from "@/types";
 import Paystack from "@/services/paystack";
 import Flutterwave from "@/services/flutterwave";
@@ -56,10 +50,7 @@ export async function createSubaccount(data: ICreateSubaccount, provider?: Payme
   return getProvider(provider).createSubaccount(data);
 }
 
-/**
- * Create subaccounts on BOTH providers simultaneously.
- * Returns both codes. If one fails, logs the error but still returns what succeeded.
- */
+
 export async function createDualSubaccounts(data: ICreateSubaccount) {
   const [paystackResult, flutterwaveResult] = await Promise.allSettled([
     Paystack.createSubaccount(data),

@@ -8,7 +8,6 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  // Secure the cron endpoint
   const authHeader = req.headers.get("authorization");
   if (
     process.env.CRON_SECRET &&

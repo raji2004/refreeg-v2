@@ -21,7 +21,7 @@ export default function LifeMatters() {
     show: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.8, ease: "easeOut" as any},
+      transition: { duration: 0.8, ease: "easeOut" as any },
     },
   };
 
@@ -42,7 +42,7 @@ export default function LifeMatters() {
       whileInView="show"
       viewport={{ once: true, amount: 0.3 }}
     >
-      {/* Left Text Section */}
+      {}
       <motion.div
         className="w-full lg:w-3/4 h-auto flex flex-col justify-center items-start gap-6"
         variants={item}
@@ -65,10 +65,7 @@ export default function LifeMatters() {
           </span>
         </motion.div>
 
-        <motion.p
-          className="text-lg text-gray-600"
-          variants={item}
-        >
+        <motion.p className="text-lg text-gray-600" variants={item}>
           Join RefreeG and fund the future of healthcare — one donation, one
           life at a time.
         </motion.p>
@@ -83,7 +80,7 @@ export default function LifeMatters() {
         </motion.div>
       </motion.div>
 
-      {/* Right Image Section */}
+      {}
       <motion.div
         className="w-full lg:w-1/4 h-auto flex justify-center items-center"
         variants={imageAnim}

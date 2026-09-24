@@ -26,11 +26,6 @@ const formatNaira = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-/**
- * First-run content for a freshly onboarded account — shown above the rest
- * of the existing (navy-themed) dashboard, styled with the cream/ink/gold
- * tokens per docs/DESIGN_GUIDE.md.
- */
 export function DashboardFirstRun({
   matchedCauses,
   matchedCount,
@@ -56,7 +51,10 @@ export function DashboardFirstRun({
               </h2>
             </div>
             {matchedCount > matchedCauses.length && (
-              <Link href="/causes" className="text-sm font-medium text-ink underline">
+              <Link
+                href="/causes"
+                className="text-sm font-medium text-ink underline"
+              >
                 See all {matchedCount}
               </Link>
             )}
@@ -97,7 +95,11 @@ export function DashboardFirstRun({
                     {item.label}
                   </Link>
                 ) : (
-                  <span className={item.done ? "text-ink/60 line-through" : "text-ink"}>
+                  <span
+                    className={
+                      item.done ? "text-ink/60 line-through" : "text-ink"
+                    }
+                  >
                     {item.label}
                   </span>
                 )}

@@ -94,7 +94,7 @@ export function useAnalyticsCharts(from?: string, to?: string): UseAnalyticsChar
       const [trends, growth, categories] = await Promise.all([
         getDonationTrends(from, to),
         getUserGrowth(from, to),
-        getCauseCategories(), // Categories usually static or all-time
+        getCauseCategories(), 
       ]);
 
       setDonationTrends(trends);

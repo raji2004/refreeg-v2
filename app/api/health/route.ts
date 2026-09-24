@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  isHealthCheckAuthorized,
-  runHealthChecks,
-} from "@/lib/health/checks";
+import { isHealthCheckAuthorized, runHealthChecks } from "@/lib/health/checks";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

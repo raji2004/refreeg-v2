@@ -18,19 +18,34 @@ type NavItem = {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  /** Discover and Petitions are browsable without an account; everything else needs one. */
+
   requiresAuth: boolean;
 };
 
 const navItems: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, requiresAuth: true },
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    requiresAuth: true,
+  },
   { title: "Discover", href: "/causes", icon: Compass, requiresAuth: false },
-  { title: "My giving", href: "/dashboard/donations", icon: HeartHandshake, requiresAuth: true },
+  {
+    title: "My giving",
+    href: "/dashboard/donations",
+    icon: HeartHandshake,
+    requiresAuth: true,
+  },
   { title: "Wallet", href: "/wallet", icon: Wallet, requiresAuth: true },
   { title: "Petitions", href: "/petitions", icon: Flag, requiresAuth: false },
   { title: "Bounties", href: "/bounties", icon: Trophy, requiresAuth: true },
   { title: "Saved", href: "/saved", icon: Bookmark, requiresAuth: true },
-  { title: "Settings", href: "/dashboard/settings", icon: Settings, requiresAuth: true },
+  {
+    title: "Settings",
+    href: "/dashboard/settings/profile",
+    icon: Settings,
+    requiresAuth: true,
+  },
 ];
 
 const isPathActive = (pathname: string, href: string) => {

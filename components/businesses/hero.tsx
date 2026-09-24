@@ -6,7 +6,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 export default function Hero() {
-  // Floating animation for corner images
   const floatTransition = {
     y: {
       duration: 2,
@@ -17,7 +16,7 @@ export default function Hero() {
 
   return (
     <div className="relative w-full h-[600px] flex items-center justify-center text-white overflow-hidden">
-      {/* Background image */}
+      {}
       <Image
         src="/herobusiness.png"
         alt="business hero"
@@ -26,7 +25,7 @@ export default function Hero() {
         priority
       />
 
-      {/* Floating decorative corner images */}
+      {}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: [0, -20, 0], opacity: 1 }}
@@ -68,10 +67,10 @@ export default function Hero() {
         />
       </motion.div>
 
-      {/* Subtle overlay gradient for readability */}
+      {}
       <div className="absolute inset-0 " />
 
-      {/* Main content */}
+      {}
       <motion.div
         className="relative z-10 text-center text-black max-w-3xl px-6"
         initial={{ opacity: 0, y: 40 }}

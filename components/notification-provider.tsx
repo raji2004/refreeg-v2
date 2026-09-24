@@ -12,7 +12,6 @@ export function NotificationProvider({
 
   useEffect(() => {
     if (isSupported) {
-      // Request permission when component mounts
       requestPermission();
     }
   }, [isSupported, requestPermission]);

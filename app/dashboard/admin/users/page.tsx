@@ -69,14 +69,14 @@ export default async function AdminUsersPage({
       getUserRole(userId),
     ]);
   } catch (err) {
-    // Log server-side error and render friendly message so we can see cause in server logs
     console.error("AdminUsersPage data fetch error:", err);
     return (
       <Card>
         <CardHeader>
           <CardTitle>Unable to load users</CardTitle>
           <CardDescription>
-            An error occurred while loading users. Check server logs for details.
+            An error occurred while loading users. Check server logs for
+            details.
           </CardDescription>
         </CardHeader>
       </Card>

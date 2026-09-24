@@ -88,18 +88,16 @@ async function checkPayments(): Promise<ServiceStatus> {
   }
 
   try {
-    const response = await runWithTimeout(
-      "payments",
-      () =>
-        fetch("https://api.paystack.co/bank?currency=NGN&perPage=1", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${secretKey}`,
-            Accept: "application/json",
-          },
-          cache: "no-store",
-          signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
-        }),
+    const response = await runWithTimeout("payments", () =>
+      fetch("https://api.paystack.co/bank?currency=NGN&perPage=1", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${secretKey}`,
+          Accept: "application/json",
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
+      }),
     );
 
     if (!response.ok) {
@@ -122,10 +120,11 @@ export async function runHealthChecks(): Promise<HealthCheckResponse> {
   ]);
 
   const services = { database, bookings, payments };
-  const status =
-    Object.values(services).every((service) => service === "operational")
-      ? "operational"
-      : "unavailable";
+  const status = Object.values(services).every(
+    (service) => service === "operational",
+  )
+    ? "operational"
+    : "unavailable";
 
   return {
     status,
@@ -143,7 +142,8 @@ export function isHealthCheckAuthorized(request: Request): boolean {
 
   const bearer = request.headers.get("authorization");
   const headerToken = request.headers.get("x-health-check-token");
-  const providedToken = bearer?.replace(/^Bearer\s+/i, "").trim() || headerToken;
+  const providedToken =
+    bearer?.replace(/^Bearer\s+/i, "").trim() || headerToken;
 
   return providedToken === expectedToken;
 }

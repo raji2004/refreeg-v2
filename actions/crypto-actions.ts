@@ -19,14 +19,9 @@ interface CreateCryptoDonationParams {
   currency: string;
 }
 
-/**
- * Records a crypto donation (usually called by the Breet Webhook after settlement)
- * and increments the campaign's raised total.
- */
 export async function createCryptoDonation(data: CreateCryptoDonationParams) {
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create the crypto donation record
       const donation = await tx.crypto_donations.create({
         data: {
           cause_id:
@@ -45,7 +40,6 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
           amount_in_crypto: data.amount_in_crypto,
           status: data.status,
 
-          // SANITIZE TX_HASH: If it's empty/falsy, force it to null instead of ""
           tx_hash:
             data.tx_hash &&
             typeof data.tx_hash === "string" &&
@@ -61,7 +55,6 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
         },
       });
 
-      // 2. Increment the cause raised amount
       await tx.cause.update({
         where: { id: data.cause_id },
         data: { raised: { increment: data.amount_in_naira } },
@@ -70,14 +63,12 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
       return donation;
     });
 
-    // 3. Sync Proof Milestones (Triggers the 25/50/75/100% compliance engine)
     try {
       await syncMilestoneRequirements(data.cause_id);
     } catch (e) {
       console.error("Error syncing proof milestones for crypto:", e);
     }
 
-    // 4. Fire off reward events if it was a registered user
     if (data.user_id) {
       try {
         await recordEvent({
@@ -97,7 +88,6 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
       }
     }
 
-    // 5. Emit SSE event for real-time dashboard updates
     try {
       const { eventBus } = await import("@/lib/event-bus");
       eventBus.emit("donation", {
@@ -109,7 +99,6 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
       console.error("Error emitting crypto donation SSE:", e);
     }
 
-    // 6. Revalidate paths
     revalidatePath(`/causes/${data.cause_id}`);
     revalidatePath("/causes");
     revalidatePath("/");

@@ -2,18 +2,18 @@
 
 import React from "react";
 import SidebarItem from "./SidebarItem";
-import { 
-  Home, 
-  FileText, 
-  Users, 
-  HeartHandshake, 
+import {
+  Home,
+  FileText,
+  Users,
+  HeartHandshake,
   LifeBuoy,
   Terminal,
   Key,
   Zap,
   Activity,
   ShieldAlert,
-  Play
+  Play,
 } from "lucide-react";
 
 export default function Sidebar({
@@ -37,9 +37,8 @@ export default function Sidebar({
 
   const items = platformItems;
 
-  // Filter items based on search query
   const filteredItems = items.filter((item) =>
-    item.label.toLowerCase().includes(searchQuery.toLowerCase())
+    item.label.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (

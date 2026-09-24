@@ -12,7 +12,6 @@ type CreatePledgeInput = {
   causeTitle?: string;
 };
 
-/** Reminder must be today or a future calendar day (UTC) — past dates rejected. */
 function isReminderDateTodayOrFuture(isoDate: string): boolean {
   const parts = isoDate.split("-").map(Number);
   if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return false;

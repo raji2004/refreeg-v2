@@ -8,10 +8,22 @@ export async function POST(request: Request) {
     if (type === "milestone") {
       const { followers, causeTitle, causeUrl, milestone } = data;
       for (const email of followers) {
-        await sendMilestoneEmail({ to: email, causeTitle, causeUrl, milestone });
+        await sendMilestoneEmail({
+          to: email,
+          causeTitle,
+          causeUrl,
+          milestone,
+        });
       }
     } else if (type === "expiring") {
-      const { followers, causeTitle, causeUrl, amountRaised, goalAmount, percent } = data;
+      const {
+        followers,
+        causeTitle,
+        causeUrl,
+        amountRaised,
+        goalAmount,
+        percent,
+      } = data;
       for (const email of followers) {
         await sendCampaignExpiringEmail({
           to: email,

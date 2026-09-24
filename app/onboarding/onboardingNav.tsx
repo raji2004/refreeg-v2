@@ -29,7 +29,10 @@ export default function OnboardingNav({
     >
       <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity">
+          <Link
+            href="/"
+            className="cursor-pointer hover:opacity-80 transition-opacity"
+          >
             <Logo />
           </Link>
           {organizationMode && (

@@ -10,7 +10,6 @@ import type {
 } from "@/types";
 import { KycStatus, KycVerification } from "@/types/kyc-types";
 
-// Helper function to map Prisma Profile to the expected Profile type
 function mapPrismaToProfile(p: any): Profile {
   return {
     id: p.id,
@@ -19,8 +18,10 @@ function mapPrismaToProfile(p: any): Profile {
     first_name: p.firstName,
     last_name: p.lastName,
     username: p.username,
+    display_name: p.displayName ?? null,
     phone: p.phone,
     location: p.location,
+    donation_preference: p.donationPreference ?? "named",
     account_number: p.accountNumber,
     bank_name: p.bankName,
     account_name: p.accountName,
@@ -37,7 +38,6 @@ function mapPrismaToProfile(p: any): Profile {
     interests: p.interests ?? [],
     gender: p.gender,
     bio: p.bio,
-    // solana_wallet: p.solana_wallet, // 👈 REMOVED (Legacy Web3)
     twitter_url: p.twitter_url,
     facebook_url: p.facebook_url,
     instagram_url: p.instagram_url,
@@ -49,11 +49,16 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   try {
     const profile = await prisma.user.findUnique({
       where: { id: userId },
+      include: {
+        _count: { select: { causes: true, donations: true } },
+      },
     });
 
     if (!profile) return null;
 
-    return mapPrismaToProfile(profile);
+    const mapped = mapPrismaToProfile(profile);
+    mapped.causes_count = profile._count?.donations ?? 0;
+    return mapped;
   } catch (error) {
     console.error("Error fetching profile:", error);
     throw error;
@@ -82,18 +87,37 @@ export async function updateProfile(
         fullName: profileData.name,
         email: profileData.email,
         username: profileData.username,
-        phone: profileData.phone,
+        phone: profileData.phone || null,
         bio: profileData.bio,
-        accountType: profileData.account_type,
-        profilePhoto: profileData.profile_photo,
-        twitter_url: profileData.twitter_url || null,
-        facebook_url: profileData.facebook_url || null,
-        instagram_url: profileData.instagram_url || null,
-        linkedin_url: profileData.linkedin_url || null,
+        location: profileData.location || null,
+        displayName: profileData.display_name || null,
+        donationPreference: profileData.donation_preference || "named",
+        ...(profileData.interests !== undefined
+          ? { interests: profileData.interests }
+          : {}),
+        ...(profileData.account_type !== undefined
+          ? { accountType: profileData.account_type }
+          : {}),
+        ...(profileData.profile_photo !== undefined
+          ? { profilePhoto: profileData.profile_photo }
+          : {}),
+        ...(profileData.twitter_url !== undefined
+          ? { twitter_url: profileData.twitter_url || null }
+          : {}),
+        ...(profileData.facebook_url !== undefined
+          ? { facebook_url: profileData.facebook_url || null }
+          : {}),
+        ...(profileData.instagram_url !== undefined
+          ? { instagram_url: profileData.instagram_url || null }
+          : {}),
+        ...(profileData.linkedin_url !== undefined
+          ? { linkedin_url: profileData.linkedin_url || null }
+          : {}),
       },
     });
 
     revalidatePath("/dashboard/settings");
+    revalidatePath("/dashboard/settings/profile");
     revalidatePath(`/profile/${userId}`);
     revalidatePath("/");
 
@@ -169,7 +193,7 @@ export async function createOnboardingProfile(
 ): Promise<any> {
   const existingProfile = await prisma.user.findUnique({
     where: { id: userId },
-    select: { profilePhoto: true },
+    select: { profilePhoto: true, accountType: true },
   });
 
   let profilePhotoUrl: string | null = existingProfile?.profilePhoto ?? null;
@@ -216,7 +240,12 @@ export async function createOnboardingProfile(
   if (profileData.lastName) updateData.lastName = profileData.lastName;
   if (profileData.username) updateData.username = profileData.username;
   if (profileData.location) updateData.location = profileData.location;
-  if (profileData.accountType) updateData.accountType = profileData.accountType;
+  if (profileData.accountType) {
+    updateData.accountType =
+      existingProfile?.accountType === "individual"
+        ? "individual"
+        : profileData.accountType;
+  }
   if (profileData.gender) updateData.gender = profileData.gender;
 
   try {
@@ -414,10 +443,27 @@ export async function saveStep1Progress(
   accountType: string,
 ): Promise<void> {
   try {
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountType: true },
+    });
+
+    if (
+      existing?.accountType === "individual" &&
+      accountType === "organization"
+    ) {
+      throw new Error(
+        "Individual accounts cannot be converted to organization accounts.",
+      );
+    }
+
     await prisma.user.update({
       where: { id: userId },
       data: {
-        accountType: accountType,
+        accountType:
+          existing?.accountType === "organization"
+            ? "organization"
+            : accountType,
       },
     });
 

@@ -7,7 +7,6 @@ import Image from "next/image";
 
 import { User, CircleHelp } from "lucide-react";
 
-// Custom Venus icon component (female symbol ♀)
 const Venus = ({
   size = 32,
   className = "",
@@ -40,7 +39,6 @@ interface Step2Props {
   updateOnboardingData: (key: string, value: any) => void;
 }
 
-// ✅ Replace symbols with Lucide React icons
 const genderOptions = [
   { id: "male", label: "Male", icon: <User size={32} /> },
   { id: "female", label: "Female", icon: <Venus size={32} /> },
@@ -66,7 +64,7 @@ export default function Step2({
 
   return (
     <div className="w-full flex flex-col items-center justify-center py-8">
-      {/* 3D User Icon */}
+      {}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -81,7 +79,7 @@ export default function Step2({
         />
       </motion.div>
 
-      {/* Title */}
+      {}
       <motion.h2
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -91,7 +89,7 @@ export default function Step2({
         What&apos;s your gender?
       </motion.h2>
 
-      {/* Gender Options */}
+      {}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

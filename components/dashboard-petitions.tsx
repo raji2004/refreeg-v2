@@ -92,7 +92,10 @@ export async function DashboardPetitions({
             Launch your first petition to start gathering supporters and track
             signature progress from one place.
           </p>
-          <Link href="/dashboard/petitions/create" className="block sm:inline-block">
+          <Link
+            href="/dashboard/petitions/create"
+            className="block sm:inline-block"
+          >
             <Button className="mt-6 h-11 w-full rounded-2xl bg-blue-600 px-5 text-white hover:bg-blue-700 sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Create your first petition
@@ -171,7 +174,8 @@ export async function DashboardPetitions({
                         className="min-w-0 break-words text-slate-500 sm:max-w-[60%] sm:text-right"
                         title={`${petition.signatures} of ${petition.goal.toLocaleString()}`}
                       >
-                        {petition.signatures} of {petition.goal.toLocaleString()}
+                        {petition.signatures} of{" "}
+                        {petition.goal.toLocaleString()}
                       </span>
                     </div>
                     <Progress value={progress} className="h-2.5" />
@@ -191,7 +195,10 @@ export async function DashboardPetitions({
                       Analytics
                     </Button>
                   </Link>
-                  <Link href={`/petitions/${petition.id}`} className="w-full sm:w-auto">
+                  <Link
+                    href={`/petitions/${petition.id}`}
+                    className="w-full sm:w-auto"
+                  >
                     <Button
                       variant="ghost"
                       className="h-11 w-full rounded-2xl px-5 text-slate-700 hover:bg-slate-100 hover:text-slate-950"

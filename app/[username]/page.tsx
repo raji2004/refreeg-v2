@@ -70,9 +70,7 @@ export default async function PublicProfilePage({
   }
 
   const donations = await listUserDonations(userId).then((items) =>
-    items.filter(
-      (donation) => (donation.cause as any)?.status === "approved",
-    ),
+    items.filter((donation) => (donation.cause as any)?.status === "approved"),
   );
 
   return (

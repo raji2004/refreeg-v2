@@ -5,7 +5,7 @@ export const metadata = { title: "Proof Updates | RefreeG Admin" };
 
 export default async function AdminProofUpdatesPage() {
   const updates = await getPendingProofUpdatesForAdmin();
-  // Serialize Dates before crossing into the client component
+
   const serialized = updates.map((u) => ({
     ...u,
     created_at: u.created_at.toISOString(),

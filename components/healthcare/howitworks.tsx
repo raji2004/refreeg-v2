@@ -7,7 +7,6 @@ import Image from "next/image";
 import Link from "next/link";
 
 export default function HowItWorks() {
-  // Animation variants
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -18,7 +17,11 @@ export default function HowItWorks() {
 
   const item = {
     hidden: { opacity: 0, y: 40 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as any } },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" as any },
+    },
   };
 
   return (
@@ -29,7 +32,7 @@ export default function HowItWorks() {
       whileInView="show"
       viewport={{ once: true, amount: 0.3 }}
     >
-      {/* Headings */}
+      {}
       <motion.div
         className="text-center w-full text-2xl md:text-3xl lg:text-5xl font-bold"
         variants={item}
@@ -44,7 +47,7 @@ export default function HowItWorks() {
         From Need to Care, Faster.
       </motion.div>
 
-      {/* Steps */}
+      {}
       <motion.div
         className="w-full flex flex-col gap-16 mb-12 text-lg"
         variants={container}
@@ -93,7 +96,7 @@ export default function HowItWorks() {
         </motion.div>
       </motion.div>
 
-      {/* Button */}
+      {}
       <motion.div
         className="w-full flex justify-start"
         variants={item}

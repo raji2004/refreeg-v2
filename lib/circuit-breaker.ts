@@ -1,6 +1,6 @@
 const failures = new Map<string, { count: number; lastFailure: number }>();
-const THRESHOLD = 5; // Open circuit after 5 failures
-const RESET_TIME = 60000; // Reset after 60 seconds
+const THRESHOLD = 5;
+const RESET_TIME = 60000;
 
 export function checkCircuit(service: string) {
   const state = failures.get(service);

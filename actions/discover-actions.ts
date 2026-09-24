@@ -40,23 +40,16 @@ export interface DiscoverItem {
   daysLeft: number | null;
   urgent: boolean;
   location: string | null;
-  /** Campaign detail page is locked while true; petitions are never paused. See prisma/schema/cause.prisma. */
+
   paused: boolean;
   createdAt: string;
 }
 
-/**
- * Orders a merged campaigns+petitions list. Needed because the two types
- * come from separate DB queries — a DB-level ORDER BY on each can't produce
- * one correctly-interleaved combined feed, so every sort is applied here
- * after merging.
- *
- * Paused campaigns (locked detail page, no real content yet) always sort
- * after everything else, regardless of the active sort — otherwise a batch
- * of just-reconstructed placeholders with a fresh `createdAt` can bury real
- * campaigns at the top of "Newest first".
- */
-function compareItems(a: DiscoverItem, b: DiscoverItem, sortBy: DiscoverSort): number {
+function compareItems(
+  a: DiscoverItem,
+  b: DiscoverItem,
+  sortBy: DiscoverSort,
+): number {
   if (a.paused !== b.paused) return a.paused ? 1 : -1;
 
   switch (sortBy) {
@@ -76,7 +69,9 @@ function compareItems(a: DiscoverItem, b: DiscoverItem, sortBy: DiscoverSort): n
   }
 }
 
-function daysLeftFromEndDate(endDate: string | null | undefined): number | null {
+function daysLeftFromEndDate(
+  endDate: string | null | undefined,
+): number | null {
   if (!endDate) return null;
   const diff = new Date(endDate).getTime() - Date.now();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
@@ -133,10 +128,6 @@ export async function listDiscoverResults(
   const includeCauses = filters.includeType !== "petitions";
   const includePetitions = filters.includeType !== "campaigns";
 
-  // Causes and petitions come from separate tables, so DB-level pagination
-  // on either one can't produce a correctly-paginated combined feed — fetch
-  // a bounded candidate set (capped at DISCOVER_RESULT_CAP, which is small)
-  // from each, merge, sort, and paginate here instead.
   const [causes, petitions] = await Promise.all([
     includeCauses
       ? listCauses({
@@ -204,17 +195,9 @@ export async function countDiscoverResults(
       : Promise.resolve(0),
   ]);
 
-  // "Near its goal" isn't a DB predicate (percent is computed) — approximate
-  // by falling back to the full count when that filter is active; the grid
-  // reflects the true count once results are actually fetched.
   return causeCount + petitionCount;
 }
 
-/**
- * For the empty state: re-count with a single active filter dropped, so the
- * UI can say "Remove Kano gives you 12 results" with a real number. Returns
- * the filter key whose removal unblocks the most results.
- */
 export async function suggestFilterToRemove(
   filters: DiscoverFilters,
   activeKeys: (keyof DiscoverFilters)[],
@@ -234,13 +217,6 @@ export async function suggestFilterToRemove(
   );
 }
 
-/**
- * Per-category result counts for the filter rail's live-count checkboxes.
- * Category is a single-select filter at the data layer (`listCauses`/
- * `listPetitions` both take `category?: string`), so this counts each
- * category with the *other* active filters held constant, not combinations
- * of categories.
- */
 export async function getDiscoverFacets(
   filters: Omit<DiscoverFilters, "category">,
   categoryIds: string[],
@@ -256,7 +232,8 @@ export async function getDiscoverFacets(
 
 export async function searchDiscover(query: string) {
   const trimmed = query.trim();
-  if (!trimmed) return { campaigns: [], petitions: [], organizations: [], totalCount: 0 };
+  if (!trimmed)
+    return { campaigns: [], petitions: [], organizations: [], totalCount: 0 };
 
   const [campaigns, petitions, organizations, campaignCount, petitionCount] =
     await Promise.all([

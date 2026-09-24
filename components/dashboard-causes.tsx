@@ -61,8 +61,8 @@ export async function DashboardCauses({
             Your fundraising pipeline
           </h3>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Review how each cause is performing, check approval status, and
-            jump into analytics or public view.
+            Review how each cause is performing, check approval status, and jump
+            into analytics or public view.
           </p>
         </div>
         <Link href="/dashboard/causes/create" className="w-full sm:w-auto">
@@ -85,7 +85,10 @@ export async function DashboardCauses({
             Start your first campaign and track donations, supporter momentum,
             and approval status from this dashboard.
           </p>
-          <Link href="/dashboard/causes/create" className="block sm:inline-block">
+          <Link
+            href="/dashboard/causes/create"
+            className="block sm:inline-block"
+          >
             <Button className="mt-6 h-11 w-full rounded-2xl bg-blue-600 px-5 text-white hover:bg-blue-700 sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Create your first cause
@@ -184,7 +187,10 @@ export async function DashboardCauses({
                       Analytics
                     </Button>
                   </Link>
-                  <Link href={causePublicPath(cause)} className="w-full sm:w-auto">
+                  <Link
+                    href={causePublicPath(cause)}
+                    className="w-full sm:w-auto"
+                  >
                     <Button
                       variant="ghost"
                       className="h-11 w-full rounded-2xl px-5 text-slate-700 hover:bg-slate-100 hover:text-slate-950"

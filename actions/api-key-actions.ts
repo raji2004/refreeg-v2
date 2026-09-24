@@ -14,7 +14,6 @@ export async function createApiKey(name: string, mode: "live" | "test") {
 
   const user = session.user;
 
-  // Check role/account type
   const profile = await prisma.user.findUnique({
     where: { id: user.id as string },
     select: { accountType: true },
@@ -40,10 +39,11 @@ export async function createApiKey(name: string, mode: "live" | "test") {
 
     revalidatePath("/dashboard/developer/api-keys");
 
-    // Return the full key ONLY ONCE so the UI can show it
     return { ...data, rawKey: fullKey };
   } catch (error) {
-    throw new Error(`Failed to create API key: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to create API key: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
   }
 }
 
@@ -75,7 +75,7 @@ export async function revokeApiKey(id: string) {
 
   try {
     await prisma.api_keys.update({
-      where: { 
+      where: {
         id,
         user_id: session.user.id as string, // Ensure user owns the key
       },

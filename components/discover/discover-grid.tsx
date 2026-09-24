@@ -47,10 +47,15 @@ export function DiscoverGrid({
   const isFirstRender = useRef(true);
 
   const [giveModal, setGiveModal] = useState<{ id: string } | null>(null);
-  const [pledgeModal, setPledgeModal] = useState<
-    { id: string; title: string; daysLeft: number | null } | null
-  >(null);
-  const [signModal, setSignModal] = useState<{ id: string; title: string } | null>(null);
+  const [pledgeModal, setPledgeModal] = useState<{
+    id: string;
+    title: string;
+    daysLeft: number | null;
+  } | null>(null);
+  const [signModal, setSignModal] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   useEffect(() => {
     try {
@@ -78,7 +83,9 @@ export function DiscoverGrid({
   useEffect(() => {
     listBookmarkedIds()
       .then((rows) => {
-        setBookmarked(new Set(rows.map((r) => `${r.targetType}:${r.targetId}`)));
+        setBookmarked(
+          new Set(rows.map((r) => `${r.targetType}:${r.targetId}`)),
+        );
       })
       .catch(() => {
         // Non-critical — bookmarks just won't show as saved this load.
@@ -177,7 +184,10 @@ export function DiscoverGrid({
         return next;
       });
       toast({
-        title: err instanceof Error ? err.message : "Couldn't save that — try again.",
+        title:
+          err instanceof Error
+            ? err.message
+            : "Couldn't save that — try again.",
         variant: "destructive",
       });
     }
@@ -226,11 +236,22 @@ export function DiscoverGrid({
       {loadingFresh ? (
         <div className={gridClass}>
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className={view === "grid" ? "h-[360px] w-full rounded-xl" : "h-32 w-full rounded-xl"} />
+            <Skeleton
+              key={i}
+              className={
+                view === "grid"
+                  ? "h-[360px] w-full rounded-xl"
+                  : "h-32 w-full rounded-xl"
+              }
+            />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <DiscoverEmptyState filters={filters} onRemoveFilter={onRemoveFilter} onClearAll={onClearFilters} />
+        <DiscoverEmptyState
+          filters={filters}
+          onRemoveFilter={onRemoveFilter}
+          onClearAll={onClearFilters}
+        />
       ) : (
         <>
           <div className={gridClass}>
@@ -245,9 +266,15 @@ export function DiscoverGrid({
                   onToggleBookmark={() => handleToggleBookmark(item)}
                   onGiveClick={() => setGiveModal({ id: item.id })}
                   onPledgeClick={() =>
-                    setPledgeModal({ id: item.id, title: item.title, daysLeft: item.daysLeft })
+                    setPledgeModal({
+                      id: item.id,
+                      title: item.title,
+                      daysLeft: item.daysLeft,
+                    })
                   }
-                  onSignClick={() => setSignModal({ id: item.id, title: item.title })}
+                  onSignClick={() =>
+                    setSignModal({ id: item.id, title: item.title })
+                  }
                 />
               );
             })}

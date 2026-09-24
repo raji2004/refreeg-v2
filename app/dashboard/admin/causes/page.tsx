@@ -9,7 +9,6 @@ const ManageCauses = dynamic(() => import("@/components/admin/ManageCause"), {
 });
 
 export default async function AdminCausesPage() {
-  // ✅ Server-side check BEFORE any client component renders
   const session = await auth();
 
   if (!session?.user) {

@@ -1,7 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { Search as SearchIcon, Flag, Building2, BadgeCheck } from "lucide-react";
+import {
+  Search as SearchIcon,
+  Flag,
+  Building2,
+  BadgeCheck,
+} from "lucide-react";
 import {
   CommandEmpty,
   CommandGroup,
@@ -13,7 +18,6 @@ import {
 import { getMediaUrl } from "@/lib/s3/media";
 import type { useDiscoverSearch } from "@/hooks/use-discover-search";
 
-/** Splits `text` on `query` (case-insensitive) and wraps matches in a gold-wash <mark>. */
 function HighlightedText({ text, query }: { text: string; query: string }) {
   if (!query.trim()) return <>{text}</>;
   const lower = text.toLowerCase();
@@ -32,12 +36,6 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
   );
 }
 
-/**
- * The shared `<CommandInput>` + `<CommandList>` body behind Discover
- * search — rendered inside a `CommandDialog` on desktop (discover-search.tsx)
- * and inside a plain full-page `<Command>` on mobile (app/causes/search),
- * so both surfaces share one implementation of the actual search UX.
- */
 export function DiscoverSearchResults({
   search,
   inputPlaceholder = "Search campaigns, petitions, organisations…",
@@ -47,11 +45,21 @@ export function DiscoverSearchResults({
   search: ReturnType<typeof useDiscoverSearch>;
   inputPlaceholder?: string;
   autoFocus?: boolean;
-  /** Overrides CommandList's default max-h-[300px] — the full-page mobile surface wants it to fill the viewport instead. */
+
   listClassName?: string;
 }) {
-  const { query, setQuery, loading, results, recentSearches, goToFullResults, selectCause, selectPetition, selectOrg, selectRecent } =
-    search;
+  const {
+    query,
+    setQuery,
+    loading,
+    results,
+    recentSearches,
+    goToFullResults,
+    selectCause,
+    selectPetition,
+    selectOrg,
+    selectRecent,
+  } = search;
 
   return (
     <>
@@ -79,12 +87,16 @@ export function DiscoverSearchResults({
         )}
 
         {query.trim() && loading && (
-          <div className="py-6 text-center text-sm text-muted-foreground">Searching…</div>
+          <div className="py-6 text-center text-sm text-muted-foreground">
+            Searching…
+          </div>
         )}
 
         {query.trim() && !loading && results && (
           <>
-            {results.totalCount === 0 && <CommandEmpty>No matches for “{query}”.</CommandEmpty>}
+            {results.totalCount === 0 && (
+              <CommandEmpty>No matches for “{query}”.</CommandEmpty>
+            )}
 
             {results.campaigns.length > 0 && (
               <CommandGroup heading="Campaigns">
@@ -133,7 +145,8 @@ export function DiscoverSearchResults({
                         <HighlightedText text={item.title} query={query} />
                       </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {item.raised.toLocaleString()} of {item.goal.toLocaleString()} signatures
+                        {item.raised.toLocaleString()} of{" "}
+                        {item.goal.toLocaleString()} signatures
                       </p>
                     </div>
                   </CommandItem>
@@ -153,7 +166,9 @@ export function DiscoverSearchResults({
                     <span className="flex-1 truncate">
                       <HighlightedText text={org.name} query={query} />
                     </span>
-                    {org.isVerified && <BadgeCheck className="h-4 w-4 text-blue-600" />}
+                    {org.isVerified && (
+                      <BadgeCheck className="h-4 w-4 text-blue-600" />
+                    )}
                   </CommandItem>
                 ))}
               </CommandGroup>

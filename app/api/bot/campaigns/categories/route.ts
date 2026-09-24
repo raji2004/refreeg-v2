@@ -3,7 +3,6 @@ import { validateApiKey } from "@/utils/api-bot/api-auth";
 import { rateLimit } from "@/utils/api-bot/api-auth";
 import { logApiRequest } from "@/utils/api-bot/request-logger";
 
-// Static categories based on TDD specification
 const CATEGORIES = [
   { id: "education", display_name: "Education" },
   { id: "health", display_name: "Healthcare" },
@@ -19,19 +18,29 @@ export async function GET(request: NextRequest) {
   const startedAt = Date.now();
   const limitRes = rateLimit(request);
   if (limitRes?.errorResponse) {
-    await logApiRequest({ request, statusCode: 429, errorCode: "rate_limited", startedAt });
+    await logApiRequest({
+      request,
+      statusCode: 429,
+      errorCode: "rate_limited",
+      startedAt,
+    });
     return limitRes.errorResponse;
   }
 
   const authRes = await validateApiKey(request);
   if (authRes.errorResponse) {
-    await logApiRequest({ request, statusCode: 401, errorCode: "unauthorized", startedAt });
+    await logApiRequest({
+      request,
+      statusCode: 401,
+      errorCode: "unauthorized",
+      startedAt,
+    });
     return authRes.errorResponse;
   }
 
   const response = NextResponse.json({
     status: "success",
-    data: CATEGORIES
+    data: CATEGORIES,
   });
 
   await logApiRequest({

@@ -14,19 +14,22 @@ export async function GET(request: Request) {
     const isPetition = entityType === "petition";
 
     if (isPetition) {
-      // Fetch petition comment replies
       const replies = await prisma.petition_comments.findMany({
         where: { parent_id: parentId },
         orderBy: { created_at: "asc" },
         take: 100,
         include: {
           user: {
-            select: { id: true, fullName: true, profilePhoto: true, username: true },
+            select: {
+              id: true,
+              fullName: true,
+              profilePhoto: true,
+              username: true,
+            },
           },
         },
       });
 
-      // Fetch nested reply counts in one query
       const replyIds = replies.map((r) => r.id);
       const nestedCounts = await prisma.petition_comments.groupBy({
         by: ["parent_id"],
@@ -41,7 +44,7 @@ export async function GET(request: Request) {
 
       const repliesWithCounts = replies.map((reply) => ({
         ...reply,
-        // Map Prisma field names to the frontend's expected shape
+
         user: reply.user
           ? {
               id: reply.user.id,
@@ -55,19 +58,22 @@ export async function GET(request: Request) {
 
       return NextResponse.json(repliesWithCounts);
     } else {
-      // Fetch cause comment replies
       const replies = await prisma.comments.findMany({
         where: { parent_id: parentId },
         orderBy: { created_at: "asc" },
         take: 100,
         include: {
           user: {
-            select: { id: true, fullName: true, profilePhoto: true, username: true },
+            select: {
+              id: true,
+              fullName: true,
+              profilePhoto: true,
+              username: true,
+            },
           },
         },
       });
 
-      // Fetch nested reply counts in one query
       const replyIds = replies.map((r) => r.id);
       const nestedCounts = await prisma.comments.groupBy({
         by: ["parent_id"],
@@ -82,7 +88,7 @@ export async function GET(request: Request) {
 
       const repliesWithCounts = replies.map((reply) => ({
         ...reply,
-        // Map Prisma field names to the frontend's expected shape
+
         user: reply.user
           ? {
               id: reply.user.id,
@@ -100,7 +106,7 @@ export async function GET(request: Request) {
     console.error("Failed to fetch replies:", error);
     return NextResponse.json(
       { error: "Failed to fetch replies" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

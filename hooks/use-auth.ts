@@ -15,7 +15,7 @@ import {
 function normalizeRedirectPath(target?: string | null): string | null {
   if (!target) return null;
   if (!target.startsWith("/")) return null;
-  // Prevent protocol-relative redirects (e.g. //evil.com)
+  
   if (target.startsWith("//")) return null;
   return target;
 }
@@ -32,8 +32,8 @@ export function useAuth() {
     try {
       const normalizedEmail = email.trim().toLowerCase();
 
-      // If user on login attempt has a cause but no profile details (or no password set),
-      // direct them to set up a new password first, then the profile flow.
+      
+      
       const causeCheck = await checkCauseUserLoginAction(normalizedEmail);
       if (causeCheck?.isCauseUserWithoutProfile && causeCheck.token) {
         toast({
@@ -168,6 +168,30 @@ export function useAuth() {
     }
   };
 
+  const signInWithApple = async (redirectTo?: string | null) => {
+    try {
+      const safeRedirect = normalizeRedirectPath(redirectTo);
+      const callbackUrl = safeRedirect
+        ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(safeRedirect)}`
+        : `${window.location.origin}/auth/callback`;
+
+      await fetch("/api/auth/pre-signin-cleanup", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+
+      await nextAuthSignIn("apple", {
+        callbackUrl,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error signing in with Apple",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const signOut = async () => {
     try {
       await nextAuthSignOut({ redirect: false });
@@ -275,6 +299,7 @@ export function useAuth() {
     signUp,
     signOut,
     signInWithGoogle,
+    signInWithApple,
     resetPassword,
     updatePassword,
   };

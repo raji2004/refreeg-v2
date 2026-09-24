@@ -23,7 +23,11 @@ export default function DespairAndHope() {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as any } },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" as any },
+    },
   };
 
   return (
@@ -34,7 +38,7 @@ export default function DespairAndHope() {
       variants={containerVariants}
       className="w-full h-auto flex flex-col lg:flex-row justify-center items-center px-6 lg:px-10 py-10 pb-12 gap-4 overflow-hidden"
     >
-      {/* Left Section (text + button) */}
+      {}
       <motion.div
         variants={containerVariants}
         className="w-full lg:w-3/4 h-auto flex flex-col justify-center items-start gap-6"
@@ -55,12 +59,9 @@ export default function DespairAndHope() {
           <span className="text-gray-500">Despair and Hope </span>
         </motion.div>
 
-        <motion.p
-          variants={itemVariants}
-          className="text-lg text-gray-600"
-        >
-          Join RefreeG and make disaster relief faster, safer, and more impactful.
-          Survivors are <br /> waiting.
+        <motion.p variants={itemVariants} className="text-lg text-gray-600">
+          Join RefreeG and make disaster relief faster, safer, and more
+          impactful. Survivors are <br /> waiting.
         </motion.p>
 
         <motion.div variants={itemVariants} whileHover={{ scale: 1.05 }}>
@@ -73,7 +74,7 @@ export default function DespairAndHope() {
         </motion.div>
       </motion.div>
 
-      {/* Right Section (Image) */}
+      {}
       <motion.div
         variants={itemVariants}
         transition={{ delay: 0.3 }}

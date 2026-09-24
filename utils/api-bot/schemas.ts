@@ -10,11 +10,11 @@ export const CreateCampaignSchema = z.object({
   title: z.string().min(5).max(100),
   description: z.string().min(20).max(5000),
   goal_amount: z.number().positive(),
-  payout_mode: z.enum(["manual", "automated"]), // Updated to match user's clarified modes
+  payout_mode: z.enum(["manual", "automated"]), 
   deadline: z.string().datetime().optional(),
   category_id: z.string().uuid().optional(),
   
-  // Accept either bank_id OR direct bank details
+  
   bank_id: z.string().uuid().optional(),
   bank_account_number: z.string().min(10).max(20).optional(),
   bank_code: z.string().min(2).optional(),

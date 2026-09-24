@@ -4,12 +4,7 @@ import { cn } from "@/lib/utils";
 import type { DiscoverFilters, DiscoverSort } from "@/actions/discover-actions";
 
 export type DiscoverTab =
-  | "all"
-  | "for-you"
-  | "urgent"
-  | "closing-soon"
-  | "petitions"
-  | "new";
+  "all" | "for-you" | "urgent" | "closing-soon" | "petitions" | "new";
 
 const TABS: { id: DiscoverTab; label: string }[] = [
   { id: "all", label: "All" },
@@ -20,24 +15,42 @@ const TABS: { id: DiscoverTab; label: string }[] = [
   { id: "new", label: "New" },
 ];
 
-/** Maps a tab to its preset filter+sort overrides, layered on top of whatever the rail already has active. */
-export function presetForTab(
-  tab: DiscoverTab,
-): { filters: Partial<DiscoverFilters>; sortBy: DiscoverSort } {
+export function presetForTab(tab: DiscoverTab): {
+  filters: Partial<DiscoverFilters>;
+  sortBy: DiscoverSort;
+} {
   switch (tab) {
     case "urgent":
-      return { filters: { urgentOnly: true, includeType: "all" }, sortBy: "most-urgent" };
+      return {
+        filters: { urgentOnly: true, includeType: "all" },
+        sortBy: "most-urgent",
+      };
     case "closing-soon":
-      return { filters: { urgentOnly: true, includeType: "all" }, sortBy: "closing-soonest" };
+      return {
+        filters: { urgentOnly: true, includeType: "all" },
+        sortBy: "closing-soonest",
+      };
     case "petitions":
-      return { filters: { urgentOnly: false, includeType: "petitions" }, sortBy: "newest" };
+      return {
+        filters: { urgentOnly: false, includeType: "petitions" },
+        sortBy: "newest",
+      };
     case "new":
-      return { filters: { urgentOnly: false, includeType: "all" }, sortBy: "newest" };
+      return {
+        filters: { urgentOnly: false, includeType: "all" },
+        sortBy: "newest",
+      };
     case "for-you":
-      return { filters: { urgentOnly: false, includeType: "all" }, sortBy: "closest-to-goal" };
+      return {
+        filters: { urgentOnly: false, includeType: "all" },
+        sortBy: "closest-to-goal",
+      };
     case "all":
     default:
-      return { filters: { urgentOnly: false, includeType: "all" }, sortBy: "newest" };
+      return {
+        filters: { urgentOnly: false, includeType: "all" },
+        sortBy: "newest",
+      };
   }
 }
 

@@ -4,7 +4,9 @@ import type { PaymentProviderType } from "@/types";
 
 export async function GET(request: NextRequest) {
   try {
-    const provider = request.nextUrl.searchParams.get("provider") as PaymentProviderType | null;
+    const provider = request.nextUrl.searchParams.get(
+      "provider",
+    ) as PaymentProviderType | null;
     const banks = await listBanks(provider || undefined);
 
     return NextResponse.json({
@@ -18,7 +20,7 @@ export async function GET(request: NextRequest) {
         error: error.message || "Failed to fetch banks list",
         success: false,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

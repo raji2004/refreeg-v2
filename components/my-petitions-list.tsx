@@ -76,13 +76,11 @@ export async function MyPetitionsList({
 }: MyPetitionsListProps) {
   const petitions = await getUserPetitionsWithStatus(userId, status);
 
-  // 1. Filter petitions first
   const filteredPetitions =
     status === "all"
       ? petitions
       : petitions.filter((petition) => petition.status === status);
 
-  // 2. Then attach signature counts
   const petitionsWithSigners = await Promise.all(
     filteredPetitions.map(async (petition) => {
       const signers = await listSignaturesForPetition(petition.id);
@@ -135,10 +133,7 @@ export async function MyPetitionsList({
         const goal = Number(petition.goal) || 0;
         const progress =
           goal > 0
-            ? Math.min(
-                Math.max((petition.signatures / goal) * 100, 0),
-                100,
-              )
+            ? Math.min(Math.max((petition.signatures / goal) * 100, 0), 100)
             : 0;
         const statusDetails = getStatusDetails(petition.status);
         const StatusIcon = statusDetails.icon;
@@ -209,7 +204,10 @@ export async function MyPetitionsList({
                     </p>
                   </div>
                 </div>
-                <Progress value={progress} className="mt-3 h-2.5 bg-slate-200" />
+                <Progress
+                  value={progress}
+                  className="mt-3 h-2.5 bg-slate-200"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -233,16 +231,15 @@ export async function MyPetitionsList({
                 </div>
               </div>
 
-              {petition.status === "rejected" &&
-                petition.rejection_reason && (
-                  <div className="flex gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-3.5 text-sm text-rose-800">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <p className="min-w-0 leading-5">
-                      <strong className="font-semibold">Review note:</strong>{" "}
-                      {petition.rejection_reason}
-                    </p>
-                  </div>
-                )}
+              {petition.status === "rejected" && petition.rejection_reason && (
+                <div className="flex gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-3.5 text-sm text-rose-800">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p className="min-w-0 leading-5">
+                    <strong className="font-semibold">Review note:</strong>{" "}
+                    {petition.rejection_reason}
+                  </p>
+                </div>
+              )}
             </CardContent>
 
             <CardFooter className="border-t border-slate-100 bg-slate-50/50 px-6 py-4">

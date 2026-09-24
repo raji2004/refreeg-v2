@@ -280,7 +280,6 @@ export const stories = [
 ];
 
 export const faqs = [
-  // FEATURES
   {
     category: "features",
     icon: Info,
@@ -387,7 +386,6 @@ export const faqs = [
       "Yes, you can enable 2FA in your account settings. It adds an extra layer of security by sending a verification code to your registered email.",
   },
 
-  // RESOURCES
   {
     category: "resources",
     icon: HelpCircle,

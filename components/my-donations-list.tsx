@@ -81,7 +81,6 @@ export async function MyDonationsList({
 
   let filteredDonations = donations;
   if (timeframe === "recent") {
-    // Filter to only show donations from the last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     filteredDonations = filteredDonations.filter(
@@ -89,7 +88,6 @@ export async function MyDonationsList({
     );
   }
 
-  // Calculate total amount donated
   const totalDonated = filteredDonations.reduce(
     (sum, donation) => sum + donation.amount,
     0,

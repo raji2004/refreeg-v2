@@ -46,13 +46,21 @@ export default async function OrganizationInvitationPage({
                     ? "This invitation has already been used or revoked."
                     : result.error}
               </p>
-              <Button asChild><Link href="/">Return home</Link></Button>
+              <Button asChild>
+                <Link href="/">Return home</Link>
+              </Button>
             </>
           ) : (
             <>
               <div className="space-y-3 rounded-xl border bg-slate-50 p-4 text-left text-sm">
-                <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-blue-700" /> {result.invitation.email}</p>
-                <p className="flex items-center gap-2 capitalize"><ShieldCheck className="h-4 w-4 text-blue-700" /> {result.invitation.role} access</p>
+                <p className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-blue-700" />{" "}
+                  {result.invitation.email}
+                </p>
+                <p className="flex items-center gap-2 capitalize">
+                  <ShieldCheck className="h-4 w-4 text-blue-700" />{" "}
+                  {result.invitation.role} access
+                </p>
               </div>
 
               {!session?.user ? (
@@ -61,17 +69,26 @@ export default async function OrganizationInvitationPage({
                     Sign in with the invited email address to continue.
                   </p>
                   <Button asChild className="w-full">
-                    <Link href={`/auth/signin?redirect=${encodeURIComponent(redirectPath)}`}>Sign in to accept</Link>
+                    <Link
+                      href={`/auth/signin?redirect=${encodeURIComponent(redirectPath)}`}
+                    >
+                      Sign in to accept
+                    </Link>
                   </Button>
                   <Button asChild variant="outline" className="w-full">
-                    <Link href={`/auth/signup?redirect=${encodeURIComponent(redirectPath)}`}>Create an account</Link>
+                    <Link
+                      href={`/auth/signup?redirect=${encodeURIComponent(redirectPath)}`}
+                    >
+                      Create an account
+                    </Link>
                   </Button>
                 </div>
-              ) : session.user.email?.toLowerCase() !== result.invitation.email.toLowerCase() ? (
+              ) : session.user.email?.toLowerCase() !==
+                result.invitation.email.toLowerCase() ? (
                 <div className="space-y-3">
                   <p className="text-sm text-rose-700">
-                    You are signed in as {session.user.email}. Switch accounts and
-                    use {result.invitation.email} to accept this invitation.
+                    You are signed in as {session.user.email}. Switch accounts
+                    and use {result.invitation.email} to accept this invitation.
                   </p>
                   <form
                     action={async () => {

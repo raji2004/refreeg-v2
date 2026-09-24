@@ -8,7 +8,6 @@ const GetMail = () => {
   const [message, setMessage] = useState("");
   const pathname = usePathname();
 
-  // Assign button colors based on the current path
   const getButtonColor = () => {
     switch (pathname) {
       case "/non-profits":
@@ -20,7 +19,7 @@ const GetMail = () => {
       case "/disaster-relief":
         return "bg-[#0A0A0B] hover:bg-[#0A0A0B]";
       default:
-        return "bg-secondary hover:bg-seecondary/90"; // default theme color
+        return "bg-secondary hover:bg-seecondary/90";
     }
   };
 

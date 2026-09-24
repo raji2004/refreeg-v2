@@ -8,12 +8,7 @@ import {
 } from "@/utils/api-bot/response-utils";
 import { CORS_HEADERS } from "@/utils/api-bot/cors";
 
-/**
- * Validates an API key from the Authorization header.
- * Use this at the top of your `app/api/bot/*` route handlers.
- *
- * @returns { user_id, mode, apiKeyId, errorResponse }
- */
+
 export async function validateApiKey(request: NextRequest) {
   const authHeader = request.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -66,7 +61,7 @@ export async function validateApiKey(request: NextRequest) {
     };
   }
 
-  // Update last_used_at
+  
   prisma.api_keys.update({
     where: { id: apiKey.id },
     data: { last_used_at: new Date() },
@@ -80,16 +75,13 @@ export async function validateApiKey(request: NextRequest) {
   };
 }
 
-/**
- * Advanced in-memory rate limiter.
- * This can be replaced with a Redis-backed store for production clusters.
- */
+
 const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const DEFAULT_WINDOW_MS = 60 * 1000; // 1 minute
-const DEFAULT_MAX_REQUESTS = 60; // 60 requests per minute
+const DEFAULT_WINDOW_MS = 60 * 1000; 
+const DEFAULT_MAX_REQUESTS = 60; 
 
 export function rateLimit(request: NextRequest, max = DEFAULT_MAX_REQUESTS, window = DEFAULT_WINDOW_MS) {
-  // Use IP or API Key for identification
+  
   const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
   const keyIdentifier = request.headers.get("Authorization") || ip;
   const now = Date.now();
@@ -117,9 +109,7 @@ export function rateLimit(request: NextRequest, max = DEFAULT_MAX_REQUESTS, wind
   return null;
 }
 
-/**
- * Simple preflight OPTIONS handler for all bot routes
- */
+
 export function handlePreflight() {
   return new NextResponse(null, {
     status: 204,

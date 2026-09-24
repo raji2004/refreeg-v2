@@ -6,7 +6,6 @@ import { Button } from "../ui/button";
 import { motion } from "framer-motion";
 
 export default function Hero() {
-  // Floating animation for corner images
   const floatTransition = {
     y: {
       duration: 2,
@@ -17,7 +16,7 @@ export default function Hero() {
 
   return (
     <div className="relative w-full h-[600px] flex items-center justify-center text-white overflow-hidden">
-      {/* Background image */}
+      {}
       <Image
         src="/herobusiness.png"
         alt="business hero"
@@ -26,14 +25,19 @@ export default function Hero() {
         priority
       />
 
-      {/* Floating decorative corner images */}
+      {}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: [0, -20, 0], opacity: 1 }}
         transition={{ ...floatTransition, duration: 4 }}
         className="absolute top-0 left-0"
       >
-        <Image src="/images/Yellowbitcoin.png" alt="rocket" width={200} height={200} />
+        <Image
+          src="/images/Yellowbitcoin.png"
+          alt="rocket"
+          width={200}
+          height={200}
+        />
       </motion.div>
 
       <motion.div
@@ -42,7 +46,12 @@ export default function Hero() {
         transition={{ ...floatTransition, duration: 4, delay: 0.3 }}
         className="absolute top-0 right-0"
       >
-        <Image src="/images/moneyandphone.png" alt="filecase" width={200} height={200} />
+        <Image
+          src="/images/moneyandphone.png"
+          alt="filecase"
+          width={200}
+          height={200}
+        />
       </motion.div>
 
       <motion.div
@@ -51,7 +60,12 @@ export default function Hero() {
         transition={{ ...floatTransition, duration: 4, delay: 0.6 }}
         className="absolute bottom-0 left-0"
       >
-        <Image src="/images/safegreen.png" alt="green-safe" width={200} height={200} />
+        <Image
+          src="/images/safegreen.png"
+          alt="green-safe"
+          width={200}
+          height={200}
+        />
       </motion.div>
 
       <motion.div
@@ -68,10 +82,10 @@ export default function Hero() {
         />
       </motion.div>
 
-      {/* Subtle overlay gradient for readability */}
+      {}
       <div className="absolute inset-0 " />
 
-      {/* Main content */}
+      {}
       <motion.div
         className="relative z-10 text-center text-black max-w-3xl px-6"
         initial={{ opacity: 0, y: 40 }}
@@ -93,7 +107,10 @@ export default function Hero() {
           transition={{ delay: 0.7 }}
           className="text-lg md:text-xl mb-6"
         >
-          At RefreeG, we believe your impact shouldn’t be hidden behind confusing charges. That’s why we keep our fees clear, fair, and simple—so you always know exactly where your money goes and how it gets to you.
+          At RefreeG, we believe your impact shouldn’t be hidden behind
+          confusing charges. That’s why we keep our fees clear, fair, and
+          simple—so you always know exactly where your money goes and how it
+          gets to you.
         </motion.p>
 
         <motion.div

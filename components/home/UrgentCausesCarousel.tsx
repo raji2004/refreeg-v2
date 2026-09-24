@@ -133,13 +133,13 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
 
   return (
     <>
-      {/* ✅ MOBILE: Vertical list (only 3) */}
+      {}
       <div className="flex flex-col gap-4 md:hidden mt-6 mb-6">
         {causes.slice(0, 3).map((cause) => (
           <div key={cause.id}>{renderCard(cause)}</div>
         ))}
 
-        {/* See More Button */}
+        {}
         <Link href="/causes" className="w-full">
           <button className="w-full py-3 rounded-xl border border-gray-300 text-sm font-medium hover:bg-gray-100 transition">
             See More
@@ -147,7 +147,7 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
         </Link>
       </div>
 
-      {/* ✅ DESKTOP: Carousel */}
+      {}
       <div className="hidden md:block">
         <Carousel
           setApi={setApi}

@@ -9,6 +9,7 @@ interface SettingsItemProps {
   description: string;
   href: string;
   icon?: React.ReactNode;
+  destructive?: boolean;
 }
 
 export function SettingsItem({
@@ -16,72 +17,46 @@ export function SettingsItem({
   description,
   href,
   icon,
+  destructive,
 }: SettingsItemProps) {
   return (
     <Link
       href={href}
       className={cn(
-        "group relative flex items-center justify-between rounded-lg",
-        "py-4 px-4",
-        "border border-gray-200",
-        "bg-white",
-        "transition-all duration-200 ease-out",
-
-        "hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm",
-
-        "active:scale-[0.98] active:bg-gray-100",
-
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        "group flex items-center justify-between rounded-xl border-2 border-ink/10 bg-white px-4 py-4 transition-colors",
+        "hover:border-ink/30 hover:bg-cream",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2",
       )}
     >
-      <span
-        className={cn(
-          "absolute left-0 top-0 h-full w-1 rounded-l-lg",
-          "bg-transparent",
-          "transition-colors duration-200",
-          "group-hover:bg-blue-500"
-        )}
-      />
-
-      <div
-        className={cn(
-          "flex items-center gap-4 flex-1 min-w-0",
-          "transition-transform duration-200 ease-out",
-          "group-hover:translate-x-1"
-        )}
-      >
-        {icon && (
+      <div className="flex min-w-0 flex-1 items-center gap-4">
+        {icon ? (
           <div
             className={cn(
-              "text-gray-400",
-              "transition-colors duration-200",
-              "group-hover:text-blue-600"
+              "text-ink/40 transition-colors group-hover:text-ink",
+              destructive && "text-destructive/60 group-hover:text-destructive",
             )}
           >
             {icon}
           </div>
-        )}
+        ) : null}
 
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <h3
             className={cn(
-              "font-medium text-base text-gray-900",
-              "transition-colors duration-200"
+              "text-base font-medium text-ink",
+              destructive && "text-destructive",
             )}
           >
             {title}
           </h3>
-          <p className="text-sm text-gray-500 mt-1 group-hover:text-gray-600">
-            {description}
-          </p>
+          <p className="mt-1 text-sm text-ink/55">{description}</p>
         </div>
       </div>
 
       <ChevronRight
         className={cn(
-          "h-5 w-5 ml-4 text-gray-400",
-          "transition-all duration-200",
-          "group-hover:text-blue-600 group-hover:translate-x-1"
+          "ml-4 h-5 w-5 text-ink/30 transition-transform group-hover:translate-x-0.5 group-hover:text-ink/60",
+          destructive && "text-destructive/40",
         )}
       />
     </Link>
