@@ -17,6 +17,7 @@ jest.mock("@/lib/prisma", () => ({
       create: jest.fn(),
       update: jest.fn(),
     },
+    cause: { findFirst: jest.fn(), update: jest.fn() },
     userWallet: {
       findUnique: jest.fn(),
       create: jest.fn(),
