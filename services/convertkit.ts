@@ -105,7 +105,7 @@ export async function addTagsToSubscriber(
       };
     }
 
-    const url = `https:
+    const url = `https://api.convertkit.com/v3/tags/${tagIds[0]}/subscribe`;
 
     const response = await fetch(url, {
       method: "POST",
