@@ -297,17 +297,88 @@ export async function listUserDonations(
       orderBy: { createdAt: "desc" },
     });
 
-    return data.map((item: any) => ({
-      ...mapPrismaToDonation(item),
-      cause: {
-        title: item.cause?.title || "Unknown Cause",
-        category: item.cause?.category || "Unknown",
-        status: item.cause?.status ?? null,
-        slug: item.cause?.slug || null,
-      },
-    }));
+    return data.map(mapDonationWithCause);
   } catch (error) {
     console.error("Error listing user donations:", error);
+    throw error;
+  }
+}
+
+function mapDonationWithCause(item: any): DonationWithCause {
+  return {
+    ...mapPrismaToDonation(item),
+    cause: {
+      title: item.cause?.title || "Unknown Cause",
+      category: item.cause?.category || "Unknown",
+      status: item.cause?.status ?? null,
+      slug: item.cause?.slug || null,
+    },
+  };
+}
+
+export interface UserDonationsPage {
+  donations: DonationWithCause[];
+  total: number;
+  totalAmount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export async function listUserDonationsPage(
+  userId: string,
+  {
+    timeframe = "all",
+    page = 1,
+    pageSize = 10,
+  }: {
+    timeframe?: "all" | "recent";
+    page?: number;
+    pageSize?: number;
+  } = {},
+): Promise<UserDonationsPage> {
+  const safePageSize = Math.min(Math.max(Math.floor(pageSize) || 10, 1), 50);
+  const safePage = Math.max(Math.floor(page) || 1, 1);
+
+  const where: any = { userId };
+  if (timeframe === "recent") {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    where.createdAt = { gte: thirtyDaysAgo };
+  }
+
+  try {
+    const [rows, summary] = await Promise.all([
+      prisma.donation.findMany({
+        where,
+        include: {
+          cause: {
+            select: { title: true, category: true, status: true, slug: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
+      }),
+      prisma.donation.aggregate({
+        where,
+        _sum: { amount: true },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const total = summary._count._all;
+
+    return {
+      donations: rows.map(mapDonationWithCause),
+      total,
+      totalAmount: Number(summary._sum.amount || 0),
+      page: safePage,
+      pageSize: safePageSize,
+      totalPages: Math.max(Math.ceil(total / safePageSize), 1),
+    };
+  } catch (error) {
+    console.error("Error listing user donations page:", error);
     throw error;
   }
 }

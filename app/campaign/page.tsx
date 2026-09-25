@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCause } from "@/actions/cause-actions";
-import { getCurrentUser } from "@/actions/auth-actions";
+import { getSessionUser } from "@/lib/auth/session-user";
 import { getProfile } from "@/actions/profile-actions";
 import { listDonationsForCause } from "@/actions/donation-actions";
 import { listCommentsForCause } from "@/actions/comment-actions";
@@ -23,7 +23,7 @@ export default async function CampaignQualityTestPage({
 
   const donors = await listDonationsForCause(cause.id);
   const comments = await listCommentsForCause(cause.id);
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
   const myprofile = user ? await getProfile(user.id) : undefined;
   const creatorProfile = await getProfile(cause.user_id);
 

@@ -1,7 +1,6 @@
 jest.mock("@/actions/role-actions", () => ({
   getUserRoleInfo: jest.fn(),
   setUserRole: jest.fn(),
-  listUsersWithRoles: jest.fn(),
 }));
 
 jest.mock("@/actions/admin-user-actions", () => ({
@@ -32,11 +31,7 @@ jest.mock("@/components/ui/use-toast", () => ({
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, act, waitFor } from "@testing-library/react";
-import {
-  getUserRoleInfo,
-  setUserRole,
-  listUsersWithRoles,
-} from "@/actions/role-actions";
+import { getUserRoleInfo, setUserRole } from "@/actions/role-actions";
 import { listAdminCauses, getCauseEdits } from "@/actions/admin-cause-actions";
 import {
   listAdminPetitions,
@@ -48,7 +43,6 @@ import { useAdmin } from "@/hooks/use-admin";
 
 const mockGetUserRoleInfo = getUserRoleInfo as jest.Mock;
 const mockSetUserRole = setUserRole as jest.Mock;
-const mockListUsersWithRoles = listUsersWithRoles as jest.Mock;
 const mockListAdminCauses = listAdminCauses as jest.Mock;
 const mockGetCauseEdits = getCauseEdits as jest.Mock;
 const mockListAdminPetitions = listAdminPetitions as jest.Mock;
@@ -72,7 +66,6 @@ describe("useAdmin", () => {
       isManager: false,
       role: "admin",
     });
-    mockListUsersWithRoles.mockResolvedValue([]);
     mockListAdminCauses.mockResolvedValue([]);
     mockGetCauseEdits.mockResolvedValue([]);
     mockListAdminPetitions.mockResolvedValue([]);
@@ -91,9 +84,51 @@ describe("useAdmin", () => {
     expect(result.current.isManager).toBe(false);
     expect(result.current.isAdminOrManager).toBe(true);
     expect(result.current.userRole).toBe("admin");
-    expect(result.current.fetchUsers()).toEqual([]);
     expect(result.current.causes).toEqual([]);
     expect(result.current.petitions).toEqual([]);
+  });
+
+  it("does not load moderation queues when only the role is needed", async () => {
+    const { result } = renderHook(() => useAdmin("admin-1"), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isAdminOrManager).toBe(true));
+
+    expect(mockListAdminCauses).not.toHaveBeenCalled();
+    expect(mockGetCauseEdits).not.toHaveBeenCalled();
+    expect(mockListAdminPetitions).not.toHaveBeenCalled();
+    expect(mockGetPetitionEdits).not.toHaveBeenCalled();
+  });
+
+  it("loads the moderation queues when a status is requested", async () => {
+    const { result } = renderHook(() => useAdmin("admin-1", "pending"), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(mockListAdminCauses).toHaveBeenCalled());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(mockGetCauseEdits).toHaveBeenCalled();
+    expect(mockListAdminPetitions).toHaveBeenCalled();
+    expect(mockGetPetitionEdits).toHaveBeenCalled();
+  });
+
+  it("does not load moderation queues for non-admin users", async () => {
+    mockGetUserRoleInfo.mockResolvedValue({
+      isAdmin: false,
+      isManager: false,
+      role: "user",
+    });
+
+    const { result } = renderHook(() => useAdmin("user-1", "pending"), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(mockListAdminCauses).not.toHaveBeenCalled();
+    expect(mockListAdminPetitions).not.toHaveBeenCalled();
   });
 
   it("appoints a manager when caller is admin", async () => {

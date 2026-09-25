@@ -166,6 +166,29 @@ export async function listSignaturesForPetition(
   })) as unknown as Signature[];
 }
 
+export async function getPetitionSignatureTotals(
+  petitionIds: string[],
+): Promise<Record<string, { signerCount: number; totalAmount: number }>> {
+  const totals: Record<string, { signerCount: number; totalAmount: number }> =
+    {};
+  if (petitionIds.length === 0) return totals;
+
+  const grouped = await prisma.signatures.groupBy({
+    by: ["petition_id"],
+    _count: { petition_id: true },
+    _sum: { amount: true },
+    where: { petition_id: { in: petitionIds } },
+  });
+
+  for (const row of grouped) {
+    totals[row.petition_id] = {
+      signerCount: row._count.petition_id,
+      totalAmount: Number(row._sum.amount || 0),
+    };
+  }
+  return totals;
+}
+
 /**
  * List signatures for a user
  * @param userId - The ID of the user to list signatures for

@@ -21,11 +21,16 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
-import { listUserDonations } from "@/actions/donation-actions";
+import type { DonationWithCause } from "@/types/donation-types";
+import { PaginationButton } from "@/components/pagination-button";
 import { causePublicPath } from "@/lib/causes/slug";
 
 interface MyDonationsListProps {
-  userId: string;
+  donations: DonationWithCause[];
+  total: number;
+  totalAmount: number;
+  page: number;
+  totalPages: number;
   timeframe?: "all" | "recent";
 }
 
@@ -73,27 +78,17 @@ const getStatusDetails = (status: string) => {
   }
 };
 
-export async function MyDonationsList({
-  userId,
+export function MyDonationsList({
+  donations,
+  total,
+  totalAmount,
+  page,
+  totalPages,
   timeframe = "all",
 }: MyDonationsListProps) {
-  const donations = await listUserDonations(userId, timeframe);
+  const totalDonated = totalAmount;
 
-  let filteredDonations = donations;
-  if (timeframe === "recent") {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    filteredDonations = filteredDonations.filter(
-      (donation) => new Date(donation.created_at) >= thirtyDaysAgo,
-    );
-  }
-
-  const totalDonated = filteredDonations.reduce(
-    (sum, donation) => sum + donation.amount,
-    0,
-  );
-
-  if (filteredDonations.length === 0) {
+  if (donations.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 px-5 py-14 text-center">
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
@@ -145,18 +140,16 @@ export async function MyDonationsList({
             <ReceiptText className="h-5 w-5" />
           </span>
           <div>
-            <p className="text-2xl font-bold text-slate-950">
-              {filteredDonations.length}
-            </p>
+            <p className="text-2xl font-bold text-slate-950">{total}</p>
             <p className="text-sm text-slate-600">
-              contribution{filteredDonations.length !== 1 ? "s" : ""}
+              contribution{total !== 1 ? "s" : ""}
             </p>
           </div>
         </div>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-2">
-        {filteredDonations.map((donation) => {
+        {donations.map((donation) => {
           const statusDetails = getStatusDetails(donation.status);
           const StatusIcon = statusDetails.icon;
 
@@ -269,6 +262,12 @@ export async function MyDonationsList({
           );
         })}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-center border-t border-slate-100 pt-6">
+          <PaginationButton currentPage={page} totalPages={totalPages} />
+        </div>
+      )}
     </div>
   );
 }

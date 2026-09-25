@@ -1,11 +1,24 @@
 "use server";
 
-import { listCauses, countCauses } from "./cause-actions";
-import { listPetitions, countPetitions } from "./petition-actions";
+import {
+  listCauses,
+  countCauses,
+  countCausesByCategory,
+} from "./cause-actions";
+import {
+  listPetitions,
+  countPetitions,
+  countPetitionsByCategory,
+} from "./petition-actions";
 import { searchOrganizations } from "./organization-actions";
 import type { Cause } from "@/types/cause-types";
 import type { Petition } from "@/types/petition-types";
-import { DISCOVER_RESULT_CAP } from "@/lib/discover-constants";
+import { unstable_cache } from "next/cache";
+import {
+  DISCOVER_CACHE_SECONDS,
+  DISCOVER_CACHE_TAG,
+  DISCOVER_RESULT_CAP,
+} from "@/lib/discover-constants";
 
 export type DiscoverSort =
   | "most-urgent"
@@ -120,40 +133,79 @@ function petitionToItem(petition: Petition): DiscoverItem {
   };
 }
 
+// Only the fields that change what the database returns. Sorting and
+// near-goal filtering happen afterwards, so they must not split the cache.
+function queryFilters(filters: DiscoverFilters) {
+  return {
+    category: filters.category,
+    location: filters.location,
+    urgentOnly: filters.urgentOnly,
+    verifiedOnly: filters.verifiedOnly,
+    minAmountNeeded: filters.minAmountNeeded,
+    maxAmountNeeded: filters.maxAmountNeeded,
+    includeType: filters.includeType,
+    search: filters.search,
+  };
+}
+
+type QueryFilters = ReturnType<typeof queryFilters>;
+
+// Free-text searches are high-cardinality and would fill the cache with
+// one-off entries, so they always hit the database.
+function cachedByArgs<I extends { search?: string }, T>(
+  name: string,
+  run: (args: I) => Promise<T>,
+) {
+  const cached = unstable_cache(
+    (json: string) => run(JSON.parse(json) as I),
+    [name],
+    { revalidate: DISCOVER_CACHE_SECONDS, tags: [DISCOVER_CACHE_TAG] },
+  );
+  return (args: I) =>
+    args.search?.trim() ? run(args) : cached(JSON.stringify(args));
+}
+
+const getCappedItems = cachedByArgs(
+  "discover-capped-items",
+  async (filters: QueryFilters): Promise<DiscoverItem[]> => {
+    const includeCauses = filters.includeType !== "petitions";
+    const includePetitions = filters.includeType !== "campaigns";
+
+    const [causes, petitions] = await Promise.all([
+      includeCauses
+        ? listCauses({
+            category: filters.category,
+            search: filters.search,
+            location: filters.location,
+            urgentOnly: filters.urgentOnly,
+            verifiedOnly: filters.verifiedOnly,
+            minAmountNeeded: filters.minAmountNeeded,
+            maxAmountNeeded: filters.maxAmountNeeded,
+            limit: DISCOVER_RESULT_CAP,
+          })
+        : Promise.resolve([]),
+      includePetitions
+        ? listPetitions({
+            category: filters.category,
+            search: filters.search,
+            verifiedOnly: filters.verifiedOnly,
+            limit: DISCOVER_RESULT_CAP,
+          })
+        : Promise.resolve([]),
+    ]);
+
+    return [...causes.map(causeToItem), ...petitions.map(petitionToItem)];
+  },
+);
+
 export async function listDiscoverResults(
   filters: DiscoverFilters,
   { limit, offset }: { limit: number; offset: number },
 ) {
   const sortBy = filters.sortBy || "newest";
-  const includeCauses = filters.includeType !== "petitions";
-  const includePetitions = filters.includeType !== "campaigns";
-
-  const [causes, petitions] = await Promise.all([
-    includeCauses
-      ? listCauses({
-          category: filters.category,
-          search: filters.search,
-          location: filters.location,
-          urgentOnly: filters.urgentOnly,
-          verifiedOnly: filters.verifiedOnly,
-          minAmountNeeded: filters.minAmountNeeded,
-          maxAmountNeeded: filters.maxAmountNeeded,
-          limit: DISCOVER_RESULT_CAP,
-        })
-      : Promise.resolve([]),
-    includePetitions
-      ? listPetitions({
-          category: filters.category,
-          search: filters.search,
-          verifiedOnly: filters.verifiedOnly,
-          limit: DISCOVER_RESULT_CAP,
-        })
-      : Promise.resolve([]),
-  ]);
 
   let items: DiscoverItem[] = [
-    ...causes.map(causeToItem),
-    ...petitions.map(petitionToItem),
+    ...(await getCappedItems(queryFilters(filters))),
   ];
 
   if (filters.nearGoalOnly) {
@@ -168,34 +220,41 @@ export async function listDiscoverResults(
   return { items: page, hasMore: offset + page.length < cappedTotal };
 }
 
+const getResultCount = cachedByArgs(
+  "discover-result-count",
+  async (filters: QueryFilters): Promise<number> => {
+    const includeCauses = filters.includeType !== "petitions";
+    const includePetitions = filters.includeType !== "campaigns";
+
+    const [causeCount, petitionCount] = await Promise.all([
+      includeCauses
+        ? countCauses({
+            category: filters.category,
+            search: filters.search,
+            location: filters.location,
+            urgentOnly: filters.urgentOnly,
+            verifiedOnly: filters.verifiedOnly,
+            minAmountNeeded: filters.minAmountNeeded,
+            maxAmountNeeded: filters.maxAmountNeeded,
+          })
+        : Promise.resolve(0),
+      includePetitions
+        ? countPetitions({
+            category: filters.category,
+            search: filters.search,
+            verifiedOnly: filters.verifiedOnly,
+          })
+        : Promise.resolve(0),
+    ]);
+
+    return causeCount + petitionCount;
+  },
+);
+
 export async function countDiscoverResults(
   filters: DiscoverFilters,
 ): Promise<number> {
-  const includeCauses = filters.includeType !== "petitions";
-  const includePetitions = filters.includeType !== "campaigns";
-
-  const [causeCount, petitionCount] = await Promise.all([
-    includeCauses
-      ? countCauses({
-          category: filters.category,
-          search: filters.search,
-          location: filters.location,
-          urgentOnly: filters.urgentOnly,
-          verifiedOnly: filters.verifiedOnly,
-          minAmountNeeded: filters.minAmountNeeded,
-          maxAmountNeeded: filters.maxAmountNeeded,
-        })
-      : Promise.resolve(0),
-    includePetitions
-      ? countPetitions({
-          category: filters.category,
-          search: filters.search,
-          verifiedOnly: filters.verifiedOnly,
-        })
-      : Promise.resolve(0),
-  ]);
-
-  return causeCount + petitionCount;
+  return getResultCount(queryFilters(filters));
 }
 
 export async function suggestFilterToRemove(
@@ -217,17 +276,44 @@ export async function suggestFilterToRemove(
   );
 }
 
+const computeFacets = cachedByArgs(
+  "discover-facets",
+  async (args: Omit<QueryFilters, "category"> & { categoryIds: string[] }) => {
+    const includeCauses = args.includeType !== "petitions";
+    const includePetitions = args.includeType !== "campaigns";
+
+    const [causeCounts, petitionCounts] = await Promise.all([
+      includeCauses
+        ? countCausesByCategory({
+            search: args.search,
+            location: args.location,
+            urgentOnly: args.urgentOnly,
+            verifiedOnly: args.verifiedOnly,
+            minAmountNeeded: args.minAmountNeeded,
+            maxAmountNeeded: args.maxAmountNeeded,
+          })
+        : Promise.resolve({} as Record<string, number>),
+      includePetitions
+        ? countPetitionsByCategory({
+            search: args.search,
+            verifiedOnly: args.verifiedOnly,
+          })
+        : Promise.resolve({} as Record<string, number>),
+    ]);
+
+    return args.categoryIds.map((id) => ({
+      category: id,
+      count: (causeCounts[id] ?? 0) + (petitionCounts[id] ?? 0),
+    }));
+  },
+);
+
 export async function getDiscoverFacets(
   filters: Omit<DiscoverFilters, "category">,
   categoryIds: string[],
 ) {
-  const counts = await Promise.all(
-    categoryIds.map(async (id) => ({
-      category: id,
-      count: await countDiscoverResults({ ...filters, category: id }),
-    })),
-  );
-  return counts;
+  const { category: _category, ...scoped } = queryFilters(filters);
+  return computeFacets({ ...scoped, categoryIds });
 }
 
 export async function searchDiscover(query: string) {
