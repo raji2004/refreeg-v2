@@ -1,0 +1,264 @@
+name: PR Check
+
+# Runs on every pull request so a branch is known to be ready before it merges
+# and triggers the push-to-main pipeline (deploy.yml). The "Lint & unit tests"
+# job runs the exact commands of deploy.yml's test gate; the build job adds
+# the compile step that gate skips, so a failure that would only have shown up
+# during the deploy build is caught here instead.
+#
+# Branch protection: mark "PR ready" as the required status check. It rolls up
+# the blocking jobs, so the list of required checks never needs to change.
+
+on:
+  pull_request:
+    branches: [main, dev]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  # Same NODE_VERSION as deploy.yml
+  NODE_VERSION: '22'
+
+jobs:
+  # ── Same gate as the push-to-main pipeline ───────────────────────────────
+  test:
+    name: Lint & unit tests
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Unit tests
+        run: pnpm run test:no-coverage
+
+  # ── Production build ─────────────────────────────────────────────────────
+  # next.config.mjs sets ignoreBuildErrors, so this catches syntax errors,
+  # broken imports and server/client boundary mistakes, not type errors.
+  # Placeholder values are enough: the deploy build gets no DATABASE_URL either,
+  # and NEXT_PUBLIC_* values are only inlined into the bundle.
+  build:
+    name: Production build
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Cache Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        env:
+          NEXT_PUBLIC_BASE_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          NEXT_PUBLIC_REFREEG_SERVICE_FEE: '0'
+          NEXT_PUBLIC_BREET_ENV: sandbox
+          NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: pk_test_placeholder
+          NEXT_PUBLIC_S3_DIRECT_UPLOAD: 'false'
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT: ci
+          SENTRY_TELEMETRY_DISABLED: '1'
+        run: pnpm run build
+
+  # ── Formatting on the files this PR touches ──────────────────────────────
+  # The pre-commit hook formats staged files, so the check mirrors that scope.
+  # Checking the whole repo would fail on files no one in this PR changed.
+  format:
+    name: Prettier (changed files)
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting of changed files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git diff --name-only --diff-filter=ACMR -z "$BASE_SHA...$HEAD_SHA" \
+            -- '*.js' '*.jsx' '*.ts' '*.tsx' '*.json' '*.css' '*.md' '*.mjs' \
+            > changed-files.txt
+
+          if [ ! -s changed-files.txt ]; then
+            echo "No formattable files changed."
+            exit 0
+          fi
+
+          xargs -0 pnpm exec prettier --check < changed-files.txt
+
+  # ── Schema changes must ship with a migration ────────────────────────────
+  # deploy.yml runs `prisma migrate deploy` on every push to main; a schema
+  # edit with no migration is what caused the 2026-08-12 payment_provider
+  # incident. This replays every migration on a throwaway database and fails
+  # if the result differs from prisma/schema.
+  schema:
+    name: Prisma migrations match schema
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: refreeg_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/refreeg_ci?schema=public
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate schema
+        run: pnpm exec prisma validate
+
+      - name: Apply all migrations to an empty database
+        run: pnpm exec prisma migrate deploy
+
+      - name: Fail if the schema has changes without a migration
+        run: |
+          pnpm exec prisma migrate diff \
+            --from-url "$DATABASE_URL" \
+            --to-schema-datamodel prisma/schema \
+            --exit-code
+
+  # ── Report-only: type errors ─────────────────────────────────────────────
+  # The build ignores TypeScript errors and main currently has some, so this
+  # does not block merging. It shows up as a separate check so new errors are
+  # visible on the PR. Remove continue-on-error once main is clean.
+  typecheck:
+    name: Type check (report only)
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+
+  # ── Single required check ────────────────────────────────────────────────
+  ready:
+    name: PR ready
+    needs: [test, build, format, schema]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Summarize
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+
+          # Draft PRs skip every job; that is not "ready".
+          if [ "${{ github.event.pull_request.draft }}" = "true" ]; then
+            echo "::warning::Draft pull request - checks were skipped."
+            exit 1
+          fi
+
+          for result in $RESULTS; do
+            if [ "$result" != "success" ]; then
+              echo "::error::At least one required check did not pass."
+              exit 1
+            fi
+          done
+
+          echo "All required checks passed."
