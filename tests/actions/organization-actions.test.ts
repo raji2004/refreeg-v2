@@ -9,6 +9,7 @@ jest.mock("@/lib/prisma", () => ({
     },
     organization: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
@@ -16,6 +17,7 @@ jest.mock("@/lib/prisma", () => ({
       findFirst: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
+      count: jest.fn(),
     },
   },
 }));
@@ -30,19 +32,62 @@ jest.mock("next/cache", () => ({
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth/auth";
-import { updateOrganization } from "@/actions/organization-actions";
+import {
+  updateOrganization,
+  getOrganizationPublicProfile,
+} from "@/actions/organization-actions";
 
 const mockPrisma = prisma as unknown as {
   user: { findUnique: jest.Mock; update: jest.Mock };
-  organization: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
+  organization: {
+    findFirst: jest.Mock;
+    findUnique: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+  };
   organizationMember: {
     findFirst: jest.Mock;
     findUnique: jest.Mock;
     create: jest.Mock;
+    count: jest.Mock;
   };
 };
 
 const mockAuth = auth as jest.Mock;
+
+describe("getOrganizationPublicProfile", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("counts members with a per-organization query instead of a _count include", async () => {
+    mockPrisma.organization.findUnique.mockResolvedValue({
+      id: "org-1",
+      name: "Hope",
+      slug: "hope",
+      preferences: null,
+      createdAt: new Date("2024-01-01T00:00:00.000Z"),
+    });
+    mockPrisma.organizationMember.count.mockResolvedValue(7);
+
+    const result = await getOrganizationPublicProfile("owner-1");
+
+    expect(result?.memberCount).toBe(7);
+    expect(mockPrisma.organizationMember.count).toHaveBeenCalledWith({
+      where: { organizationId: "org-1" },
+    });
+    expect(
+      mockPrisma.organization.findUnique.mock.calls[0][0].select,
+    ).not.toHaveProperty("_count");
+  });
+
+  it("returns null without counting when the owner has no organization", async () => {
+    mockPrisma.organization.findUnique.mockResolvedValue(null);
+
+    expect(await getOrganizationPublicProfile("owner-1")).toBeNull();
+    expect(mockPrisma.organizationMember.count).not.toHaveBeenCalled();
+  });
+});
 
 describe("updateOrganization action", () => {
   beforeEach(() => {

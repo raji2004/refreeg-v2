@@ -34,6 +34,7 @@ import {
   addRewards,
   getUserWallet,
   getUserStats,
+  updateUserStreaks,
 } from "@/actions/event-reward-actions";
 
 const mockPrisma = prisma as unknown as {
@@ -46,6 +47,85 @@ const mockPrisma = prisma as unknown as {
 describe("event-reward-actions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe("updateUserStreaks", () => {
+    beforeEach(() => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-03-10T15:30:00Z"));
+      mockPrisma.userStreak.upsert.mockImplementation(async ({ create }) => ({
+        ...create,
+      }));
+      mockPrisma.events.create.mockResolvedValue({ id: "event-1" });
+      mockPrisma.rewardTransaction.create.mockResolvedValue({ id: "r-1" });
+      mockPrisma.userWallet.findUnique.mockResolvedValue({ balance: 0 });
+      mockPrisma.userWallet.upsert.mockResolvedValue({ balance: 0 });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("stores today's UTC date and starts a streak for a first-time user", async () => {
+      mockPrisma.userStreak.findUnique.mockResolvedValue(null);
+
+      await updateUserStreaks("user-1");
+
+      const args = mockPrisma.userStreak.upsert.mock.calls[0][0];
+      expect(args.create.weeklyStreak).toBe(1);
+      expect(args.create.lastActiveDate).toEqual(
+        new Date("2026-03-10T00:00:00Z"),
+      );
+      expect(args.update.lastActiveDate).toEqual(
+        new Date("2026-03-10T00:00:00Z"),
+      );
+    });
+
+    it("extends the streak when the last active day was yesterday (UTC)", async () => {
+      mockPrisma.userStreak.findUnique.mockResolvedValue({
+        weeklyStreak: 2,
+        isMonthlyActive: true,
+        lastActiveDate: new Date("2026-03-09T00:00:00Z"),
+      });
+
+      await updateUserStreaks("user-1");
+
+      expect(
+        mockPrisma.userStreak.upsert.mock.calls[0][0].update.weeklyStreak,
+      ).toBe(3);
+    });
+
+    it("resets the streak after a missed day", async () => {
+      mockPrisma.userStreak.findUnique.mockResolvedValue({
+        weeklyStreak: 5,
+        isMonthlyActive: true,
+        lastActiveDate: new Date("2026-03-07T00:00:00Z"),
+      });
+
+      await updateUserStreaks("user-1");
+
+      expect(
+        mockPrisma.userStreak.upsert.mock.calls[0][0].update.weeklyStreak,
+      ).toBe(1);
+    });
+
+    it("records a monthly_active event with the UTC month when a new month starts", async () => {
+      mockPrisma.userStreak.findUnique.mockResolvedValue({
+        weeklyStreak: 1,
+        isMonthlyActive: false,
+        lastActiveDate: new Date("2026-02-27T00:00:00Z"),
+      });
+
+      await updateUserStreaks("user-1");
+
+      expect(mockPrisma.events.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            event_type: "monthly_active",
+            metadata: { month: 3, year: 2026 },
+          }),
+        }),
+      );
+    });
   });
 
   describe("recordEvent", () => {

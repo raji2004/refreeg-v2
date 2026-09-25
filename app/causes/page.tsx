@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DiscoverPageClient } from "@/components/discover/discover-page-client";
+import { listBookmarkedIds } from "@/actions/bookmark-actions";
 import {
   listDiscoverResults,
   getDiscoverFacets,
@@ -28,9 +29,10 @@ export default async function DiscoverPage({
   const { tab: initialTab, filters: initialFilters } =
     parseDiscoverSearchParams(params);
 
-  const [{ items, hasMore }, facets] = await Promise.all([
+  const [{ items, hasMore }, facets, bookmarks] = await Promise.all([
     listDiscoverResults(initialFilters, { limit: PAGE_SIZE, offset: 0 }),
     getDiscoverFacets(initialFilters, CATEGORY_IDS),
+    listBookmarkedIds().catch(() => []),
   ]);
 
   return (
@@ -40,6 +42,7 @@ export default async function DiscoverPage({
       initialItems={items}
       initialHasMore={hasMore}
       initialFacets={facets}
+      initialBookmarks={bookmarks.map((b) => `${b.targetType}:${b.targetId}`)}
     />
   );
 }

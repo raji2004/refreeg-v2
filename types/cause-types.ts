@@ -88,6 +88,7 @@ export interface CauseFormData {
 }
 export interface CauseFilterOptions {
   category?: string;
+  categories?: string[];
   status?: CauseStatus;
   userId?: string;
   limit?: number;

@@ -77,15 +77,16 @@ describe("dashboard-actions", () => {
     });
 
     it("aggregates donations across approved causes", async () => {
-      mockPrisma.cause.findMany.mockResolvedValue([{ id: "cause-1" }]);
-      mockPrisma.donation.aggregate.mockResolvedValue({
-        _sum: { amount: 1500 },
-      });
-      mockPrisma.donation.findMany.mockResolvedValue([
-        { userId: "donor-1" },
-        { userId: "donor-2" },
-        { userId: "donor-1" },
+      mockPrisma.cause.findMany.mockResolvedValue([
+        { id: "cause-1", status: "approved" },
+        { id: "cause-2", status: "pending" },
       ]);
+      mockPrisma.donation.groupBy
+        .mockResolvedValueOnce([
+          { causeId: "cause-1", _sum: { amount: 1500 } },
+          { causeId: "cause-2", _sum: { amount: 999 } },
+        ])
+        .mockResolvedValueOnce([{ userId: "donor-1" }, { userId: "donor-2" }]);
 
       const result = await getDashboardStats("user-1");
 
@@ -109,7 +110,9 @@ describe("dashboard-actions", () => {
 
   describe("getDonationTrends", () => {
     it("returns monthly donation totals", async () => {
-      mockPrisma.cause.findMany.mockResolvedValue([{ id: "cause-1" }]);
+      mockPrisma.cause.findMany.mockResolvedValue([
+        { id: "cause-1", status: "approved" },
+      ]);
       mockPrisma.donation.findMany.mockResolvedValue([
         {
           amount: 100,
@@ -132,6 +135,21 @@ describe("dashboard-actions", () => {
       mockPrisma.cause.findMany.mockResolvedValue([]);
 
       expect(await getDonationTrends("user-1")).toEqual([]);
+    });
+  });
+
+  describe("dashboard query count", () => {
+    it("loads causes once and never fetches raw donation rows for stats", async () => {
+      mockPrisma.cause.findMany.mockResolvedValue([
+        { id: "cause-1", status: "approved" },
+      ]);
+      mockPrisma.donation.groupBy.mockResolvedValue([]);
+
+      await getDashboardStats("user-1");
+
+      expect(mockPrisma.cause.findMany).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.donation.aggregate).not.toHaveBeenCalled();
+      expect(mockPrisma.donation.findMany).not.toHaveBeenCalled();
     });
   });
 
@@ -172,7 +190,11 @@ describe("dashboard-actions", () => {
         { id: "petition-1", title: "Petition 1" },
       ]);
       mockPrisma.signatures.groupBy.mockResolvedValue([
-        { petition_id: "petition-1", _count: { petition_id: 4 } },
+        {
+          petition_id: "petition-1",
+          _count: { petition_id: 4 },
+          _sum: { amount: 40 },
+        },
       ]);
 
       const result = await getUserPetitionsWithStats("user-1");
@@ -239,14 +261,27 @@ describe("dashboard-actions", () => {
     });
 
     it("aggregates signature totals for approved petitions", async () => {
-      mockPrisma.petitions.findMany.mockResolvedValue([{ id: "petition-1" }]);
-      mockPrisma.signatures.aggregate.mockResolvedValue({
-        _sum: { amount: 2000 },
-      });
-      mockPrisma.signatures.findMany.mockResolvedValue([
-        { user_id: "signer-1" },
-        { user_id: "signer-2" },
+      mockPrisma.petitions.findMany.mockResolvedValue([
+        { id: "petition-1", status: "approved" },
+        { id: "petition-2", status: "rejected" },
       ]);
+      mockPrisma.signatures.groupBy
+        .mockResolvedValueOnce([
+          {
+            petition_id: "petition-1",
+            _count: { petition_id: 2 },
+            _sum: { amount: 2000 },
+          },
+          {
+            petition_id: "petition-2",
+            _count: { petition_id: 1 },
+            _sum: { amount: 500 },
+          },
+        ])
+        .mockResolvedValueOnce([
+          { user_id: "signer-1" },
+          { user_id: "signer-2" },
+        ]);
 
       const result = await getPetitionDashboardStats("user-1");
 

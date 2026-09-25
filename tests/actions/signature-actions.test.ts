@@ -8,6 +8,7 @@ jest.mock("@/lib/prisma", () => ({
       create: jest.fn(),
       findMany: jest.fn(),
       aggregate: jest.fn(),
+      groupBy: jest.fn(),
     },
     petitions: {
       findUnique: jest.fn(),
@@ -30,6 +31,7 @@ import {
   createSignature,
   listSignaturesForPetition,
   listUserSignatures,
+  getPetitionSignatureTotals,
 } from "@/actions/signature-actions";
 
 const mockPrisma = prisma as unknown as {
@@ -38,6 +40,7 @@ const mockPrisma = prisma as unknown as {
     create: jest.Mock;
     findMany: jest.Mock;
     aggregate: jest.Mock;
+    groupBy: jest.Mock;
   };
   petitions: { findUnique: jest.Mock };
   user: { findUnique: jest.Mock };
@@ -160,6 +163,37 @@ describe("signature-actions", () => {
       expect(result).toHaveLength(1);
       expect(result[0].amount).toBe(1);
       expect(result[0].created_at).toBe("2026-01-15T10:00:00.000Z");
+    });
+  });
+
+  describe("getPetitionSignatureTotals", () => {
+    it("returns counts and totals for many petitions in one grouped query", async () => {
+      mockPrisma.signatures.groupBy.mockResolvedValue([
+        {
+          petition_id: "p1",
+          _count: { petition_id: 3 },
+          _sum: { amount: 1500 },
+        },
+        {
+          petition_id: "p2",
+          _count: { petition_id: 1 },
+          _sum: { amount: null },
+        },
+      ]);
+
+      const totals = await getPetitionSignatureTotals(["p1", "p2", "p3"]);
+
+      expect(totals).toEqual({
+        p1: { signerCount: 3, totalAmount: 1500 },
+        p2: { signerCount: 1, totalAmount: 0 },
+      });
+      expect(mockPrisma.signatures.groupBy).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.signatures.findMany).not.toHaveBeenCalled();
+    });
+
+    it("skips the query when there are no petitions", async () => {
+      expect(await getPetitionSignatureTotals([])).toEqual({});
+      expect(mockPrisma.signatures.groupBy).not.toHaveBeenCalled();
     });
   });
 

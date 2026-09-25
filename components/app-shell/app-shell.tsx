@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Menu } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
-import { getProfile } from "@/actions/profile-actions";
+import { useProfile } from "@/hooks/use-profile";
 import { AppShellNav } from "./app-shell-nav";
 import { AppShellHeader } from "./app-shell-header";
 import { SidebarCtaCard } from "./sidebar-cta-card";
@@ -14,26 +14,10 @@ import { SidebarCtaCard } from "./sidebar-cta-card";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const isAuthenticated = !!user;
-  const [isVerified, setIsVerified] = useState(false);
-  const [totalPoints, setTotalPoints] = useState(0);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
-  useEffect(() => {
-    if (!user?.id) {
-      setIsVerified(false);
-      setTotalPoints(0);
-      return;
-    }
-    let cancelled = false;
-    getProfile(user.id).then((profile) => {
-      if (cancelled) return;
-      setIsVerified(!!profile?.is_verified);
-      setTotalPoints(profile?.total_points || 0);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id]);
+  const { profile } = useProfile(user?.id);
+  const isVerified = !!profile?.is_verified;
+  const totalPoints = profile?.total_points || 0;
 
   return (
     <div className="flex min-h-screen bg-cream">
