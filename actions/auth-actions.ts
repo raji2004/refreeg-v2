@@ -199,8 +199,23 @@ export async function recordSignupReward(userId: string, amount: number = 1) {
   }
 }
 
-export async function requestPasswordResetAction(email: string) {
+export async function requestPasswordResetAction(rawEmail: string) {
   try {
+    const email = rawEmail.trim().toLowerCase();
+    const baseUrl =
+      process.env.AUTH_URL?.replace("/api/auth", "") || "http://localhost:3000";
+
+    // Cause owners (direct or via recovered_owner_email) without a finished
+    // profile get a quick profile created and a link into the profile flow.
+    const causeCheck = await checkCauseUserLoginAction(email);
+    if (causeCheck.isCauseUserWithoutProfile && causeCheck.token) {
+      await sendPasswordResetEmail({
+        email,
+        resetUrl: `${baseUrl}/auth/update-password?token=${causeCheck.token}&flow=cause-profile&email=${encodeURIComponent(email)}`,
+      });
+      return { success: true };
+    }
+
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
@@ -210,25 +225,18 @@ export async function requestPasswordResetAction(email: string) {
       };
     }
 
-    // Generate a secure random token
     const token = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 3600000); // 1 hour from now
+    const expires = new Date(Date.now() + 3600000);
 
-    // Store token in DB
     await prisma.passwordResetToken.upsert({
       where: { email },
       update: { token, expires },
       create: { email, token, expires },
     });
 
-    // Use AUTH_URL from env, default to localhost if not set
-    const baseUrl =
-      process.env.AUTH_URL?.replace("/api/auth", "") || "http://localhost:3000";
-    const resetUrl = `${baseUrl}/auth/update-password?token=${token}`;
-
     await sendPasswordResetEmail({
       email,
-      resetUrl,
+      resetUrl: `${baseUrl}/auth/update-password?token=${token}`,
     });
 
     return { success: true };
