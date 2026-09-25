@@ -198,11 +198,14 @@ export async function getOrganizationPublicProfile(ownerId: string) {
         whatsappNumber: true,
         preferences: true,
         createdAt: true,
-        _count: { select: { members: true } },
       },
     });
 
     if (!organization) return null;
+
+    const memberCount = await prisma.organizationMember.count({
+      where: { organizationId: organization.id },
+    });
 
     return {
       id: organization.id,
@@ -219,7 +222,7 @@ export async function getOrganizationPublicProfile(ownerId: string) {
       tiktokUrl: organization.tiktokUrl || "",
       facebookUrl: organization.facebookUrl || "",
       whatsappNumber: organization.whatsappNumber || "",
-      memberCount: organization._count.members,
+      memberCount,
       publicProfile: mapPreferences(organization.preferences).publicProfile,
       createdAt: organization.createdAt.toISOString(),
     };

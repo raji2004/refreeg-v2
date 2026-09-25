@@ -22,7 +22,7 @@ import {
   getUserCausesWithStats,
   getUserPetitionsWithStats,
 } from "@/actions/dashboard-actions";
-import { getProfile, hasBankDetails } from "@/actions/profile-actions";
+import { getCachedProfile } from "@/lib/profile-cache";
 import { getOrganizationWorkspace } from "@/actions/organization-actions";
 import {
   getMatchedCauses,
@@ -70,16 +70,23 @@ export default async function DashboardPage({
   const search = params.search?.trim() || "";
   const modeFilter = params.mode || "all";
 
-  const [stats, petitionStats, donationTrends, userCauses, userPetitions] =
-    await Promise.all([
-      getDashboardStats(user.id as string),
-      getPetitionDashboardStats(user.id as string),
-      getDonationTrends(user.id as string),
-      getUserCausesWithStats(user.id as string),
-      getUserPetitionsWithStats(user.id as string),
-    ]);
-
-  const profile = await getProfile(user.id as string);
+  const [
+    stats,
+    petitionStats,
+    donationTrends,
+    userCauses,
+    userPetitions,
+    profile,
+    weeklyDelivered,
+  ] = await Promise.all([
+    getDashboardStats(user.id as string),
+    getPetitionDashboardStats(user.id as string),
+    getDonationTrends(user.id as string),
+    getUserCausesWithStats(user.id as string),
+    getUserPetitionsWithStats(user.id as string),
+    getCachedProfile(user.id as string),
+    getPlatformWeeklyDelivered(),
+  ]);
 
   if (profile?.account_type === "organization") {
     const organizationResult = await getOrganizationWorkspace();
@@ -124,13 +131,11 @@ export default async function DashboardPage({
   }));
 
   const interests = profile?.interests || [];
-  const [matchedCauses, matchedCount, weeklyDelivered, hasBank] =
-    await Promise.all([
-      getMatchedCauses(interests, 4),
-      getMatchedCausesCount(interests),
-      getPlatformWeeklyDelivered(),
-      hasBankDetails(user.id as string),
-    ]);
+  const hasBank = !!(profile?.account_number && profile?.bank_name);
+  const [matchedCauses, matchedCount] = await Promise.all([
+    getMatchedCauses(interests, 4),
+    getMatchedCausesCount(interests),
+  ]);
   const checklist = [
     { label: "Email confirmed", done: true },
     {

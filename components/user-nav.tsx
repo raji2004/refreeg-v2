@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
-import { getProfile } from "@/actions/profile-actions";
+import { useProfile } from "@/hooks/use-profile";
 import Link from "next/link";
 import {
   ShieldAlert,
@@ -36,35 +36,30 @@ import { getOrganizationWorkspace } from "@/actions/organization-actions";
 
 export function UserNav() {
   const { user, signOut } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
+  const { profile } = useProfile(user?.id);
   const [organization, setOrganization] = useState<any>(null);
   const [open, setOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const { isAdminOrManager } = useAdmin(user?.id);
+  const isOrganizationAccount = profile?.account_type === "organization";
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (user?.id) {
-        try {
-          const profileData = await getProfile(user.id);
-          setProfile(profileData);
-
-          if (profileData?.account_type === "organization") {
-            const result = await getOrganizationWorkspace();
-            if (result.success) setOrganization(result.workspace);
-          } else {
-            setOrganization(null);
-          }
-        } catch (error) {
-          console.error("Error fetching profile:", error);
-        }
-      }
-    };
-
-    if (user) {
-      fetchProfile();
+    if (!isOrganizationAccount) {
+      setOrganization(null);
+      return;
     }
-  }, [user]);
+
+    let cancelled = false;
+    getOrganizationWorkspace()
+      .then((result) => {
+        if (!cancelled && result.success) setOrganization(result.workspace);
+      })
+      .catch((error) => console.error("Error fetching workspace:", error));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOrganizationAccount]);
 
   if (!user) return null;
 

@@ -41,7 +41,13 @@ import { UserActions } from "./user-actions";
 import { UserSearch } from "@/components/search";
 import { CopyEmail } from "@/components/copy-email";
 import type { UserWithRole } from "@/types";
-import { getUserRole, listUsersWithRoles } from "@/actions/role-actions";
+import type { UsersWithRolesPage } from "@/actions/role-actions";
+import {
+  getUserRole,
+  listUsersWithRolesPage,
+  getPendingKycSummary,
+} from "@/actions/role-actions";
+import { PaginationButton } from "@/components/pagination-button";
 import Link from "next/link";
 import { ExportCSVButton } from "./components/export-csv-button";
 import { SendKycReminderButton } from "./components/send-kyc-reminder-button";
@@ -49,7 +55,9 @@ import { SendKycReminderButton } from "./components/send-kyc-reminder-button";
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string }> | { search?: string };
+  searchParams:
+    | Promise<{ search?: string; page?: string }>
+    | { search?: string; page?: string };
 }) {
   const params = await searchParams;
 
@@ -60,12 +68,18 @@ export default async function AdminUsersPage({
     redirect("/auth/signin");
   }
 
-  let users: UserWithRole[] = [];
+  const requestedPage = Math.max(Number.parseInt(params.page || "1") || 1, 1);
+  let usersPage: UsersWithRolesPage;
+  let pendingKyc: { count: number; firstUserId: string | null };
   let userRole: string | null = null;
 
   try {
-    [users, userRole] = await Promise.all([
-      listUsersWithRoles(),
+    [usersPage, pendingKyc, userRole] = await Promise.all([
+      listUsersWithRolesPage({
+        page: requestedPage,
+        search: params.search,
+      }),
+      getPendingKycSummary(params.search),
       getUserRole(userId),
     ]);
   } catch (err) {
@@ -96,17 +110,8 @@ export default async function AdminUsersPage({
     );
   }
 
-  const filteredUsers = params.search
-    ? users.filter(
-        (user) =>
-          user.email.toLowerCase().includes(params.search!.toLowerCase()) ||
-          user.full_name?.toLowerCase().includes(params.search!.toLowerCase()),
-      )
-    : users;
-
-  const kycAttentionUsers = filteredUsers.filter(
-    (u) => u.kyc_status === "pending",
-  );
+  const users = usersPage.users;
+  const kycAttentionCount = pendingKyc.count;
 
   return (
     <div className="space-y-6">
@@ -117,23 +122,23 @@ export default async function AdminUsersPage({
         </p>
       </div>
 
-      {kycAttentionUsers.length > 0 && (
+      {kycAttentionCount > 0 && pendingKyc.firstUserId && (
         <div className="rounded-md bg-yellow-50 border border-yellow-300 p-4 flex items-center gap-4">
           <Shield className="h-6 w-6 text-yellow-600" />
           <div className="flex-1">
             <span className="font-medium text-yellow-800">
-              {kycAttentionUsers.length} KYC submission
-              {kycAttentionUsers.length > 1 ? "s" : ""} require review
+              {kycAttentionCount} KYC submission
+              {kycAttentionCount > 1 ? "s" : ""} require review
             </span>
             <span className="block text-yellow-700 text-sm">
-              There {kycAttentionUsers.length === 1 ? "is" : "are"}{" "}
-              {kycAttentionUsers.length} user
-              {kycAttentionUsers.length > 1 ? "s" : ""} with new or edited KYC
+              There {kycAttentionCount === 1 ? "is" : "are"} {kycAttentionCount}{" "}
+              user
+              {kycAttentionCount > 1 ? "s" : ""} with new or edited KYC
               submissions awaiting your attention.
             </span>
           </div>
           <Link
-            href={`/dashboard/admin/users/kyc/${kycAttentionUsers[0].id}`}
+            href={`/dashboard/admin/users/kyc/${pendingKyc.firstUserId}`}
             className="ml-4 px-3 py-1 rounded bg-yellow-200 text-yellow-900 font-medium hover:bg-yellow-300 transition"
           >
             Review Now
@@ -166,7 +171,7 @@ export default async function AdminUsersPage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.length === 0 ? (
+                {users.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={6}
@@ -176,7 +181,7 @@ export default async function AdminUsersPage({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredUsers.map((userItem: UserWithRole) => (
+                  users.map((userItem: UserWithRole) => (
                     <TableRow key={userItem.id}>
                       <TableCell>
                         <div className="flex flex-col">
@@ -254,6 +259,21 @@ export default async function AdminUsersPage({
                 )}
               </TableBody>
             </Table>
+          </div>
+          <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
+            <p className="text-sm text-muted-foreground">
+              {usersPage.total === 0
+                ? "0 users"
+                : `Showing ${(usersPage.page - 1) * usersPage.pageSize + 1}–${
+                    (usersPage.page - 1) * usersPage.pageSize + users.length
+                  } of ${usersPage.total} users`}
+            </p>
+            {usersPage.totalPages > 1 && (
+              <PaginationButton
+                currentPage={usersPage.page}
+                totalPages={usersPage.totalPages}
+              />
+            )}
           </div>
         </CardContent>
       </Card>

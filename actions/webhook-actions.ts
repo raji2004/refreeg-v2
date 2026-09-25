@@ -1,12 +1,12 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "./auth-actions";
+import { getSessionUser } from "@/lib/auth/session-user";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 
 export async function getWebhooks() {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
   if (!user) throw new Error("Unauthorized");
 
   const data = await prisma.api_webhooks.findMany({
@@ -18,7 +18,7 @@ export async function getWebhooks() {
 }
 
 export async function createWebhook(url: string, events: string[]) {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
   if (!user) throw new Error("Unauthorized");
 
   const secret = `wh_sec_${crypto.randomBytes(24).toString("hex")}`;
@@ -38,7 +38,7 @@ export async function createWebhook(url: string, events: string[]) {
 }
 
 export async function deleteWebhook(id: string) {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
   if (!user) throw new Error("Unauthorized");
 
   await prisma.api_webhooks.deleteMany({
@@ -49,7 +49,7 @@ export async function deleteWebhook(id: string) {
 }
 
 export async function getWebhookLogs(webhookId?: string, limit = 50) {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
   if (!user) throw new Error("Unauthorized");
 
   const where: any = {

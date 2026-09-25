@@ -11,15 +11,19 @@ jest.mock("@/lib/auth/admin-auth", () => ({
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
-    api_keys: { findMany: jest.fn() },
-    api_campaigns: { findMany: jest.fn(), update: jest.fn() },
+    api_keys: { findMany: jest.fn(), count: jest.fn() },
+    api_campaigns: {
+      findMany: jest.fn(),
+      update: jest.fn(),
+      count: jest.fn(),
+    },
     api_campaign_reports: {
       count: jest.fn(),
       groupBy: jest.fn(),
       update: jest.fn(),
     },
-    api_donations: { findMany: jest.fn() },
-    api_request_logs: { findMany: jest.fn() },
+    api_donations: { findMany: jest.fn(), aggregate: jest.fn() },
+    api_request_logs: { findMany: jest.fn(), count: jest.fn() },
     user: { findMany: jest.fn() },
     logs: { create: jest.fn() },
   },
@@ -39,15 +43,15 @@ import {
 const mockAuth = auth as jest.Mock;
 const mockGetUserRole = getUserRole as jest.Mock;
 const mockPrisma = prisma as unknown as {
-  api_keys: { findMany: jest.Mock };
-  api_campaigns: { findMany: jest.Mock; update: jest.Mock };
+  api_keys: { findMany: jest.Mock; count: jest.Mock };
+  api_campaigns: { findMany: jest.Mock; update: jest.Mock; count: jest.Mock };
   api_campaign_reports: {
     count: jest.Mock;
     groupBy: jest.Mock;
     update: jest.Mock;
   };
-  api_donations: { findMany: jest.Mock };
-  api_request_logs: { findMany: jest.Mock };
+  api_donations: { findMany: jest.Mock; aggregate: jest.Mock };
+  api_request_logs: { findMany: jest.Mock; count: jest.Mock };
   user: { findMany: jest.Mock };
   logs: { create: jest.Mock };
 };
@@ -73,26 +77,32 @@ describe("api-monitoring-actions", () => {
     });
 
     it("returns monitoring summary for admin", async () => {
-      mockPrisma.api_keys.findMany.mockResolvedValue([
-        { id: "k1", revoked_at: null, last_used_at: new Date() },
-        { id: "k2", revoked_at: new Date(), last_used_at: new Date() },
-      ]);
-      mockPrisma.api_campaigns.findMany.mockResolvedValue([
-        { id: "c1", status: "active" },
-        { id: "c2", status: "paused" },
-      ]);
+      mockPrisma.api_keys.count.mockImplementation(
+        async (args?: { where?: object }) => (args?.where ? 1 : 2),
+      );
+      mockPrisma.api_campaigns.count.mockImplementation(
+        async (args?: { where?: object }) => (args?.where ? 1 : 2),
+      );
       mockPrisma.api_campaign_reports.count.mockResolvedValue(3);
-      mockPrisma.api_donations.findMany.mockResolvedValue([
-        { amount: 1000 },
-        { amount: 2000 },
-      ]);
-      mockPrisma.api_request_logs.findMany.mockResolvedValue([
-        { status_code: 200 },
-        { status_code: 500 },
-      ]);
+      mockPrisma.api_donations.aggregate.mockResolvedValue({
+        _sum: { amount: 3000 },
+      });
+      mockPrisma.api_request_logs.count.mockImplementation(
+        async (args?: { where?: object }) => (args?.where ? 1 : 2),
+      );
 
       const result = await getApiMonitoringSummary();
 
+      expect(mockPrisma.api_keys.findMany).not.toHaveBeenCalled();
+      expect(mockPrisma.api_campaigns.findMany).not.toHaveBeenCalled();
+      expect(mockPrisma.api_donations.findMany).not.toHaveBeenCalled();
+      expect(mockPrisma.api_request_logs.findMany).not.toHaveBeenCalled();
+      expect(mockPrisma.api_request_logs.count).toHaveBeenCalledWith({
+        where: { status_code: { gte: 400 } },
+      });
+      expect(mockPrisma.api_keys.count).toHaveBeenCalledWith({
+        where: { revoked_at: null, last_used_at: { not: null } },
+      });
       expect(result.activeKeys).toBe(1);
       expect(result.totalKeys).toBe(2);
       expect(result.apiCampaigns).toBe(2);

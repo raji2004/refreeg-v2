@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth/auth";
 import { isAdminOrManager } from "./role-actions";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { DISCOVER_CACHE_TAG } from "@/lib/discover-constants";
 import {
   sendPetitionApprovedEmailForUser,
   sendPetitionRejectedEmailForUser,
@@ -306,5 +307,6 @@ export async function updatePetitionStatus(
   }
 
   revalidatePath("/dashboard/admin/petitions");
+  revalidateTag(DISCOVER_CACHE_TAG);
   return { success: true };
 }

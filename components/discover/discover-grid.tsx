@@ -16,7 +16,7 @@ import {
   type DiscoverFilters,
   type DiscoverItem,
 } from "@/actions/discover-actions";
-import { listBookmarkedIds, toggleBookmark } from "@/actions/bookmark-actions";
+import { toggleBookmark } from "@/actions/bookmark-actions";
 import { DISCOVER_RESULT_CAP } from "@/lib/discover-constants";
 
 const PAGE_SIZE = 12;
@@ -26,12 +26,14 @@ export function DiscoverGrid({
   filters,
   initialItems,
   initialHasMore,
+  initialBookmarks,
   onRemoveFilter,
   onClearFilters,
 }: {
   filters: DiscoverFilters;
   initialItems: DiscoverItem[];
   initialHasMore: boolean;
+  initialBookmarks: string[];
   onRemoveFilter: (key: keyof DiscoverFilters) => void;
   onClearFilters: () => void;
 }) {
@@ -42,7 +44,9 @@ export function DiscoverGrid({
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingFresh, setLoadingFresh] = useState(false);
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
+  const [bookmarked, setBookmarked] = useState<Set<string>>(
+    () => new Set(initialBookmarks),
+  );
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const isFirstRender = useRef(true);
 
@@ -79,18 +83,6 @@ export function DiscoverGrid({
       // best-effort only
     }
   };
-
-  useEffect(() => {
-    listBookmarkedIds()
-      .then((rows) => {
-        setBookmarked(
-          new Set(rows.map((r) => `${r.targetType}:${r.targetId}`)),
-        );
-      })
-      .catch(() => {
-        // Non-critical — bookmarks just won't show as saved this load.
-      });
-  }, [user?.id]);
 
   // Refetch from scratch whenever the active filter set changes.
   useEffect(() => {

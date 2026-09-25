@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ArrowRight, BarChart3, Eye, Plus } from "lucide-react";
-import { getCurrentUser } from "@/actions";
+import { getSessionUser } from "@/lib/auth/session-user";
 import { getUserPetitionsWithStats } from "@/actions/dashboard-actions";
 
 const getProgress = (current: number, goal: number) => {
@@ -38,7 +38,7 @@ export async function DashboardPetitions({
   let petitionsWithSigners = initialPetitions;
 
   if (!petitionsWithSigners) {
-    const user = await getCurrentUser();
+    const user = await getSessionUser();
     if (!user) {
       return (
         <div className="rounded-[24px] border border-slate-200 bg-white p-8 text-center shadow-[0_18px_40px_-34px_rgba(15,23,42,0.45)]">
