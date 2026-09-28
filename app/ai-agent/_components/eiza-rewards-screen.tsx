@@ -107,9 +107,6 @@ export default function EizaRewardsScreen() {
     onDonation: async (payload) => {
       handleEventPayload(payload);
     },
-    onLogin: async () => {
-      await handleLoginReward();
-    },
     onWeeklyStreak: async (payload) => {
       handleEventPayload(payload);
       await fetchWalletData();

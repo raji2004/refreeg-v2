@@ -61,10 +61,10 @@ describe("Flutterwave Service", () => {
               transaction_charge: 15,
             },
           ],
-        })
+        }),
       );
       expect(result.authorization_url).toBe(
-        "https://checkout.flutterwave.com/v3/hosted/pay/123"
+        "https://checkout.flutterwave.com/v3/hosted/pay/123",
       );
       expect(result.reference).toContain("flw_");
     });
@@ -79,7 +79,7 @@ describe("Flutterwave Service", () => {
       const result = await Flutterwave.verifyTransaction("12345");
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        "/transactions/12345/verify"
+        "/transactions/12345/verify",
       );
       expect(result).toBe(true);
     });
@@ -102,7 +102,7 @@ describe("Flutterwave Service", () => {
         account_bank: "044",
         account_number: "0690000031",
         business_name: "Test Cause",
-        business_email: undefined,
+        business_email: "no-reply@refreeg.com",
         business_contact_mobile: "08000000000",
         business_mobile: "08000000000",
         split_type: "percentage",

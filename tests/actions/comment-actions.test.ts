@@ -120,14 +120,12 @@ describe("comment-actions", () => {
       expect(recordEvent).not.toHaveBeenCalled();
     });
 
-    it("does not record event for guest comments", async () => {
-      mockPrisma.comments.create.mockResolvedValue({
-        ...commentRecord,
-        user_id: null,
-      });
+    it("rejects guest comments", async () => {
+      await expect(
+        createComment("cause-1", null, "Guest comment"),
+      ).rejects.toThrow("You must be signed in to comment");
 
-      await createComment("cause-1", null, "Guest comment");
-
+      expect(mockPrisma.comments.create).not.toHaveBeenCalled();
       expect(recordEvent).not.toHaveBeenCalled();
     });
 
