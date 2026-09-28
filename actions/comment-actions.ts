@@ -21,7 +21,8 @@ export async function createComment(
   content: string,
   parentId?: string,
 ) {
-  const dbUserId = userId && userId !== "" ? userId : null;
+  if (!userId) throw new Error("You must be signed in to comment");
+  const dbUserId = userId;
 
   const comment = await prisma.comments.create({
     data: {

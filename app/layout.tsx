@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "./providers";
 import { ClientLayout } from "@/components/client-layout";
 import { Metadata } from "next";
+import NextTopLoader from "nextjs-toploader";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -74,6 +75,13 @@ export default function RootLayout({
         className={`${montserrat.variable} ${fraunces.variable} font-montserrat antialiased`}
         suppressHydrationWarning
       >
+        <NextTopLoader
+          color="hsl(var(--lime))"
+          height={3}
+          showSpinner={false}
+          shadow="0 0 0 1px hsl(var(--ink) / 0.35)"
+          zIndex={1600}
+        />
         <Providers>
           <ClientLayout>{children}</ClientLayout>
           <Toaster />

@@ -40,6 +40,7 @@ export interface Profile {
   gender?: string | null;
   bio: string | null;
   solana_wallet?: string | null;
+  crypto_wallets?: unknown;
   social_media?: {
     twitter?: string | null;
     facebook?: string | null;

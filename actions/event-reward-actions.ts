@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { REWARD_AMOUNTS } from "@/lib/reward-constants";
-import type { RewardEvent } from "@/types";
+import type { RewardEvent, RewardTransaction, UserStreak } from "@/types";
 
 export async function recordEvent(event: RewardEvent) {
   try {
@@ -127,9 +127,19 @@ export async function getUserWallet(userId: string) {
       }),
     ]);
 
+    // Decimal and Date can't cross the server-action boundary; return plain values.
     return {
-      wallet,
-      transactions,
+      wallet: wallet ? { balance: Number(wallet.balance ?? 0) } : null,
+      transactions: transactions.map((t): RewardTransaction => ({
+        id: t.id,
+        user_id: t.userId,
+        amount: Number(t.amount),
+        transaction_type: t.transactionType,
+        event_id: t.event_id ?? "",
+        status: (t.status ?? "completed") as RewardTransaction["status"],
+        created_at: t.createdAt?.toISOString() ?? "",
+        updated_at: t.updatedAt?.toISOString(),
+      })),
       walletError: null,
       transactionsError: null,
     };
@@ -249,20 +259,21 @@ export async function updateUserStreaks(userId: string) {
   }
 }
 
-export async function getUserStats(userId: string) {
+export async function getUserStats(userId: string): Promise<UserStreak> {
   try {
     const data = await prisma.userStreak.findUnique({
       where: { userId },
     });
 
-    return (
-      data || {
-        userId,
-        weeklyStreak: 0,
-        isMonthlyActive: false,
-        lastActiveDate: null,
-      }
-    );
+    return {
+      id: data?.id ?? "",
+      user_id: userId,
+      weekly_streak: data?.weeklyStreak ?? 0,
+      is_monthly_active: data?.isMonthlyActive ?? false,
+      last_active_date: data?.lastActiveDate?.toISOString() ?? null,
+      created_at: data?.createdAt?.toISOString() ?? "",
+      updated_at: data?.updatedAt?.toISOString() ?? "",
+    };
   } catch (error) {
     console.error("Error in getUserStats:", error);
     throw error;

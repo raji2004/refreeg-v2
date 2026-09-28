@@ -13,23 +13,18 @@ export async function GET(request: Request) {
       );
     }
 
-    const country = await prisma.country.findFirst({
+    // The state table is empty in production; cities carries every state name.
+    const states = await prisma.city.findMany({
       where: {
-        name: { equals: countryName, mode: "insensitive" },
+        country_name: { equals: countryName, mode: "insensitive" },
+        state_name: { not: null },
       },
-      select: {
-        states: {
-          select: { name: true },
-          orderBy: { name: "asc" },
-        },
-      },
+      distinct: ["state_name"],
+      select: { state_name: true },
+      orderBy: { state_name: "asc" },
     });
 
-    if (!country) {
-      return NextResponse.json({ error: "Country not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(country.states.map((s) => s.name));
+    return NextResponse.json(states.map((s) => s.state_name));
   } catch (error) {
     console.error("States API error:", error);
 
