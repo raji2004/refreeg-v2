@@ -100,8 +100,8 @@ export async function addTagsToSubscriber(
       };
     }
 
-    // Fixed the broken URL here
-    const url = `https://api.convertkit.com/v3/subscribers/add_tags`;
+    // Using the direct tag subscription endpoint
+    const url = `https://api.convertkit.com/v3/tags/${tagIds[0]}/subscribe`;
 
     const response = await fetch(url, {
       method: "POST",
@@ -111,7 +111,6 @@ export async function addTagsToSubscriber(
       body: JSON.stringify({
         api_key: apiKey,
         email,
-        tags: tagIds,
       }),
     });
 
