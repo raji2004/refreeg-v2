@@ -107,53 +107,33 @@ async function requireAdminAccess(): Promise<{
 export async function getApiMonitoringSummary(): Promise<ApiMonitoringSummary> {
   await requireAdminAccess();
 
-  const allKeys = await prisma.api_keys.findMany({
-    select: {
-      id: true,
-      revoked_at: true,
-      last_used_at: true,
-    },
-  });
+  const [
+    totalKeys,
+    activeKeys,
+    totalCampaigns,
+    activeCampaigns,
+    pendingReports,
+    successfulDonations,
+    totalRequestVolume,
+    totalErrors,
+  ] = await Promise.all([
+    prisma.api_keys.count(),
+    prisma.api_keys.count({
+      where: { revoked_at: null, last_used_at: { not: null } },
+    }),
+    prisma.api_campaigns.count(),
+    prisma.api_campaigns.count({ where: { status: "active" } }),
+    prisma.api_campaign_reports.count({ where: { status: "pending" } }),
+    prisma.api_donations.aggregate({
+      where: { status: "success" },
+      _sum: { amount: true },
+    }),
+    prisma.api_request_logs.count(),
+    prisma.api_request_logs.count({ where: { status_code: { gte: 400 } } }),
+  ]);
 
-  const activeKeys = allKeys.filter(
-    (key) => !key.revoked_at && !!key.last_used_at,
-  ).length;
-  const totalKeys = allKeys.length;
+  const donationVolume = Number(successfulDonations._sum.amount ?? 0);
 
-  const allCampaigns = await prisma.api_campaigns.findMany({
-    select: {
-      id: true,
-      status: true,
-    },
-  });
-
-  const totalCampaigns = allCampaigns.length;
-  const activeCampaigns = allCampaigns.filter(
-    (campaign) => campaign.status === "active",
-  ).length;
-
-  const pendingReports = await prisma.api_campaign_reports.count({
-    where: { status: "pending" },
-  });
-
-  const successfulDonations = await prisma.api_donations.findMany({
-    where: { status: "success" },
-    select: { amount: true },
-  });
-
-  const donationVolume = successfulDonations.reduce(
-    (sum, donation) => sum + Number(donation.amount),
-    0,
-  );
-
-  const requestLogs = await prisma.api_request_logs.findMany({
-    select: { status_code: true },
-  });
-
-  const totalRequestVolume = requestLogs.length;
-  const totalErrors = requestLogs.filter(
-    (log) => Number(log.status_code) >= 400,
-  ).length;
   const requestErrorRate =
     totalRequestVolume > 0
       ? Number(((totalErrors / totalRequestVolume) * 100).toFixed(1))

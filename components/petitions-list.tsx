@@ -1,5 +1,4 @@
-import { listPetitions } from "@/actions/petition-actions";
-import { listSignaturesForPetition } from "@/actions/signature-actions";
+import { getRankedPetitions } from "@/lib/petitions-ranked";
 import { PaginationButton } from "@/components/pagination-button";
 import { PetitionCard } from "./petition-card";
 
@@ -14,57 +13,7 @@ export async function PetitionsList({
   page,
   pageSize,
 }: PetitionsListProps) {
-  const petitions = await listPetitions();
-
-  const activePetitions = petitions.filter(
-    (p) => (p.days_active ?? 0) > 0 && p.status !== ("expired" as any),
-  );
-
-  const categoryFiltered =
-    category === "all"
-      ? activePetitions
-      : activePetitions.filter((p) => p.category === category);
-
-  const petitionsWithSigners = await Promise.all(
-    categoryFiltered.map(async (petition) => {
-      const signers = await listSignaturesForPetition(petition.id);
-      const signerCount = signers?.length || 0;
-      const totalAmount = signers.reduce((sum, s) => sum + (s.amount || 0), 0);
-
-      const percentRaised =
-        petition.goal > 0
-          ? Math.min(Math.round((totalAmount / petition.goal) * 100), 100)
-          : 0;
-
-      return {
-        ...petition,
-        image: petition.image ?? undefined,
-        days_active: petition.days_active ?? undefined,
-        signerCount,
-        totalAmount,
-        percentRaised,
-      };
-    }),
-  );
-
-  const sortedPetitions = petitionsWithSigners.sort((a, b) => {
-    if (a.percentRaised === 0 && b.percentRaised !== 0) return 1;
-    if (b.percentRaised === 0 && a.percentRaised !== 0) return -1;
-
-    if (b.percentRaised !== a.percentRaised) {
-      return b.percentRaised - a.percentRaised;
-    }
-
-    if (b.signerCount !== a.signerCount) {
-      return b.signerCount - a.signerCount;
-    }
-
-    if (b.totalAmount !== a.totalAmount) {
-      return b.totalAmount - a.totalAmount;
-    }
-
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  const sortedPetitions = await getRankedPetitions(category);
 
   const totalPetitions = sortedPetitions.length;
   const totalPages = Math.ceil(totalPetitions / pageSize);

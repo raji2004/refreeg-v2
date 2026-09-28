@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getProfile } from "@/actions/profile-actions";
-import { getCurrentUser } from "@/actions/auth-actions";
+import { getSessionUser } from "@/lib/auth/session-user";
 import DeveloperNav from "./DeveloperNav";
 import {
   Card,
@@ -19,7 +19,7 @@ export default async function DeveloperLayout({
 }: {
   children: ReactNode;
 }) {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
   if (!user) redirect("/auth/signin");
 
   const profile = await getProfile(user.id);

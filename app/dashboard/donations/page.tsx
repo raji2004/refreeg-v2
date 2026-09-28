@@ -1,16 +1,46 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { MyDonationsList } from "@/components/my-donations-list";
-import { getCurrentUser } from "@/actions/auth-actions";
+import { auth } from "@/lib/auth/auth";
+import { listUserDonationsPage } from "@/actions/donation-actions";
 import { ArrowUpRight, HeartHandshake, Sparkles } from "lucide-react";
 
-export default async function MyDonationsPage() {
-  const user = await getCurrentUser();
+const PAGE_SIZE = 10;
 
-  if (!user) {
+const tabClass = (active: boolean) =>
+  `inline-flex h-9 items-center rounded-xl px-4 text-sm font-medium transition-colors ${
+    active
+      ? "bg-white text-slate-950 shadow-sm"
+      : "text-slate-600 hover:text-slate-950"
+  }`;
+
+export default async function MyDonationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; page?: string }>;
+}) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
     redirect("/auth/signin");
+  }
+
+  const params = await searchParams;
+  const timeframe = params.tab === "recent" ? "recent" : "all";
+  const requestedPage = Math.max(Number.parseInt(params.page || "1") || 1, 1);
+
+  const result = await listUserDonationsPage(session.user.id, {
+    timeframe,
+    page: requestedPage,
+    pageSize: PAGE_SIZE,
+  });
+
+  if (requestedPage > result.totalPages) {
+    const query = new URLSearchParams();
+    if (timeframe === "recent") query.set("tab", "recent");
+    query.set("page", String(result.totalPages));
+    redirect(`/dashboard/donations?${query.toString()}`);
   }
 
   return (
@@ -40,28 +70,35 @@ export default async function MyDonationsPage() {
         </Link>
       </div>
 
-      <Tabs defaultValue="all" className="mt-5 space-y-5">
-        <TabsList className="h-auto max-w-full justify-start gap-1 rounded-2xl bg-slate-100/80 p-1.5">
-          <TabsTrigger
-            value="all"
-            className="h-9 rounded-xl px-4 text-slate-600 data-[state=active]:text-slate-950"
+      <div className="mt-5 space-y-5">
+        <nav
+          aria-label="Donation period"
+          className="inline-flex h-auto max-w-full items-center justify-start gap-1 rounded-2xl bg-slate-100/80 p-1.5"
+        >
+          <Link
+            href="/dashboard/donations"
+            aria-current={timeframe === "all" ? "page" : undefined}
+            className={tabClass(timeframe === "all")}
           >
             All donations
-          </TabsTrigger>
-          <TabsTrigger
-            value="recent"
-            className="h-9 rounded-xl px-4 text-slate-600 data-[state=active]:text-blue-700"
+          </Link>
+          <Link
+            href="/dashboard/donations?tab=recent"
+            aria-current={timeframe === "recent" ? "page" : undefined}
+            className={tabClass(timeframe === "recent")}
           >
             Last 30 days
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="all" className="mt-0">
-          <MyDonationsList userId={user.id} />
-        </TabsContent>
-        <TabsContent value="recent" className="mt-0">
-          <MyDonationsList userId={user.id} timeframe="recent" />
-        </TabsContent>
-      </Tabs>
+          </Link>
+        </nav>
+        <MyDonationsList
+          donations={result.donations}
+          total={result.total}
+          totalAmount={result.totalAmount}
+          page={result.page}
+          totalPages={result.totalPages}
+          timeframe={timeframe}
+        />
+      </div>
     </section>
   );
 }

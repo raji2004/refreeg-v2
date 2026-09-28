@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ArrowRight, BarChart3, Eye, Plus } from "lucide-react";
-import { getCurrentUser } from "@/actions";
+import { getSessionUser } from "@/lib/auth/session-user";
 import { getUserCausesWithStats } from "@/actions/dashboard-actions";
 import { causePublicPath } from "@/lib/causes/slug";
 
@@ -46,7 +46,7 @@ export async function DashboardCauses({
   let userCauses = initialCauses;
 
   if (!userCauses) {
-    const user = await getCurrentUser();
+    const user = await getSessionUser();
     userCauses = await getUserCausesWithStats(user?.id ?? "");
   }
 

@@ -7,15 +7,28 @@ import { NotificationProvider } from "@/components/notification-provider";
 import { AuthProvider } from "@/components/auth-provider";
 import { GlobalSupportBoundary } from "@/components/global-support-boundary";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30 * 60 * 1000,
+function makeQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 30 * 60 * 1000,
+      },
     },
-  },
-});
+  });
+}
+
+let browserQueryClient: QueryClient | undefined;
+
+// A module-level client would be shared across requests during SSR, so the
+// server gets a fresh one each render and only the browser reuses a singleton.
+function getQueryClient() {
+  if (typeof window === "undefined") return makeQueryClient();
+  return (browserQueryClient ??= makeQueryClient());
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const queryClient = getQueryClient();
+
   return (
     <GlobalSupportBoundary>
       <QueryClientProvider client={queryClient}>

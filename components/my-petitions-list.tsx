@@ -22,7 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import { getUserPetitionsWithStatus } from "@/actions/petition-actions";
-import { listSignaturesForPetition } from "@/actions/signature-actions";
+import { getPetitionSignatureTotals } from "@/actions/signature-actions";
 import { PetitionDropdown } from "./petition-dropdown";
 
 interface MyPetitionsListProps {
@@ -81,15 +81,14 @@ export async function MyPetitionsList({
       ? petitions
       : petitions.filter((petition) => petition.status === status);
 
-  const petitionsWithSigners = await Promise.all(
-    filteredPetitions.map(async (petition) => {
-      const signers = await listSignaturesForPetition(petition.id);
-      return {
-        ...petition,
-        signatures: signers.length,
-      };
-    }),
+  const totals = await getPetitionSignatureTotals(
+    filteredPetitions.map((petition) => petition.id),
   );
+
+  const petitionsWithSigners = filteredPetitions.map((petition) => ({
+    ...petition,
+    signatures: totals[petition.id]?.signerCount ?? 0,
+  }));
 
   if (petitionsWithSigners.length === 0) {
     return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,12 +33,14 @@ export function DiscoverPageClient({
   initialItems,
   initialHasMore,
   initialFacets,
+  initialBookmarks,
 }: {
   initialTab: DiscoverTab;
   initialFilters: DiscoverFilters;
   initialItems: DiscoverItem[];
   initialHasMore: boolean;
   initialFacets: { category: string; count: number }[];
+  initialBookmarks: string[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -58,12 +60,25 @@ export function DiscoverPageClient({
     [filters, sortBy],
   );
 
+  const facetsKey = JSON.stringify({ ...activeFilters, category: undefined });
+  const lastFacetsKey = useRef(
+    JSON.stringify({
+      ...initialFilters,
+      sortBy: initialFilters.sortBy || "newest",
+      category: undefined,
+    }),
+  );
+
   useEffect(() => {
+    // The server already rendered facets for the initial filters.
+    if (facetsKey === lastFacetsKey.current) return;
+    lastFacetsKey.current = facetsKey;
+
     const { category, ...rest } = activeFilters;
     getDiscoverFacets(rest, CATEGORY_IDS)
       .then(setFacets)
       .catch(() => {});
-  }, [JSON.stringify({ ...activeFilters, category: undefined })]);
+  }, [facetsKey]);
 
   useEffect(() => {
     const params = buildDiscoverSearchParams(tab, activeFilters);
@@ -209,6 +224,7 @@ export function DiscoverPageClient({
               filters={activeFilters}
               initialItems={initialItems}
               initialHasMore={initialHasMore}
+              initialBookmarks={initialBookmarks}
               onRemoveFilter={handleRemoveFilter}
               onClearFilters={handleClearFilters}
             />

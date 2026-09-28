@@ -1,8 +1,6 @@
-"use client";
-
-import { useAuth } from "@/hooks/use-auth";
-import { useProfile } from "@/hooks/use-profile";
-import { Skeleton } from "@/components/ui/skeleton";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth/auth";
+import { getCachedProfile } from "@/lib/profile-cache";
 import { SettingsItem } from "./components/settings-item";
 import { SettingsNav } from "./components/settings-nav";
 import {
@@ -14,40 +12,26 @@ import {
   Building2,
 } from "lucide-react";
 
-export default function SettingsPage() {
-  const { user } = useAuth();
-  const {
-    profile,
-    isLoading: profileLoading,
-    error: profileError,
-  } = useProfile(user?.id);
+export default async function SettingsPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/auth/signin");
 
-  const isOrganization = profile?.account_type === "organization";
+  const profile = await getCachedProfile(session.user.id).catch(() => null);
 
-  if (profileLoading) {
-    return (
-      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-5 w-96" />
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-xl" />
-          <Skeleton className="h-20 w-full rounded-xl" />
-          <Skeleton className="h-20 w-full rounded-xl" />
-        </div>
-      </div>
-    );
-  }
-
-  if (profileError) {
+  if (!profile) {
     return (
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         <h1 className="font-fraunces text-3xl font-semibold text-ink">
           Settings
         </h1>
-        <p className="text-sm text-destructive">{profileError}</p>
+        <p className="text-sm text-destructive">
+          We couldn&apos;t load your settings. Please refresh the page.
+        </p>
       </div>
     );
   }
+
+  const isOrganization = profile.account_type === "organization";
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
@@ -60,7 +44,6 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {}
       <div className="hidden lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-10">
         <SettingsNav isOrganization={isOrganization} />
         <div className="rounded-xl border-2 border-ink/10 bg-white p-6">
