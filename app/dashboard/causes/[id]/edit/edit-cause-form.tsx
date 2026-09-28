@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import Image from "next/image";
 import { isProxyMediaUrl } from "@/lib/s3/media";
 import { Button } from "@/components/ui/button";

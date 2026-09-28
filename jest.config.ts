@@ -54,15 +54,13 @@ const config: Config = {
     "^next-auth$": "<rootDir>/__mocks__/next-auth.ts",
     "^next-auth/react$": "<rootDir>/__mocks__/next-auth-react.ts",
     "^next/navigation$": "<rootDir>/__mocks__/next-navigation.ts",
+    "^nextjs-toploader/app$": "<rootDir>/__mocks__/next-navigation.ts",
     "^next/cache$": "<rootDir>/__mocks__/next-cache.ts",
     "\\.(css|less|scss|sass)$": "<rootDir>/__mocks__/styleMock.js",
   },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   testEnvironment: "jsdom",
-  testMatch: [
-    "**/__tests__/**/*.[jt]s?(x)",
-    "**/tests/**/*.test.[jt]s?(x)",
-  ],
+  testMatch: ["**/__tests__/**/*.[jt]s?(x)", "**/tests/**/*.test.[jt]s?(x)"],
   testPathIgnorePatterns: ["/node_modules/", "/e2e/"],
   transform: {
     "^.+\\.(ts|tsx|js|jsx)$": [

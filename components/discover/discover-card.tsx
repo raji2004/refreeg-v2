@@ -106,9 +106,9 @@ export function DiscoverCard({
 
         <div className="flex flex-1 flex-col p-4">
           <div className="flex-1">
-            <h3 className="line-clamp-2 font-fraunces text-base leading-snug text-ink group-hover:underline">
+            <h2 className="line-clamp-2 font-fraunces text-base leading-snug text-ink group-hover:underline">
               {item.title}
-            </h3>
+            </h2>
             <div className="mt-1.5 flex items-center gap-1.5 text-xs text-ink/60">
               <span className="truncate">{item.orgName}</span>
               {item.verified && (
@@ -134,7 +134,11 @@ export function DiscoverCard({
                   : `${item.raised.toLocaleString()} signed`}
               </span>
             </div>
-            <Progress value={item.percent} className="h-1.5 bg-ink/10" />
+            <Progress
+              value={item.percent}
+              aria-label={`${item.percent}% ${item.type === "campaign" ? "funded" : "of signature goal"}`}
+              className="h-1.5 bg-ink/10"
+            />
 
             <div className="flex items-center justify-end gap-1.5 pt-1">
               {item.paused ? (

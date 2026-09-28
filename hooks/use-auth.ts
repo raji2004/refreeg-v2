@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { toast } from "@/components/ui/use-toast";
-import { signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/react";
+import {
+  signIn as nextAuthSignIn,
+  signOut as nextAuthSignOut,
+} from "next-auth/react";
 import { useAuthContext } from "@/components/auth-provider";
 import {
   signUpAction,
@@ -15,7 +18,7 @@ import {
 function normalizeRedirectPath(target?: string | null): string | null {
   if (!target) return null;
   if (!target.startsWith("/")) return null;
-  
+
   if (target.startsWith("//")) return null;
   return target;
 }
@@ -32,8 +35,6 @@ export function useAuth() {
     try {
       const normalizedEmail = email.trim().toLowerCase();
 
-      
-      
       const causeCheck = await checkCauseUserLoginAction(normalizedEmail);
       if (causeCheck?.isCauseUserWithoutProfile && causeCheck.token) {
         toast({
@@ -103,9 +104,9 @@ export function useAuth() {
         normalizedEmail,
         password,
         fullName,
-        accountType
+        accountType,
       );
-      
+
       if (!res.success) {
         toast({
           title: "Error signing up",

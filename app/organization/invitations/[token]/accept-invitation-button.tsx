@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { Loader2 } from "lucide-react";
 import { acceptOrganizationInvitation } from "@/actions/organization-actions";
 import { Button } from "@/components/ui/button";

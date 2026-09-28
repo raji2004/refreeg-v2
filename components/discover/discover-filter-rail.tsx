@@ -103,7 +103,7 @@ export function DiscoverFilterRail({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-ink">Filters</h3>
+        <h2 className="text-sm font-semibold text-ink">Filters</h2>
         {hasActiveFilters && (
           <Button
             variant="ghost"

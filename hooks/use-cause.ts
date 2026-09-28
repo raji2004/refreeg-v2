@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createCause, updateCause, deleteCause } from "@/actions/cause-actions";
 import type { CauseFormData } from "@/types";
 import { toast } from "@/components/ui/use-toast";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 
 export function useCause() {
   const router = useRouter();
@@ -88,7 +88,7 @@ export function useCause() {
   const updateUserCause = async (
     causeId: string,
     userId: string,
-    causeData: Partial<CauseFormData>
+    causeData: Partial<CauseFormData>,
   ) => {
     return updateMutation.mutateAsync({ causeId, userId, causeData });
   };

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useDebounce } from "@/hooks/use-debounce";
 import { searchDiscover, type DiscoverItem } from "@/actions/discover-actions";
 
@@ -30,18 +30,15 @@ function saveRecentSearch(query: string) {
     const existing = readRecentSearches().filter((q) => q !== query);
     const next = [query, ...existing].slice(0, RECENT_SEARCHES_LIMIT);
     window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
-  } catch {
-    
-  }
+  } catch {}
 }
-
 
 export function useDiscoverSearch({
   active,
   onNavigate,
 }: {
   active: boolean;
-  
+
   onNavigate?: () => void;
 }) {
   const router = useRouter();
@@ -76,7 +73,12 @@ export function useDiscoverSearch({
       })
       .catch(() => {
         if (!cancelled) {
-          setResults({ campaigns: [], petitions: [], organizations: [], totalCount: 0 });
+          setResults({
+            campaigns: [],
+            petitions: [],
+            organizations: [],
+            totalCount: 0,
+          });
           setLoading(false);
         }
       });
