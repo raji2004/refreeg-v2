@@ -14,7 +14,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { XCircle } from "lucide-react";
 import { updateVerificationStatus } from "@/actions/kyc-actions";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 
 interface KycRejectionDialogProps {
   kycId: string;

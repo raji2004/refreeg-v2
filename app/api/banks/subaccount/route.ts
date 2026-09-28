@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createDualSubaccounts } from "@/services/payment-provider";
 import type { ICreateSubaccount } from "@/types";
+import { auth } from "@/lib/auth/auth";
 
 export async function POST(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized", success: false },
+      { status: 401 },
+    );
+  }
+
   try {
     const data: ICreateSubaccount = await request.json();
+    data.business_email = session.user.email || undefined;
 
     if (!data.account_number || !data.bank_code || !data.business_name) {
       return NextResponse.json(

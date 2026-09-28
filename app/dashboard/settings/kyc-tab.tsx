@@ -24,7 +24,7 @@ import {
   MapPin,
   AlertCircle,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import type { Profile } from "@/types";
 import Image from "next/image";
 import NavigationLoader from "@/components/NavigationLoader";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { DateRange } from "react-day-picker";
 import { addDays, subDays } from "date-fns";
 import {

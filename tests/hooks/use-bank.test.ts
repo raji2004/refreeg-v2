@@ -56,7 +56,6 @@ describe("useBank", () => {
             bank_name: "Access Bank",
             account_name: "John Doe",
             sub_account_code: "SUB_123",
-            flutterwave_sub_account_id: "FLW_SUB_456",
           },
         }),
       { wrapper: createWrapper() },
@@ -71,10 +70,9 @@ describe("useBank", () => {
   });
 
   it("updates form data when handleBankChange is called", async () => {
-    const { result } = renderHook(
-      () => useBank({ userId: "user-1" }),
-      { wrapper: createWrapper() },
-    );
+    const { result } = renderHook(() => useBank({ userId: "user-1" }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoadingBanks).toBe(false));
 
@@ -99,16 +97,19 @@ describe("useBank", () => {
       .mockResolvedValueOnce({ json: async () => mockBanksResponse })
       .mockResolvedValueOnce({
         json: async () => ({
-        success: true,
-        data: {
-          subaccount_code: "SUB_123",
-          flutterwave_sub_account_id: "FLW_SUB_456",
-        },
-      }),
+          success: true,
+          data: {
+            subaccount_code: "SUB_123",
+            flutterwave_sub_account_id: "FLW_SUB_456",
+          },
+        }),
       });
 
     const client = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const wrapper = ({ children }: { children: React.ReactNode }) =>
       React.createElement(QueryClientProvider, { client }, children);

@@ -118,7 +118,9 @@ function buildPetition(overrides: Record<string, unknown> = {}) {
       subAccountCode: "SUB_1",
       profilePhoto: null,
     },
-    petition_sections: [{ id: "sec-1", heading: "Why", description: "Because" }],
+    petition_sections: [
+      { id: "sec-1", heading: "Why", description: "Because" },
+    ],
     ...overrides,
   };
 }
@@ -235,9 +237,7 @@ describe("petition-actions", () => {
       expect(mockSendApproved).toHaveBeenCalledWith("owner-1", {
         petitionName: "Save the park",
       });
-      expect(revalidatePath).toHaveBeenCalledWith(
-        "/dashboard/admin/petitions",
-      );
+      expect(revalidatePath).toHaveBeenCalledWith("/dashboard/admin/petitions");
     });
 
     it("rejects a petition and sends rejection email", async () => {
@@ -373,6 +373,8 @@ describe("petition-actions", () => {
 
       const result = await createPetition("owner-1", {
         title: "New Petition",
+        description: "",
+        coverImage: null,
         category: "environment",
         goal: 500,
         sections: [{ heading: "Why", description: "Because" }],

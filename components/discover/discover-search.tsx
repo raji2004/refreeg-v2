@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { Search as SearchIcon } from "lucide-react";
 import { CommandDialog } from "@/components/ui/command";
 import { useDiscoverSearch } from "@/hooks/use-discover-search";

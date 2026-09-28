@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { KycTab } from "../kyc-tab";
 import { SettingsShell } from "../components/settings-shell";
 import { toast } from "@/components/ui/use-toast";

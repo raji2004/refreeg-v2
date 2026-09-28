@@ -9,7 +9,7 @@ export async function getClaimableCauses() {
   const email = session?.user?.email;
   if (!email) return [];
 
-  return prisma.cause.findMany({
+  const causes = await prisma.cause.findMany({
     where: {
       reconstructed: true,
       recovered_owner_email: email.toLowerCase(),
@@ -22,6 +22,12 @@ export async function getClaimableCauses() {
       raised: true,
     },
   });
+
+  return causes.map((c) => ({
+    ...c,
+    goal: Number(c.goal),
+    raised: Number(c.raised ?? 0),
+  }));
 }
 
 export async function claimCause(causeId: string) {

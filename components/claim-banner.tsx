@@ -21,7 +21,7 @@ export function ClaimBanner() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    getClaimableCauses().then((data) => setCauses(data as ClaimableCause[]));
+    getClaimableCauses().then(setCauses);
   }, []);
 
   const handleClaim = async (id: string) => {
