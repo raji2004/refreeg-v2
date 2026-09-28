@@ -3,6 +3,12 @@ import { redirect } from "next/navigation";
 import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
 import { ClaimBanner } from "@/components/claim-banner";
 import { isSessionInvalidated } from "@/lib/auth/session-guard";
+import { getCachedProfile } from "@/lib/profile-cache";
+import {
+  QueryClient,
+  HydrationBoundary,
+  dehydrate,
+} from "@tanstack/react-query";
 
 export default async function DashboardLayout({
   children,
@@ -15,10 +21,11 @@ export default async function DashboardLayout({
     redirect("/auth/signin");
   }
 
-  const invalidated = await isSessionInvalidated(
-    session.user.id as string,
-    (session.user as any).loginTime,
-  );
+  const userId = session.user.id as string;
+  const [invalidated, profile] = await Promise.all([
+    isSessionInvalidated(userId, (session.user as any).loginTime),
+    getCachedProfile(userId).catch(() => null),
+  ]);
   if (invalidated) {
     redirect(
       `/api/auth/force-signout?redirect=${encodeURIComponent("/auth/signin")}`,
@@ -32,10 +39,15 @@ export default async function DashboardLayout({
     redirect("/onboarding");
   }
 
+  const queryClient = new QueryClient();
+  if (profile) queryClient.setQueryData(["profile", userId], profile);
+
   return (
-    <ClientLayoutWrapper>
-      {/* <ClaimBanner /> */}
-      {children}
-    </ClientLayoutWrapper>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ClientLayoutWrapper>
+        {/* <ClaimBanner /> */}
+        {children}
+      </ClientLayoutWrapper>
+    </HydrationBoundary>
   );
 }

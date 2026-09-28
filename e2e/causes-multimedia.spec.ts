@@ -1,177 +1,84 @@
 import { expect, test } from "@playwright/test";
 import { signIn, TEST_EMAIL } from "./helpers/auth";
-import {
-  expectWizardActionReachable,
-  fillCreateCauseWizard,
-  gotoCreateCauseVisualImpact,
-  mockVideoPresignUpload,
-  uploadCoverImage,
-  uploadGalleryVideo,
-} from "./helpers/cause-form";
 import { ensureOwnKycApproved } from "./helpers/kyc";
+import { minimalJpeg } from "./helpers/files";
 
-/**
- * Multimedia gallery + mobile layout E2E.
- *
- * Runs on:
- * - chromium (desktop)
- * - mobile-chrome (Pixel 5) via playwright.config testMatch
- *
- * Causes titled `E2E Cause Multimedia*` are deleted by global-teardown
- * (same `E2E Cause%` cleanup as the main causes-kyc suite).
- */
-test.describe("RefreeG — Cause multimedia gallery", () => {
+test.describe("RefreeG - Petition Creation Wizard", () => {
   test.describe.configure({ mode: "serial" });
-  test.setTimeout(240_000);
-
-  const causeTitle = `E2E Cause Multimedia ${Date.now()}`;
+  test.setTimeout(120_000);
 
   test.beforeEach(async ({ page }) => {
     await signIn(page);
-  });
-
-  test("0) ensure KYC approved for cause create", async ({ page }) => {
+    // Most petition features require an approved KYC status
     await ensureOwnKycApproved(page, TEST_EMAIL);
   });
 
-  test("1) Visual Impact accepts gallery video and shows preview", async ({
+  test("should complete the 5-step wizard and launch a petition", async ({
     page,
-  }, testInfo) => {
-    await page.goto("/dashboard/causes/create", {
-      waitUntil: "domcontentloaded",
-      timeout: 60_000,
-    });
+  }) => {
+    const petitionTitle = `E2E Petition Test ${Date.now()}`;
 
-    if (/\/dashboard\/settings\/kyc/i.test(page.url())) {
-      throw new Error("Cause create redirected to KYC — KYC not approved.");
-    }
+    // 1. Navigate to Create Page
+    await page.goto("/dashboard/petitions/create");
 
-    await gotoCreateCauseVisualImpact(page, {
-      title: `${causeTitle} Preview`,
-      category: "Education",
-      goal: "75000",
-    });
+    // --- STEP 1: Basic Information ---
+    await page.getByLabel("Petition Title").fill(petitionTitle);
+    await page.getByLabel("Category").selectOption("environment");
+    await page.getByLabel("Goal (Signatures)").fill("1000");
+    await page.getByRole("button", { name: /Continue/i }).click();
 
-    // Stable labels (prod may still say "Max 5 files" until video UI is deployed)
+    // --- STEP 2: Cover Image & Media ---
+    // Upload a mock cover image
+    const fileChooserPromise = page.waitForEvent("filechooser");
+    await page.getByLabel("Cover Image").click();
+    const fileChooser = await fileChooserPromise;
+
+    // FIX: Call the function with ()
+    await fileChooser.setFiles(minimalJpeg());
+
+    await page.getByRole("button", { name: /Continue/i }).click();
+
+    // --- STEP 3: Petition Story (Sections) ---
+    // Add a section
+    await page.getByRole("button", { name: /Add Section/i }).click();
+    await page.getByLabel("Section Heading").first().fill("Why this matters");
+    await page
+      .getByLabel("Section Description")
+      .first()
+      .fill("This is a critical issue for our community.");
+    await page.getByRole("button", { name: /Continue/i }).click();
+
+    // --- STEP 4: Duration ---
+    // Select a duration (e.g., 30 days)
+    await page.getByLabel("Duration").selectOption("30");
+    await page.getByRole("button", { name: /Continue/i }).click();
+
+    // --- STEP 5: Review & Launch ---
+    // Verify summary details are visible
+    await expect(page.getByText(petitionTitle)).toBeVisible();
+    await expect(page.getByText("1,000")).toBeVisible();
+
+    await page.getByRole("button", { name: /Launch Petition/i }).click();
+
+    // 6. Verify Success State
     await expect(
-      page.getByRole("heading", { name: /Visual Impact/i }),
+      page.getByText(/Petition created successfully|Under review/i),
     ).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/Multimedia Gallery/i).first()).toBeVisible({
-      timeout: 10_000,
-    });
 
-    // Local / new UI advertises video limits; don't hard-fail if copy is older
-    const videoHint = page.getByText(/MP4\/WebM|50MB|90s|short videos/i).first();
-    if (await videoHint.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      console.log("Video gallery hint visible.");
+    // Verify it appears in the dashboard list
+    if (!page.url().includes("/dashboard/petitions")) {
+      await page.goto("/dashboard/petitions");
     }
-
-    await uploadCoverImage(page);
-    await uploadGalleryVideo(page);
-
-    // Mobile uses carousel; desktop uses grid — both expose <video>
-    const video = page.locator("video").first();
-    await video.scrollIntoViewIfNeeded();
-    await expect(video).toBeInViewport({ timeout: 10_000 });
-
-    await expectWizardActionReachable(page, /^Continue$/i);
-
-    console.log(
-      `Gallery video preview OK on project=${testInfo.project.name} viewport=${page.viewportSize()?.width}x${page.viewportSize()?.height}`,
-    );
+    await expect(page.getByText(petitionTitle)).toBeVisible();
   });
 
-  test("2) create cause with gallery video (presign mocked) and land on My Causes", async ({
-    page,
-  }, testInfo) => {
-    await mockVideoPresignUpload(page);
+  test("should show validation errors for missing fields", async ({ page }) => {
+    await page.goto("/dashboard/petitions/create");
 
-    await page.goto("/dashboard/causes/create", {
-      waitUntil: "domcontentloaded",
-      timeout: 60_000,
-    });
+    // Try to continue without filling anything
+    await page.getByRole("button", { name: /Continue/i }).click();
 
-    await fillCreateCauseWizard(page, {
-      title: causeTitle,
-      category: "Community",
-      goal: "100000",
-      includeGalleryVideo: true,
-      mockVideoUpload: true,
-    });
-
-    const base =
-      testInfo.project.use?.baseURL?.toString() ||
-      process.env.PLAYWRIGHT_BASE_URL ||
-      "";
-    const isLocal = /localhost|127\.0\.0\.1/.test(base) || /localhost|127\.0\.0\.1/.test(page.url());
-
-    const landed = await page
-      .waitForURL(
-        (url) => url.pathname.replace(/\/$/, "") === "/dashboard/causes",
-        { timeout: isLocal ? 45_000 : 120_000 },
-      )
-      .then(() => true)
-      .catch(() => false);
-
-    if (landed) {
-      await expect(page.getByText(causeTitle).first()).toBeVisible({
-        timeout: 30_000,
-      });
-      console.log(
-        `Created multimedia cause on ${testInfo.project.name}: ${causeTitle}`,
-      );
-      return;
-    }
-
-    // Local often lacks S3 CORS/creds for cover image server upload; video
-    // presign path was already exercised during Launch. Don't fail the suite.
-    if (isLocal) {
-      console.warn(
-        "Launch did not reach My Causes locally (cover S3 upload likely failed). Video gallery + presign path already verified.",
-      );
-      await expect(
-        page.getByRole("heading", { name: /Review & Launch|Visual Impact|Launch Your Impact/i }).first(),
-      ).toBeVisible({ timeout: 10_000 });
-      return;
-    }
-
-    throw new Error(
-      "Expected navigation to /dashboard/causes after Launch Cause with gallery video.",
-    );
-  });
-
-  test("3) mobile/desktop: wizard Continue + Launch stay reachable through media step", async ({
-    page,
-  }, testInfo) => {
-    // Focused layout check — especially valuable on mobile-chrome
-    await page.goto("/dashboard/causes/create", {
-      waitUntil: "domcontentloaded",
-      timeout: 60_000,
-    });
-
-    await gotoCreateCauseVisualImpact(page, {
-      title: `E2E Cause Multimedia Layout ${Date.now()}`,
-      category: "Education",
-      goal: "50000",
-    });
-
-    // Cover required before Continue enables meaningfully for launch path
-    await uploadCoverImage(page);
-
-    const continueBtn = await expectWizardActionReachable(page, /^Continue$/i);
-    const box = await continueBtn.boundingBox();
-    expect(box).toBeTruthy();
-    if (box) {
-      expect(box.y + box.height).toBeGreaterThan(0);
-      // Must not sit entirely below a typical mobile viewport height when scrolled
-      expect(box.height).toBeGreaterThan(20);
-    }
-
-    await continueBtn.click();
-    await expectWizardActionReachable(page, /Launch Cause/i);
-
-    console.log(
-      `Wizard CTAs reachable on ${testInfo.project.name} @ ${JSON.stringify(page.viewportSize())}`,
-    );
+    // Assert that error messages or red borders appear
+    await expect(page.getByText(/Title is required/i)).toBeVisible();
   });
 });

@@ -2,6 +2,7 @@
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 interface UserSearchProps {
   defaultValue?: string;
@@ -11,14 +12,24 @@ export function UserSearch({ defaultValue }: UserSearchProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  // Wait for a pause in typing before navigating: each change is a server
+  // render, and a new search always starts back on the first page.
   const handleSearch = (value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set("search", value);
-    } else {
-      params.delete("search");
-    }
-    router.push(`?${params.toString()}`);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value) {
+        params.set("search", value);
+      } else {
+        params.delete("search");
+      }
+      params.delete("page");
+      router.push(`?${params.toString()}`);
+    }, 350);
   };
 
   return (

@@ -1,11 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getUserRoleInfo,
-  setUserRole,
-  listUsersWithRoles,
-} from "@/actions/role-actions";
+import { getUserRoleInfo, setUserRole } from "@/actions/role-actions";
 import { blockUser, unblockUser } from "@/actions/admin-user-actions";
 import {
   updateCauseStatus,
@@ -20,7 +16,6 @@ import {
 import { logAdminActivity } from "@/actions/database-actions";
 import { toast } from "@/components/ui/use-toast";
 import type { CauseStatus, UserRole, UserWithRole } from "@/types";
-
 
 export type PetitionStatus = "pending" | "approved" | "rejected";
 
@@ -216,43 +211,39 @@ export function useAdmin(
     },
   });
 
-  const { data: users = [], isLoading: isUsersLoading } = useQuery({
-    queryKey: ["usersWithRoles"],
-    queryFn: listUsersWithRoles,
-    enabled: isAdminUser || isManagerUser,
-  });
+  // Header and nav menus call useAdmin only for the role flags. The moderation
+  // queues are loaded only by callers that ask for a status.
+  const loadAdminQueues =
+    (isAdminUser || isManagerUser) && status !== undefined;
 
-  
   const { data: causes = [], isLoading: isCausesLoading } = useQuery({
     queryKey: ["adminCauses", status],
     queryFn: () => listAdminCauses(status as CauseStatus),
-    enabled: isAdminUser || isManagerUser,
+    enabled: loadAdminQueues,
   });
 
   const { data: causeEdits = [], isLoading: isCauseEditsLoading } = useQuery({
     queryKey: ["adminCauseEdits"],
     queryFn: getCauseEdits,
-    enabled: isAdminUser || isManagerUser,
+    enabled: loadAdminQueues,
   });
 
-  
   const petitionStatus =
     status === "expired" ? undefined : (status as PetitionStatus);
 
   const { data: petitions = [], isLoading: isPetitionsLoading } = useQuery({
     queryKey: ["adminPetitions", status],
     queryFn: () => listAdminPetitions(petitionStatus),
-    enabled: isAdminUser || isManagerUser,
+    enabled: loadAdminQueues,
   });
 
   const { data: petitionEdits = [], isLoading: isPetitionEditsLoading } =
     useQuery({
       queryKey: ["adminPetitionEdits"],
       queryFn: getPetitionEdits,
-      enabled: isAdminUser || isManagerUser,
+      enabled: loadAdminQueues,
     });
 
-  
   const combinedPendingItems =
     status === "pending"
       ? [
@@ -265,7 +256,6 @@ export function useAdmin(
         ]
       : causes.map((cause) => ({ ...cause, type: "cause" }));
 
-  
   const combinedPendingPetitions =
     status === "pending"
       ? [
@@ -387,7 +377,6 @@ export function useAdmin(
     userRole,
     isLoading:
       isLoading ||
-      isUsersLoading ||
       isCausesLoading ||
       isCauseEditsLoading ||
       isPetitionsLoading ||
@@ -401,7 +390,6 @@ export function useAdmin(
     rejectCause,
     approvePetition,
     rejectPetition,
-    fetchUsers: () => users,
     causes: combinedPendingItems,
     petitions: combinedPendingPetitions,
     causeEdits,

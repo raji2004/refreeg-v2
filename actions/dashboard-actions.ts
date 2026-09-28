@@ -1,37 +1,83 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// The dashboard renders several of these actions together; caching the shared
+// reads per request keeps them to one query each.
+const loadUserCauses = cache((userId: string) =>
+  prisma.cause.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
+);
+
+const loadUserCausesWithRaised = cache(async (userId: string) => {
+  const causes = await loadUserCauses(userId);
+  const raisedByCause: Record<string, number> = {};
+  if (causes.length === 0) return { causes, raisedByCause };
+
+  const grouped = await prisma.donation.groupBy({
+    by: ["causeId"],
+    _sum: { amount: true },
+    where: { causeId: { in: causes.map((c) => c.id) } },
+  });
+  for (const d of grouped) {
+    raisedByCause[d.causeId] = Number(d._sum.amount || 0);
+  }
+  return { causes, raisedByCause };
+});
+
+const loadUserPetitions = cache((userId: string) =>
+  prisma.petitions.findMany({
+    where: { user_id: userId },
+    orderBy: { created_at: "desc" },
+  }),
+);
+
+const loadUserPetitionsWithStats = cache(async (userId: string) => {
+  const petitions = await loadUserPetitions(userId);
+  const stats: Record<string, { count: number; amount: number }> = {};
+  if (petitions.length === 0) return { petitions, stats };
+
+  const grouped = await prisma.signatures.groupBy({
+    by: ["petition_id"],
+    _count: { petition_id: true },
+    _sum: { amount: true },
+    where: { petition_id: { in: petitions.map((p) => p.id) } },
+  });
+  for (const s of grouped) {
+    stats[s.petition_id] = {
+      count: s._count.petition_id,
+      amount: Number(s._sum.amount || 0),
+    };
+  }
+  return { petitions, stats };
+});
+
 export async function getDashboardStats(userId: string) {
   try {
-    const causes = await prisma.cause.findMany({
-      where: { userId, status: "approved" },
-      select: { id: true },
-    });
+    const { causes: allCauses, raisedByCause } =
+      await loadUserCausesWithRaised(userId);
+    const causes = allCauses.filter((c) => c.status === "approved");
 
-    if (!causes || causes.length === 0) {
+    if (causes.length === 0) {
       return { totalRaised: 0, totalDonors: 0, activeCauses: 0 };
     }
 
     const causeIds = causes.map((c) => c.id);
 
-    const agg = await prisma.donation.aggregate({
-      _sum: { amount: true },
-      where: { causeId: { in: causeIds } },
-    });
-
-    const donations = await prisma.donation.findMany({
+    const donors = await prisma.donation.groupBy({
+      by: ["userId"],
       where: { causeId: { in: causeIds }, userId: { not: null } },
-      select: { userId: true },
     });
 
-    const totalRaised = Number(agg._sum.amount || 0);
-    const totalDonors = new Set(donations.map((d) => d.userId)).size;
+    const totalRaised = causeIds.reduce(
+      (sum, id) => sum + (raisedByCause[id] || 0),
+      0,
+    );
 
     return {
       totalRaised,
-      totalDonors,
+      totalDonors: donors.length,
       activeCauses: causes.length,
     };
   } catch (error) {
@@ -57,12 +103,11 @@ export async function getDonationTrends(userId: string) {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const causes = await prisma.cause.findMany({
-      where: { userId, status: "approved" },
-      select: { id: true },
-    });
+    const causes = (await loadUserCauses(userId)).filter(
+      (c) => c.status === "approved",
+    );
 
-    if (!causes || causes.length === 0) return [];
+    if (causes.length === 0) return [];
 
     const causeIds = causes.map((cause) => cause.id);
 
@@ -124,25 +169,9 @@ export async function getUserCauses(userId: string, status?: string) {
 
 export async function getUserCausesWithStats(userId: string) {
   try {
-    const causes = await prisma.cause.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-    });
+    const { causes, raisedByCause } = await loadUserCausesWithRaised(userId);
 
-    if (!causes || causes.length === 0) return [];
-
-    const causeIds = causes.map((c) => c.id);
-
-    const aggregatedDonations = await prisma.donation.groupBy({
-      by: ["causeId"],
-      _sum: { amount: true },
-      where: { causeId: { in: causeIds } },
-    });
-
-    const raisedByCause: Record<string, number> = {};
-    for (const d of aggregatedDonations) {
-      raisedByCause[d.causeId] = Number(d._sum.amount || 0);
-    }
+    if (causes.length === 0) return [];
 
     return causes.map((cause) => ({
       ...cause,
@@ -156,29 +185,13 @@ export async function getUserCausesWithStats(userId: string) {
 
 export async function getUserPetitionsWithStats(userId: string) {
   try {
-    const petitions = await prisma.petitions.findMany({
-      where: { user_id: userId },
-      orderBy: { created_at: "desc" },
-    });
+    const { petitions, stats } = await loadUserPetitionsWithStats(userId);
 
-    if (!petitions || petitions.length === 0) return [];
-
-    const petitionIds = petitions.map((p) => p.id);
-
-    const aggregatedSignatures = await prisma.signatures.groupBy({
-      by: ["petition_id"],
-      _count: { petition_id: true },
-      where: { petition_id: { in: petitionIds } },
-    });
-
-    const countByPetition: Record<string, number> = {};
-    for (const s of aggregatedSignatures) {
-      countByPetition[s.petition_id] = s._count.petition_id;
-    }
+    if (petitions.length === 0) return [];
 
     return petitions.map((petition) => ({
       ...petition,
-      signatures: countByPetition[petition.id] || 0,
+      signatures: stats[petition.id]?.count || 0,
     }));
   } catch (error) {
     console.error("Error fetching user petitions with stats:", error);
@@ -287,12 +300,11 @@ export async function getCauseAnalytics(causeId: string) {
 
 export async function getPetitionDashboardStats(userId: string) {
   try {
-    const petitions = await prisma.petitions.findMany({
-      where: { user_id: userId, status: "approved" },
-      select: { id: true },
-    });
+    const { petitions: allPetitions, stats } =
+      await loadUserPetitionsWithStats(userId);
+    const petitions = allPetitions.filter((p) => p.status === "approved");
 
-    if (!petitions || petitions.length === 0) {
+    if (petitions.length === 0) {
       return {
         totalRaised: 0,
         totalDonors: 0,
@@ -302,22 +314,19 @@ export async function getPetitionDashboardStats(userId: string) {
 
     const petitionIds = petitions.map((p) => p.id);
 
-    const agg = await prisma.signatures.aggregate({
-      _sum: { amount: true },
-      where: { petition_id: { in: petitionIds } },
-    });
-
-    const signatures = await prisma.signatures.findMany({
+    const signers = await prisma.signatures.groupBy({
+      by: ["user_id"],
       where: { petition_id: { in: petitionIds }, user_id: { not: null } },
-      select: { user_id: true },
     });
 
-    const totalRaised = Number(agg._sum.amount || 0);
-    const totalDonors = new Set(signatures.map((s) => s.user_id)).size;
+    const totalRaised = petitionIds.reduce(
+      (sum, id) => sum + (stats[id]?.amount || 0),
+      0,
+    );
 
     return {
       totalRaised,
-      totalDonors,
+      totalDonors: signers.length,
       activePetitions: petitions.length,
     };
   } catch (error) {

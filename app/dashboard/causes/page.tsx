@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Sparkles } from "lucide-react";
 import { MyCausesList } from "@/components/my-causes-list";
-import { getCurrentUser } from "@/actions/auth-actions";
+import { getSessionUser } from "@/lib/auth/session-user";
 import { ProofComplianceBanner } from "@/components/proof/proof-compliance-banner";
 
 const validStatuses = ["all", "approved", "pending", "rejected", "suspended"];
@@ -14,7 +14,7 @@ export default async function MyCausesPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
 
   if (!user) {
     redirect("/auth/signin");

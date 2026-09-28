@@ -21,6 +21,7 @@ export function useProfile(userId: string | undefined) {
     queryKey: ["profile", userId],
     queryFn: () => getProfile(userId!),
     enabled: !!userId,
+    staleTime: 60 * 1000,
   });
 
   const updateProfileMutation = useMutation({
@@ -60,7 +61,7 @@ export function useProfile(userId: string | undefined) {
       queryClient.setQueryData(
         ["profile", userId],
         (old: Profile | undefined) =>
-          old ? { ...old, profile_photo: photoUrl } : undefined
+          old ? { ...old, profile_photo: photoUrl } : undefined,
       );
       toast({
         title: "Profile photo updated",

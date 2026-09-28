@@ -67,9 +67,9 @@ async function openSettingsProfile(page: Page) {
   await expect(page).toHaveURL(/\/dashboard\/settings\/profile/, {
     timeout: 30_000,
   });
-  await expect(
-    page.getByRole("heading", { name: /^Settings$/i }),
-  ).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: /^Settings$/i })).toBeVisible({
+    timeout: 30_000,
+  });
 }
 
 /** Profile rows are labeled with a <label>; Edit/Add/Change/Save/Cancel live in that row. */
@@ -127,9 +127,7 @@ test.describe("Settings profile redesign", () => {
 
   test("1) Settings nav goes to /dashboard/settings/profile", async () => {
     await openSettingsProfile(page);
-    await expect(
-      page.getByText(/Editing one row at a time/i),
-    ).toBeVisible();
+    await expect(page.getByText(/Editing one row at a time/i)).toBeVisible();
     await expect(page.getByRole("button", { name: /^Change$/i })).toBeVisible();
   });
 
@@ -154,7 +152,9 @@ test.describe("Settings profile redesign", () => {
       page.getByText(/How you appear on campaigns you fund/i),
     ).toBeVisible();
     await expect(page.getByText("Anonymous", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Change photo/i })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Change photo/i }),
+    ).toBeVisible();
     await expect(page.getByRole("button", { name: /^Change$/i })).toBeVisible();
 
     // Desktop sub-nav (hidden on narrow viewports)
@@ -292,9 +292,9 @@ test.describe("Settings profile redesign", () => {
     await row.locator("input#phone").fill("12345");
     await clickRowAction(page, "Phone", /^Save$/);
 
-    await expect(
-      page.getByText(/valid Nigerian phone number/i),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/valid Nigerian phone number/i)).toBeVisible({
+      timeout: 10_000,
+    });
     await expect(page.getByText(/Profile updated/i)).toHaveCount(0);
   });
 

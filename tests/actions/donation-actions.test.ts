@@ -8,6 +8,7 @@ jest.mock("@/lib/prisma", () => ({
       findUnique: jest.fn(),
       create: jest.fn(),
       findMany: jest.fn(),
+      aggregate: jest.fn(),
     },
     cause: {
       update: jest.fn(),
@@ -37,7 +38,9 @@ jest.mock("@/lib/event-bus", () => ({
 }));
 
 jest.mock("@/actions/referral-attribution", () => ({
-  recordDonorReferralAttribution: jest.fn().mockResolvedValue({ recorded: true }),
+  recordDonorReferralAttribution: jest
+    .fn()
+    .mockResolvedValue({ recorded: true }),
 }));
 
 import { revalidatePath } from "next/cache";
@@ -49,6 +52,7 @@ import {
   createDonation,
   listDonationsForCause,
   listUserDonations,
+  listUserDonationsPage,
 } from "@/actions/donation-actions";
 
 const mockPrisma = prisma as unknown as {
@@ -57,6 +61,7 @@ const mockPrisma = prisma as unknown as {
     findUnique: jest.Mock;
     create: jest.Mock;
     findMany: jest.Mock;
+    aggregate: jest.Mock;
   };
   cause: { update: jest.Mock; findUnique: jest.Mock };
   pledges: { updateMany: jest.Mock };
@@ -69,7 +74,9 @@ describe("donation-actions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.NEXT_PUBLIC_APP_URL = "https://example.com";
-    global.fetch = jest.fn().mockResolvedValue({ ok: true }) as unknown as typeof fetch;
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue({ ok: true }) as unknown as typeof fetch;
     (recordEvent as jest.Mock).mockResolvedValue({});
     (sendDonationReceivedEmail as jest.Mock).mockResolvedValue({});
   });
@@ -297,6 +304,92 @@ describe("donation-actions", () => {
         category: "education",
         status: "approved",
         slug: null,
+      });
+    });
+  });
+  describe("listUserDonationsPage", () => {
+    const row = (id: string) => ({
+      id,
+      causeId: "cause-1",
+      amount: 100,
+      tip_amount: 0,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      cause: {
+        title: "Help",
+        category: "education",
+        status: "approved",
+        slug: null,
+      },
+    });
+
+    beforeEach(() => {
+      mockPrisma.donation.findMany.mockResolvedValue([row("d1"), row("d2")]);
+      mockPrisma.donation.aggregate.mockResolvedValue({
+        _sum: { amount: 4500 },
+        _count: { _all: 25 },
+      });
+    });
+
+    it("returns one page with totals that cover every donation", async () => {
+      const result = await listUserDonationsPage("user-1", {
+        page: 2,
+        pageSize: 10,
+      });
+
+      expect(result.donations).toHaveLength(2);
+      expect(result.total).toBe(25);
+      expect(result.totalAmount).toBe(4500);
+      expect(result.totalPages).toBe(3);
+      expect(result.page).toBe(2);
+      expect(mockPrisma.donation.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 10, take: 10 }),
+      );
+    });
+
+    it("applies the 30-day window to both the page and the totals", async () => {
+      await listUserDonationsPage("user-1", { timeframe: "recent" });
+
+      const pageWhere = mockPrisma.donation.findMany.mock.calls[0][0].where;
+      const totalsWhere = mockPrisma.donation.aggregate.mock.calls[0][0].where;
+      expect(pageWhere.createdAt.gte).toBeInstanceOf(Date);
+      expect(totalsWhere).toEqual(pageWhere);
+    });
+
+    it("does not window the query for the all-time tab", async () => {
+      await listUserDonationsPage("user-1");
+
+      expect(mockPrisma.donation.findMany.mock.calls[0][0].where).toEqual({
+        userId: "user-1",
+      });
+    });
+
+    it("clamps a bad page and an oversized page size", async () => {
+      const result = await listUserDonationsPage("user-1", {
+        page: -4,
+        pageSize: 5000,
+      });
+
+      expect(result.page).toBe(1);
+      expect(result.pageSize).toBe(50);
+      expect(mockPrisma.donation.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 0, take: 50 }),
+      );
+    });
+
+    it("reports a single empty page when the user has no donations", async () => {
+      mockPrisma.donation.findMany.mockResolvedValue([]);
+      mockPrisma.donation.aggregate.mockResolvedValue({
+        _sum: { amount: null },
+        _count: { _all: 0 },
+      });
+
+      const result = await listUserDonationsPage("user-1");
+
+      expect(result).toMatchObject({
+        donations: [],
+        total: 0,
+        totalAmount: 0,
+        totalPages: 1,
       });
     });
   });

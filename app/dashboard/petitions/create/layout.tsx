@@ -1,6 +1,6 @@
 import type React from "react";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/actions/auth-actions";
+import { getSessionUser } from "@/lib/auth/session-user";
 import { requireKycAndProfile } from "@/lib/auth/require-kyc";
 
 export default async function CreatePetitionLayout({
@@ -8,7 +8,7 @@ export default async function CreatePetitionLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
 
   if (!user) {
     redirect("/auth/signin");

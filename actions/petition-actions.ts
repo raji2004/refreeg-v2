@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { DISCOVER_CACHE_TAG } from "@/lib/discover-constants";
 import type {
   Petition,
   PetitionWithUser,
@@ -391,9 +392,7 @@ export const listPetitions = cache(
   },
 );
 
-export async function countPetitions(
-  options: PetitionFilterOptions = {},
-): Promise<number> {
+function buildPetitionCountWhere(options: PetitionFilterOptions) {
   const where: any = {};
 
   if (options.category && options.category !== "all") {
@@ -418,7 +417,29 @@ export async function countPetitions(
     where.user = { isVerified: true };
   }
 
-  return prisma.petitions.count({ where });
+  return where;
+}
+
+export async function countPetitions(
+  options: PetitionFilterOptions = {},
+): Promise<number> {
+  return prisma.petitions.count({ where: buildPetitionCountWhere(options) });
+}
+
+export async function countPetitionsByCategory(
+  options: PetitionFilterOptions = {},
+): Promise<Record<string, number>> {
+  const groups = await prisma.petitions.groupBy({
+    by: ["category"],
+    where: buildPetitionCountWhere(options),
+    _count: { _all: true },
+  });
+
+  const counts: Record<string, number> = {};
+  for (const group of groups) {
+    counts[group.category] = group._count._all;
+  }
+  return counts;
 }
 
 export async function updatePetitionStatus(
@@ -509,6 +530,7 @@ export async function updatePetitionStatus(
     }
 
     revalidatePath("/dashboard/admin/petitions");
+    revalidateTag(DISCOVER_CACHE_TAG);
     return {
       ...updatedPetition,
       goal: Number(updatedPetition.goal),
@@ -558,6 +580,7 @@ export async function updatePetitionStatus(
     }
 
     revalidatePath("/dashboard/admin/petitions");
+    revalidateTag(DISCOVER_CACHE_TAG);
     return {
       ...updatedPetition,
       goal: Number(updatedPetition.goal),

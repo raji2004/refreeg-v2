@@ -179,18 +179,20 @@ export async function updateUserStreaks(userId: string) {
       isMonthlyActive = true;
     }
 
+    const lastActiveDate = new Date(todayUtcStr + "T00:00:00Z");
+
     const updatedStreak = await prisma.userStreak.upsert({
       where: { userId },
       update: {
         weeklyStreak,
         isMonthlyActive,
-        lastActiveDate: today,
+        lastActiveDate,
       },
       create: {
         userId,
         weeklyStreak,
         isMonthlyActive,
-        lastActiveDate: today,
+        lastActiveDate,
       },
     });
 
@@ -223,7 +225,7 @@ export async function updateUserStreaks(userId: string) {
       await recordEvent({
         type: "monthly_active",
         userId,
-        metadata: { month: today.getMonth() + 1, year },
+        metadata: { month: month + 1, year },
       });
 
       try {

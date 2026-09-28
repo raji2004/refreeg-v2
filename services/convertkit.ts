@@ -1,7 +1,5 @@
 "use server";
 
-
-
 interface ConvertKitSubscriberData {
   email: string;
   first_name?: string;
@@ -15,7 +13,6 @@ interface ConvertKitResponse {
   error?: string;
 }
 
-
 export async function subscribeToConvertKit({
   email,
   first_name,
@@ -26,7 +23,6 @@ export async function subscribeToConvertKit({
     const apiKey = process.env.CONVERTKIT_API_KEY;
     const formId = process.env.CONVERTKIT_FORM_ID;
 
-    
     if (!apiKey) {
       console.error("ConvertKit API key not configured");
       return {
@@ -43,7 +39,6 @@ export async function subscribeToConvertKit({
       };
     }
 
-    
     const url = `https://api.convertkit.com/v3/forms/${formId}/subscribe`;
 
     const requestBody = {
@@ -92,7 +87,7 @@ export async function subscribeToConvertKit({
  */
 export async function addTagsToSubscriber(
   email: string,
-  tagIds: number[]
+  tagIds: number[],
 ): Promise<ConvertKitResponse> {
   try {
     const apiKey = process.env.CONVERTKIT_API_KEY;
@@ -105,6 +100,7 @@ export async function addTagsToSubscriber(
       };
     }
 
+    // Using the direct tag subscription endpoint
     const url = `https://api.convertkit.com/v3/tags/${tagIds[0]}/subscribe`;
 
     const response = await fetch(url, {
@@ -130,7 +126,7 @@ export async function addTagsToSubscriber(
 
     return {
       success: true,
-      subscriberId: data.subscription?.subscriber?.id,
+      subscriberId: data.subscriber?.id,
     };
   } catch (error) {
     console.error("Error adding tags to ConvertKit subscriber:", error);
@@ -141,10 +137,9 @@ export async function addTagsToSubscriber(
   }
 }
 
-
 export async function updateSubscriberFields(
   email: string,
-  fields: Record<string, string>
+  fields: Record<string, string>,
 ): Promise<ConvertKitResponse> {
   try {
     const apiSecret = process.env.CONVERTKIT_API_SECRET;
