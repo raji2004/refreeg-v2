@@ -112,14 +112,14 @@ async function uploadViaPresignedPut(
 }
 
 /**
- * Resolves gallery items so videos are S3 keys and images remain File
- * objects for the existing server-action path.
+ * Resolves gallery items so both images and videos are uploaded to S3
+ * and returned as S3 keys, preventing huge binary payloads through Server Actions.
  */
 export async function resolveMultimediaForSubmit(
   items: (File | string)[],
   options: { entityType: S3EntityType; entityId?: string },
-): Promise<(File | string)[]> {
-  const resolved: (File | string)[] = [];
+): Promise<string[]> {
+  const resolved: string[] = [];
 
   for (const item of items) {
     if (typeof item === "string") {
@@ -127,16 +127,15 @@ export async function resolveMultimediaForSubmit(
       continue;
     }
 
-    if (item.type.startsWith("video/")) {
-      const { key } = await uploadFileWithPresign(item, {
-        entityType: options.entityType,
-        entityId: options.entityId,
-        mediaType: "videos",
-      });
-      resolved.push(key);
-    } else {
-      resolved.push(item);
-    }
+    const mediaType: S3MediaType = item.type.startsWith("video/")
+      ? "videos"
+      : "images";
+    const { key } = await uploadFileWithPresign(item, {
+      entityType: options.entityType,
+      entityId: options.entityId,
+      mediaType,
+    });
+    resolved.push(key);
   }
 
   return resolved;

@@ -264,6 +264,52 @@ describe("cause-actions", () => {
         expect.objectContaining({ latitude: 6.5244, longitude: 3.3792 }),
       );
     });
+
+    it("creates a cause with direct S3 key strings for coverImage and multimedia", async () => {
+      let causeCreateData: any = null;
+      mockPrisma.cause.findFirst.mockResolvedValue(null);
+      mockPrisma.$transaction.mockImplementation(async (callback) =>
+        callback({
+          cause: {
+            create: jest.fn().mockImplementation(async ({ data }) => {
+              causeCreateData = data;
+              return {
+                ...basePrismaCause,
+                ...data,
+              };
+            }),
+          },
+          cause_sections: { createMany: jest.fn() },
+        }),
+      );
+      mockPrisma.user.findUnique.mockResolvedValue({
+        fullName: "Creator",
+        email: "creator@example.com",
+      });
+
+      const s3CoverKey = "uploads/causes/owner-1/draft-id/images/cover.jpg";
+      const s3GalleryKey = "uploads/causes/owner-1/draft-id/images/gallery1.jpg";
+
+      await createCause("owner-1", {
+        title: "S3 Key Cause",
+        category: "tech",
+        goal: 10000,
+        currency: "NGN",
+        coverImage: s3CoverKey,
+        multimedia: [s3GalleryKey],
+        sections: [],
+        deviceLocation: {
+          latitude: 6.5244,
+          longitude: 3.3792,
+          accuracy: 50,
+          capturedAt: Date.now(),
+        },
+      } as any);
+
+      expect(causeCreateData).toBeDefined();
+      expect(causeCreateData.image).toBe(s3CoverKey);
+      expect(causeCreateData.multimedia).toEqual([s3GalleryKey]);
+    });
   });
 
   describe("updateCause", () => {
@@ -299,6 +345,39 @@ describe("cause-actions", () => {
 
       expect(result).toEqual(edit);
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard/causes");
+    });
+
+    it("creates a pending cause edit with direct S3 key string for coverImage", async () => {
+      let editCreateData: any = null;
+      mockPrisma.cause_edits.findFirst.mockResolvedValue(null);
+      const edit = { id: "edit-2", status: "pending" };
+      mockPrisma.$transaction.mockImplementation(async (callback) =>
+        callback({
+          cause_edits: {
+            create: jest.fn().mockImplementation(async ({ data }) => {
+              editCreateData = data;
+              return edit;
+            }),
+          },
+          cause_edit_sections: { createMany: jest.fn() },
+        }),
+      );
+      mockPrisma.user.findUnique.mockResolvedValue({
+        fullName: "Owner",
+        email: "owner@example.com",
+      });
+
+      const s3CoverKey = "uploads/causes/owner-1/edit-id/images/cover.jpg";
+
+      await updateCause(VALID_UUID, "owner-1", {
+        title: "Updated Title",
+        category: "health",
+        goal: 8000,
+        coverImage: s3CoverKey,
+      } as any);
+
+      expect(editCreateData).toBeDefined();
+      expect(editCreateData.image).toBe(s3CoverKey);
     });
   });
 
