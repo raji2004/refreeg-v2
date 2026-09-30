@@ -303,6 +303,7 @@ describe("cause-actions", () => {
         coverImage: s3CoverKey,
         multimedia: [s3GalleryKey],
         sections: [],
+        location: "Lagos, Nigeria",
         deviceLocation: {
           latitude: 6.5244,
           longitude: 3.3792,
