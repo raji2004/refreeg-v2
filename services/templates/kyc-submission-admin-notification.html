@@ -106,14 +106,32 @@
         <img src="https://www.refreeg.com/logo.svg" alt="RefreeG Logo" />
         <span class="brand-name">RefreeG</span>
       </div>
-      
-      <h1>{{#if isRejected}}Action Notice: Didit KYC Verification Declined{{else}}Action Required: New KYC Submission{{/if}}</h1>
+
+      <h1>
+        {{#if isRejected}}Action Notice: Didit KYC Verification
+        Declined{{else}}Action Required: New KYC Submission{{/if}}
+      </h1>
       <p>Dear {{adminName}},</p>
-      <p>{{#if isRejected}}A Know Your Customer (KYC) verification was declined/rejected by Didit. You can inspect the verification in the Didit admin console to verify details or determine if a manual approval is warranted.{{else}}A new Know Your Customer (KYC) verification has been submitted via Didit and requires a manual review.{{/if}}</p>
-      
+      <p>
+        {{#if isRejected}}A Know Your Customer (KYC) verification was
+        declined/rejected by Didit. You can inspect the verification in the
+        Didit admin console to verify details or determine if a manual approval
+        is warranted.{{else}}A new Know Your Customer (KYC) verification has
+        been submitted via Didit and requires a manual review.{{/if}}
+      </p>
+
       <div class="alert-box">
-        <strong>{{#if isRejected}}⚠️ Verification Declined{{else}}⚠️ Review Required{{/if}}</strong>
-        <p style="margin-top: 10px; margin-bottom: 0;">{{#if isRejected}}{{#if rejectionReason}}<strong>Reason:</strong> {{rejectionReason}}{{else}}Please review this verification in the Didit admin console.{{/if}}{{else}}Please review this submission within 24-48 hours to ensure a smooth onboarding process for the user.{{/if}}</p>
+        <strong
+          >{{#if isRejected}}⚠️ Verification Declined{{else}}⚠️ Review
+          Required{{/if}}</strong
+        >
+        <p style="margin-top: 10px; margin-bottom: 0">
+          {{#if isRejected}}{{#if rejectionReason}}<strong>Reason:</strong>
+          {{rejectionReason}}{{else}}Please review this verification in the
+          Didit admin console.{{/if}}{{else}}Please review this submission
+          within 24-48 hours to ensure a smooth onboarding process for the
+          user.{{/if}}
+        </p>
       </div>
 
       <div class="info-box">
@@ -121,14 +139,17 @@
         <ul>
           <li><strong>User Name:</strong> {{userName}}</li>
           <li><strong>Email:</strong> {{userEmail}}</li>
-          <li><strong>Status:</strong> {{#if isRejected}}Rejected / Declined{{else}}Pending Review{{/if}}</li>
+          <li>
+            <strong>Status:</strong> {{#if isRejected}}Rejected /
+            Declined{{else}}Pending Review{{/if}}
+          </li>
         </ul>
       </div>
-      
+
       <div class="btn-container">
         <a href="{{kycReviewUrl}}" class="btn">Review in Didit</a>
       </div>
-      
+
       <p class="center-text">
         This is an automated administrative notification.
       </p>

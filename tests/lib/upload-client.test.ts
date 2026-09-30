@@ -6,7 +6,9 @@ describe("resolveMultimediaForSubmit", () => {
       if (url === "/api/s3/upload") {
         return {
           ok: true,
-          json: async () => ({ key: "uploads/causes/entity-1/images/mock.jpg" }),
+          json: async () => ({
+            key: "uploads/causes/entity-1/images/mock.jpg",
+          }),
         };
       }
       return { ok: false };
