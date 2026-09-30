@@ -48,7 +48,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, ShieldCheck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import NavigationLoader from "../NavigationLoader";
 const MultimediaCarousel = dynamic(() => import("../MultimediaCarousel"), {
@@ -120,10 +120,33 @@ export default function ManageCauses() {
     },
   });
 
+  const [previewMetrics, setPreviewMetrics] = useState<{
+    impact: string;
+    readability: string;
+    transparency: string;
+    status: string;
+  }>({
+    impact: "B+",
+    readability: "A",
+    transparency: "High",
+    status: "pending",
+  });
+  const [isSavingPreviewMetrics, setIsSavingPreviewMetrics] = useState(false);
+
   const { showNotification } = useNotifications();
 
   const handleApprove = async (causeId: string) => {
     try {
+      if (detailDialog.open && detailDialog.cause?.id === causeId) {
+        await updateCauseTrustMetrics(causeId, {
+          trust_score: {
+            impact: previewMetrics.impact,
+            readability: previewMetrics.readability,
+            transparency: previewMetrics.transparency,
+          },
+          verified_status: previewMetrics.status,
+        }).catch((e) => console.error("Metrics sync on approve failed:", e));
+      }
       await approveCause(causeId);
       showNotification("Cause Approved", {
         body: "A new cause has been approved and is now live!",
@@ -181,6 +204,45 @@ export default function ManageCauses() {
     }
   };
 
+  const handleSavePreviewMetrics = async () => {
+    if (!detailDialog.cause) return;
+    setIsSavingPreviewMetrics(true);
+    try {
+      await updateCauseTrustMetrics(detailDialog.cause.id, {
+        trust_score: {
+          impact: previewMetrics.impact,
+          readability: previewMetrics.readability,
+          transparency: previewMetrics.transparency,
+        },
+        verified_status: previewMetrics.status,
+      });
+      setDetailDialog((prev) =>
+        prev.cause
+          ? {
+              ...prev,
+              cause: {
+                ...prev.cause,
+                trust_score: {
+                  impact: previewMetrics.impact,
+                  readability: previewMetrics.readability,
+                  transparency: previewMetrics.transparency,
+                },
+                verified_status: previewMetrics.status,
+              } as any,
+            }
+          : prev,
+      );
+      showNotification("Metrics Updated", {
+        body: "Cause trust metrics have been updated.",
+      });
+      router.refresh();
+    } catch (error) {
+      console.error("Error updating trust metrics from preview:", error);
+    } finally {
+      setIsSavingPreviewMetrics(false);
+    }
+  };
+
   const openDetailDialog = async (item: any) => {
     setDetailDialog((prev) => ({ ...prev, open: true, isLoading: true }));
     try {
@@ -196,6 +258,12 @@ export default function ManageCauses() {
           created_at: item.created_at,
           updated_at: item.updated_at,
           raised: item.raised || 0,
+          trust_score: item.trust_score || {
+            impact: "B+",
+            readability: "A",
+            transparency: "High",
+          },
+          verified_status: item.verified_status || "pending",
           user: {
             name: item.profiles?.full_name || "Anonymous",
             email: item.profiles?.email || "",
@@ -210,9 +278,23 @@ export default function ManageCauses() {
           multimedia: item.multimedia || [],
           video_links: item.video_links || [],
         };
+        setPreviewMetrics({
+          impact: detailed.trust_score?.impact || "B+",
+          readability: detailed.trust_score?.readability || "A",
+          transparency: detailed.trust_score?.transparency || "High",
+          status: detailed.verified_status || "pending",
+        });
         setDetailDialog({ open: true, isLoading: false, cause: detailed });
       } else {
         const detailed = await getCause(item.id);
+        if (detailed) {
+          setPreviewMetrics({
+            impact: (detailed as any).trust_score?.impact || "B+",
+            readability: (detailed as any).trust_score?.readability || "A",
+            transparency: (detailed as any).trust_score?.transparency || "High",
+            status: (detailed as any).verified_status || "pending",
+          });
+        }
         setDetailDialog({ open: true, isLoading: false, cause: detailed });
       }
     } catch (e) {
@@ -652,6 +734,195 @@ export default function ManageCauses() {
                           : "N/A"}
                       </p>
                     )}
+                  </div>
+                </div>
+
+                {/* Trust & Quality Metrics (Integrated into Preview) */}
+                <div className="p-4 border border-brand/20 bg-brand/5 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-5 w-5 text-brand" />
+                      <h3 className="font-semibold text-sm text-foreground">
+                        Trust & Quality Metrics
+                      </h3>
+                    </div>
+                    <Badge
+                      variant={
+                        previewMetrics.status === "verified"
+                          ? "default"
+                          : previewMetrics.status === "in_review"
+                            ? "secondary"
+                            : "outline"
+                      }
+                      className="capitalize text-xs font-medium"
+                    >
+                      {previewMetrics.status.replace("_", " ")}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Evaluate and mark the quality scores and verification status
+                    for this cause. Changes can be saved individually or will
+                    automatically be applied upon approval.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                    <div>
+                      <Label
+                        htmlFor="preview-impact"
+                        className="text-xs font-medium text-muted-foreground block mb-1"
+                      >
+                        Impact Score
+                      </Label>
+                      <Select
+                        value={previewMetrics.impact}
+                        onValueChange={(val) =>
+                          setPreviewMetrics((prev) => ({
+                            ...prev,
+                            impact: val,
+                          }))
+                        }
+                      >
+                        <SelectTrigger
+                          id="preview-impact"
+                          className="h-9 bg-background"
+                        >
+                          <SelectValue placeholder="Impact" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[
+                            "A+",
+                            "A",
+                            "A-",
+                            "B+",
+                            "B",
+                            "B-",
+                            "C+",
+                            "C",
+                            "C-",
+                          ].map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="preview-readability"
+                        className="text-xs font-medium text-muted-foreground block mb-1"
+                      >
+                        Readability
+                      </Label>
+                      <Select
+                        value={previewMetrics.readability}
+                        onValueChange={(val) =>
+                          setPreviewMetrics((prev) => ({
+                            ...prev,
+                            readability: val,
+                          }))
+                        }
+                      >
+                        <SelectTrigger
+                          id="preview-readability"
+                          className="h-9 bg-background"
+                        >
+                          <SelectValue placeholder="Readability" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["High", "Medium", "Low"].map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="preview-transparency"
+                        className="text-xs font-medium text-muted-foreground block mb-1"
+                      >
+                        Transparency
+                      </Label>
+                      <Select
+                        value={previewMetrics.transparency}
+                        onValueChange={(val) =>
+                          setPreviewMetrics((prev) => ({
+                            ...prev,
+                            transparency: val,
+                          }))
+                        }
+                      >
+                        <SelectTrigger
+                          id="preview-transparency"
+                          className="h-9 bg-background"
+                        >
+                          <SelectValue placeholder="Transparency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["High", "Medium", "Low"].map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="preview-status"
+                        className="text-xs font-medium text-muted-foreground block mb-1"
+                      >
+                        Verification Status
+                      </Label>
+                      <Select
+                        value={previewMetrics.status}
+                        onValueChange={(val) =>
+                          setPreviewMetrics((prev) => ({
+                            ...prev,
+                            status: val,
+                          }))
+                        }
+                      >
+                        <SelectTrigger
+                          id="preview-status"
+                          className="h-9 bg-background"
+                        >
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">
+                            Pending Review
+                          </SelectItem>
+                          <SelectItem value="in_review">In Review</SelectItem>
+                          <SelectItem value="verified">Verified</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs font-medium border-brand/30 hover:bg-brand/10 hover:text-brand"
+                      onClick={handleSavePreviewMetrics}
+                      disabled={isSavingPreviewMetrics}
+                    >
+                      {isSavingPreviewMetrics ? (
+                        <>
+                          <Icons.spinner className="h-3 w-3 mr-1 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Metrics"
+                      )}
+                    </Button>
                   </div>
                 </div>
               </div>
