@@ -27,9 +27,7 @@ export function ImageLightbox({
   const move = useCallback(
     (direction: -1 | 1) => {
       if (currentIndex === null || images.length < 2) return;
-      onIndexChange(
-        (currentIndex + direction + images.length) % images.length,
-      );
+      onIndexChange((currentIndex + direction + images.length) % images.length);
     },
     [currentIndex, images.length, onIndexChange],
   );

@@ -1,18 +1,14 @@
 import type React from "react";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/actions/auth-actions";
+import { getSessionUser } from "@/lib/auth/session-user";
 import { requireKycAndProfile } from "@/lib/auth/require-kyc";
 
-/**
- * Layout that gates petition creation behind KYC approval and profile
- * completeness. Replaces the old middleware-level check.
- */
 export default async function CreatePetitionLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
 
   if (!user) {
     redirect("/auth/signin");

@@ -1,17 +1,18 @@
-"use client";
-
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth/auth";
+import { getCachedProfile } from "@/lib/profile-cache";
 import { NotificationsForm } from "../notifications-form";
 import { SettingsShell } from "../components/settings-shell";
 
-export default function NotificationsSettingsPage() {
+export default async function NotificationsSettingsPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/auth/signin");
+
+  const profile = await getCachedProfile(session.user.id).catch(() => null);
+
   return (
-    <SettingsShell>
-      <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-        <div className="p-6 space-y-4">
-          <h2 className="text-lg font-semibold">Notification Settings</h2>
-          <NotificationsForm />
-        </div>
-      </div>
+    <SettingsShell isOrganization={profile?.account_type === "organization"}>
+      <NotificationsForm />
     </SettingsShell>
   );
 }

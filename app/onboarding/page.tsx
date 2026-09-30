@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
@@ -45,9 +46,6 @@ import {
 } from "@/actions/profile-actions";
 import { toast } from "@/components/ui/use-toast";
 
-// ---------------------------------------------------------------------------
-// Step identifiers — each account type uses a different ordered subset.
-// ---------------------------------------------------------------------------
 type StepId =
   | "account-type"
   | "gender"
@@ -68,7 +66,6 @@ const INDIVIDUAL_STEPS: StepId[] = [
 ];
 
 const ORGANIZATION_STEPS: StepId[] = [
-  "account-type",
   "profile",
   "org-setup",
   "invite-team",
@@ -78,10 +75,6 @@ const ORGANIZATION_STEPS: StepId[] = [
 ];
 
 const ORGANIZATION_STEP_DETAILS = [
-  {
-    id: "account-type" as const,
-    label: "Account type",
-  },
   {
     id: "profile" as const,
     label: "Owner profile",
@@ -108,28 +101,25 @@ const ORGANIZATION_STEP_DETAILS = [
   },
 ];
 
-/**
- * Map the numeric value returned by `getCurrentOnboardingStep` (which may
- * include 3.5 for org-setup) to the appropriate StepId.
- */
 function dbStepToStepId(dbStep: number, accountType: string): StepId {
+  if (accountType === "organization") {
+    if (dbStep <= 3) return "profile";
+    if (dbStep === 3.5) return "org-setup";
+    return "kyc";
+  }
   if (dbStep <= 1) return "account-type";
-  if (dbStep === 2) return accountType === "organization" ? "profile" : "gender";
+  if (dbStep === 2) return "gender";
   if (dbStep === 3) return "profile";
-  if (dbStep === 3.5) return "org-setup";
-  // dbStep >= 4 means profile + org-setup are done → KYC
   return "kyc";
 }
 
 export default function OnboardingPage() {
-  // State management for dynamic onboarding flow
   const [currentStepId, setCurrentStepId] = useState<StepId>("account-type");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [direction, setDirection] = useState(1);
 
-  // Onboarding data state - now prefilled from database
   const [onboardingData, setOnboardingData] = useState({
     accountType: "",
     gender: "",
@@ -152,7 +142,6 @@ export default function OnboardingPage() {
   const { data: session, status, update } = useSession();
   const completionDestinationRef = useRef<string | null>(null);
 
-  // Derive step sequence based on account type
   const isOrg = onboardingData.accountType === "organization";
   const stepSequence = useMemo(
     () => (isOrg ? ORGANIZATION_STEPS : INDIVIDUAL_STEPS),
@@ -162,7 +151,6 @@ export default function OnboardingPage() {
   const currentStepIndex = stepSequence.indexOf(currentStepId);
   const totalSteps = stepSequence.length;
 
-  // Navigation helpers
   const goToStep = (stepId: StepId, dir: 1 | -1 = 1) => {
     setDirection(dir);
     setCurrentStepId(stepId);
@@ -182,7 +170,6 @@ export default function OnboardingPage() {
     }
   };
 
-  // ──── Auth & resume logic ───────────────────────────────────────────
   useEffect(() => {
     const checkUser = async () => {
       if (status === "loading") return;
@@ -194,21 +181,18 @@ export default function OnboardingPage() {
 
       const currentUser = session.user;
 
-      // Check the flag from the JWT session first (most reliable and fastest)
       const isCompletedInSession = (currentUser as any).onboardingCompleted;
-      
+
       if (isCompletedInSession === true) {
-        // handleComplete owns navigation while it refreshes the session. Without
-        // this guard, this effect can race it and send KYC users to /dashboard.
         if (completionDestinationRef.current) return;
         router.push("/dashboard");
         return;
       }
 
-      // Check if user has already completed onboarding via DB
-      const hasCompleted = await hasCompletedOnboarding(currentUser.id as string);
+      const hasCompleted = await hasCompletedOnboarding(
+        currentUser.id as string,
+      );
       if (hasCompleted) {
-        // If DB says completed but session says no, update the session to fix the loop
         if (isCompletedInSession === false) {
           await update({ onboardingCompleted: true });
         }
@@ -218,7 +202,6 @@ export default function OnboardingPage() {
 
       setUser(currentUser);
 
-      // Only fetch and set initial state if we haven't loaded yet
       if (isLoading) {
         try {
           const [currentStepFromDB, existingData] = await Promise.all([
@@ -228,17 +211,15 @@ export default function OnboardingPage() {
 
           const accountType = existingData.accountType || "";
 
-          // Handle Google OAuth name splitting if firstName/lastName are missing
           let firstName = existingData.profile.firstName || "";
           let lastName = existingData.profile.lastName || "";
-          
+
           if (!firstName && !lastName && currentUser.name) {
             const nameParts = currentUser.name.split(" ");
             firstName = nameParts[0] || "";
             lastName = nameParts.slice(1).join(" ") || "";
           }
 
-          // Prefill onboarding data with existing database data or session data
           setOnboardingData((prev) => ({
             ...prev,
             accountType,
@@ -248,11 +229,11 @@ export default function OnboardingPage() {
               ...existingData.profile,
               firstName: firstName,
               lastName: lastName,
-              profilePhoto: existingData.profile.profilePhoto || currentUser.image || "",
+              profilePhoto:
+                existingData.profile.profilePhoto || currentUser.image || "",
             },
           }));
 
-          // Set the current step based on database state
           const resumeStepId = dbStepToStepId(currentStepFromDB, accountType);
           setCurrentStepId(resumeStepId);
 
@@ -268,8 +249,6 @@ export default function OnboardingPage() {
     checkUser();
   }, [router, session, status, isLoading, update]);
 
-  // Additional protection: Reset to step 1 if user tries to access late
-  // steps without completing the profile step
   useEffect(() => {
     if (!user) return;
     const lateSteps: StepId[] = ["kyc", "interests", "complete"];
@@ -285,30 +264,36 @@ export default function OnboardingPage() {
     );
 
     if (!isProfileComplete) {
-      setCurrentStepId("account-type");
+      setCurrentStepId(
+        onboardingData.accountType === "organization"
+          ? "profile"
+          : "account-type",
+      );
       toast({
         title: "Complete your profile first",
         description: "Please complete earlier steps before proceeding.",
         variant: "destructive",
       });
     }
-  }, [user, currentStepId, onboardingData.profile]);
-
-  // ──── Step handlers ─────────────────────────────────────────────────
+  }, [user, currentStepId, onboardingData.profile, onboardingData.accountType]);
 
   const handleStep1Next = async (accountType: string) => {
     try {
+      if (accountType === "organization") {
+        toast({
+          title: "Invalid account type",
+          description:
+            "Organization accounts must be registered through the dedicated organization page.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       await saveStep1Progress(user.id, accountType);
       updateOnboardingData("accountType", accountType);
 
-      // Organization → skip gender, go to profile
-      if (accountType === "organization") {
-        setDirection(1);
-        setCurrentStepId("profile");
-      } else {
-        setDirection(1);
-        setCurrentStepId("gender");
-      }
+      setDirection(1);
+      setCurrentStepId("gender");
     } catch (error) {
       console.error("Error saving step 1 progress:", error);
       toast({
@@ -353,7 +338,6 @@ export default function OnboardingPage() {
         user.image,
       );
 
-      // Org → go to org setup. Individual → go to KYC.
       if (onboardingData.accountType === "organization") {
         goToStep("org-setup", 1);
       } else {
@@ -401,8 +385,6 @@ export default function OnboardingPage() {
       localStorage.removeItem("onboarding_kyc_completed");
       localStorage.removeItem("onboarding_consent");
 
-      // A full navigation guarantees the refreshed auth cookie is used by the
-      // dashboard route guard before the KYC page is rendered.
       window.location.assign(target);
     } catch (error) {
       completionDestinationRef.current = null;

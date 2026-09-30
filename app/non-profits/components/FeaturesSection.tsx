@@ -4,7 +4,6 @@ import React from "react";
 import { motion } from "framer-motion";
 
 const FeaturesSection = () => {
-  // Animation variants with proper TypeScript types
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -96,8 +95,11 @@ const FeaturesSection = () => {
       variants={containerVariants}
     >
       <div className="max-w-6xl mx-auto">
-        {/* Header Section */}
-        <motion.div className="text-center mb-12 md:mb-20" variants={itemVariants}>
+        {}
+        <motion.div
+          className="text-center mb-12 md:mb-20"
+          variants={itemVariants}
+        >
           <motion.h1
             className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6"
             initial={{ opacity: 0, y: 30 }}
@@ -120,12 +122,12 @@ const FeaturesSection = () => {
           </motion.p>
         </motion.div>
 
-        {/* Features Grid - Responsive layout */}
+        {}
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 lg:gap-16 mb-12 md:mb-20"
           variants={containerVariants}
         >
-          {/* Global Reach */}
+          {}
           <motion.div
             className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 lg:p-12 shadow-sm hover:shadow-lg transition-all duration-300"
             variants={itemVariants}
@@ -136,7 +138,7 @@ const FeaturesSection = () => {
           >
             <motion.div className="mb-6 md:mb-8" variants={iconVariants}>
               <div className="relative w-16 h-16 md:w-20 md:h-20">
-                {/* Gold coins with green arrow */}
+                {}
                 <motion.div
                   className="absolute bottom-0 left-0 w-4 h-6 md:w-6 md:h-8 bg-yellow-400 rounded-sm"
                   animate={{ y: [0, -5, 0] }}
@@ -189,7 +191,7 @@ const FeaturesSection = () => {
             </motion.p>
           </motion.div>
 
-          {/* Transparent Fund Tracking */}
+          {}
           <motion.div
             className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 lg:p-12 shadow-sm hover:shadow-lg transition-all duration-300"
             variants={itemVariants}
@@ -200,7 +202,7 @@ const FeaturesSection = () => {
           >
             <motion.div className="mb-6 md:mb-8" variants={iconVariants}>
               <div className="relative w-16 h-16 md:w-20 md:h-20">
-                {/* Globe with magnifying glass */}
+                {}
                 <motion.div
                   className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-teal-500 relative"
                   animate={{ rotate: [0, 5, 0, -5, 0] }}
@@ -234,7 +236,7 @@ const FeaturesSection = () => {
             </motion.p>
           </motion.div>
 
-          {/* Real-Time Updates */}
+          {}
           <motion.div
             className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 lg:p-12 shadow-sm hover:shadow-lg transition-all duration-300"
             variants={itemVariants}
@@ -245,7 +247,7 @@ const FeaturesSection = () => {
           >
             <motion.div className="mb-6 md:mb-8" variants={iconVariants}>
               <div className="relative w-16 h-16 md:w-20 md:h-20">
-                {/* Bell with notification */}
+                {}
                 <motion.div
                   className="w-12 h-14 md:w-14 md:h-16 bg-gradient-to-b from-yellow-400 to-orange-400 rounded-t-full relative"
                   animate={{ scale: [1, 1.05, 1] }}
@@ -283,7 +285,7 @@ const FeaturesSection = () => {
             </motion.p>
           </motion.div>
 
-          {/* Earn While You Build */}
+          {}
           <motion.div
             className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 lg:p-12 shadow-sm hover:shadow-lg transition-all duration-300"
             variants={itemVariants}
@@ -294,7 +296,7 @@ const FeaturesSection = () => {
           >
             <motion.div className="mb-6 md:mb-8" variants={iconVariants}>
               <div className="relative w-16 h-16 md:w-20 md:h-20">
-                {/* Bar chart */}
+                {}
                 <motion.div
                   className="flex items-end gap-1 md:gap-2 h-12 md:h-16"
                   initial="hidden"
@@ -317,12 +319,12 @@ const FeaturesSection = () => {
                         index === 0
                           ? "bg-purple-400"
                           : index === 1
-                          ? "bg-pink-400"
-                          : index === 2
-                          ? "bg-green-400"
-                          : index === 3
-                          ? "bg-blue-400"
-                          : "bg-teal-400"
+                            ? "bg-pink-400"
+                            : index === 2
+                              ? "bg-green-400"
+                              : index === 3
+                                ? "bg-blue-400"
+                                : "bg-teal-400"
                       }`}
                       variants={barChartVariants}
                       custom={height}
@@ -361,8 +363,8 @@ const FeaturesSection = () => {
               variants={textVariants}
               transition={{ delay: 0.1 }}
             >
-              Stake your nonprofit&apos;s funds in our liquidity pool to generate
-              yield and sustain your mission long-term.
+              Stake your nonprofit&apos;s funds in our liquidity pool to
+              generate yield and sustain your mission long-term.
             </motion.p>
           </motion.div>
         </motion.div>

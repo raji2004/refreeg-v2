@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
     const { email, password, fullName, accountType } = registration;
     const referralCode = body.referralCode || null;
-    // UTM tracking fields — stored in pending registration, written to referrals_v1 on OTP verify
+
     const utm_source = body.utm_source || null;
     const utm_medium = body.utm_medium || null;
     const utm_campaign = body.utm_campaign || null;

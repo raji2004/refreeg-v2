@@ -17,6 +17,7 @@ jest.mock("@/lib/prisma", () => ({
       create: jest.fn(),
       update: jest.fn(),
     },
+    cause: { findFirst: jest.fn(), update: jest.fn() },
     userWallet: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -50,10 +51,7 @@ jest.mock("@/services/convertkit", () => ({
   subscribeToConvertKit: jest.fn(),
 }));
 
-import {
-  recordEvent,
-  updateUserStreaks,
-} from "@/actions/event-reward-actions";
+import { recordEvent, updateUserStreaks } from "@/actions/event-reward-actions";
 import {
   getCurrentUser,
   signUpAction,
@@ -127,6 +125,7 @@ describe("auth-actions", () => {
       expect(result).toEqual(user);
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: "user-1" },
+        omit: { password: true },
       });
     });
   });
@@ -254,9 +253,7 @@ describe("auth-actions", () => {
 
     it("stores token and sends reset email on success", async () => {
       mockPrisma.user.findUnique.mockResolvedValue({ id: "user-1" });
-      (mockPrisma.passwordResetToken.upsert as jest.Mock).mockResolvedValue(
-        {},
-      );
+      (mockPrisma.passwordResetToken.upsert as jest.Mock).mockResolvedValue({});
       (sendPasswordResetEmail as jest.Mock).mockResolvedValue(undefined);
 
       const result = await requestPasswordResetAction("test@example.com");
@@ -292,7 +289,7 @@ describe("auth-actions", () => {
 
       const result = await resetPasswordAction("valid-token", "newpass");
 
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ success: true, email: "test@example.com" });
       expect(mockPrisma.$transaction).toHaveBeenCalled();
     });
   });

@@ -3,18 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { assertCronAuthorized } from "@/lib/cron-auth";
 import { causePublicPath } from "@/lib/causes/slug";
 
-/**
- * Daily job (Next.js): email reminders for pledges due today that are NOT
- * card-authorized (legacy / reminder-only). Authorized pledges are charged via
- * POST /api/cron/pledge-charges.
- *
- * Also sends follower “campaign expiring in ~2 days” emails.
- */
 async function runPledgeReminders() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Prisma queries for pledges
   const pledges = await prisma.pledges.findMany({
     where: {
       reminder_date: {
@@ -27,7 +19,6 @@ async function runPledgeReminders() {
     },
   });
 
-  // Manually fetch related causes since there is no Prisma relation defined on pledges
   const causeIds = [...new Set(pledges.map((p) => p.cause_id))];
   const causesMap = new Map<string, { title: string; id: string }>();
   if (causeIds.length > 0) {
@@ -40,7 +31,10 @@ async function runPledgeReminders() {
 
   const pledgesWithCauses = pledges.map((pledge) => ({
     ...pledge,
-    causes: causesMap.get(pledge.cause_id) || { title: "Unknown Cause", id: pledge.cause_id },
+    causes: causesMap.get(pledge.cause_id) || {
+      title: "Unknown Cause",
+      id: pledge.cause_id,
+    },
   }));
 
   const appUrl =
@@ -109,9 +103,7 @@ async function runPledgeReminders() {
           const amountRaised = Number(cause.raised || 0);
           const goalAmount = Number(cause.goal || 0);
           const percent =
-            goalAmount > 0
-              ? Math.round((amountRaised / goalAmount) * 100)
-              : 0;
+            goalAmount > 0 ? Math.round((amountRaised / goalAmount) * 100) : 0;
 
           await fetch(`${appUrl}/api/mail/follower-update`, {
             method: "POST",

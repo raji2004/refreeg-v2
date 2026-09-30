@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Flutterwave uses a hash header for webhook verification
     const webhookHash = request.headers.get("verif-hash");
     const secretHash = process.env.FLUTTERWAVE_WEBHOOK_HASH;
 
@@ -46,15 +45,11 @@ export async function POST(request: NextRequest) {
         const transactionId = data?.id;
 
         if (!txRef) {
-          return new NextResponse(
-            JSON.stringify({ error: "Missing tx_ref" }),
-            { status: 400 },
-          );
+          return new NextResponse(JSON.stringify({ error: "Missing tx_ref" }), {
+            status: 400,
+          });
         }
 
-        // Verify the transaction independently (don't trust webhook data alone).
-        // Prefer verifying by the numeric transaction ID (data.id) which works
-        // in both test and live mode. Fall back to tx_ref lookup if no ID.
         let full: any;
         if (transactionId) {
           full = await Flutterwave.verifyTransactionFull(String(transactionId));
@@ -71,12 +66,9 @@ export async function POST(request: NextRequest) {
 
         const meta = full.meta || {};
 
-        // Handle pledge authorization flow
         if (String(meta.pledge_flow) === "authorization") {
-          // Import dynamically to keep the module boundary clean
-          const { processPledgeAuthorizationSuccess } = await import(
-            "@/lib/pledge-provider"
-          );
+          const { processPledgeAuthorizationSuccess } =
+            await import("@/lib/pledge-provider");
           await processPledgeAuthorizationSuccess(txRef, "flutterwave");
           return new NextResponse(
             JSON.stringify({ message: "Pledge authorization stored" }),
@@ -84,11 +76,9 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Handle pledge scheduled charge
         if (String(meta.pledge_flow) === "scheduled_charge") {
-          const { processPledgeScheduledChargeSuccess } = await import(
-            "@/lib/pledge-provider"
-          );
+          const { processPledgeScheduledChargeSuccess } =
+            await import("@/lib/pledge-provider");
           await processPledgeScheduledChargeSuccess(txRef, "flutterwave");
           return new NextResponse(
             JSON.stringify({ message: "Pledge charge processed" }),

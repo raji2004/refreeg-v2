@@ -10,19 +10,20 @@ const ENDPOINTS = [
     path: "/api/bot/campaigns",
     body: {
       title: "Help for Education",
-      description: "Raising funds for a local school library project with high impact outcomes.",
+      description:
+        "Raising funds for a local school library project with high impact outcomes.",
       goal_amount: 500000,
       payout_mode: "manual",
       bank_account_number: "0123456789",
       bank_code: "058",
-      bank_account_name: "John Doe"
-    }
+      bank_account_name: "John Doe",
+    },
   },
   {
     name: "List Campaigns",
     method: "GET",
     path: "/api/bot/campaigns",
-    body: {}
+    body: {},
   },
   {
     name: "Update Campaign",
@@ -34,8 +35,8 @@ const ENDPOINTS = [
       goal_amount: 600000,
       bank_account_number: "0123456789",
       bank_code: "058",
-      bank_account_name: "John Doe"
-    }
+      bank_account_name: "John Doe",
+    },
   },
   {
     name: "Validate (AI)",
@@ -43,13 +44,14 @@ const ENDPOINTS = [
     path: "/api/bot/campaigns/validate",
     body: {
       title: "Suspicious Campaign",
-      description: "A very clear and helpful campaign description for education purposes.",
+      description:
+        "A very clear and helpful campaign description for education purposes.",
       goal_amount: 1000,
       payout_mode: "manual",
       bank_account_number: "0123456789",
       bank_code: "058",
-      bank_account_name: "Verification Admin"
-    }
+      bank_account_name: "Verification Admin",
+    },
   },
   {
     name: "Register Bank",
@@ -58,14 +60,14 @@ const ENDPOINTS = [
     body: {
       bank_account_number: "0123456789",
       bank_code: "058",
-      bank_account_name: "John Doe"
-    }
+      bank_account_name: "John Doe",
+    },
   },
   {
     name: "List Banks",
     method: "GET",
     path: "/api/bot/banks",
-    body: {}
+    body: {},
   },
   {
     name: "Initialize Donation",
@@ -75,27 +77,31 @@ const ENDPOINTS = [
       campaign_id: "uuid-from-creation",
       amount: 5000,
       name: "Sponsor Name",
-      email: "sponsor@example.com"
-    }
+      email: "sponsor@example.com",
+    },
   },
   {
     name: "List Categories",
     method: "GET",
     path: "/api/bot/campaigns/categories",
-    body: {}
-  }
+    body: {},
+  },
 ];
 
 export default function ApiPlayground() {
   const [apiKey, setApiKey] = useState("");
   const [selectedEndpoint, setSelectedEndpoint] = useState(ENDPOINTS[0]);
-  const [requestBody, setRequestBody] = useState(JSON.stringify(selectedEndpoint.body, null, 2));
+  const [requestBody, setRequestBody] = useState(
+    JSON.stringify(selectedEndpoint.body, null, 2),
+  );
   const [response, setResponse] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(JSON.stringify(selectedEndpoint.body, null, 2));
+    navigator.clipboard.writeText(
+      JSON.stringify(selectedEndpoint.body, null, 2),
+    );
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -108,30 +114,35 @@ export default function ApiPlayground() {
 
     setLoading(true);
     try {
-      // Handle path parameters if any (like {{campaign_id}})
       const finalBody = JSON.parse(requestBody);
       let finalPath = selectedEndpoint.path;
       if (finalPath.includes("{{campaign_id}}")) {
-         const id = prompt("Enter Campaign ID:", "c8b3ecf6...");
-         if (!id) {
-           setLoading(false);
-           return;
-         }
-         finalPath = finalPath.replace("{{campaign_id}}", id);
+        const id = prompt("Enter Campaign ID:", "c8b3ecf6...");
+        if (!id) {
+          setLoading(false);
+          return;
+        }
+        finalPath = finalPath.replace("{{campaign_id}}", id);
       }
 
       const res = await fetch(finalPath, {
         method: selectedEndpoint.method,
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
-        body: selectedEndpoint.method !== "GET" ? JSON.stringify(finalBody) : undefined,
+        body:
+          selectedEndpoint.method !== "GET"
+            ? JSON.stringify(finalBody)
+            : undefined,
       });
       const data = await res.json();
       setResponse(data);
     } catch (err) {
-      setResponse({ status: "error", error: { message: "Failed to connect to API" } });
+      setResponse({
+        status: "error",
+        error: { message: "Failed to connect to API" },
+      });
     } finally {
       setLoading(false);
     }
@@ -144,7 +155,9 @@ export default function ApiPlayground() {
           <div className="p-2 bg-blue-500/10 rounded-lg">
             <Play className="w-5 h-5 text-blue-400" />
           </div>
-          <h2 className="text-lg font-semibold text-white">Interactive Playground</h2>
+          <h2 className="text-lg font-semibold text-white">
+            Interactive Playground
+          </h2>
         </div>
         <div className="text-xs font-mono px-3 py-1 bg-slate-800 rounded-full text-slate-400">
           Sandbox Mode
@@ -155,8 +168,10 @@ export default function ApiPlayground() {
         {/* Left: Configuration */}
         <div className="p-6 border-r border-slate-800 space-y-6 text-[15px]">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">API KEY</label>
-            <input 
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+              API KEY
+            </label>
+            <input
               type="text"
               name="rg_api_key_test"
               autoComplete="off"
@@ -169,7 +184,9 @@ export default function ApiPlayground() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">ENDPOINT</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+              ENDPOINT
+            </label>
             <div className="flex flex-wrap gap-2">
               {ENDPOINTS.map((ep) => (
                 <button
@@ -179,8 +196,8 @@ export default function ApiPlayground() {
                     setRequestBody(JSON.stringify(ep.body, null, 2));
                   }}
                   className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-                    selectedEndpoint.name === ep.name 
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20" 
+                    selectedEndpoint.name === ep.name
+                      ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
                       : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"
                   }`}
                 >
@@ -192,9 +209,18 @@ export default function ApiPlayground() {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">REQUEST BODY</label>
-              <button onClick={handleCopy} className="p-1.5 hover:bg-slate-800 rounded-md transition-colors text-slate-400">
-                {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                REQUEST BODY
+              </label>
+              <button
+                onClick={handleCopy}
+                className="p-1.5 hover:bg-slate-800 rounded-md transition-colors text-slate-400"
+              >
+                {copied ? (
+                  <Check className="w-3.5 h-3.5 text-green-400" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
               </button>
             </div>
             <textarea
@@ -210,17 +236,29 @@ export default function ApiPlayground() {
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-xl shadow-blue-900/30 group"
           >
-            {loading ? <Terminal className="w-5 h-5 animate-pulse" /> : <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
+            {loading ? (
+              <Terminal className="w-5 h-5 animate-pulse" />
+            ) : (
+              <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+            )}
             {loading ? "Executing Request..." : "Run Test Request"}
           </button>
         </div>
 
         {/* Right: Response */}
         <div className="p-6 bg-slate-950/50 space-y-4">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">RESPONSE</label>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+            RESPONSE
+          </label>
           <div className="h-[400px] overflow-auto bg-slate-950 rounded-xl border border-slate-800 p-4 font-mono text-sm">
             {response ? (
-              <pre className={response.status === "error" ? "text-red-400" : "text-green-400"}>
+              <pre
+                className={
+                  response.status === "error"
+                    ? "text-red-400"
+                    : "text-green-400"
+                }
+              >
                 {JSON.stringify(response, null, 2)}
               </pre>
             ) : (

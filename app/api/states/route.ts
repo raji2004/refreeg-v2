@@ -9,33 +9,28 @@ export async function GET(request: Request) {
     if (!countryName) {
       return NextResponse.json(
         { error: "Country name is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // 1. Fetch states directly
-    const states = await prisma.state.findMany({
+    // The state table is empty in production; cities carries every state name.
+    const states = await prisma.city.findMany({
       where: {
         country_name: { equals: countryName, mode: "insensitive" },
+        state_name: { not: null },
       },
-      select: { name: true },
-      orderBy: { name: "asc" },
+      distinct: ["state_name"],
+      select: { state_name: true },
+      orderBy: { state_name: "asc" },
     });
 
-    if (states.length === 0) {
-      return NextResponse.json(
-        { error: "No states found for country" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(states.map((s: any) => s.name));
+    return NextResponse.json(states.map((s) => s.state_name));
   } catch (error) {
     console.error("States API error:", error);
 
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -79,7 +79,7 @@ export const usePayment = (): UsePaymentReturn => {
         }
 
         localStorage.setItem("payment_reference", result.data.reference);
-        // Pledges default to paystack for now
+        
         localStorage.setItem("payment_provider", "paystack");
 
         window.location.href = result.data.authorization_url;
@@ -105,7 +105,7 @@ export const usePayment = (): UsePaymentReturn => {
         setIsLoading(true);
         setError(null);
 
-        // Use the stored provider if not passed explicitly
+        
         const resolvedProvider = provider || localStorage.getItem("payment_provider") || "paystack";
 
         const response = await fetch("/api/payments/verify", {

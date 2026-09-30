@@ -2,6 +2,12 @@
 
 import { useEffect, useRef } from "react";
 
+declare global {
+  interface Window {
+    adsbygoogle?: unknown[];
+  }
+}
+
 type AdBannerProps = {
   dataAdSlot?: string;
   dataAdFormat?: string;
@@ -32,7 +38,6 @@ function AdBanner({
     }
 
     try {
-      // @ts-ignore
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (error: any) {
       console.error(error.message);

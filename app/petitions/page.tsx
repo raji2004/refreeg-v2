@@ -4,7 +4,6 @@ import { PetitionsFilter } from "@/components/petitions-filter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { categories } from "@/lib/categories";
 import AdBanner from "@/components/AdBanner";
-// Mock categories for filtering
 
 import { Metadata } from "next";
 

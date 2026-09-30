@@ -63,7 +63,7 @@ export const WhatDoWeFocusOn: FC = () => {
                 "vocational-training",
                 "healthcare-support",
                 "gender-based-violence-support",
-              ].includes(blog.slug)
+              ].includes(blog.slug),
             )
             .map(({ slug, title, img, content }) => (
               <FeatureCard

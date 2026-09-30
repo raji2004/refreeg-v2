@@ -42,7 +42,6 @@ export default function EizaRewardsScreen() {
     [streakSeries],
   );
 
-  // Fetch initial wallet data
   const fetchWalletData = useCallback(async () => {
     if (!user?.id) {
       setLoading(false);
@@ -55,7 +54,6 @@ export default function EizaRewardsScreen() {
         setBalance(Number(walletData.wallet.balance) || 0);
       }
 
-      // Format transactions for display
       if (walletData.transactions && Array.isArray(walletData.transactions)) {
         const formatted = walletData.transactions.map(
           (t: any) => ({

@@ -43,11 +43,7 @@ interface UserActionsProps {
 }
 
 type ActionType =
-  | "appoint_manager"
-  | "remove_manager"
-  | "block"
-  | "unblock"
-  | "delete";
+  "appoint_manager" | "remove_manager" | "block" | "unblock" | "delete";
 
 export function UserActions({
   user: userItem,
@@ -113,7 +109,7 @@ export function UserActions({
               description: result.error,
               variant: "destructive",
             });
-            return; // Don't close dialog on error? Or do we? Let's close it.
+            return;
           } else {
             toast({
               title: "Success",

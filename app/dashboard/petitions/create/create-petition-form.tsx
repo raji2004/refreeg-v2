@@ -352,21 +352,24 @@ export default function CreatePetitionForm() {
 
     try {
       const { compressImage } = await import("@/utils/image-compression");
-      
+
       const processedFiles = await Promise.all(
         files.map(async (file) => {
           if (file.type.startsWith("image/")) {
             return await compressImage(file, 1000, 0.7);
           }
           return file;
-        })
+        }),
       );
 
       const currentSize =
         formData.multimedia && formData.multimedia.length > 0
           ? formData.multimedia.reduce((acc, file) => acc + file.size, 0)
           : 0;
-      const newFilesSize = processedFiles.reduce((acc, file) => acc + file.size, 0);
+      const newFilesSize = processedFiles.reduce(
+        (acc, file) => acc + file.size,
+        0,
+      );
 
       if (currentSize + newFilesSize > MAX_TOTAL_SIZE) {
         setErrors((prev) => ({
@@ -965,9 +968,7 @@ export default function CreatePetitionForm() {
 
             <div className="space-y-2">
               <h4 className="font-medium">Signature Goal</h4>
-              <p className="text-sm">
-                {formData.goal} Signatures
-              </p>
+              <p className="text-sm">{formData.goal} Signatures</p>
             </div>
 
             <div className="space-y-2">

@@ -48,9 +48,9 @@ export async function ProofComplianceBanner({ userId }: { userId: string }) {
                     “{c.title}” is suspended
                   </p>
                   <p className="text-sm text-red-700">
-                    It&apos;s hidden from the platform and not accepting donations.
-                    Submit your fund-use update — the campaign goes live again
-                    once it&apos;s approved.
+                    It&apos;s hidden from the platform and not accepting
+                    donations. Submit your fund-use update — the campaign goes
+                    live again once it&apos;s approved.
                   </p>
                 </div>
               </div>
@@ -106,7 +106,8 @@ export async function ProofComplianceBanner({ userId }: { userId: string }) {
               </p>
               <p className="text-sm text-blue-700">
                 Your {c.submitted.map((m) => `${m}%`).join(" and ")} fund-use
-                update is with our team. We&apos;ll email you when it&apos;s approved.
+                update is with our team. We&apos;ll email you when it&apos;s
+                approved.
               </p>
             </div>
           </div>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Confirm your new RefreeG email</title>
+    <style>
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background-color: #f4f7f6;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        background: #ffffff;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      }
+      .brand-name {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333333;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      h1 {
+        font-size: 22px;
+        color: #1a1a1a;
+        margin-bottom: 16px;
+      }
+      p {
+        font-size: 15px;
+        line-height: 1.6;
+        color: #555555;
+      }
+      .button {
+        display: inline-block;
+        margin: 24px 0;
+        padding: 14px 28px;
+        background-color: #3860c2;
+        color: #ffffff !important;
+        text-decoration: none;
+        border-radius: 999px;
+        font-weight: 600;
+      }
+      .footer {
+        margin-top: 32px;
+        font-size: 12px;
+        color: #999999;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="brand-name">RefreeG</div>
+      <h1>Confirm your new email</h1>
+      <p>Hi {{userName}},</p>
+      <p>
+        You asked to change the email on your RefreeG account to
+        <strong>{{newEmail}}</strong>. Click the button below to confirm.
+        Receipts and alerts will keep going to your current address until you
+        confirm.
+      </p>
+      <p style="text-align: center">
+        <a class="button" href="{{confirmUrl}}">Confirm new email</a>
+      </p>
+      <p>
+        If you did not request this, you can ignore this email — your address
+        will not change.
+      </p>
+      <div class="footer">&copy; {{currentYear}} RefreeG</div>
+    </div>
+  </body>
+</html>

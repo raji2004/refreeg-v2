@@ -308,10 +308,11 @@ export default function TermsOfService() {
               Welcome to RefreeG&apos;s Terms of Service
             </h2>
             <p className="text-gray-700 leading-relaxed mb-4">
-              These Terms of Service (&quot;Terms&quot;) govern your access to and use of
-              RefreeG&apos;s blockchain-powered crowdfunding platform. RefreeG
-              connects verified cause creators with supporters to make a
-              positive impact through transparent and secure fundraising.
+              These Terms of Service (&quot;Terms&quot;) govern your access to
+              and use of RefreeG&apos;s blockchain-powered crowdfunding
+              platform. RefreeG connects verified cause creators with supporters
+              to make a positive impact through transparent and secure
+              fundraising.
             </p>
             <p className="text-gray-700 leading-relaxed">
               By creating an account or using our services, you acknowledge that

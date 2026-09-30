@@ -5,15 +5,9 @@ import {
   processPledgeScheduledChargeSuccess,
 } from "@/lib/pledge-provider";
 
-type ChargeResult = { ok: true; reason: string } | { ok: false; reason: string };
+type ChargeResult =
+  { ok: true; reason: string } | { ok: false; reason: string };
 
-/**
- * Verifies a Paystack reference and records the resulting donation/pledge.
- * Shared by the webhook and the client-side verify endpoint so a donation is
- * recorded as soon as the donor is redirected back, without depending solely
- * on webhook delivery. Safe to call more than once for the same reference —
- * createDonation and the pledge processors are idempotent on it.
- */
 export async function processSuccessfulCharge(
   reference: string,
 ): Promise<ChargeResult> {

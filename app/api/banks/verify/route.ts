@@ -4,7 +4,7 @@ import type { PaymentProviderType } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
-    const { accountNumber, bankCode, provider } = await request.json() as {
+    const { accountNumber, bankCode, provider } = (await request.json()) as {
       accountNumber?: string;
       bankCode?: string;
       provider?: PaymentProviderType;
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
           error: "Account number and bank code are required",
           success: false,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
     const verification = await verifyAccountNumber(
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         error: error.message || "Failed to verify account number",
         success: false,
       },
-      { status: error.response?.status || 500 }
+      { status: error.response?.status || 500 },
     );
   }
 }

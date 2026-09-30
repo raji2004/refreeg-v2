@@ -6,7 +6,6 @@ import { createPledge } from "@/actions/pledge-actions";
 import { usePayment } from "@/hooks/use-payment";
 import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/pledge-constants";
 
-/** Local calendar YYYY-MM-DD (avoids UTC shifts from toISOString). */
 function formatLocalYYYYMMDD(date: Date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -191,7 +190,10 @@ export function PledgeQuickForm({
     if (!pledgeId || paymentLoading) return;
     setPledgeError(null);
     try {
-      await initializePledgeCheckout({ pledgeId, guestToken: guestPledgeToken });
+      await initializePledgeCheckout({
+        pledgeId,
+        guestToken: guestPledgeToken,
+      });
     } catch {
       setPledgeError("Could not open Paystack. Please try again.");
     }

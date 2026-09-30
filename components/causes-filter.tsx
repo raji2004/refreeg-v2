@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import {
@@ -77,10 +78,8 @@ export function CausesFilter({ selectedCategory }: CausesFilterProps) {
   const searchParams = useSearchParams();
 
   const handleCategoryChange = (categoryId: string) => {
-    // Preserve existing params (search, sort, etc.)
     const params = new URLSearchParams(searchParams.toString());
 
-    // Reset to page 1 on category change
     params.delete("page");
 
     if (categoryId !== "all") {

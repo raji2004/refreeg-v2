@@ -17,15 +17,18 @@ const WINDOW_MS = 60_000;
 const MAX_REPORTS_PER_WINDOW = 20;
 
 function requestIp(request: NextRequest) {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
-    "unknown";
+    "unknown"
+  );
 }
 
 function isSameOrigin(request: NextRequest) {
   const origin = request.headers.get("origin");
-  const host = (request.headers.get("x-forwarded-host") ||
-    request.headers.get("host"))
+  const host = (
+    request.headers.get("x-forwarded-host") || request.headers.get("host")
+  )
     ?.split(",")[0]
     .trim();
   if (!origin || !host) return false;
@@ -85,7 +88,10 @@ export async function POST(request: NextRequest) {
   });
 
   if (!sent) {
-    return NextResponse.json({ error: "Reporter unavailable." }, { status: 503 });
+    return NextResponse.json(
+      { error: "Reporter unavailable." },
+      { status: 503 },
+    );
   }
 
   return NextResponse.json({ accepted: true }, { status: 202 });

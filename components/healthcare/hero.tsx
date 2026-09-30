@@ -9,7 +9,7 @@ import Link from "next/link";
 export default function Hero() {
   return (
     <div className="relative w-full h-[600px] flex items-center justify-center text-white overflow-hidden">
-      {/* Background image with zoom-in animation */}
+      {}
       <motion.div
         initial={{ scale: 1.1, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -26,7 +26,7 @@ export default function Hero() {
         <div className="absolute inset-0 bg-black/10" />
       </motion.div>
 
-      {/* Animated Content Layer */}
+      {}
       <motion.div
         initial="hidden"
         animate="visible"
@@ -59,10 +59,10 @@ export default function Hero() {
           transition={{ duration: 1, ease: "easeOut" }}
           className="text-lg md:text-xl mb-6"
         >
-          RefreeG empowers hospitals, clinics, and healthcare nonprofits to raise
-          funds transparently for treatments, equipment, and emergency response.
-          Donors can give in fiat or crypto, track impact, and even earn yield while
-          saving lives.
+          RefreeG empowers hospitals, clinics, and healthcare nonprofits to
+          raise funds transparently for treatments, equipment, and emergency
+          response. Donors can give in fiat or crypto, track impact, and even
+          earn yield while saving lives.
         </motion.p>
 
         <motion.div

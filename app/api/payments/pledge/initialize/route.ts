@@ -54,11 +54,17 @@ export async function POST(request: NextRequest) {
 
     if (pledge.user_id) {
       if (!user || user.id !== pledge.user_id) {
-        return NextResponse.json({ error: "Forbidden", success: false }, { status: 403 });
+        return NextResponse.json(
+          { error: "Forbidden", success: false },
+          { status: 403 },
+        );
       }
     } else {
       if (!guestToken || guestToken !== pledge.token) {
-        return NextResponse.json({ error: "Forbidden", success: false }, { status: 403 });
+        return NextResponse.json(
+          { error: "Forbidden", success: false },
+          { status: 403 },
+        );
       }
     }
 
@@ -82,7 +88,7 @@ export async function POST(request: NextRequest) {
     const subaccount = profile?.subAccountCode?.trim() || "";
 
     const verificationAmount = PLEDGE_VERIFICATION_AMOUNT_NGN;
-    // No service fee on the verification charge — it is not a donation.
+
     const serviceFee = 0;
     const baseUrl = getBaseURL();
 

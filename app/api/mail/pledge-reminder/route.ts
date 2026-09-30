@@ -6,10 +6,14 @@ export async function POST(request: Request) {
     const { pledge } = await request.json();
 
     if (!pledge || !pledge.email) {
-      return NextResponse.json({ error: "Invalid pledge data" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid pledge data" },
+        { status: 400 },
+      );
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
     const causeId = pledge.cause_id || pledge.causes?.id;
     const causeTitle = pledge.causes?.title || "this campaign";
 

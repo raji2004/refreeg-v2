@@ -1,11 +1,24 @@
 "use server";
 
-import { listCauses, countCauses } from "./cause-actions";
-import { listPetitions, countPetitions } from "./petition-actions";
+import {
+  listCauses,
+  countCauses,
+  countCausesByCategory,
+} from "./cause-actions";
+import {
+  listPetitions,
+  countPetitions,
+  countPetitionsByCategory,
+} from "./petition-actions";
 import { searchOrganizations } from "./organization-actions";
 import type { Cause } from "@/types/cause-types";
 import type { Petition } from "@/types/petition-types";
-import { DISCOVER_RESULT_CAP } from "@/lib/discover-constants";
+import { unstable_cache } from "next/cache";
+import {
+  DISCOVER_CACHE_SECONDS,
+  DISCOVER_CACHE_TAG,
+  DISCOVER_RESULT_CAP,
+} from "@/lib/discover-constants";
 
 export type DiscoverSort =
   | "most-urgent"
@@ -40,23 +53,16 @@ export interface DiscoverItem {
   daysLeft: number | null;
   urgent: boolean;
   location: string | null;
-  /** Campaign detail page is locked while true; petitions are never paused. See prisma/schema/cause.prisma. */
+
   paused: boolean;
   createdAt: string;
 }
 
-/**
- * Orders a merged campaigns+petitions list. Needed because the two types
- * come from separate DB queries — a DB-level ORDER BY on each can't produce
- * one correctly-interleaved combined feed, so every sort is applied here
- * after merging.
- *
- * Paused campaigns (locked detail page, no real content yet) always sort
- * after everything else, regardless of the active sort — otherwise a batch
- * of just-reconstructed placeholders with a fresh `createdAt` can bury real
- * campaigns at the top of "Newest first".
- */
-function compareItems(a: DiscoverItem, b: DiscoverItem, sortBy: DiscoverSort): number {
+function compareItems(
+  a: DiscoverItem,
+  b: DiscoverItem,
+  sortBy: DiscoverSort,
+): number {
   if (a.paused !== b.paused) return a.paused ? 1 : -1;
 
   switch (sortBy) {
@@ -76,7 +82,9 @@ function compareItems(a: DiscoverItem, b: DiscoverItem, sortBy: DiscoverSort): n
   }
 }
 
-function daysLeftFromEndDate(endDate: string | null | undefined): number | null {
+function daysLeftFromEndDate(
+  endDate: string | null | undefined,
+): number | null {
   if (!endDate) return null;
   const diff = new Date(endDate).getTime() - Date.now();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
@@ -125,44 +133,79 @@ function petitionToItem(petition: Petition): DiscoverItem {
   };
 }
 
+// Only the fields that change what the database returns. Sorting and
+// near-goal filtering happen afterwards, so they must not split the cache.
+function queryFilters(filters: DiscoverFilters) {
+  return {
+    category: filters.category,
+    location: filters.location,
+    urgentOnly: filters.urgentOnly,
+    verifiedOnly: filters.verifiedOnly,
+    minAmountNeeded: filters.minAmountNeeded,
+    maxAmountNeeded: filters.maxAmountNeeded,
+    includeType: filters.includeType,
+    search: filters.search,
+  };
+}
+
+type QueryFilters = ReturnType<typeof queryFilters>;
+
+// Free-text searches are high-cardinality and would fill the cache with
+// one-off entries, so they always hit the database.
+function cachedByArgs<I extends { search?: string }, T>(
+  name: string,
+  run: (args: I) => Promise<T>,
+) {
+  const cached = unstable_cache(
+    (json: string) => run(JSON.parse(json) as I),
+    [name],
+    { revalidate: DISCOVER_CACHE_SECONDS, tags: [DISCOVER_CACHE_TAG] },
+  );
+  return (args: I) =>
+    args.search?.trim() ? run(args) : cached(JSON.stringify(args));
+}
+
+const getCappedItems = cachedByArgs(
+  "discover-capped-items",
+  async (filters: QueryFilters): Promise<DiscoverItem[]> => {
+    const includeCauses = filters.includeType !== "petitions";
+    const includePetitions = filters.includeType !== "campaigns";
+
+    const [causes, petitions] = await Promise.all([
+      includeCauses
+        ? listCauses({
+            category: filters.category,
+            search: filters.search,
+            location: filters.location,
+            urgentOnly: filters.urgentOnly,
+            verifiedOnly: filters.verifiedOnly,
+            minAmountNeeded: filters.minAmountNeeded,
+            maxAmountNeeded: filters.maxAmountNeeded,
+            limit: DISCOVER_RESULT_CAP,
+          })
+        : Promise.resolve([]),
+      includePetitions
+        ? listPetitions({
+            category: filters.category,
+            search: filters.search,
+            verifiedOnly: filters.verifiedOnly,
+            limit: DISCOVER_RESULT_CAP,
+          })
+        : Promise.resolve([]),
+    ]);
+
+    return [...causes.map(causeToItem), ...petitions.map(petitionToItem)];
+  },
+);
+
 export async function listDiscoverResults(
   filters: DiscoverFilters,
   { limit, offset }: { limit: number; offset: number },
 ) {
   const sortBy = filters.sortBy || "newest";
-  const includeCauses = filters.includeType !== "petitions";
-  const includePetitions = filters.includeType !== "campaigns";
-
-  // Causes and petitions come from separate tables, so DB-level pagination
-  // on either one can't produce a correctly-paginated combined feed — fetch
-  // a bounded candidate set (capped at DISCOVER_RESULT_CAP, which is small)
-  // from each, merge, sort, and paginate here instead.
-  const [causes, petitions] = await Promise.all([
-    includeCauses
-      ? listCauses({
-          category: filters.category,
-          search: filters.search,
-          location: filters.location,
-          urgentOnly: filters.urgentOnly,
-          verifiedOnly: filters.verifiedOnly,
-          minAmountNeeded: filters.minAmountNeeded,
-          maxAmountNeeded: filters.maxAmountNeeded,
-          limit: DISCOVER_RESULT_CAP,
-        })
-      : Promise.resolve([]),
-    includePetitions
-      ? listPetitions({
-          category: filters.category,
-          search: filters.search,
-          verifiedOnly: filters.verifiedOnly,
-          limit: DISCOVER_RESULT_CAP,
-        })
-      : Promise.resolve([]),
-  ]);
 
   let items: DiscoverItem[] = [
-    ...causes.map(causeToItem),
-    ...petitions.map(petitionToItem),
+    ...(await getCappedItems(queryFilters(filters))),
   ];
 
   if (filters.nearGoalOnly) {
@@ -177,44 +220,43 @@ export async function listDiscoverResults(
   return { items: page, hasMore: offset + page.length < cappedTotal };
 }
 
+const getResultCount = cachedByArgs(
+  "discover-result-count",
+  async (filters: QueryFilters): Promise<number> => {
+    const includeCauses = filters.includeType !== "petitions";
+    const includePetitions = filters.includeType !== "campaigns";
+
+    const [causeCount, petitionCount] = await Promise.all([
+      includeCauses
+        ? countCauses({
+            category: filters.category,
+            search: filters.search,
+            location: filters.location,
+            urgentOnly: filters.urgentOnly,
+            verifiedOnly: filters.verifiedOnly,
+            minAmountNeeded: filters.minAmountNeeded,
+            maxAmountNeeded: filters.maxAmountNeeded,
+          })
+        : Promise.resolve(0),
+      includePetitions
+        ? countPetitions({
+            category: filters.category,
+            search: filters.search,
+            verifiedOnly: filters.verifiedOnly,
+          })
+        : Promise.resolve(0),
+    ]);
+
+    return causeCount + petitionCount;
+  },
+);
+
 export async function countDiscoverResults(
   filters: DiscoverFilters,
 ): Promise<number> {
-  const includeCauses = filters.includeType !== "petitions";
-  const includePetitions = filters.includeType !== "campaigns";
-
-  const [causeCount, petitionCount] = await Promise.all([
-    includeCauses
-      ? countCauses({
-          category: filters.category,
-          search: filters.search,
-          location: filters.location,
-          urgentOnly: filters.urgentOnly,
-          verifiedOnly: filters.verifiedOnly,
-          minAmountNeeded: filters.minAmountNeeded,
-          maxAmountNeeded: filters.maxAmountNeeded,
-        })
-      : Promise.resolve(0),
-    includePetitions
-      ? countPetitions({
-          category: filters.category,
-          search: filters.search,
-          verifiedOnly: filters.verifiedOnly,
-        })
-      : Promise.resolve(0),
-  ]);
-
-  // "Near its goal" isn't a DB predicate (percent is computed) — approximate
-  // by falling back to the full count when that filter is active; the grid
-  // reflects the true count once results are actually fetched.
-  return causeCount + petitionCount;
+  return getResultCount(queryFilters(filters));
 }
 
-/**
- * For the empty state: re-count with a single active filter dropped, so the
- * UI can say "Remove Kano gives you 12 results" with a real number. Returns
- * the filter key whose removal unblocks the most results.
- */
 export async function suggestFilterToRemove(
   filters: DiscoverFilters,
   activeKeys: (keyof DiscoverFilters)[],
@@ -234,29 +276,50 @@ export async function suggestFilterToRemove(
   );
 }
 
-/**
- * Per-category result counts for the filter rail's live-count checkboxes.
- * Category is a single-select filter at the data layer (`listCauses`/
- * `listPetitions` both take `category?: string`), so this counts each
- * category with the *other* active filters held constant, not combinations
- * of categories.
- */
+const computeFacets = cachedByArgs(
+  "discover-facets",
+  async (args: Omit<QueryFilters, "category"> & { categoryIds: string[] }) => {
+    const includeCauses = args.includeType !== "petitions";
+    const includePetitions = args.includeType !== "campaigns";
+
+    const [causeCounts, petitionCounts] = await Promise.all([
+      includeCauses
+        ? countCausesByCategory({
+            search: args.search,
+            location: args.location,
+            urgentOnly: args.urgentOnly,
+            verifiedOnly: args.verifiedOnly,
+            minAmountNeeded: args.minAmountNeeded,
+            maxAmountNeeded: args.maxAmountNeeded,
+          })
+        : Promise.resolve({} as Record<string, number>),
+      includePetitions
+        ? countPetitionsByCategory({
+            search: args.search,
+            verifiedOnly: args.verifiedOnly,
+          })
+        : Promise.resolve({} as Record<string, number>),
+    ]);
+
+    return args.categoryIds.map((id) => ({
+      category: id,
+      count: (causeCounts[id] ?? 0) + (petitionCounts[id] ?? 0),
+    }));
+  },
+);
+
 export async function getDiscoverFacets(
   filters: Omit<DiscoverFilters, "category">,
   categoryIds: string[],
 ) {
-  const counts = await Promise.all(
-    categoryIds.map(async (id) => ({
-      category: id,
-      count: await countDiscoverResults({ ...filters, category: id }),
-    })),
-  );
-  return counts;
+  const { category: _category, ...scoped } = queryFilters(filters);
+  return computeFacets({ ...scoped, categoryIds });
 }
 
 export async function searchDiscover(query: string) {
   const trimmed = query.trim();
-  if (!trimmed) return { campaigns: [], petitions: [], organizations: [], totalCount: 0 };
+  if (!trimmed)
+    return { campaigns: [], petitions: [], organizations: [], totalCount: 0 };
 
   const [campaigns, petitions, organizations, campaignCount, petitionCount] =
     await Promise.all([

@@ -9,7 +9,7 @@ import Link from "next/link";
 export default function Hero() {
   return (
     <div className="relative w-full h-[380px] pt-16 flex justify-center text-white overflow-hidden">
-      {/* Background Image */}
+      {}
       <Image
         src="/herodisaster.png"
         alt="disaster hero"
@@ -18,13 +18,13 @@ export default function Hero() {
         priority
       />
 
-      {/* Optional dark overlay for readability */}
+      {}
       <div className="absolute inset-0" />
 
-      {/* Content Layer */}
+      {}
       <div className="relative z-10 text-black px-6 w-full">
         <div className="px-10 w-full flex flex-col-reverse md:flex md:flex-row justify-between items-center">
-          {/* Text Section */}
+          {}
           <motion.div
             className="w-full lg:w-8/12"
             initial={{ opacity: 0, x: -80 }}
@@ -44,7 +44,7 @@ export default function Hero() {
               </div>
             </div>
 
-            {/* Animated Button */}
+            {}
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link href="/dashboard/causes/create">
                 <Button className="text-xs md:text-base flex items-center gap-x-2 text-white p-2 bg-[#151314] rounded">
@@ -60,7 +60,7 @@ export default function Hero() {
             </motion.div>
           </motion.div>
 
-          {/* Image Section */}
+          {}
           <motion.div
             className="hidden lg:block w-full md:w-4/12"
             initial={{ opacity: 0, scale: 0.8, rotate: 3 }}

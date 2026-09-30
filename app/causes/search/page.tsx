@@ -6,12 +6,6 @@ import { Command } from "@/components/ui/command";
 import { useDiscoverSearch } from "@/hooks/use-discover-search";
 import { DiscoverSearchResults } from "@/components/discover/discover-search-results";
 
-/**
- * Dedicated full-page search surface for narrow viewports — the desktop
- * ⌘K overlay (components/discover/discover-search.tsx) stays a scrim
- * dialog, but the mobile spec calls for a real page with a back arrow
- * instead of an overlay on top of Discover.
- */
 export default function DiscoverSearchPage() {
   const router = useRouter();
   const search = useDiscoverSearch({ active: true });
@@ -34,7 +28,11 @@ export default function DiscoverSearchPage() {
         shouldFilter={false}
         className="flex flex-1 flex-col overflow-hidden rounded-none bg-transparent"
       >
-        <DiscoverSearchResults search={search} listClassName="max-h-none flex-1" autoFocus />
+        <DiscoverSearchResults
+          search={search}
+          listClassName="max-h-none flex-1"
+          autoFocus
+        />
       </Command>
     </div>
   );

@@ -1,15 +1,25 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { LineChart, CartesianGrid, XAxis, YAxis, Line } from "recharts"
-import { Inbox } from "lucide-react"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { LineChart, CartesianGrid, XAxis, YAxis, Line } from "recharts";
+import { Inbox } from "lucide-react";
 
 interface SignatureTrendsProps {
   data: Array<{
-    date: string
-    amount: number
-  }>
+    date: string;
+    amount: number;
+  }>;
 }
 
 export function SignatureTrends({ data }: SignatureTrendsProps) {
@@ -18,7 +28,9 @@ export function SignatureTrends({ data }: SignatureTrendsProps) {
       <Card>
         <CardHeader>
           <CardTitle>Signature Trends</CardTitle>
-          <CardDescription>Track your petition&apos;s signature patterns over time</CardDescription>
+          <CardDescription>
+            Track your petition&apos;s signature patterns over time
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
@@ -28,34 +40,36 @@ export function SignatureTrends({ data }: SignatureTrendsProps) {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Signature Trends</CardTitle>
-        <CardDescription>Track your petition&apos;s signature patterns over time</CardDescription>
+        <CardDescription>
+          Track your petition&apos;s signature patterns over time
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer
           config={{
             amount: {
               label: "Signatures",
-              color: "#2563eb", // Light mode color
-            }
+              color: "#2563eb",
+            },
           }}
         >
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
-            {/* Tooltip now uses your shared chart styling */}
+            {}
             <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
             <Line
               type="monotone"
               dataKey="amount"
-              stroke="var(--color-amount)" // Uses CSS variable from ChartContainer
+              stroke="var(--color-amount)"
               strokeWidth={2}
               dot={{ r: 3 }}
               activeDot={{ r: 5 }}
@@ -64,5 +78,5 @@ export function SignatureTrends({ data }: SignatureTrendsProps) {
         </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }

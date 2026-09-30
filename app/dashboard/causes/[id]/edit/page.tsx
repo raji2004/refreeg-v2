@@ -17,11 +17,8 @@ export default async function EditCausePage({
   params: Promise<{ id: string }> | { id: string };
 }) {
   const myParams = await params;
-  
-  const [session, cause] = await Promise.all([
-    auth(),
-    getCause(myParams.id)
-  ]);
+
+  const [session, cause] = await Promise.all([auth(), getCause(myParams.id)]);
 
   if (!session?.user) {
     redirect("/auth/signin");
@@ -29,16 +26,15 @@ export default async function EditCausePage({
 
   const user = session.user;
 
-  // Dependent fetch
   const [hasBankInfo, pendingEdit] = await Promise.all([
     hasBankDetails(user.id as string),
     prisma.cause_edits.findFirst({
       where: {
         original_cause_id: myParams.id,
-        status: "pending"
+        status: "pending",
       },
-      select: { status: true }
-    })
+      select: { status: true },
+    }),
   ]);
 
   if (pendingEdit) {
@@ -46,8 +42,9 @@ export default async function EditCausePage({
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">
         <h1 className="text-2xl font-bold">Edit Already Pending</h1>
         <p className="text-muted-foreground max-w-md">
-          You already have an edit request for this cause pending review. 
-          Please wait for our team to approve or reject your previous changes before making more edits.
+          You already have an edit request for this cause pending review. Please
+          wait for our team to approve or reject your previous changes before
+          making more edits.
         </p>
         <Link
           href="/dashboard/causes"

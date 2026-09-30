@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,21 +34,26 @@ export function DiscoverPageClient({
   initialItems,
   initialHasMore,
   initialFacets,
+  initialBookmarks,
 }: {
   initialTab: DiscoverTab;
   initialFilters: DiscoverFilters;
   initialItems: DiscoverItem[];
   initialHasMore: boolean;
   initialFacets: { category: string; count: number }[];
+  initialBookmarks: string[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const [tab, setTab] = useState<DiscoverTab>(initialTab);
   const [filters, setFilters] = useState<DiscoverFilters>(initialFilters);
-  const [sortBy, setSortBy] = useState<DiscoverSortType>(initialFilters.sortBy || "newest");
+  const [sortBy, setSortBy] = useState<DiscoverSortType>(
+    initialFilters.sortBy || "newest",
+  );
   const [facets, setFacets] = useState(initialFacets);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [draftFilters, setDraftFilters] = useState<DiscoverFilters>(initialFilters);
+  const [draftFilters, setDraftFilters] =
+    useState<DiscoverFilters>(initialFilters);
   const [draftCount, setDraftCount] = useState<number | null>(null);
 
   const activeFilters = useMemo<DiscoverFilters>(
@@ -55,22 +61,32 @@ export function DiscoverPageClient({
     [filters, sortBy],
   );
 
+  const facetsKey = JSON.stringify({ ...activeFilters, category: undefined });
+  const lastFacetsKey = useRef(
+    JSON.stringify({
+      ...initialFilters,
+      sortBy: initialFilters.sortBy || "newest",
+      category: undefined,
+    }),
+  );
+
   useEffect(() => {
+    // The server already rendered facets for the initial filters.
+    if (facetsKey === lastFacetsKey.current) return;
+    lastFacetsKey.current = facetsKey;
+
     const { category, ...rest } = activeFilters;
     getDiscoverFacets(rest, CATEGORY_IDS)
       .then(setFacets)
-      .catch(() => {
-        // Non-critical — category counts just won't update this pass.
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify({ ...activeFilters, category: undefined })]);
+      .catch(() => {});
+  }, [facetsKey]);
 
-  // Keep the URL in sync so a shared or refreshed Discover link restores
-  // the same tab/filters/sort instead of resetting to defaults.
   useEffect(() => {
     const params = buildDiscoverSearchParams(tab, activeFilters);
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, JSON.stringify(activeFilters)]);
 
@@ -176,7 +192,11 @@ export function DiscoverPageClient({
                   />
                 </div>
                 <div className="border-t border-ink/10 px-4 py-3">
-                  <Button variant="ink" className="w-full" onClick={applyDraftFilters}>
+                  <Button
+                    variant="ink"
+                    className="w-full"
+                    onClick={applyDraftFilters}
+                  >
                     {draftCount == null
                       ? "Show results"
                       : `Show ${draftCount} result${draftCount === 1 ? "" : "s"}`}
@@ -205,6 +225,7 @@ export function DiscoverPageClient({
               filters={activeFilters}
               initialItems={initialItems}
               initialHasMore={initialHasMore}
+              initialBookmarks={initialBookmarks}
               onRemoveFilter={handleRemoveFilter}
               onClearFilters={handleClearFilters}
             />

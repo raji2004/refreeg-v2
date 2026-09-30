@@ -47,7 +47,6 @@ export function TimeRangeSelector({
   const [unit, setUnit] = React.useState<TimeUnit>("days");
   const [isOpen, setIsOpen] = React.useState(false);
 
-  // Helper to calculate date range
   const calculateRange = (val: number, u: TimeUnit): DateRange => {
     const end = endOfDay(new Date());
     let start = new Date();
@@ -68,7 +67,6 @@ export function TimeRangeSelector({
     }
     start = startOfDay(start);
 
-    // Safety check (though logic above naturally prevents future start dates for positive values)
     if (start > end) {
       start = end;
     }
@@ -76,7 +74,6 @@ export function TimeRangeSelector({
     return { from: start, to: end };
   };
 
-  // Handle quick selection
   const handleQuickSelect = (val: number, u: TimeUnit) => {
     setValue(val.toString());
     setUnit(u);
@@ -85,13 +82,11 @@ export function TimeRangeSelector({
     setIsOpen(false);
   };
 
-  // Handle manual input change
   const handleManualChange = (newValue: string, newUnit: TimeUnit) => {
     setValue(newValue);
     setUnit(newUnit);
   };
 
-  // Handle manual apply
   const handleManualApply = () => {
     const numVal = parseInt(value);
     if (!isNaN(numVal) && numVal > 0) {

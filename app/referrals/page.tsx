@@ -44,10 +44,6 @@ import {
 } from "@/actions/leaderboard-actions";
 import { Button } from "@/components/ui/button";
 
-/* -------------------------------------------------------------------------- */
-/*                                    Types                                   */
-/* -------------------------------------------------------------------------- */
-
 type StepProps = {
   src: string;
   alt: string;
@@ -76,10 +72,6 @@ type DebugInfo = {
   userEmail?: string | null;
   rowCount: number;
 };
-
-/* -------------------------------------------------------------------------- */
-/*                              Reusable Components                           */
-/* -------------------------------------------------------------------------- */
 
 const Step: React.FC<StepProps> = ({ src, alt, text, mobile = false }) => (
   <motion.div
@@ -113,17 +105,11 @@ const CopyToast: React.FC<{ visible: boolean }> = ({ visible }) => (
   </AnimatePresence>
 );
 
-/* -------------------------------------------------------------------------- */
-/*                               Referral Page                                */
-/* -------------------------------------------------------------------------- */
-
 export default function ReferralPage() {
   const { user } = useAuth();
 
-  // Active Tab: "hub" (My Referrals) vs "leaderboard" (Public Leaderboard)
   const [activeTab, setActiveTab] = useState<"hub" | "leaderboard">("hub");
 
-  // User Referral Data
   const [referralLink, setReferralLink] = useState("");
   const [copied, setCopied] = useState(false);
   const [points, setPoints] = useState(0);
@@ -136,7 +122,6 @@ export default function ReferralPage() {
   const [isQREnlarged, setIsQREnlarged] = useState(false);
   const [debug, setDebug] = useState<DebugInfo>({ rowCount: 0 });
 
-  // Leaderboard Data
   const [leaderboardEntries, setLeaderboardEntries] = useState<
     LeaderboardEntry[]
   >([]);
@@ -152,17 +137,12 @@ export default function ReferralPage() {
     referralCount: number;
   }>({ rank: null, referralCount: 0 });
 
-  // Referrer Detail Modal State
   const [selectedReferrerId, setSelectedReferrerId] = useState<string | null>(
     null,
   );
   const [referrerDetail, setReferrerDetail] =
     useState<ReferrerDonorDetailResult | null>(null);
   const [detailLoading, setDetailLoading] = useState<boolean>(false);
-
-  /* ------------------------------------------------------------------------ */
-  /*                             Load User Referrals                          */
-  /* ------------------------------------------------------------------------ */
 
   useEffect(() => {
     const loadData = async () => {

@@ -3,12 +3,6 @@ import { prisma } from "@/lib/prisma";
 export const PROOF_MILESTONES = [25, 50, 75, 100] as const;
 export const PROOF_GRACE_PERIOD_DAYS = 7;
 
-/**
- * Idempotent sync: for every 25% threshold the cause has reached, ensure a
- * requirement row exists. Event-driven (called after raised changes), and
- * naturally grandfathers pre-existing crossings — no requirement is ever
- * created unless raised moves past a threshold while this code is live.
- */
 export async function syncMilestoneRequirements(
   causeId: string,
 ): Promise<void> {
@@ -33,7 +27,6 @@ export async function syncMilestoneRequirements(
     Date.now() + PROOF_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000,
   );
 
-  // skipDuplicates guards against concurrent webhooks racing on the same threshold
   const result = await prisma.campaign_proof_requirements.createMany({
     data: crossed.map((milestone) => ({
       cause_id: causeId,
@@ -43,9 +36,8 @@ export async function syncMilestoneRequirements(
     skipDuplicates: true,
   });
 
-  if (result.count === 0) return; // nothing newly crossed
+  if (result.count === 0) return;
 
-  // One consolidated email listing every newly-required milestone
   const { sendProofUpdateRequiredEmail } = await import("@/services/mail");
   try {
     await sendProofUpdateRequiredEmail({

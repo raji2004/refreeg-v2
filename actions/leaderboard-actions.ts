@@ -56,10 +56,6 @@ export interface ReferrerDonorDetailResult {
   pageSize: number;
 }
 
-/**
- * Returns paginated leaderboard entries sorted by total amount donated DESC,
- * with tie-breaking by earliest referral timestamp (min createdAt).
- */
 export async function getLeaderboard(params?: {
   page?: number;
   pageSize?: number;
@@ -69,7 +65,6 @@ export async function getLeaderboard(params?: {
   const offset = (page - 1) * pageSize;
 
   try {
-    // 1. Aggregate donations per referrer (filtered by confirmed status)
     const grouped = await (prisma as any).donation.groupBy({
       by: ["referrer_id"],
       where: {
@@ -101,9 +96,7 @@ export async function getLeaderboard(params?: {
       take: pageSize,
     });
 
-    const totalDistinctReferrers = await (
-      prisma as any
-    ).donation.groupBy({
+    const totalDistinctReferrers = await (prisma as any).donation.groupBy({
       by: ["referrer_id"],
       where: {
         referrer_id: { not: null },
@@ -122,7 +115,6 @@ export async function getLeaderboard(params?: {
       };
     }
 
-    // 2. Fetch user profile data for all referrers in this page
     const referrerIds = grouped.map((g: any) => g.referrer_id);
     const users = await prisma.user.findMany({
       where: {
@@ -139,28 +131,25 @@ export async function getLeaderboard(params?: {
 
     const userMap = new Map(users.map((u) => [u.id, u]));
 
-    // 3. Assemble ranked entries
-    const entries: LeaderboardEntry[] = grouped.map(
-      (g: any, index: number) => {
-        const user = userMap.get(g.referrer_id);
-        const rank = offset + index + 1;
-        const totalAmount = Number(g._sum.amount || 0);
+    const entries: LeaderboardEntry[] = grouped.map((g: any, index: number) => {
+      const user = userMap.get(g.referrer_id);
+      const rank = offset + index + 1;
+      const totalAmount = Number(g._sum.amount || 0);
 
-        return {
-          rank,
-          id: g.referrer_id,
-          fullName: user?.fullName || user?.username || "Anonymous Referrer",
-          username: user?.username || null,
-          profilePhoto: user?.profilePhoto || null,
-          referralCode: user?.referralCode || null,
-          totalAmountDonated: totalAmount,
-          successfulReferrals: g._count.id,
-          firstReferralAt: g._min.createdAt
-            ? new Date(g._min.createdAt).toISOString()
-            : null,
-        };
-      },
-    );
+      return {
+        rank,
+        id: g.referrer_id,
+        fullName: user?.fullName || user?.username || "Anonymous Referrer",
+        username: user?.username || null,
+        profilePhoto: user?.profilePhoto || null,
+        referralCode: user?.referralCode || null,
+        totalAmountDonated: totalAmount,
+        successfulReferrals: g._count.id,
+        firstReferralAt: g._min.createdAt
+          ? new Date(g._min.createdAt).toISOString()
+          : null,
+      };
+    });
 
     return {
       entries,
@@ -179,18 +168,13 @@ export async function getLeaderboard(params?: {
   }
 }
 
-/**
- * Returns rank, total amount donated, and referral count for a specific user ID.
- */
 export async function getCurrentUserRank(
   userId: string,
 ): Promise<CurrentUserRankResult> {
   if (!userId) return { rank: null, totalAmountDonated: 0, referralCount: 0 };
 
   try {
-    const allReferrers = await (
-      prisma as any
-    ).donation.groupBy({
+    const allReferrers = await (prisma as any).donation.groupBy({
       by: ["referrer_id"],
       where: {
         referrer_id: { not: null },
@@ -219,9 +203,7 @@ export async function getCurrentUserRank(
       ],
     });
 
-    const index = allReferrers.findIndex(
-      (r: any) => r.referrer_id === userId,
-    );
+    const index = allReferrers.findIndex((r: any) => r.referrer_id === userId);
 
     if (index === -1) {
       return { rank: null, totalAmountDonated: 0, referralCount: 0 };
@@ -238,9 +220,6 @@ export async function getCurrentUserRank(
   }
 }
 
-/**
- * Returns referrer profile and paginated list of referred donations (with amount and anonymous protections).
- */
 export async function getReferrerDonorDetail(
   referrerId: string,
   params?: { page?: number; pageSize?: number },

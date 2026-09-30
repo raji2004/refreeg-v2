@@ -102,8 +102,6 @@ const normalizeImageToAspect = async (
   const context = canvas.getContext("2d");
   if (!context) return file;
 
-  // Fill the fixed frame without discarding any of the original image. The
-  // softened backdrop makes portrait and square uploads feel intentional.
   const coverScale = Math.max(
     outputWidth / image.naturalWidth,
     outputHeight / image.naturalHeight,
@@ -143,14 +141,10 @@ const normalizeImageToAspect = async (
   });
   if (!blob) return file;
 
-  return new File(
-    [blob],
-    `${file.name.replace(/\.[^/.]+$/, "")}-16x9.jpg`,
-    {
-      type: "image/jpeg",
-      lastModified: Date.now(),
-    },
-  );
+  return new File([blob], `${file.name.replace(/\.[^/.]+$/, "")}-16x9.jpg`, {
+    type: "image/jpeg",
+    lastModified: Date.now(),
+  });
 };
 
 const getInitialCropRect = (): CropRect => ({
@@ -217,7 +211,10 @@ const createCroppedImage = async ({
   targetHeight?: number;
 }) => {
   const image = await loadImage(src);
-  const baseScale = Math.min(frameWidth / image.width, frameHeight / image.height);
+  const baseScale = Math.min(
+    frameWidth / image.width,
+    frameHeight / image.height,
+  );
   const scaledWidth = image.width * baseScale * zoom;
   const scaledHeight = image.height * baseScale * zoom;
   const imageLeft = (frameWidth - scaledWidth) / 2;
@@ -267,7 +264,11 @@ const createCroppedImage = async ({
   const extension = mimeType === "image/png" ? "png" : "jpg";
 
   const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob(resolve, mimeType, mimeType === "image/png" ? undefined : 0.92);
+    canvas.toBlob(
+      resolve,
+      mimeType,
+      mimeType === "image/png" ? undefined : 0.92,
+    );
   });
 
   if (!blob) {
@@ -411,8 +412,8 @@ export function ImageUpload({
         nextPosition += 1;
       }
 
-      const completedBatch = batch.results.filter(
-        (file): file is File => Boolean(file),
+      const completedBatch = batch.results.filter((file): file is File =>
+        Boolean(file),
       );
       resetCropState();
       onUpload(completedBatch);
@@ -447,10 +448,13 @@ export function ImageUpload({
         return;
       }
 
-      const imageIndexes = acceptedFiles.reduce<number[]>((indexes, file, index) => {
-        if (shouldCropFile(file)) indexes.push(index);
-        return indexes;
-      }, []);
+      const imageIndexes = acceptedFiles.reduce<number[]>(
+        (indexes, file, index) => {
+          if (shouldCropFile(file)) indexes.push(index);
+          return indexes;
+        },
+        [],
+      );
 
       if (imageIndexes.length === 0) {
         onUpload(acceptedFiles);

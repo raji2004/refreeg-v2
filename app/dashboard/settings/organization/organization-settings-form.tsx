@@ -81,7 +81,11 @@ export function OrganizationSettingsForm({
     toast(
       result.success
         ? { title: "Organization settings saved" }
-        : { title: "Could not save settings", description: result.error, variant: "destructive" },
+        : {
+            title: "Could not save settings",
+            description: result.error,
+            variant: "destructive",
+          },
     );
   };
 
@@ -96,7 +100,11 @@ export function OrganizationSettingsForm({
       setWorkspace((current) => ({ ...current, logoUrl: result.logoUrl }));
       toast({ title: "Organization logo updated" });
     } else {
-      toast({ title: "Could not upload logo", description: result.error, variant: "destructive" });
+      toast({
+        title: "Could not upload logo",
+        description: result.error,
+        variant: "destructive",
+      });
     }
     event.target.value = "";
   };
@@ -104,7 +112,10 @@ export function OrganizationSettingsForm({
   const inviteMember = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsInviting(true);
-    const result = await inviteOrganizationMember({ email: inviteEmail, role: inviteRole });
+    const result = await inviteOrganizationMember({
+      email: inviteEmail,
+      role: inviteRole,
+    });
     setIsInviting(false);
 
     if (result.success) {
@@ -115,7 +126,11 @@ export function OrganizationSettingsForm({
         description: result.warning || "The team invitation was sent by email.",
       });
     } else {
-      toast({ title: "Could not invite team member", description: result.error, variant: "destructive" });
+      toast({
+        title: "Could not invite team member",
+        description: result.error,
+        variant: "destructive",
+      });
     }
   };
 
@@ -125,7 +140,11 @@ export function OrganizationSettingsForm({
       await refreshWorkspace();
       toast({ title: "Invitation revoked" });
     } else {
-      toast({ title: "Could not revoke invitation", description: result.error, variant: "destructive" });
+      toast({
+        title: "Could not revoke invitation",
+        description: result.error,
+        variant: "destructive",
+      });
     }
   };
 
@@ -135,7 +154,11 @@ export function OrganizationSettingsForm({
       await refreshWorkspace();
       toast({ title: "Team member removed" });
     } else {
-      toast({ title: "Could not remove team member", description: result.error, variant: "destructive" });
+      toast({
+        title: "Could not remove team member",
+        description: result.error,
+        variant: "destructive",
+      });
     }
   };
 
@@ -145,7 +168,9 @@ export function OrganizationSettingsForm({
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,0.65fr)]">
       <div className="space-y-6">
         <Card>
-          <CardHeader><CardTitle>Workspace profile</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Workspace profile</CardTitle>
+          </CardHeader>
           <CardContent>
             <form className="space-y-5" onSubmit={saveOrganization}>
               <div className="flex flex-col gap-4 rounded-xl border bg-slate-50 p-4 sm:flex-row sm:items-center">
@@ -170,10 +195,16 @@ export function OrganizationSettingsForm({
                     disabled={!workspace.canManage || isUploading}
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                    {isUploading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="mr-2 h-4 w-4" />
+                    )}
                     Upload logo
                   </Button>
-                  <p className="text-xs text-muted-foreground">JPG, PNG, or WebP. Maximum 2 MB.</p>
+                  <p className="text-xs text-muted-foreground">
+                    JPG, PNG, or WebP. Maximum 2 MB.
+                  </p>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -189,7 +220,12 @@ export function OrganizationSettingsForm({
                   <Input
                     value={workspace.name}
                     disabled={!workspace.canManage}
-                    onChange={(event) => setWorkspace((current) => ({ ...current, name: event.target.value }))}
+                    onChange={(event) =>
+                      setWorkspace((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
                   />
                 </Field>
                 <Field label="Admin email">
@@ -197,14 +233,24 @@ export function OrganizationSettingsForm({
                     type="email"
                     value={workspace.adminEmail}
                     disabled={!workspace.canManage}
-                    onChange={(event) => setWorkspace((current) => ({ ...current, adminEmail: event.target.value }))}
+                    onChange={(event) =>
+                      setWorkspace((current) => ({
+                        ...current,
+                        adminEmail: event.target.value,
+                      }))
+                    }
                   />
                 </Field>
                 <Field label="Industry">
                   <Input
                     value={workspace.industry}
                     disabled={!workspace.canManage}
-                    onChange={(event) => setWorkspace((current) => ({ ...current, industry: event.target.value }))}
+                    onChange={(event) =>
+                      setWorkspace((current) => ({
+                        ...current,
+                        industry: event.target.value,
+                      }))
+                    }
                   />
                 </Field>
                 <Field label="Phone number">
@@ -212,7 +258,12 @@ export function OrganizationSettingsForm({
                     type="tel"
                     value={workspace.phone}
                     disabled={!workspace.canManage}
-                    onChange={(event) => setWorkspace((current) => ({ ...current, phone: event.target.value }))}
+                    onChange={(event) =>
+                      setWorkspace((current) => ({
+                        ...current,
+                        phone: event.target.value,
+                      }))
+                    }
                   />
                 </Field>
               </div>
@@ -220,15 +271,23 @@ export function OrganizationSettingsForm({
                 <Textarea
                   value={workspace.address}
                   disabled={!workspace.canManage}
-                  onChange={(event) => setWorkspace((current) => ({ ...current, address: event.target.value }))}
+                  onChange={(event) =>
+                    setWorkspace((current) => ({
+                      ...current,
+                      address: event.target.value,
+                    }))
+                  }
                 />
               </Field>
 
               <div className="space-y-5 rounded-xl border border-slate-200 p-4 sm:p-5">
                 <div>
-                  <h3 className="font-semibold text-slate-950">Public profile</h3>
+                  <h3 className="font-semibold text-slate-950">
+                    Public profile
+                  </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Tell supporters about the organisation and where they can find it online.
+                    Tell supporters about the organisation and where they can
+                    find it online.
                   </p>
                 </div>
 
@@ -347,36 +406,53 @@ export function OrganizationSettingsForm({
                   description="Notify organization admins about incoming donations."
                   checked={workspace.preferences.donationNotifications}
                   disabled={!workspace.canManage}
-                  onCheckedChange={(checked) => setWorkspace((current) => ({
-                    ...current,
-                    preferences: { ...current.preferences, donationNotifications: checked },
-                  }))}
+                  onCheckedChange={(checked) =>
+                    setWorkspace((current) => ({
+                      ...current,
+                      preferences: {
+                        ...current.preferences,
+                        donationNotifications: checked,
+                      },
+                    }))
+                  }
                 />
                 <Preference
                   label="Weekly team digest"
                   description="Receive a summary of organization activity."
                   checked={workspace.preferences.teamDigest}
                   disabled={!workspace.canManage}
-                  onCheckedChange={(checked) => setWorkspace((current) => ({
-                    ...current,
-                    preferences: { ...current.preferences, teamDigest: checked },
-                  }))}
+                  onCheckedChange={(checked) =>
+                    setWorkspace((current) => ({
+                      ...current,
+                      preferences: {
+                        ...current.preferences,
+                        teamDigest: checked,
+                      },
+                    }))
+                  }
                 />
                 <Preference
                   label="Public organization profile"
                   description="Allow supporters to see organization information."
                   checked={workspace.preferences.publicProfile}
                   disabled={!workspace.canManage}
-                  onCheckedChange={(checked) => setWorkspace((current) => ({
-                    ...current,
-                    preferences: { ...current.preferences, publicProfile: checked },
-                  }))}
+                  onCheckedChange={(checked) =>
+                    setWorkspace((current) => ({
+                      ...current,
+                      preferences: {
+                        ...current.preferences,
+                        publicProfile: checked,
+                      },
+                    }))
+                  }
                 />
               </div>
 
               {workspace.canManage && (
                 <Button type="submit" disabled={isSaving}>
-                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isSaving && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Save organization
                 </Button>
               )}
@@ -388,18 +464,35 @@ export function OrganizationSettingsForm({
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Team</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" /> Team
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {workspace.members.map((member) => (
-              <div key={member.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+              <div
+                key={member.id}
+                className="flex items-center justify-between gap-3 rounded-lg border p-3"
+              >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{member.user.fullName || member.user.email || "Team member"}</p>
-                  <p className="truncate text-xs text-muted-foreground">{member.user.email}</p>
-                  <p className="mt-1 text-xs font-medium capitalize text-blue-700">{member.role}</p>
+                  <p className="truncate text-sm font-medium">
+                    {member.user.fullName || member.user.email || "Team member"}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {member.user.email}
+                  </p>
+                  <p className="mt-1 text-xs font-medium capitalize text-blue-700">
+                    {member.role}
+                  </p>
                 </div>
                 {workspace.canManage && member.role !== "owner" && (
-                  <Button type="button" size="icon" variant="ghost" aria-label="Remove member" onClick={() => removeMember(member.id)}>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Remove member"
+                    onClick={() => removeMember(member.id)}
+                  >
                     <Trash2 className="h-4 w-4 text-rose-600" />
                   </Button>
                 )}
@@ -410,13 +503,26 @@ export function OrganizationSettingsForm({
 
         {workspace.canManage && (
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><MailPlus className="h-5 w-5" /> Invite a teammate</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MailPlus className="h-5 w-5" /> Invite a teammate
+              </CardTitle>
+            </CardHeader>
             <CardContent className="space-y-5">
               <form onSubmit={inviteMember} className="space-y-3">
-                <Field label="Email address"><Input type="email" required value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} /></Field>
+                <Field label="Email address">
+                  <Input
+                    type="email"
+                    required
+                    value={inviteEmail}
+                    onChange={(event) => setInviteEmail(event.target.value)}
+                  />
+                </Field>
                 <Field label="Role">
                   <Select value={inviteRole} onValueChange={setInviteRole}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="member">Member</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
@@ -424,7 +530,11 @@ export function OrganizationSettingsForm({
                   </Select>
                 </Field>
                 <Button type="submit" className="w-full" disabled={isInviting}>
-                  {isInviting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                  {isInviting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="mr-2 h-4 w-4" />
+                  )}
                   Send invitation
                 </Button>
               </form>
@@ -433,12 +543,24 @@ export function OrganizationSettingsForm({
                 <div className="space-y-2 border-t pt-4">
                   <p className="text-sm font-semibold">Pending invitations</p>
                   {workspace.invitations.map((invitation) => (
-                    <div key={invitation.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-3">
+                    <div
+                      key={invitation.id}
+                      className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-3"
+                    >
                       <div className="min-w-0">
                         <p className="truncate text-sm">{invitation.email}</p>
-                        <p className="text-xs capitalize text-muted-foreground">{invitation.role}</p>
+                        <p className="text-xs capitalize text-muted-foreground">
+                          {invitation.role}
+                        </p>
                       </div>
-                      <Button type="button" size="sm" variant="ghost" onClick={() => revokeInvitation(invitation.id)}>Revoke</Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => revokeInvitation(invitation.id)}
+                      >
+                        Revoke
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -451,8 +573,19 @@ export function OrganizationSettingsForm({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="space-y-2"><Label>{label}</Label>{children}</div>;
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      {children}
+    </div>
+  );
 }
 
 function Preference({
@@ -470,8 +603,15 @@ function Preference({
 }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <div><Label>{label}</Label><p className="text-xs text-muted-foreground">{description}</p></div>
-      <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
+      <div>
+        <Label>{label}</Label>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <Switch
+        checked={checked}
+        disabled={disabled}
+        onCheckedChange={onCheckedChange}
+      />
     </div>
   );
 }

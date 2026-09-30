@@ -42,7 +42,6 @@ export default function AllYouNeed() {
     },
   ];
 
-  // Animation variants
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
@@ -66,7 +65,7 @@ export default function AllYouNeed() {
       scale: 1,
       opacity: 1,
       transition: {
-        type: "spring" as const, // ✅ assert literal type
+        type: "spring" as const,
         stiffness: 200,
         damping: 10,
       },
@@ -75,7 +74,7 @@ export default function AllYouNeed() {
 
   return (
     <div className="w-full h-auto text-black flex flex-col px-6 lg:px-10 py-10 gap-6">
-      {/* Headings */}
+      {}
       <motion.div
         className="text-center w-full text-2xl md:text-3xl lg:text-5xl font-bold"
         initial={{ opacity: 0, y: 30 }}
@@ -94,11 +93,11 @@ export default function AllYouNeed() {
         transition={{ duration: 0.8, delay: 0.2 }}
         viewport={{ once: true }}
       >
-        Raise funds, protect your supporters, and grow your capital with features
-        made for forward-thinking entrepreneurs.
+        Raise funds, protect your supporters, and grow your capital with
+        features made for forward-thinking entrepreneurs.
       </motion.div>
 
-      {/* Steps */}
+      {}
       <motion.div
         className="w-full flex flex-col gap-16 text-lg"
         variants={containerVariants}
@@ -107,7 +106,11 @@ export default function AllYouNeed() {
         viewport={{ once: true, amount: 0.3 }}
       >
         {steps.map((step, index) => (
-          <motion.div key={index} variants={itemVariants} className={step.align}>
+          <motion.div
+            key={index}
+            variants={itemVariants}
+            className={step.align}
+          >
             <motion.div
               className="w-fit border px-4 py-1.5 mb-4 rounded-full bg-[#003E25] text-white text-center font-semibold"
               variants={bounceVariants}
@@ -121,7 +124,7 @@ export default function AllYouNeed() {
         ))}
       </motion.div>
 
-      {/* Button */}
+      {}
       <motion.div
         className="w-full flex justify-start"
         initial={{ opacity: 0, y: 30 }}

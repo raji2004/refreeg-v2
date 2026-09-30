@@ -31,7 +31,7 @@ export function useBank({ initialData, userId }: UseBankProps) {
   const lastInitialDataRef = useRef<string>("");
   const isMountedRef = useRef(true);
 
-  // Memoize the initial data sync to avoid loops
+  
   useEffect(() => {
     if (!initialData) return;
 

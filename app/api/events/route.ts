@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 import { eventBus } from "@/lib/event-bus";
 import { EventPayload } from "@/hooks/use-event-listeners";
 
-// This route must be dynamic
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
@@ -11,15 +10,18 @@ export async function GET(req: NextRequest) {
 
   const stream = new ReadableStream({
     start(controller) {
-      // Send initial connection ping
-      controller.enqueue(`data: ${JSON.stringify({ type: 'ping' })}\n\n`);
+      controller.enqueue(`data: ${JSON.stringify({ type: "ping" })}\n\n`);
 
       const handleEvent = (payload: EventPayload) => {
         // Filter events specific to the user, if a userId was provided by the client
-        if (userId && payload.data?.user_id && payload.data.user_id !== userId) {
+        if (
+          userId &&
+          payload.data?.user_id &&
+          payload.data.user_id !== userId
+        ) {
           return;
         }
-        
+
         controller.enqueue(`data: ${JSON.stringify(payload)}\n\n`);
       };
 
@@ -33,7 +35,7 @@ export async function GET(req: NextRequest) {
       // Keep the connection alive with pings every 30 seconds
       const pingInterval = setInterval(() => {
         try {
-          controller.enqueue(`data: ${JSON.stringify({ type: 'ping' })}\n\n`);
+          controller.enqueue(`data: ${JSON.stringify({ type: "ping" })}\n\n`);
         } catch (e) {
           // If enqueue fails, the stream is likely closed.
           clearInterval(pingInterval);

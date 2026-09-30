@@ -2,7 +2,13 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminOrManager } from "@/lib/auth/admin-auth";
-import { subDays, differenceInDays, startOfDay, endOfDay, format } from "date-fns";
+import {
+  subDays,
+  differenceInDays,
+  startOfDay,
+  endOfDay,
+  format,
+} from "date-fns";
 
 export interface AnalyticsData {
   totalDonations: {
@@ -77,7 +83,10 @@ export interface Alert {
   threshold: string;
 }
 
-export async function getAdminAnalytics(from?: string, to?: string): Promise<AnalyticsData> {
+export async function getAdminAnalytics(
+  from?: string,
+  to?: string,
+): Promise<AnalyticsData> {
   await requireAdminOrManager();
 
   const toDate = to ? new Date(to) : new Date();
@@ -85,7 +94,6 @@ export async function getAdminAnalytics(from?: string, to?: string): Promise<Ana
   const daysDiff = differenceInDays(toDate, fromDate);
   const prevFromDate = subDays(fromDate, daysDiff);
 
-  // Donations
   const [currentDonations, prevDonations] = await Promise.all([
     prisma.donation.aggregate({
       where: {
@@ -105,9 +113,9 @@ export async function getAdminAnalytics(from?: string, to?: string): Promise<Ana
 
   const currentTotal = Number(currentDonations._sum.amount || 0);
   const prevTotal = Number(prevDonations._sum.amount || 0);
-  const donationTrend = prevTotal === 0 ? 100 : ((currentTotal - prevTotal) / prevTotal) * 100;
+  const donationTrend =
+    prevTotal === 0 ? 100 : ((currentTotal - prevTotal) / prevTotal) * 100;
 
-  // Users
   const [totalUsers, newUsers] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({
@@ -115,27 +123,31 @@ export async function getAdminAnalytics(from?: string, to?: string): Promise<Ana
     }),
   ]);
 
-  // Causes
   const [activeCauses, totalCauses] = await Promise.all([
     prisma.cause.count({ where: { status: "approved" } }),
     prisma.cause.count(),
   ]);
 
-  // Pending Approvals
   const pendingApprovals = await prisma.cause.count({
     where: { status: "pending" },
   });
 
   return {
     totalDonations: {
-      current: currentTotal.toLocaleString("en-NG", { style: "currency", currency: "NGN" }),
-      previous: prevTotal.toLocaleString("en-NG", { style: "currency", currency: "NGN" }),
+      current: currentTotal.toLocaleString("en-NG", {
+        style: "currency",
+        currency: "NGN",
+      }),
+      previous: prevTotal.toLocaleString("en-NG", {
+        style: "currency",
+        currency: "NGN",
+      }),
       trend: Number(donationTrend.toFixed(1)),
     },
     totalUsers: {
       current: totalUsers,
       newInPeriod: newUsers,
-      trend: 0, // Simplified
+      trend: 0,
     },
     activeCauses: {
       active: activeCauses,
@@ -147,13 +159,15 @@ export async function getAdminAnalytics(from?: string, to?: string): Promise<Ana
   };
 }
 
-export async function getDonationTrends(from?: string, to?: string): Promise<DonationTrend[]> {
+export async function getDonationTrends(
+  from?: string,
+  to?: string,
+): Promise<DonationTrend[]> {
   await requireAdminOrManager();
 
   const toDate = to ? new Date(to) : new Date();
   const fromDate = from ? new Date(from) : subDays(toDate, 30);
 
-  // Group by day for the last 30 days
   const donations = await prisma.donation.findMany({
     where: {
       createdAt: { gte: fromDate, lte: toDate },
@@ -178,10 +192,15 @@ export async function getDonationTrends(from?: string, to?: string): Promise<Don
 
   const trendsMap = new Map<string, DonationTrend>();
 
-  // Initialize days
   for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
     const day = format(d, "MMM dd");
-    trendsMap.set(day, { period: day, regular: 0, crypto: 0, total: 0, count: 0 });
+    trendsMap.set(day, {
+      period: day,
+      regular: 0,
+      crypto: 0,
+      total: 0,
+      count: 0,
+    });
   }
 
   donations.forEach((d) => {
@@ -211,7 +230,10 @@ export async function getDonationTrends(from?: string, to?: string): Promise<Don
   return Array.from(trendsMap.values());
 }
 
-export async function getUserGrowth(from?: string, to?: string): Promise<UserGrowth[]> {
+export async function getUserGrowth(
+  from?: string,
+  to?: string,
+): Promise<UserGrowth[]> {
   await requireAdminOrManager();
 
   const toDate = to ? new Date(to) : new Date();
@@ -235,7 +257,7 @@ export async function getUserGrowth(from?: string, to?: string): Promise<UserGro
     const growth = growthMap.get(day);
     if (growth) {
       growth.users += 1;
-      growth.active += 1; // Simplified
+      growth.active += 1;
     }
   });
 
@@ -254,9 +276,15 @@ export async function getCauseCategories(): Promise<CauseCategory[]> {
 
   for (const cat of categories) {
     const [approved, pending, completed] = await Promise.all([
-      prisma.cause.count({ where: { category: cat.category, status: "approved" } }),
-      prisma.cause.count({ where: { category: cat.category, status: "pending" } }),
-      prisma.cause.count({ where: { category: cat.category, status: "completed" } }),
+      prisma.cause.count({
+        where: { category: cat.category, status: "approved" },
+      }),
+      prisma.cause.count({
+        where: { category: cat.category, status: "pending" },
+      }),
+      prisma.cause.count({
+        where: { category: cat.category, status: "completed" },
+      }),
     ]);
 
     results.push({
@@ -271,7 +299,10 @@ export async function getCauseCategories(): Promise<CauseCategory[]> {
   return results;
 }
 
-export async function getKycAnalytics(from?: string, to?: string): Promise<KycAnalytics> {
+export async function getKycAnalytics(
+  from?: string,
+  to?: string,
+): Promise<KycAnalytics> {
   await requireAdminOrManager();
 
   const [total, pending, approved] = await Promise.all([
@@ -284,11 +315,14 @@ export async function getKycAnalytics(from?: string, to?: string): Promise<KycAn
     total,
     pending,
     approvalRate: total > 0 ? (approved / total) * 100 : 0,
-    avgProcessingTimeHours: 24, // Mocked
+    avgProcessingTimeHours: 24,
   };
 }
 
-export async function getPaymentAnalytics(from?: string, to?: string): Promise<PaymentAnalytics> {
+export async function getPaymentAnalytics(
+  from?: string,
+  to?: string,
+): Promise<PaymentAnalytics> {
   await requireAdminOrManager();
 
   const [total, failed] = await Promise.all([
@@ -308,7 +342,10 @@ export async function getPaymentAnalytics(from?: string, to?: string): Promise<P
   };
 }
 
-export async function getCauseLifecycleAnalytics(from?: string, to?: string): Promise<CauseLifecycle> {
+export async function getCauseLifecycleAnalytics(
+  from?: string,
+  to?: string,
+): Promise<CauseLifecycle> {
   await requireAdminOrManager();
 
   const [created, pending, approved] = await Promise.all([
@@ -323,14 +360,16 @@ export async function getCauseLifecycleAnalytics(from?: string, to?: string): Pr
       pending,
       approved,
     },
-    avgApprovalTimeHours: 12, // Mocked
+    avgApprovalTimeHours: 12,
   };
 }
 
 export async function getAlerts(): Promise<Alert[]> {
   await requireAdminOrManager();
 
-  const pendingCount = await prisma.cause.count({ where: { status: "pending" } });
+  const pendingCount = await prisma.cause.count({
+    where: { status: "pending" },
+  });
   const alerts: Alert[] = [];
 
   if (pendingCount > 10) {

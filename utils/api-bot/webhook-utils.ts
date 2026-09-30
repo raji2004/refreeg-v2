@@ -1,4 +1,4 @@
-// utils/webhook-utils.ts
+
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
@@ -20,22 +20,20 @@ interface WebhookPayload {
   [key: string]: any;
 }
 
-/**
- * Dispatches a webhook notification to all active endpoints subscribed to the given event.
- */
+
 export async function dispatchWebhook(
   userId: string,
   event: WebhookEvent,
   payload: WebhookPayload,
 ) {
   try {
-    // 1. Fetch active webhooks for the user subscribed to this event
+    
     const webhooks = await prisma.api_webhooks.findMany({
       where: {
         user_id: userId,
         is_active: true,
         events: {
-          has: event, // PostgreSQL array contains check
+          has: event, 
         },
       },
       select: {
@@ -49,7 +47,7 @@ export async function dispatchWebhook(
       return;
     }
 
-    // 2. Dispatch to each endpoint
+    
     const dispatchPromises = webhooks.map(async (webhook) => {
       const timestamp = Math.floor(Date.now() / 1000);
       const body = JSON.stringify({
@@ -58,7 +56,7 @@ export async function dispatchWebhook(
         payload,
       });
 
-      // Generate HMAC-SHA256 signature
+      
       const signaturePayload = `${timestamp}.${body}`;
       const hmac = crypto.createHmac("sha256", webhook.secret);
       const signature = hmac.update(signaturePayload).digest("hex");

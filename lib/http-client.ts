@@ -1,6 +1,3 @@
-/**
- * A fetch wrapper that enforces strict timeouts to prevent hanging requests.
- */
 export async function safeFetch(
   input: RequestInfo | URL,
   init?: RequestInit & { timeoutMs?: number },

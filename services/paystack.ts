@@ -18,7 +18,7 @@ if (!PAYSTACK_SECRET_KEY) {
 const Paystack = {
   api: axios.create({
     baseURL: "https://api.paystack.co",
-    timeout: 5000, // 👈 5-second timeout to prevent hanging
+    timeout: 5000, 
     headers: {
       Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
       "Content-Type": "application/json",

@@ -21,6 +21,7 @@ export function useProfile(userId: string | undefined) {
     queryKey: ["profile", userId],
     queryFn: () => getProfile(userId!),
     enabled: !!userId,
+    staleTime: 60 * 1000,
   });
 
   const updateProfileMutation = useMutation({
@@ -60,7 +61,7 @@ export function useProfile(userId: string | undefined) {
       queryClient.setQueryData(
         ["profile", userId],
         (old: Profile | undefined) =>
-          old ? { ...old, profile_photo: photoUrl } : undefined
+          old ? { ...old, profile_photo: photoUrl } : undefined,
       );
       toast({
         title: "Profile photo updated",
@@ -100,9 +101,9 @@ export function useProfile(userId: string | undefined) {
     isLoading,
     isUploading: updateProfilePhotoMutation.isPending,
     error: error as string | null,
-    updateProfile: updateProfileMutation.mutate,
-    updateProfilePhoto: updateProfilePhotoMutation.mutate,
-    updateBankDetails: updateBankDetailsMutation.mutate,
+    updateProfile: updateProfileMutation.mutateAsync,
+    updateProfilePhoto: updateProfilePhotoMutation.mutateAsync,
+    updateBankDetails: updateBankDetailsMutation.mutateAsync,
     hasBankDetails: profile
       ? !!(profile.account_number && profile.bank_name)
       : false,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { SupportErrorCta } from "@/components/support-error-cta";
 import { reportClientError } from "@/lib/client-error-reporter";
 

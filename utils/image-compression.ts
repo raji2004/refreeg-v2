@@ -14,7 +14,7 @@ export const compressImage = async (
         let width = img.width;
         let height = img.height;
 
-        // Calculate proportional dimensions
+        
         if (width > height) {
           if (width > maxWidth) {
             height = Math.round((height * maxWidth) / width);
@@ -32,17 +32,17 @@ export const compressImage = async (
         const ctx = canvas.getContext("2d");
         
         if (!ctx) {
-          resolve(file); // fallback to original file
+          resolve(file); 
           return;
         }
 
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Convert the canvas back into a Blob, then into a File
+        
         canvas.toBlob(
           (blob) => {
             if (!blob) {
-              resolve(file); // fallback
+              resolve(file); 
               return;
             }
             const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {

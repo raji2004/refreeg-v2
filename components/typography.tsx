@@ -5,7 +5,7 @@ export const H1 = ({ className, children }: typographyProps) => (
   <h1
     className={cn(
       className,
-      "font-montserrat text-2xl md:text-5xl leading-relaxed"
+      "font-montserrat text-2xl md:text-5xl leading-relaxed",
     )}
   >
     {children}
@@ -16,7 +16,7 @@ export const H2 = ({ className, children }: typographyProps) => (
   <h2
     className={cn(
       className,
-      "font-montserrat text-xl md:text-4xl leading-relaxed"
+      "font-montserrat text-xl md:text-4xl leading-relaxed",
     )}
   >
     {children}
@@ -27,7 +27,7 @@ export const H3 = ({ className, children }: typographyProps) => (
   <h3
     className={cn(
       className,
-      "font-montserrat text-lg md:text-2xl leading-relaxed"
+      "font-montserrat text-lg md:text-2xl leading-relaxed",
     )}
   >
     {children}
@@ -38,7 +38,7 @@ export const H4 = ({ className, children }: typographyProps) => (
   <h4
     className={cn(
       className,
-      "font-montserrat text-base md:text-xl leading-relaxed"
+      "font-montserrat text-base md:text-xl leading-relaxed",
     )}
   >
     {children}
@@ -49,7 +49,7 @@ export const H5 = ({ className, children }: typographyProps) => (
   <h5
     className={cn(
       className,
-      "font-montserrat text-sm md:text-lg leading-relaxed"
+      "font-montserrat text-sm md:text-lg leading-relaxed",
     )}
   >
     {children}
@@ -60,7 +60,7 @@ export const H6 = ({ className, children }: typographyProps) => (
   <h6
     className={cn(
       className,
-      "font-montserrat text-xs md:text-base leading-relaxed"
+      "font-montserrat text-xs md:text-base leading-relaxed",
     )}
   >
     {children}
@@ -71,7 +71,7 @@ export const P = ({ className, children }: typographyProps) => (
   <p
     className={cn(
       className,
-      "font-montserrat text-sm md:text-base leading-normal"
+      "font-montserrat text-sm md:text-base leading-normal",
     )}
   >
     {children}
@@ -82,7 +82,7 @@ export const Ul = ({ className, children }: typographyProps) => (
   <ul
     className={cn(
       className,
-      "font-montserrat list-disc list-inside text-sm md:text-base leading-normal space-y-2"
+      "font-montserrat list-disc list-inside text-sm md:text-base leading-normal space-y-2",
     )}
   >
     {children}
@@ -93,7 +93,7 @@ export const Ol = ({ className, children }: typographyProps) => (
   <ol
     className={cn(
       className,
-      "font-montserrat list-decimal list-inside text-sm md:text-base leading-normal space-y-2"
+      "font-montserrat list-decimal list-inside text-sm md:text-base leading-normal space-y-2",
     )}
   >
     {children}
@@ -104,7 +104,7 @@ export const Blockquote = ({ className, children }: typographyProps) => (
   <blockquote
     className={cn(
       className,
-      "font-montserrat italic border-l-4 pl-4 text-gray-600 text-base md:text-lg"
+      "font-montserrat italic border-l-4 pl-4 text-gray-600 text-base md:text-lg",
     )}
   >
     {children}
