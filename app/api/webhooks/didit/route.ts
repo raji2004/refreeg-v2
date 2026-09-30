@@ -229,6 +229,13 @@ export async function POST(request: Request) {
             userName,
             rejectionReason,
           );
+          await sendKycSubmissionAdminNotification(
+            userProfile.email,
+            userName,
+            kyc.user_id,
+            "https://verification.didit.me/admin",
+            { isRejected: true, rejectionReason },
+          );
         } else if (isResubmitted) {
           await sendKycResubmittedEmail(
             userProfile.email,

@@ -872,6 +872,10 @@ export async function sendKycSubmissionAdminNotification(
   userName: string,
   userId: string,
   kycReviewUrl: string,
+  options?: {
+    isRejected?: boolean;
+    rejectionReason?: string;
+  },
 ) {
   const { getAdminEmails } = await import("@/actions/role-actions");
   const adminEmails = await getAdminEmails();
@@ -880,10 +884,15 @@ export async function sendKycSubmissionAdminNotification(
     return { success: false, error: "No admin emails found" };
   }
 
+  const isRejected = options?.isRejected ?? false;
+  const subject = isRejected
+    ? "KYC Verification Declined: Action Required - Refreeg"
+    : "New KYC Submission Requires Review - Refreeg";
+
   const emailPromises = adminEmails.map((email: string) =>
     sendMail({
       to: email,
-      subject: "New KYC Submission Requires Review - Refreeg",
+      subject,
       templateName: "kyc-submission-admin-notification",
       context: {
         adminName: "Admin",
@@ -892,6 +901,8 @@ export async function sendKycSubmissionAdminNotification(
         kycReviewUrl,
         organizationName: "Refreeg",
         currentYear: new Date().getFullYear(),
+        isRejected,
+        rejectionReason: options?.rejectionReason,
       },
     }),
   );

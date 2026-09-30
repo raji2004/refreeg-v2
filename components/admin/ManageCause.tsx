@@ -128,7 +128,7 @@ export default function ManageCauses() {
       await approveCause(causeId);
       showNotification("Cause Approved", {
         body: "A new cause has been approved and is now live!",
-        icon: "/icons/icon-192x192.png",
+        icon: "/logo.png",
       });
     } catch (error) {
       console.error("Error approving cause:", error);

@@ -180,4 +180,42 @@ describe("Didit Webhook POST", () => {
       "Refreegerian",
     );
   });
+
+  it("notifies admins via sendKycSubmissionAdminNotification when KYC is declined/rejected", async () => {
+    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+      id: "kyc-1",
+      user_id: "user-1",
+      status: "pending",
+      full_name: "Test User",
+    });
+    mockPrisma.user.findUnique.mockResolvedValue({
+      email: "user@example.com",
+      fullName: "Test User",
+    });
+
+    const { sendKycRejectedEmail, sendKycSubmissionAdminNotification } =
+      await import("@/services/mail");
+
+    const req = createRequest({
+      id: "uuid-456",
+      status: "Declined",
+      decision_reason: "Document unreadable",
+      vendorData: "user-1",
+    });
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(sendKycRejectedEmail).toHaveBeenCalledWith(
+      "user@example.com",
+      "Test User",
+      "Document unreadable",
+    );
+    expect(sendKycSubmissionAdminNotification).toHaveBeenCalledWith(
+      "user@example.com",
+      "Test User",
+      "user-1",
+      "https://verification.didit.me/admin",
+      { isRejected: true, rejectionReason: "Document unreadable" },
+    );
+  });
 });
