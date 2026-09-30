@@ -55,7 +55,6 @@ const MultimediaCarousel = dynamic(() => import("../MultimediaCarousel"), {
   loading: () => <Skeleton className="h-64 w-full" />,
 });
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -100,26 +99,6 @@ export default function ManageCauses() {
     isLoading: boolean;
   }>({ open: false, cause: null, isLoading: false });
 
-  const [trustMetricsDialog, setTrustMetricsDialog] = useState<{
-    open: boolean;
-    causeId: string;
-    metrics: {
-      impact: string;
-      readability: string;
-      transparency: string;
-      status: string;
-    };
-  }>({
-    open: false,
-    causeId: "",
-    metrics: {
-      impact: "B+",
-      readability: "A",
-      transparency: "High",
-      status: "pending",
-    },
-  });
-
   const [previewMetrics, setPreviewMetrics] = useState<{
     impact: string;
     readability: string;
@@ -131,13 +110,12 @@ export default function ManageCauses() {
     transparency: "High",
     status: "pending",
   });
-  const [isSavingPreviewMetrics, setIsSavingPreviewMetrics] = useState(false);
 
   const { showNotification } = useNotifications();
 
   const handleApprove = async (causeId: string) => {
     try {
-      if (detailDialog.open && detailDialog.cause?.id === causeId) {
+      if (previewMetrics) {
         await updateCauseTrustMetrics(causeId, {
           trust_score: {
             impact: previewMetrics.impact,
@@ -167,79 +145,21 @@ export default function ManageCauses() {
   };
 
   const handleReject = async () => {
-    await rejectCause(rejectDialog.causeId, rejectDialog.reason);
-    setRejectDialog((prev) => ({ ...prev, open: false }));
-  };
-
-  const openTrustMetricsDialog = (cause: any) => {
-    setTrustMetricsDialog({
-      open: true,
-      causeId: cause.id,
-      metrics: {
-        impact: cause.trust_score?.impact || "B+",
-        readability: cause.trust_score?.readability || "A",
-        transparency: cause.trust_score?.transparency || "High",
-        status: cause.verified_status || "pending",
-      },
-    });
-  };
-
-  const handleUpdateTrustMetrics = async () => {
     try {
-      await updateCauseTrustMetrics(trustMetricsDialog.causeId, {
-        trust_score: {
-          impact: trustMetricsDialog.metrics.impact,
-          readability: trustMetricsDialog.metrics.readability,
-          transparency: trustMetricsDialog.metrics.transparency,
-        },
-        verified_status: trustMetricsDialog.metrics.status,
-      });
-      setTrustMetricsDialog((prev) => ({ ...prev, open: false }));
-      showNotification("Metrics Updated", {
-        body: "Cause trust metrics have been updated.",
-      });
-      router.refresh();
+      if (rejectDialog.causeId && previewMetrics) {
+        await updateCauseTrustMetrics(rejectDialog.causeId, {
+          trust_score: {
+            impact: previewMetrics.impact,
+            readability: previewMetrics.readability,
+            transparency: previewMetrics.transparency,
+          },
+          verified_status: previewMetrics.status,
+        }).catch((e) => console.error("Metrics sync on reject failed:", e));
+      }
+      await rejectCause(rejectDialog.causeId, rejectDialog.reason);
+      setRejectDialog((prev) => ({ ...prev, open: false }));
     } catch (error) {
-      console.error("Error updating trust metrics:", error);
-    }
-  };
-
-  const handleSavePreviewMetrics = async () => {
-    if (!detailDialog.cause) return;
-    setIsSavingPreviewMetrics(true);
-    try {
-      await updateCauseTrustMetrics(detailDialog.cause.id, {
-        trust_score: {
-          impact: previewMetrics.impact,
-          readability: previewMetrics.readability,
-          transparency: previewMetrics.transparency,
-        },
-        verified_status: previewMetrics.status,
-      });
-      setDetailDialog((prev) =>
-        prev.cause
-          ? {
-              ...prev,
-              cause: {
-                ...prev.cause,
-                trust_score: {
-                  impact: previewMetrics.impact,
-                  readability: previewMetrics.readability,
-                  transparency: previewMetrics.transparency,
-                },
-                verified_status: previewMetrics.status,
-              } as any,
-            }
-          : prev,
-      );
-      showNotification("Metrics Updated", {
-        body: "Cause trust metrics have been updated.",
-      });
-      router.refresh();
-    } catch (error) {
-      console.error("Error updating trust metrics from preview:", error);
-    } finally {
-      setIsSavingPreviewMetrics(false);
+      console.error("Error rejecting cause:", error);
     }
   };
 
@@ -431,56 +351,8 @@ export default function ManageCauses() {
                             <DropdownMenuItem
                               onClick={() => openDetailDialog(item)}
                             >
-                              Preview
+                              Inspect
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => openTrustMetricsDialog(item)}
-                            >
-                              Trust Metrics
-                            </DropdownMenuItem>
-                            {activeTab === "pending" && (
-                              <>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    openRejectDialog(
-                                      item.type === "edit"
-                                        ? (item as any).original_cause_id
-                                        : item.id,
-                                      item.title,
-                                    )
-                                  }
-                                >
-                                  Reject
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleApprove(
-                                      item.type === "edit"
-                                        ? (item as any).original_cause_id
-                                        : item.id,
-                                    )
-                                  }
-                                >
-                                  Approve
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            {activeTab === "rejected" && (
-                              <DropdownMenuItem
-                                onClick={() => handleApprove(item.id)}
-                              >
-                                Approve
-                              </DropdownMenuItem>
-                            )}
-                            {activeTab === "approved" && (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  openRejectDialog(item.id, item.title)
-                                }
-                              >
-                                Take Down
-                              </DropdownMenuItem>
-                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -530,135 +402,6 @@ export default function ManageCauses() {
             >
               Reject Cause
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={trustMetricsDialog.open}
-        onOpenChange={(open) =>
-          setTrustMetricsDialog((prev) => ({ ...prev, open }))
-        }
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Trust Metrics</DialogTitle>
-            <DialogDescription>
-              Adjust the quality scores and verification status for this cause.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="impact" className="text-right">
-                Impact Score
-              </Label>
-              <Select
-                value={trustMetricsDialog.metrics.impact}
-                onValueChange={(val) =>
-                  setTrustMetricsDialog((prev) => ({
-                    ...prev,
-                    metrics: { ...prev.metrics, impact: val },
-                  }))
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select score" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-"].map(
-                    (s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="readability" className="text-right">
-                Readability
-              </Label>
-              <Select
-                value={trustMetricsDialog.metrics.readability}
-                onValueChange={(val) =>
-                  setTrustMetricsDialog((prev) => ({
-                    ...prev,
-                    metrics: { ...prev.metrics, readability: val },
-                  }))
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select score" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["High", "Medium", "Low"].map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="transparency" className="text-right">
-                Transparency
-              </Label>
-              <Select
-                value={trustMetricsDialog.metrics.transparency}
-                onValueChange={(val) =>
-                  setTrustMetricsDialog((prev) => ({
-                    ...prev,
-                    metrics: { ...prev.metrics, transparency: val },
-                  }))
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select score" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["High", "Medium", "Low"].map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">
-                Status
-              </Label>
-              <Select
-                value={trustMetricsDialog.metrics.status}
-                onValueChange={(val) =>
-                  setTrustMetricsDialog((prev) => ({
-                    ...prev,
-                    metrics: { ...prev.metrics, status: val },
-                  }))
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending Review</SelectItem>
-                  <SelectItem value="in_review">In Review</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() =>
-                setTrustMetricsDialog((prev) => ({ ...prev, open: false }))
-              }
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleUpdateTrustMetrics}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -760,9 +503,9 @@ export default function ManageCauses() {
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Evaluate and mark the quality scores and verification status
-                    for this cause. Changes can be saved individually or will
-                    automatically be applied upon approval.
+                    Evaluate and set the quality scores and verification status
+                    for this cause. Changes are automatically saved when you
+                    approve or reject.
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
@@ -903,26 +646,6 @@ export default function ManageCauses() {
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-
-                  <div className="flex justify-end pt-1">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-8 text-xs font-medium border-brand/30 hover:bg-brand/10 hover:text-brand"
-                      onClick={handleSavePreviewMetrics}
-                      disabled={isSavingPreviewMetrics}
-                    >
-                      {isSavingPreviewMetrics ? (
-                        <>
-                          <Icons.spinner className="h-3 w-3 mr-1 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        "Save Metrics"
-                      )}
-                    </Button>
                   </div>
                 </div>
               </div>
