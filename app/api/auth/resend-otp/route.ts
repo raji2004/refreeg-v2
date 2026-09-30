@@ -13,7 +13,6 @@ export async function POST(req: Request) {
 
     const normalizedEmail = email.toLowerCase();
 
-    // Check if there is an existing pending registration
     const pendingUser = await prisma.pendingRegistration.findUnique({
       where: { email: normalizedEmail },
     });
@@ -21,18 +20,20 @@ export async function POST(req: Request) {
     if (!pendingUser) {
       return NextResponse.json(
         { error: "No pending registration found. Please sign up again." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
-    // Rate limit: prevent resending more than once per minute
     if (pendingUser.lastOtpSentAt) {
-      const secondsSinceLastSend = (Date.now() - pendingUser.lastOtpSentAt.getTime()) / 1000;
+      const secondsSinceLastSend =
+        (Date.now() - pendingUser.lastOtpSentAt.getTime()) / 1000;
       if (secondsSinceLastSend < 60) {
         const waitSeconds = Math.ceil(60 - secondsSinceLastSend);
         return NextResponse.json(
-          { error: `Please wait ${waitSeconds} seconds before requesting a new code.` },
-          { status: 429 }
+          {
+            error: `Please wait ${waitSeconds} seconds before requesting a new code.`,
+          },
+          { status: 429 },
         );
       }
     }
@@ -61,13 +62,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { message: "A new verification code has been sent to your email." },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: any) {
     console.error("Resend OTP error:", error);
     return NextResponse.json(
       { error: error.message || "An unexpected error occurred" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

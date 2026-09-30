@@ -44,7 +44,6 @@ export const AnimatedTestimonials = ({
     }
   }, [autoplay, isClient, handleNext]);
 
-  // Use deterministic rotation values based on index to avoid hydration issues
   const getRotateY = (index: number) => {
     const rotations = [-10, -7, -3, 1, 5, 8, -5, 3, -8, 6, -2, 4];
     return rotations[index % rotations.length];

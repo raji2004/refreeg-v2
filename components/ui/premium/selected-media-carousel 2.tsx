@@ -40,7 +40,7 @@ export function SelectedMediaCarousel({
 
   return (
     <div className={cn("w-full", className)}>
-      {/* Mobile Carousel View */}
+      {}
       <div className="md:hidden">
         <Carousel className="w-full">
           <CarouselContent>

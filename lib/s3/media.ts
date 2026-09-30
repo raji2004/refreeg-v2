@@ -1,12 +1,6 @@
-/**
- * Resolves a media key or URL into a displayable URL.
- * If the input is an S3 key, it returns the proxy API URL.
- * If it's already a full URL, it returns it as is.
- */
 export function getMediaUrl(key: string | null | undefined): string {
   if (!key) return "";
 
-  // If it's a full URL (http/https), or a local blob/data URL, return it as is
   if (
     key.startsWith("http://") ||
     key.startsWith("https://") ||
@@ -36,8 +30,7 @@ export function isProxyMediaUrl(url: string): boolean {
   try {
     const hostname = new URL(url).hostname;
     return (
-      hostname.includes("amazonaws.com") ||
-      hostname.includes("cloudfront.net")
+      hostname.includes("amazonaws.com") || hostname.includes("cloudfront.net")
     );
   } catch {
     return false;

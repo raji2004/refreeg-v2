@@ -1,97 +1,73 @@
-"use client";
-
-import { useAuth } from "@/hooks/use-auth";
-import { useProfile } from "@/hooks/use-profile";
-import { Skeleton } from "@/components/ui/skeleton";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth/auth";
+import { getCachedProfile } from "@/lib/profile-cache";
 import { ProfileForm } from "../profile-form";
 import { SettingsShell } from "../components/settings-shell";
-import { toast } from "@/components/ui/use-toast";
-import { useEffect, useRef } from "react";
-import { isProfileComplete } from "@/actions/profile-actions";
-import { useSearchParams } from "next/navigation";
+import { ProfileIncompleteToast } from "../components/profile-incomplete-toast";
+import { CalloutBanner } from "@/components/ui/callout-banner";
 
-export default function ProfileSettingsPage() {
-  const { user } = useAuth();
-  const {
-    profile,
-    isLoading: profileLoading,
-    error: profileError,
-  } = useProfile(user?.id);
-  const searchParams = useSearchParams();
-  const hasShownToast = useRef(false);
+export default async function ProfileSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/auth/signin");
+  const userId = session.user.id;
 
-  useEffect(() => {
-    async function checkProfileCompleteness() {
-      if (!user?.id || profileLoading) return;
+  const [profile, params] = await Promise.all([
+    getCachedProfile(userId).catch(() => null),
+    searchParams,
+  ]);
 
-      const { isComplete } = await isProfileComplete(user.id);
-      const hasErrorParam = searchParams.get("error") === "profile_incomplete";
-
-      if ((!isComplete || hasErrorParam) && !hasShownToast.current) {
-        hasShownToast.current = true;
-        toast({
-          title: "Profile Incomplete",
-          description:
-            "You need to complete your profile (full name, bio, and profile picture) to list causes.",
-          variant: "destructive",
-        });
-      }
-    }
-
-    checkProfileCompleteness();
-  }, [user, searchParams, profileLoading]);
-
-  useEffect(() => {
-    if (profileError) {
-      toast({
-        title: "Error",
-        description: profileError,
-        variant: "destructive",
-      });
-    }
-  }, [profileError]);
-
-  if (profileLoading) {
+  if (!profile) {
     return (
       <SettingsShell>
-        <Skeleton className="h-[400px] w-full" />
-      </SettingsShell>
-    );
-  }
-
-  if (profileError) {
-    return (
-      <SettingsShell>
-        <div className="text-sm text-muted-foreground">
+        <p className="text-sm text-ink/60">
           An error occurred. Please refresh the page.
-        </div>
+        </p>
       </SettingsShell>
     );
   }
+
+  const isComplete = !!profile.full_name?.trim() && !!profile.profile_photo;
+  const profileIncomplete =
+    !isComplete || params.error === "profile_incomplete";
 
   return (
-    <SettingsShell>
-      {profile && user && (
-        <ProfileForm
-          profile={{
-            full_name: profile.full_name,
-            email: profile.email ?? "",
-            phone: profile.phone,
-            profile_photo: profile.profile_photo,
-            bio: profile.bio,
-            username: profile.username,
-            account_type: profile.account_type,
-            twitter_url: profile.twitter_url,
-            facebook_url: profile.facebook_url,
-            instagram_url: profile.instagram_url,
-            linkedin_url: profile.linkedin_url,
-          }}
-          user={{
-            id: user.id,
-            email: user.email ?? "",
-          }}
-        />
-      )}
+    <SettingsShell isOrganization={profile.account_type === "organization"}>
+      {profileIncomplete ? (
+        <>
+          <ProfileIncompleteToast />
+          <CalloutBanner
+            className="mb-6"
+            variant="gold"
+            title="Your profile is incomplete"
+            description="Add your full name, bio, and photo before you can list causes."
+          />
+        </>
+      ) : null}
+      <ProfileForm
+        profile={{
+          full_name: profile.full_name,
+          email: profile.email ?? "",
+          phone: profile.phone,
+          profile_photo: profile.profile_photo,
+          bio: profile.bio,
+          username: profile.username,
+          display_name: profile.display_name,
+          location: profile.location,
+          donation_preference: profile.donation_preference,
+          account_type: profile.account_type,
+          interests: profile.interests,
+          created_at: profile.created_at,
+          causes_count: profile.causes_count,
+        }}
+        user={{
+          id: userId,
+          email: session.user.email ?? "",
+        }}
+      />
     </SettingsShell>
   );
 }

@@ -6,6 +6,7 @@ jest.mock("@/actions/auth-actions", () => ({
   signUpAction: jest.fn(),
   requestPasswordResetAction: jest.fn(),
   resetPasswordAction: jest.fn(),
+  checkCauseUserLoginAction: jest.fn(),
 }));
 
 jest.mock("@/components/ui/use-toast", () => ({
@@ -20,6 +21,7 @@ import {
   signUpAction,
   requestPasswordResetAction,
   resetPasswordAction,
+  checkCauseUserLoginAction,
 } from "@/actions/auth-actions";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -30,6 +32,9 @@ describe("useAuth", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (checkCauseUserLoginAction as jest.Mock).mockResolvedValue({
+      redirect: false,
+    });
     (useAuthContext as jest.Mock).mockReturnValue({
       user: { id: "user-1", email: "test@example.com" },
       isLoading: false,
@@ -142,6 +147,28 @@ describe("useAuth", () => {
     );
   });
 
+  it("redirects to reset password if cause user lacks password or profile details", async () => {
+    (checkCauseUserLoginAction as jest.Mock).mockResolvedValue({
+      isCauseUserWithoutProfile: true,
+      token: "mock-token",
+      causeTitle: "Save the Forest",
+    });
+
+    const { result } = renderHook(() => useAuth());
+
+    await act(async () => {
+      await result.current.signIn("cause@example.com", "password123");
+    });
+
+    expect(signIn).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Account setup required",
+        description: expect.stringContaining("Save the Forest"),
+      }),
+    );
+  });
+
   it("updates password and navigates to signin", async () => {
     (resetPasswordAction as jest.Mock).mockResolvedValue({ success: true });
 
@@ -155,6 +182,36 @@ describe("useAuth", () => {
     expect(success).toBe(true);
     expect(resetPasswordAction).toHaveBeenCalledWith("token-1", "newpass");
     expect(mockPush).toHaveBeenCalledWith("/auth/signin");
+  });
+
+  it("updates password, auto-authenticates, and navigates to onboarding for cause-profile flow", async () => {
+    (resetPasswordAction as jest.Mock).mockResolvedValue({
+      success: true,
+      email: "cause@example.com",
+    });
+    (signIn as jest.Mock).mockResolvedValue({ error: null });
+
+    const { result } = renderHook(() => useAuth());
+
+    let success: boolean | undefined;
+    await act(async () => {
+      success = await result.current.updatePassword("newpass", "token-1", {
+        flow: "cause-profile",
+      });
+    });
+
+    expect(success).toBe(true);
+    expect(resetPasswordAction).toHaveBeenCalledWith("token-1", "newpass");
+    expect(signIn).toHaveBeenCalledWith("credentials", {
+      redirect: false,
+      email: "cause@example.com",
+      password: "newpass",
+    });
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Password set successfully!",
+      }),
+    );
   });
 
   it("signs out via next-auth without redirect", async () => {

@@ -12,7 +12,6 @@ type CreatePledgeInput = {
   causeTitle?: string;
 };
 
-/** Reminder must be today or a future calendar day (UTC) — past dates rejected. */
 function isReminderDateTodayOrFuture(isoDate: string): boolean {
   const parts = isoDate.split("-").map(Number);
   if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return false;
@@ -32,6 +31,17 @@ export async function createPledge(input: CreatePledgeInput) {
     return {
       data: null,
       error: "Reminder date cannot be in the past.",
+    };
+  }
+
+  const cause = await prisma.cause.findUnique({
+    where: { id: input.causeId },
+    select: { paused: true },
+  });
+  if (cause?.paused) {
+    return {
+      data: null,
+      error: "This campaign is paused while its details are being updated.",
     };
   }
 

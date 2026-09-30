@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 export default function HowItWorks() {
-  // Animation variants
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -17,7 +16,11 @@ export default function HowItWorks() {
 
   const item = {
     hidden: { opacity: 0, y: 40 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as any } },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" as any },
+    },
   };
 
   return (
@@ -28,7 +31,7 @@ export default function HowItWorks() {
       whileInView="show"
       viewport={{ once: true, amount: 0.3 }}
     >
-      {/* Headings */}
+      {}
       <motion.div
         className="text-center w-full text-2xl md:text-3xl lg:text-5xl font-bold"
         variants={item}
@@ -43,7 +46,7 @@ export default function HowItWorks() {
         From Need to Care, Faster.
       </motion.div>
 
-      {/* Steps */}
+      {}
       <motion.div
         className="w-full flex flex-col gap-16 mb-12 text-lg"
         variants={container}
@@ -54,9 +57,10 @@ export default function HowItWorks() {
           </div>
           <div className="font-bold">Tell Your Story</div>
           <div>
-            Give your campaign a name and write a short  <br /> 
+            Give your campaign a name and write a short <br />
             description. Be clear, be personal, and tell people
-            <br />why this cause matters.
+            <br />
+            why this cause matters.
           </div>
         </motion.div>
 
@@ -66,10 +70,10 @@ export default function HowItWorks() {
           </div>
           <div className="font-bold">Add Images & Videos</div>
           <div>
-            Bring your story to life. Upload photos or record a 
-            quick video <br /> to connect emotionally with your 
-            supporters. Bring your story <br /> to life. Upload 
-            photos or record a quick video to connect <br />
+            Bring your story to life. Upload photos or record a quick video{" "}
+            <br /> to connect emotionally with your supporters. Bring your story{" "}
+            <br /> to life. Upload photos or record a quick video to connect{" "}
+            <br />
             emotionally with your supporters.
           </div>
         </motion.div>
@@ -80,9 +84,8 @@ export default function HowItWorks() {
           </div>
           <div className="font-bold">Set Your Goal</div>
           <div>
-            Decide how much you need to raise.  <br /> RefreeG 
-            helps you set realistic targets <br /> and shows your 
-            progress in real time.
+            Decide how much you need to raise. <br /> RefreeG helps you set
+            realistic targets <br /> and shows your progress in real time.
           </div>
         </motion.div>
 
@@ -92,9 +95,8 @@ export default function HowItWorks() {
           </div>
           <div className="font-bold">Verify & Build Trust</div>
           <div>
-            Upload your KYC docs so donors know  <br /> your 
-            campaign is real. Verified causes get <br /> more 
-            support, faster.
+            Upload your KYC docs so donors know <br /> your campaign is real.
+            Verified causes get <br /> more support, faster.
           </div>
         </motion.div>
 
@@ -104,14 +106,14 @@ export default function HowItWorks() {
           </div>
           <div className="font-bold"> Share & Grow</div>
           <div>
-            Launch your campaign and share it with <br /> friends, 
-            family, and the world. Use your <br /> unique RefreeG 
-            tag and link to spread <br/> the word everywhere.
+            Launch your campaign and share it with <br /> friends, family, and
+            the world. Use your <br /> unique RefreeG tag and link to spread{" "}
+            <br /> the word everywhere.
           </div>
         </motion.div>
       </motion.div>
 
-      {/* Button */}
+      {}
       <motion.div
         className="w-full flex justify-start"
         variants={item}

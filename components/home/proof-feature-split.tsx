@@ -44,18 +44,21 @@ const eyebrowLineVariants = cva("h-px w-8", {
   },
 });
 
-const eyebrowTextVariants = cva("text-xs font-semibold uppercase tracking-[0.24em]", {
-  variants: {
-    variant: {
-      light: "text-[#355e59]",
-      dark: "text-[#b5e02e]",
-      blue: "text-[#b5e02e]",
+const eyebrowTextVariants = cva(
+  "text-xs font-semibold uppercase tracking-[0.24em]",
+  {
+    variants: {
+      variant: {
+        light: "text-[#355e59]",
+        dark: "text-[#b5e02e]",
+        blue: "text-[#b5e02e]",
+      },
+    },
+    defaultVariants: {
+      variant: "light",
     },
   },
-  defaultVariants: {
-    variant: "light",
-  },
-});
+);
 
 const accentWordVariants = cva("italic", {
   variants: {
@@ -151,12 +154,18 @@ const buttonVariants = cva(
   },
 );
 
-export interface ProofFeatureSectionProps extends VariantProps<typeof sectionVariants> {
+export interface ProofFeatureSectionProps extends VariantProps<
+  typeof sectionVariants
+> {
   content: ProofFeatureContent;
   className?: string;
 }
 
-export function ProofFeatureSection({ content, variant = "light", className }: ProofFeatureSectionProps) {
+export function ProofFeatureSection({
+  content,
+  variant = "light",
+  className,
+}: ProofFeatureSectionProps) {
   return (
     <article className={cn(sectionVariants({ variant }), className)}>
       <div className="flex items-center gap-4">
@@ -166,7 +175,10 @@ export function ProofFeatureSection({ content, variant = "light", className }: P
 
       <h2 className="mt-6 max-w-[13ch] font-serif text-5xl leading-[1.12] sm:text-6xl">
         {content.headingStart}
-        <span className={accentWordVariants({ variant })}> {content.headingAccent}</span>
+        <span className={accentWordVariants({ variant })}>
+          {" "}
+          {content.headingAccent}
+        </span>
         {content.headingEnd ? ` ${content.headingEnd}` : ""}
       </h2>
 
@@ -174,11 +186,24 @@ export function ProofFeatureSection({ content, variant = "light", className }: P
 
       <div className={cn("mt-9", dividerVariants({ variant }))}>
         {content.bullets.map((item) => (
-          <div key={item.title} className={cn("grid grid-cols-[12px_1fr] gap-2 py-5", dividerVariants({ variant }))}>
-            <span aria-hidden="true" className={bulletSquareVariants({ variant })} />
+          <div
+            key={item.title}
+            className={cn(
+              "grid grid-cols-[12px_1fr] gap-2 py-5",
+              dividerVariants({ variant }),
+            )}
+          >
+            <span
+              aria-hidden="true"
+              className={bulletSquareVariants({ variant })}
+            />
             <p className="text-[1.15rem] leading-7">
-              <span className={bulletTitleVariants({ variant })}>{item.title}</span>
-              <span className={bulletBodyVariants({ variant })}>{item.body}</span>
+              <span className={bulletTitleVariants({ variant })}>
+                {item.title}
+              </span>
+              <span className={bulletBodyVariants({ variant })}>
+                {item.body}
+              </span>
             </p>
           </div>
         ))}
@@ -200,9 +225,15 @@ const leftContent: ProofFeatureContent = {
     "Stop wondering if your ₦50 turned into uniforms or overhead. With RefreeG you watch it become uniforms with a receipt to prove it.",
   bullets: [
     { title: "Live tracking", body: "from donation to delivery." },
-    { title: "Tax-ready receipts", body: "auto-generated for every contribution." },
+    {
+      title: "Tax-ready receipts",
+      body: "auto-generated for every contribution.",
+    },
     { title: "Recurring giving", body: "with full visibility on each cycle." },
-    { title: "Impact portfolio", body: "showing your lifetime giving on-chain." },
+    {
+      title: "Impact portfolio",
+      body: "showing your lifetime giving on-chain.",
+    },
   ],
   ctaLabel: "Start giving",
   ctaHref: "/causes",
@@ -218,8 +249,14 @@ const rightContent: ProofFeatureContent = {
   bullets: [
     { title: "Launch in 6 minutes", body: "with built-in verification." },
     { title: "Public ledger", body: "your supporters can audit themselves." },
-    { title: "Embed receipts", body: "directly into posts, threads, and streams." },
-    { title: "Multi-steward governance", body: "so no single party controls the funds." },
+    {
+      title: "Embed receipts",
+      body: "directly into posts, threads, and streams.",
+    },
+    {
+      title: "Multi-steward governance",
+      body: "so no single party controls the funds.",
+    },
   ],
   ctaLabel: "Start a campaign",
   ctaHref: "/dashboard/causes/create",

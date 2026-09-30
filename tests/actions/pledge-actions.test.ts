@@ -7,6 +7,9 @@ jest.mock("@/lib/prisma", () => ({
     pledges: {
       create: jest.fn(),
     },
+    cause: {
+      findUnique: jest.fn(),
+    },
   },
 }));
 
@@ -17,6 +20,7 @@ import { createPledge } from "@/actions/pledge-actions";
 const mockAuth = auth as jest.Mock;
 const mockPrisma = prisma as unknown as {
   pledges: { create: jest.Mock };
+  cause: { findUnique: jest.Mock };
 };
 
 function futureDateIso(): string {
@@ -29,6 +33,7 @@ describe("pledge-actions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockAuth.mockResolvedValue({ user: { id: "user-1" } });
+    mockPrisma.cause.findUnique.mockResolvedValue({ paused: false });
   });
 
   describe("createPledge", () => {
@@ -44,6 +49,24 @@ describe("pledge-actions", () => {
       expect(result).toEqual({
         data: null,
         error: "Reminder date cannot be in the past.",
+      });
+      expect(mockPrisma.pledges.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects pledges for a paused campaign", async () => {
+      mockPrisma.cause.findUnique.mockResolvedValue({ paused: true });
+
+      const result = await createPledge({
+        causeId: "cause-1",
+        amount: 1000,
+        reminderDate: futureDateIso(),
+        name: "Jane Doe",
+        email: "jane@example.com",
+      });
+
+      expect(result).toEqual({
+        data: null,
+        error: "This campaign is paused while its details are being updated.",
       });
       expect(mockPrisma.pledges.create).not.toHaveBeenCalled();
     });

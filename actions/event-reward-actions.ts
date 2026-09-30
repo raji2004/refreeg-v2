@@ -3,14 +3,10 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { REWARD_AMOUNTS } from "@/lib/reward-constants";
-import type { RewardEvent } from "@/types";
+import type { RewardEvent, RewardTransaction, UserStreak } from "@/types";
 
-/**
- * Record an event and calculate rewards
- */
 export async function recordEvent(event: RewardEvent) {
   try {
-    // Prevent multiple login rewards within a rolling 24-hour window
     if (event.type === "login") {
       try {
         const recentLogin = await prisma.events.findFirst({
@@ -28,17 +24,14 @@ export async function recordEvent(event: RewardEvent) {
           const hours24 = 24 * 60 * 60 * 1000;
 
           if (now - lastLogin < hours24) {
-            // A login event already recorded within 24 hours — do not award again
             return recentLogin;
           }
         }
       } catch (err) {
-        // If something goes wrong checking recent logins, log and continue to avoid breaking login flow
         console.error("Error while verifying daily login reward:", err);
       }
     }
 
-    // Insert event into events table
     const eventData = await prisma.events.create({
       data: {
         user_id: event.userId,
@@ -47,7 +40,6 @@ export async function recordEvent(event: RewardEvent) {
       },
     });
 
-    // Calculate rewards based on event type
     let rewardAmount = 0;
     switch (event.type) {
       case "comment":
@@ -81,17 +73,13 @@ export async function recordEvent(event: RewardEvent) {
   }
 }
 
-/**
- * Add rewards to user's wallet
- */
 export async function addRewards(
   userId: string,
   amount: number,
   eventType: string,
-  eventId: string
+  eventId: string,
 ) {
   try {
-    // Insert reward transaction
     const rewardData = await prisma.rewardTransaction.create({
       data: {
         userId,
@@ -102,7 +90,6 @@ export async function addRewards(
       },
     });
 
-    // Update user's wallet balance using upsert
     const wallet = await prisma.userWallet.findUnique({
       where: { userId },
       select: { balance: true },
@@ -117,7 +104,6 @@ export async function addRewards(
       create: { userId, balance: newBalance },
     });
 
-    // Revalidate relevant paths
     revalidatePath("/dashboard");
     revalidatePath(`/dashboard/wallet`);
 
@@ -128,9 +114,6 @@ export async function addRewards(
   }
 }
 
-/**
- * Get user's wallet balance and recent transactions
- */
 export async function getUserWallet(userId: string) {
   try {
     const [wallet, transactions] = await Promise.all([
@@ -144,9 +127,19 @@ export async function getUserWallet(userId: string) {
       }),
     ]);
 
+    // Decimal and Date can't cross the server-action boundary; return plain values.
     return {
-      wallet,
-      transactions,
+      wallet: wallet ? { balance: Number(wallet.balance ?? 0) } : null,
+      transactions: transactions.map((t): RewardTransaction => ({
+        id: t.id,
+        user_id: t.userId,
+        amount: Number(t.amount),
+        transaction_type: t.transactionType,
+        event_id: t.event_id ?? "",
+        status: (t.status ?? "completed") as RewardTransaction["status"],
+        created_at: t.createdAt?.toISOString() ?? "",
+        updated_at: t.updatedAt?.toISOString(),
+      })),
       walletError: null,
       transactionsError: null,
     };
@@ -156,17 +149,12 @@ export async function getUserWallet(userId: string) {
   }
 }
 
-/**
- * Update user streaks (weekly and monthly active)
- */
 export async function updateUserStreaks(userId: string) {
   try {
-    // Get current streak data
     const streakData = await prisma.userStreak.findUnique({
       where: { userId },
     });
 
-    // Use UTC date strings (YYYY-MM-DD) to avoid local timezone issues
     const todayUtcStr = new Date().toISOString().slice(0, 10);
     const lastActiveUtcStr = streakData?.lastActiveDate
       ? new Date(streakData.lastActiveDate).toISOString().slice(0, 10)
@@ -175,9 +163,7 @@ export async function updateUserStreaks(userId: string) {
     let weeklyStreak = streakData?.weeklyStreak || 0;
     let isMonthlyActive = streakData?.isMonthlyActive || false;
 
-    // If lastActive is not today (UTC), update streak
     if (!lastActiveUtcStr || lastActiveUtcStr !== todayUtcStr) {
-      // Check if streak continues (yesterday in UTC)
       const yesterday = new Date();
       yesterday.setUTCDate(yesterday.getUTCDate() - 1);
       const yesterdayUtcStr = yesterday.toISOString().slice(0, 10);
@@ -189,7 +175,6 @@ export async function updateUserStreaks(userId: string) {
       }
     }
 
-    // Check if it's a new month in UTC
     const todayUtc = new Date();
     const month = todayUtc.getUTCMonth();
     const year = todayUtc.getUTCFullYear();
@@ -204,27 +189,28 @@ export async function updateUserStreaks(userId: string) {
       isMonthlyActive = true;
     }
 
-    // Update streak data
+    const lastActiveDate = new Date(todayUtcStr + "T00:00:00Z");
+
     const updatedStreak = await prisma.userStreak.upsert({
       where: { userId },
       update: {
         weeklyStreak,
         isMonthlyActive,
-        lastActiveDate: today,
+        lastActiveDate,
       },
       create: {
         userId,
         weeklyStreak,
         isMonthlyActive,
-        lastActiveDate: today,
+        lastActiveDate,
       },
     });
 
-    // Award rewards if milestones reached
     const hasWeeklyMilestone =
-      weeklyStreak > 0 && weeklyStreak % 7 === 0 && streakData?.weeklyStreak !== weeklyStreak;
-    const hasMonthlyMilestone =
-      isMonthlyActive && !streakData?.isMonthlyActive;
+      weeklyStreak > 0 &&
+      weeklyStreak % 7 === 0 &&
+      streakData?.weeklyStreak !== weeklyStreak;
+    const hasMonthlyMilestone = isMonthlyActive && !streakData?.isMonthlyActive;
 
     if (hasWeeklyMilestone) {
       await recordEvent({
@@ -232,7 +218,7 @@ export async function updateUserStreaks(userId: string) {
         userId,
         metadata: { streak: weeklyStreak },
       });
-      // Emit SSE event
+
       try {
         const { eventBus } = await import("@/lib/event-bus");
         eventBus.emit("weekly_streak", {
@@ -249,9 +235,9 @@ export async function updateUserStreaks(userId: string) {
       await recordEvent({
         type: "monthly_active",
         userId,
-        metadata: { month: today.getMonth() + 1, year },
+        metadata: { month: month + 1, year },
       });
-      // Emit SSE event
+
       try {
         const { eventBus } = await import("@/lib/event-bus");
         eventBus.emit("monthly_active", {
@@ -273,20 +259,20 @@ export async function updateUserStreaks(userId: string) {
   }
 }
 
-/**
- * Get user's streak and activity stats
- */
-export async function getUserStats(userId: string) {
+export async function getUserStats(userId: string): Promise<UserStreak> {
   try {
     const data = await prisma.userStreak.findUnique({
       where: { userId },
     });
 
-    return data || {
-      userId,
-      weeklyStreak: 0,
-      isMonthlyActive: false,
-      lastActiveDate: null,
+    return {
+      id: data?.id ?? "",
+      user_id: userId,
+      weekly_streak: data?.weeklyStreak ?? 0,
+      is_monthly_active: data?.isMonthlyActive ?? false,
+      last_active_date: data?.lastActiveDate?.toISOString() ?? null,
+      created_at: data?.createdAt?.toISOString() ?? "",
+      updated_at: data?.updatedAt?.toISOString() ?? "",
     };
   } catch (error) {
     console.error("Error in getUserStats:", error);

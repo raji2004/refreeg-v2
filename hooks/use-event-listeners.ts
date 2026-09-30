@@ -23,7 +23,7 @@ export function useEventListeners(options: ListenerOptions) {
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const setupListeners = useCallback(() => {
-    // Prevent multiple connections
+    
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
@@ -40,7 +40,7 @@ export function useEventListeners(options: ListenerOptions) {
       try {
         const payload = JSON.parse(event.data);
         
-        // Ignore ping events
+        
         if (payload.type === 'ping') return;
 
         switch (payload.type) {
@@ -67,7 +67,7 @@ export function useEventListeners(options: ListenerOptions) {
 
     eventSource.onerror = (error) => {
       console.error("SSE Connection Error:", error);
-      // EventSource auto-reconnects, but we can log it here
+      
     };
   }, [
     options.userId,

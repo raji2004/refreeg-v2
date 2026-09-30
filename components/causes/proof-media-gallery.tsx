@@ -7,7 +7,7 @@ import { FileText, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 type MediaEntry = {
   type: "image" | "video" | "document";
-  url: string; // Matches the server action's output
+  url: string;
   name: string;
 };
 
@@ -109,7 +109,7 @@ export function ProofMediaGallery({ media }: { media: MediaEntry[] }) {
               </button>
             </>
           )}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {}
           <img
             src={getMediaUrl(open.url) ?? ""}
             alt={open.name}

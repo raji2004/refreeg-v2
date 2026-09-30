@@ -1,4 +1,3 @@
-// components/social-media.tsx
 "use client";
 
 import Link from "next/link";
@@ -20,22 +19,22 @@ const platformConfig = {
   twitter: {
     label: "Twitter",
     placeholder: "https://twitter.com/username",
-    domain: "twitter.com"
+    domain: "twitter.com",
   },
   facebook: {
     label: "Facebook",
     placeholder: "https://facebook.com/username",
-    domain: "facebook.com"
+    domain: "facebook.com",
   },
   instagram: {
     label: "Instagram",
     placeholder: "https://instagram.com/username",
-    domain: "instagram.com"
+    domain: "instagram.com",
   },
   linkedin: {
     label: "LinkedIn",
     placeholder: "https://linkedin.com/in/username",
-    domain: "linkedin.com"
+    domain: "linkedin.com",
   },
 } as const;
 
@@ -52,42 +51,43 @@ export function SocialMedia({
     twitter: "",
     facebook: "",
     instagram: "",
-    linkedin: ""
+    linkedin: "",
   });
 
   if (mode === "edit" && !onChange) {
     throw new Error("onChange is required when mode is 'edit'");
   }
 
-  const validateUrl = (platform: SocialMediaPlatform, value: string): boolean => {
+  const validateUrl = (
+    platform: SocialMediaPlatform,
+    value: string,
+  ): boolean => {
     if (!value) return true;
-    
+
     try {
-      // Check if URL starts with http:// or https://
       if (!/^https?:\/\//i.test(value)) {
-        setErrors(prev => ({
+        setErrors((prev) => ({
           ...prev,
-          [platform]: "URL must start with http:// or https://"
+          [platform]: "URL must start with http:// or https://",
         }));
         return false;
       }
 
-      // Check if URL contains the correct domain
       const url = new URL(value);
       if (!url.hostname.includes(platformConfig[platform].domain)) {
-        setErrors(prev => ({
+        setErrors((prev) => ({
           ...prev,
-          [platform]: `URL must contain ${platformConfig[platform].domain}`
+          [platform]: `URL must contain ${platformConfig[platform].domain}`,
         }));
         return false;
       }
 
-      setErrors(prev => ({ ...prev, [platform]: "" }));
+      setErrors((prev) => ({ ...prev, [platform]: "" }));
       return true;
     } catch (err) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [platform]: "Please enter a valid URL"
+        [platform]: "Please enter a valid URL",
       }));
       return false;
     }
@@ -133,7 +133,10 @@ export function SocialMedia({
         const config = platformConfig[platform.name];
         return (
           <div key={platform.name} className="space-y-2">
-            <label htmlFor={platform.name} className="block text-sm font-medium">
+            <label
+              htmlFor={platform.name}
+              className="block text-sm font-medium"
+            >
               {config.label}
             </label>
             <input

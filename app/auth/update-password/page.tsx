@@ -19,16 +19,21 @@ import { Icons } from "@/components/icons";
 function UpdatePasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const flow = searchParams.get("flow");
+  const email = searchParams.get("email");
+  const redirect = searchParams.get("redirect");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { updatePassword } = useAuth();
 
+  const isCauseProfileFlow = flow === "cause-profile";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      return; // Handled by UI validation usually, but good to have
+      return;
     }
 
     if (!token) {
@@ -37,7 +42,11 @@ function UpdatePasswordForm() {
 
     setIsLoading(true);
     try {
-      await updatePassword(password, token);
+      await updatePassword(password, token, {
+        flow,
+        email,
+        redirect,
+      });
     } catch (error) {
     } finally {
       setIsLoading(false);
@@ -65,9 +74,13 @@ function UpdatePasswordForm() {
   return (
     <Card>
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">New Password</CardTitle>
+        <CardTitle className="text-2xl text-center">
+          {isCauseProfileFlow ? "Set Your New Password" : "New Password"}
+        </CardTitle>
         <CardDescription className="text-center">
-          Please enter your new password below.
+          {isCauseProfileFlow
+            ? "Welcome back! Set a secure password to access your campaign, then we'll guide you to complete your profile."
+            : "Please enter your new password below."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -94,19 +107,27 @@ function UpdatePasswordForm() {
                 required
               />
               {password && confirmPassword && password !== confirmPassword && (
-                <p className="text-xs text-destructive">Passwords do not match</p>
+                <p className="text-xs text-destructive">
+                  Passwords do not match
+                </p>
               )}
             </div>
             <Button
               type="submit"
               className="w-full"
-              disabled={isLoading || password !== confirmPassword || password.length < 8}
+              disabled={
+                isLoading || password !== confirmPassword || password.length < 8
+              }
             >
               {isLoading ? (
                 <>
                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                  Updating password...
+                  {isCauseProfileFlow
+                    ? "Setting password..."
+                    : "Updating password..."}
                 </>
+              ) : isCauseProfileFlow ? (
+                "Set Password & Complete Profile"
               ) : (
                 "Update password"
               )}
@@ -122,13 +143,15 @@ export default function UpdatePasswordPage() {
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-        <Suspense fallback={
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-center">Loading...</CardTitle>
-            </CardHeader>
-          </Card>
-        }>
+        <Suspense
+          fallback={
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-center">Loading...</CardTitle>
+              </CardHeader>
+            </Card>
+          }
+        >
           <UpdatePasswordForm />
         </Suspense>
       </div>

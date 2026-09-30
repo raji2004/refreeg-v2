@@ -1,36 +1,83 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// The dashboard renders several of these actions together; caching the shared
+// reads per request keeps them to one query each.
+const loadUserCauses = cache((userId: string) =>
+  prisma.cause.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
+);
+
+const loadUserCausesWithRaised = cache(async (userId: string) => {
+  const causes = await loadUserCauses(userId);
+  const raisedByCause: Record<string, number> = {};
+  if (causes.length === 0) return { causes, raisedByCause };
+
+  const grouped = await prisma.donation.groupBy({
+    by: ["causeId"],
+    _sum: { amount: true },
+    where: { causeId: { in: causes.map((c) => c.id) } },
+  });
+  for (const d of grouped) {
+    raisedByCause[d.causeId] = Number(d._sum.amount || 0);
+  }
+  return { causes, raisedByCause };
+});
+
+const loadUserPetitions = cache((userId: string) =>
+  prisma.petitions.findMany({
+    where: { user_id: userId },
+    orderBy: { created_at: "desc" },
+  }),
+);
+
+const loadUserPetitionsWithStats = cache(async (userId: string) => {
+  const petitions = await loadUserPetitions(userId);
+  const stats: Record<string, { count: number; amount: number }> = {};
+  if (petitions.length === 0) return { petitions, stats };
+
+  const grouped = await prisma.signatures.groupBy({
+    by: ["petition_id"],
+    _count: { petition_id: true },
+    _sum: { amount: true },
+    where: { petition_id: { in: petitions.map((p) => p.id) } },
+  });
+  for (const s of grouped) {
+    stats[s.petition_id] = {
+      count: s._count.petition_id,
+      amount: Number(s._sum.amount || 0),
+    };
+  }
+  return { petitions, stats };
+});
 
 export async function getDashboardStats(userId: string) {
   try {
-    const causes = await prisma.cause.findMany({
-      where: { userId, status: "approved" },
-      select: { id: true },
-    });
+    const { causes: allCauses, raisedByCause } =
+      await loadUserCausesWithRaised(userId);
+    const causes = allCauses.filter((c) => c.status === "approved");
 
-    if (!causes || causes.length === 0) {
+    if (causes.length === 0) {
       return { totalRaised: 0, totalDonors: 0, activeCauses: 0 };
     }
 
     const causeIds = causes.map((c) => c.id);
 
-    const agg = await prisma.donation.aggregate({
-      _sum: { amount: true },
-      where: { causeId: { in: causeIds } },
-    });
-
-    const donations = await prisma.donation.findMany({
+    const donors = await prisma.donation.groupBy({
+      by: ["userId"],
       where: { causeId: { in: causeIds }, userId: { not: null } },
-      select: { userId: true },
     });
 
-    const totalRaised = Number(agg._sum.amount || 0);
-    const totalDonors = new Set(donations.map((d) => d.userId)).size;
+    const totalRaised = causeIds.reduce(
+      (sum, id) => sum + (raisedByCause[id] || 0),
+      0,
+    );
 
     return {
       totalRaised,
-      totalDonors,
+      totalDonors: donors.length,
       activeCauses: causes.length,
     };
   } catch (error) {
@@ -39,17 +86,28 @@ export async function getDashboardStats(userId: string) {
   }
 }
 
+export async function getPlatformWeeklyDelivered(): Promise<number> {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const agg = await prisma.donation.aggregate({
+    _sum: { amount: true },
+    where: { createdAt: { gte: sevenDaysAgo } },
+  });
+
+  return Number(agg._sum.amount || 0);
+}
+
 export async function getDonationTrends(userId: string) {
   try {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const causes = await prisma.cause.findMany({
-      where: { userId, status: "approved" },
-      select: { id: true },
-    });
+    const causes = (await loadUserCauses(userId)).filter(
+      (c) => c.status === "approved",
+    );
 
-    if (!causes || causes.length === 0) return [];
+    if (causes.length === 0) return [];
 
     const causeIds = causes.map((cause) => cause.id);
 
@@ -62,20 +120,23 @@ export async function getDonationTrends(userId: string) {
       orderBy: { createdAt: "asc" },
     });
 
-    const monthlyDonations = donations.reduce((acc, donation) => {
-      if (!donation.createdAt) return acc;
-      const date = new Date(donation.createdAt);
-      const month = date.toLocaleString("default", {
-        month: "short",
-        year: "numeric",
-      });
+    const monthlyDonations = donations.reduce(
+      (acc, donation) => {
+        if (!donation.createdAt) return acc;
+        const date = new Date(donation.createdAt);
+        const month = date.toLocaleString("default", {
+          month: "short",
+          year: "numeric",
+        });
 
-      if (!acc[month]) {
-        acc[month] = 0;
-      }
-      acc[month] += Number(donation.amount || 0);
-      return acc;
-    }, {} as Record<string, number>);
+        if (!acc[month]) {
+          acc[month] = 0;
+        }
+        acc[month] += Number(donation.amount || 0);
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return Object.entries(monthlyDonations).map(([month, amount]) => ({
       month,
@@ -108,25 +169,9 @@ export async function getUserCauses(userId: string, status?: string) {
 
 export async function getUserCausesWithStats(userId: string) {
   try {
-    const causes = await prisma.cause.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-    });
+    const { causes, raisedByCause } = await loadUserCausesWithRaised(userId);
 
-    if (!causes || causes.length === 0) return [];
-
-    const causeIds = causes.map((c) => c.id);
-
-    const aggregatedDonations = await prisma.donation.groupBy({
-      by: ["causeId"],
-      _sum: { amount: true },
-      where: { causeId: { in: causeIds } },
-    });
-
-    const raisedByCause: Record<string, number> = {};
-    for (const d of aggregatedDonations) {
-      raisedByCause[d.causeId] = Number(d._sum.amount || 0);
-    }
+    if (causes.length === 0) return [];
 
     return causes.map((cause) => ({
       ...cause,
@@ -140,29 +185,13 @@ export async function getUserCausesWithStats(userId: string) {
 
 export async function getUserPetitionsWithStats(userId: string) {
   try {
-    const petitions = await prisma.petitions.findMany({
-      where: { user_id: userId },
-      orderBy: { created_at: "desc" },
-    });
+    const { petitions, stats } = await loadUserPetitionsWithStats(userId);
 
-    if (!petitions || petitions.length === 0) return [];
-
-    const petitionIds = petitions.map((p) => p.id);
-
-    const aggregatedSignatures = await prisma.signatures.groupBy({
-      by: ["petition_id"],
-      _count: { petition_id: true },
-      where: { petition_id: { in: petitionIds } },
-    });
-
-    const countByPetition: Record<string, number> = {};
-    for (const s of aggregatedSignatures) {
-      countByPetition[s.petition_id] = s._count.petition_id;
-    }
+    if (petitions.length === 0) return [];
 
     return petitions.map((petition) => ({
       ...petition,
-      signatures: countByPetition[petition.id] || 0,
+      signatures: stats[petition.id]?.count || 0,
     }));
   } catch (error) {
     console.error("Error fetching user petitions with stats:", error);
@@ -181,12 +210,12 @@ export async function getCauseAnalytics(causeId: string) {
 
     const totalDonations = donations.reduce(
       (sum, d) => sum + Number(d.amount || 0),
-      0
+      0,
     );
-    const uniqueDonors = new Set(
-      donations.map((d) => d.userId).filter(Boolean)
-    ).size;
-    const averageDonation = uniqueDonors > 0 ? totalDonations / uniqueDonors : 0;
+    const uniqueDonors = new Set(donations.map((d) => d.userId).filter(Boolean))
+      .size;
+    const averageDonation =
+      uniqueDonors > 0 ? totalDonations / uniqueDonors : 0;
 
     const cause = await prisma.cause.findUnique({
       where: { id: causeId },
@@ -205,7 +234,7 @@ export async function getCauseAnalytics(causeId: string) {
     if (cause.createdAt) {
       daysActive = Math.ceil(
         (new Date().getTime() - new Date(cause.createdAt).getTime()) /
-          (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24),
       );
     }
 
@@ -214,20 +243,25 @@ export async function getCauseAnalytics(causeId: string) {
 
     const dailyDonations = donations
       .filter((d) => d.createdAt && new Date(d.createdAt) >= thirtyDaysAgo)
-      .reduce((acc, donation) => {
-        const date = new Date(donation.createdAt!).toISOString().split("T")[0];
-        if (!acc[date]) {
-          acc[date] = 0;
-        }
-        acc[date] += Number(donation.amount || 0);
-        return acc;
-      }, {} as Record<string, number>);
+      .reduce(
+        (acc, donation) => {
+          const date = new Date(donation.createdAt!)
+            .toISOString()
+            .split("T")[0];
+          if (!acc[date]) {
+            acc[date] = 0;
+          }
+          acc[date] += Number(donation.amount || 0);
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
     const dailyDonationsArray = Object.entries(dailyDonations).map(
       ([date, amount]) => ({
         date,
         amount,
-      })
+      }),
     );
 
     const engagement = {
@@ -266,12 +300,11 @@ export async function getCauseAnalytics(causeId: string) {
 
 export async function getPetitionDashboardStats(userId: string) {
   try {
-    const petitions = await prisma.petitions.findMany({
-      where: { user_id: userId, status: "approved" },
-      select: { id: true },
-    });
+    const { petitions: allPetitions, stats } =
+      await loadUserPetitionsWithStats(userId);
+    const petitions = allPetitions.filter((p) => p.status === "approved");
 
-    if (!petitions || petitions.length === 0) {
+    if (petitions.length === 0) {
       return {
         totalRaised: 0,
         totalDonors: 0,
@@ -281,22 +314,19 @@ export async function getPetitionDashboardStats(userId: string) {
 
     const petitionIds = petitions.map((p) => p.id);
 
-    const agg = await prisma.signatures.aggregate({
-      _sum: { amount: true },
-      where: { petition_id: { in: petitionIds } },
-    });
-
-    const signatures = await prisma.signatures.findMany({
+    const signers = await prisma.signatures.groupBy({
+      by: ["user_id"],
       where: { petition_id: { in: petitionIds }, user_id: { not: null } },
-      select: { user_id: true },
     });
 
-    const totalRaised = Number(agg._sum.amount || 0);
-    const totalDonors = new Set(signatures.map((s) => s.user_id)).size;
+    const totalRaised = petitionIds.reduce(
+      (sum, id) => sum + (stats[id]?.amount || 0),
+      0,
+    );
 
     return {
       totalRaised,
-      totalDonors,
+      totalDonors: signers.length,
       activePetitions: petitions.length,
     };
   } catch (error) {
@@ -323,20 +353,23 @@ export async function getPetitionSignatureTrends(userId: string) {
       orderBy: { created_at: "asc" },
     });
 
-    const monthlySignatures = signatures.reduce((acc, signature) => {
-      if (!signature.created_at) return acc;
-      const date = new Date(signature.created_at);
-      const month = date.toLocaleString("default", {
-        month: "short",
-        year: "numeric",
-      });
+    const monthlySignatures = signatures.reduce(
+      (acc, signature) => {
+        if (!signature.created_at) return acc;
+        const date = new Date(signature.created_at);
+        const month = date.toLocaleString("default", {
+          month: "short",
+          year: "numeric",
+        });
 
-      if (!acc[month]) {
-        acc[month] = 0;
-      }
-      acc[month] += Number(signature.amount || 0);
-      return acc;
-    }, {} as Record<string, number>);
+        if (!acc[month]) {
+          acc[month] = 0;
+        }
+        acc[month] += Number(signature.amount || 0);
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return Object.entries(monthlySignatures).map(([month, amount]) => ({
       month,
@@ -378,10 +411,10 @@ export async function getPetitionAnalytics(petitionId: string) {
 
     const totalSignatures = signatures.reduce(
       (sum, s) => sum + Number(s.amount || 0),
-      0
+      0,
     );
     const uniqueSigners = new Set(
-      signatures.map((s) => s.user_id).filter(Boolean)
+      signatures.map((s) => s.user_id).filter(Boolean),
     ).size;
     const averageSignature =
       uniqueSigners > 0 ? totalSignatures / uniqueSigners : 0;
@@ -403,7 +436,7 @@ export async function getPetitionAnalytics(petitionId: string) {
     if (petition.created_at) {
       daysActive = Math.ceil(
         (new Date().getTime() - new Date(petition.created_at).getTime()) /
-          (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24),
       );
     }
 
@@ -412,20 +445,25 @@ export async function getPetitionAnalytics(petitionId: string) {
 
     const dailySignatures = signatures
       .filter((d) => d.created_at && new Date(d.created_at) >= thirtyDaysAgo)
-      .reduce((acc, signature) => {
-        const date = new Date(signature.created_at!).toISOString().split("T")[0];
-        if (!acc[date]) {
-          acc[date] = 0;
-        }
-        acc[date] += Number(signature.amount || 0);
-        return acc;
-      }, {} as Record<string, number>);
+      .reduce(
+        (acc, signature) => {
+          const date = new Date(signature.created_at!)
+            .toISOString()
+            .split("T")[0];
+          if (!acc[date]) {
+            acc[date] = 0;
+          }
+          acc[date] += Number(signature.amount || 0);
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
     const dailySignaturesArray = Object.entries(dailySignatures).map(
       ([date, amount]) => ({
         date,
         amount,
-      })
+      }),
     );
 
     const engagement = {
@@ -433,8 +471,7 @@ export async function getPetitionAnalytics(petitionId: string) {
       comments: signatures.filter((s) => s.message && s.message.trim() !== "")
         .length,
       views: 0,
-      conversionRate:
-        sharedNum > 0 ? (uniqueSigners / sharedNum) * 100 : 0,
+      conversionRate: sharedNum > 0 ? (uniqueSigners / sharedNum) * 100 : 0,
     };
 
     return {
@@ -462,4 +499,3 @@ export async function getPetitionAnalytics(petitionId: string) {
     return null;
   }
 }
-

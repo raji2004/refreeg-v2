@@ -1,16 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { toast } from "@/components/ui/use-toast";
-import { signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/react";
+import {
+  signIn as nextAuthSignIn,
+  signOut as nextAuthSignOut,
+} from "next-auth/react";
 import { useAuthContext } from "@/components/auth-provider";
-import { signUpAction, requestPasswordResetAction, resetPasswordAction } from "@/actions/auth-actions";
+import {
+  signUpAction,
+  requestPasswordResetAction,
+  resetPasswordAction,
+  checkCauseUserLoginAction,
+} from "@/actions/auth-actions";
 
 function normalizeRedirectPath(target?: string | null): string | null {
   if (!target) return null;
   if (!target.startsWith("/")) return null;
-  // Prevent protocol-relative redirects (e.g. //evil.com)
+
   if (target.startsWith("//")) return null;
   return target;
 }
@@ -26,6 +34,32 @@ export function useAuth() {
   ) => {
     try {
       const normalizedEmail = email.trim().toLowerCase();
+
+      const causeCheck = await checkCauseUserLoginAction(normalizedEmail);
+      if (causeCheck?.isCauseUserWithoutProfile && causeCheck.token) {
+        toast({
+          title: "Account setup required",
+          description: `We found your campaign "${causeCheck.causeTitle}". Please set up a new password to continue.`,
+        });
+
+        const targetUrl = `/auth/update-password?token=${encodeURIComponent(
+          causeCheck.token,
+        )}&flow=cause-profile&email=${encodeURIComponent(normalizedEmail)}${
+          redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : ""
+        }`;
+
+        window.location.href = targetUrl;
+        return;
+      }
+
+      if (!password) {
+        toast({
+          title: "Password required",
+          description: "Please enter your password to sign in.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const res = await nextAuthSignIn("credentials", {
         redirect: false,
@@ -70,9 +104,9 @@ export function useAuth() {
         normalizedEmail,
         password,
         fullName,
-        accountType
+        accountType,
       );
-      
+
       if (!res.success) {
         toast({
           title: "Error signing up",
@@ -114,12 +148,45 @@ export function useAuth() {
         ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(safeRedirect)}`
         : `${window.location.origin}/auth/callback`;
 
+      // Clears any stale csrf-token/callback-url cookie left over from this
+      // app's several cookie/domain configurations this week — a mismatched
+      // one can make Auth.js's CSRF check fail silently, bouncing straight
+      // back to the sign-in page with no error. See that route's comment.
+      await fetch("/api/auth/pre-signin-cleanup", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+
       await nextAuthSignIn("google", {
         callbackUrl,
       });
     } catch (error: any) {
       toast({
         title: "Error signing in with Google",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const signInWithApple = async (redirectTo?: string | null) => {
+    try {
+      const safeRedirect = normalizeRedirectPath(redirectTo);
+      const callbackUrl = safeRedirect
+        ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(safeRedirect)}`
+        : `${window.location.origin}/auth/callback`;
+
+      await fetch("/api/auth/pre-signin-cleanup", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+
+      await nextAuthSignIn("apple", {
+        callbackUrl,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error signing in with Apple",
         description: error.message,
         variant: "destructive",
       });
@@ -166,7 +233,15 @@ export function useAuth() {
     }
   };
 
-  const updatePassword = async (password: string, token: string) => {
+  const updatePassword = async (
+    password: string,
+    token: string,
+    options?: {
+      flow?: string | null;
+      email?: string | null;
+      redirect?: string | null;
+    },
+  ) => {
     try {
       const res = await resetPasswordAction(token, password);
       if (!res.success) {
@@ -177,6 +252,31 @@ export function useAuth() {
         });
         return false;
       }
+
+      const email = options?.email || res.email;
+
+      // If this is the cause-profile flow, auto-authenticate and direct to profile flow (onboarding)
+      if (options?.flow === "cause-profile" && email) {
+        toast({
+          title: "Password set successfully!",
+          description: "Proceeding to complete your profile...",
+        });
+
+        const loginRes = await nextAuthSignIn("credentials", {
+          redirect: false,
+          email,
+          password,
+        });
+
+        if (!loginRes?.error) {
+          const safeRedirect = normalizeRedirectPath(options?.redirect);
+          window.location.href = safeRedirect
+            ? `/onboarding?redirect=${encodeURIComponent(safeRedirect)}`
+            : "/onboarding";
+          return true;
+        }
+      }
+
       toast({
         title: "Success",
         description: "Your password has been reset successfully.",
@@ -200,6 +300,7 @@ export function useAuth() {
     signUp,
     signOut,
     signInWithGoogle,
+    signInWithApple,
     resetPassword,
     updatePassword,
   };

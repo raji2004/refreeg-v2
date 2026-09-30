@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef } from "react";
-import { useInView, type MarginType } from "framer-motion";
+import { useInView } from "framer-motion";
+
+type MarginType = NonNullable<Parameters<typeof useInView>[1]>["margin"];
 
 export function useAnimateInView(options?: {
   once?: boolean;

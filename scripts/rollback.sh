@@ -30,7 +30,10 @@ ln -sfn "${RELEASES_DIR}/${PREVIOUS_ID}" "${APP_DIR}/current_tmp"
 mv -Tf "${APP_DIR}/current_tmp" "$CURRENT_LINK"
 echo "current -> releases/${PREVIOUS_ID}"
 
-pm2 delete frontend api 2>/dev/null || true
+# One process now ("refreeg" — see ecosystem.config.js); "frontend"/"api"
+# only matter for a rollback landing on a pre-collapse release, harmless
+# no-op otherwise.
+pm2 delete frontend api refreeg 2>/dev/null || true
 pm2 start "${CURRENT_LINK}/ecosystem.config.js" --update-env
 pm2 save --force
 

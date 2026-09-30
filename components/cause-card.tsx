@@ -12,11 +12,13 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { DonateButton } from "@/components/donate-button";
-import { H4, P } from "./typograpy";
+import { Button } from "@/components/ui/button";
+import { H4, P } from "./typography";
 import AnimatedCard from "./home/components/AnimatedCard";
-import { MapPin, Clock } from "lucide-react";
+import { MapPin, Clock, Bookmark, HandHeart } from "lucide-react";
 import type { Cause } from "@/types";
 import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
+import { cn } from "@/lib/utils";
 
 import { calculateDaysLeft, isCauseExpired } from "@/utils/cause/cause-utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
@@ -25,9 +27,20 @@ import { causePublicPath } from "@/lib/causes/slug";
 interface CauseCardProps {
   cause: Cause;
   action?: string | null;
+  bookmarked?: boolean;
+  onToggleBookmark?: () => void;
+  onGiveClick?: () => void;
+  onPledgeClick?: () => void;
 }
 
-export function CauseCard({ cause, action }: CauseCardProps) {
+export function CauseCard({
+  cause,
+  action,
+  bookmarked,
+  onToggleBookmark,
+  onGiveClick,
+  onPledgeClick,
+}: CauseCardProps) {
   const percentFunded = cause.goal
     ? Math.min(Math.round((cause.raised / cause.goal) * 100), 100)
     : 0;
@@ -42,7 +55,6 @@ export function CauseCard({ cause, action }: CauseCardProps) {
     <Link href={causePublicPath(cause)} className="group block h-full">
       <AnimatedCard>
         <Card className="overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-2xl shadow-md h-full flex flex-col border border-gray-200/80 bg-white">
-          {/* Image Section */}
           <div className="aspect-video w-full overflow-hidden relative">
             <Image
               src={getMediaUrl(cause.image) || "/placeholder.svg"}
@@ -52,7 +64,6 @@ export function CauseCard({ cause, action }: CauseCardProps) {
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               unoptimized={isProxyMediaUrl(getMediaUrl(cause.image))}
             />
-            {/* Category Badge Overlay */}
             <div className="absolute top-3 left-3">
               <Badge
                 variant="secondary"
@@ -62,8 +73,17 @@ export function CauseCard({ cause, action }: CauseCardProps) {
                 <span>{catConfig.name}</span>
               </Badge>
             </div>
-            {/* Days Left / Expired Overlay */}
-            {isExpired ? (
+            {cause.paused ? (
+              <div className="absolute top-3 right-3">
+                <Badge
+                  variant="outline"
+                  className="bg-gold/90 backdrop-blur-sm text-ink border-gold/50 text-xs font-medium px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1"
+                >
+                  <Clock className="h-3 w-3" />
+                  Paused
+                </Badge>
+              </div>
+            ) : isExpired ? (
               <div className="absolute top-3 right-3">
                 <Badge
                   variant="outline"
@@ -88,16 +108,37 @@ export function CauseCard({ cause, action }: CauseCardProps) {
                 </Badge>
               </div>
             ) : null}
+            {onToggleBookmark && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleBookmark();
+                }}
+                aria-pressed={bookmarked}
+                aria-label={bookmarked ? "Remove bookmark" : "Save"}
+                className={cn(
+                  "absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm shadow-sm transition-colors",
+                  bookmarked
+                    ? "bg-ink text-ink-foreground"
+                    : "bg-white/90 text-slate-700 hover:bg-white",
+                )}
+              >
+                <Bookmark
+                  className="h-4 w-4"
+                  fill={bookmarked ? "currentColor" : "none"}
+                />
+              </button>
+            )}
           </div>
 
-          {/* Content */}
           <CardHeader className="flex flex-col flex-1 p-4 pb-2">
             <CardTitle className="space-y-1.5">
               <H4 className="line-clamp-2 leading-snug group-hover:text-blue-900 transition-colors duration-200">
                 {cause.title}
               </H4>
               <div className="flex items-center gap-2">
-                {/* Creator avatar + name */}
                 {cause.profiles?.profile_photo ? (
                   <Image
                     src={getMediaUrl(cause.profiles.profile_photo)}
@@ -120,14 +161,12 @@ export function CauseCard({ cause, action }: CauseCardProps) {
               </div>
             </CardTitle>
 
-            {/* Summary snippet */}
             {cause.summary && (
               <P className="text-xs text-muted-foreground line-clamp-2 mt-2 leading-relaxed">
                 {cause.summary}
               </P>
             )}
 
-            {/* Location */}
             {cause.location && (
               <div className="flex items-center gap-1 mt-1.5">
                 <MapPin className="h-3 w-3 text-muted-foreground" />
@@ -138,7 +177,6 @@ export function CauseCard({ cause, action }: CauseCardProps) {
             )}
           </CardHeader>
 
-          {/* Progress + Footer */}
           <div className="mt-auto w-full">
             <CardContent className="px-4 pb-2">
               <div className="flex justify-between items-center text-xs text-muted-foreground mb-1.5">
@@ -160,7 +198,44 @@ export function CauseCard({ cause, action }: CauseCardProps) {
                     of ₦{cause.goal?.toLocaleString()} goal
                   </P>
                 </span>
-                <DonateButton type="cause" id={cause.id} disableLink />
+                {cause.paused ? (
+                  <Button size="sm" variant="outline" disabled>
+                    Paused
+                  </Button>
+                ) : onGiveClick || onPledgeClick ? (
+                  <div className="flex items-center gap-1.5">
+                    {onPledgeClick && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onPledgeClick();
+                        }}
+                      >
+                        <HandHeart className="h-3.5 w-3.5" />
+                        Pledge
+                      </Button>
+                    )}
+                    {onGiveClick && (
+                      <Button
+                        size="sm"
+                        variant="ink"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onGiveClick();
+                        }}
+                      >
+                        Give now
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <DonateButton type="cause" id={cause.id} disableLink />
+                )}
               </div>
             </CardFooter>
           </div>

@@ -87,18 +87,19 @@ export async function POST(request: Request) {
           );
         }
 
-        const result = await processSuccessfulCharge(reference);
-
-        if (!result.ok) {
-          return new NextResponse(
-            JSON.stringify({ message: `Skipped: ${result.reason}` }),
-            { status: 200 },
-          );
-        }
+        Promise.resolve().then(async () => {
+          try {
+            await processSuccessfulCharge(reference);
+          } catch (bgError) {
+            console.error("[Paystack Webhook Background] Failed:", bgError);
+          }
+        });
 
         return new NextResponse(
-          JSON.stringify({ message: "Donation processed successfully" }),
-          { status: 201 },
+          JSON.stringify({
+            message: "Donation received, processing in background",
+          }),
+          { status: 200 },
         );
       }
 
@@ -111,19 +112,28 @@ export async function POST(request: Request) {
           );
         }
 
-        await createSubscription({
-          user_id: metadata.user_id || undefined,
-          cause_id: String(metadata.cause_id),
-          paystack_subscription_code: data.subscription_code!,
-          paystack_email_token: data.email_token,
-          amount: Number(metadata.amount),
-          interval: data.plan?.interval || "monthly",
-          status: "active",
+        Promise.resolve().then(async () => {
+          try {
+            await createSubscription({
+              user_id: metadata.user_id || undefined,
+              cause_id: String(metadata.cause_id),
+              paystack_subscription_code: data.subscription_code!,
+              paystack_email_token: data.email_token,
+              amount: Number(metadata.amount),
+              interval: data.plan?.interval || "monthly",
+              status: "active",
+            });
+          } catch (bgError) {
+            console.error(
+              "[Paystack Webhook Background] Subscription failed:",
+              bgError,
+            );
+          }
         });
 
         return new NextResponse(
-          JSON.stringify({ message: "Subscription created successfully" }),
-          { status: 201 },
+          JSON.stringify({ message: "Subscription received" }),
+          { status: 200 },
         );
       }
 

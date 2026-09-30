@@ -30,6 +30,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: e.message }, { status: 403 });
     }
 
+    // Extract referral code from payload or ref_v1 cookie
+    const cookieRef = request.cookies?.get("ref_v1")?.value;
+    if (!data.referrer_code && cookieRef) {
+      data.referrer_code = cookieRef;
+    }
+
     // Force recalculate fees on the server to prevent spoofing
     // and correctly apply Flutterwave vs Paystack logic
     data.serviceFee = calculateServiceFee(Number(data.amount));
@@ -129,7 +135,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure Flutterwave gets its specific subaccount ID, not the Paystack one
-    if (data.paymentProvider === "flutterwave" && data._flutterwaveSubAccountId) {
+    if (
+      data.paymentProvider === "flutterwave" &&
+      data._flutterwaveSubAccountId
+    ) {
       data.subaccounts = [
         {
           subaccount: data._flutterwaveSubAccountId,

@@ -25,6 +25,30 @@ function getErrorMessage(error: unknown) {
   return "An unexpected error occurred.";
 }
 
+const CHUNK_RELOAD_KEY = "refreeg:chunk-reload-attempted";
+
+function isChunkLoadError(error: unknown): boolean {
+  const message = getErrorMessage(error);
+  return (
+    (error instanceof Error && error.name === "ChunkLoadError") ||
+    /Loading chunk [\d]+ failed/i.test(message) ||
+    /Failed to fetch dynamically imported module/i.test(message) ||
+    /Importing a module script failed/i.test(message)
+  );
+}
+
+function reloadOnceForStaleChunk(error: unknown): boolean {
+  if (!isChunkLoadError(error)) return false;
+  try {
+    if (sessionStorage.getItem(CHUNK_RELOAD_KEY)) return false;
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
+  } catch {
+    return false;
+  }
+  window.location.reload();
+  return true;
+}
+
 export class GlobalSupportBoundary extends React.Component<Props, State> {
   state: State = {
     hasError: false,
@@ -39,12 +63,13 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
   }
 
   private handleWindowError = (event: ErrorEvent) => {
+    if (reloadOnceForStaleChunk(event.error || event.message)) return;
     const message = getErrorMessage(event.error || event.message);
     reportClientError(event.error || event.message, { type: "window" });
     console.error(`[Window Error] ${message}`, {
       url: window.location.href,
       timestamp: new Date().toISOString(),
-      error: event.error
+      error: event.error,
     });
     this.setState({
       hasError: true,
@@ -53,12 +78,13 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
   };
 
   private handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+    if (reloadOnceForStaleChunk(event.reason)) return;
     const message = getErrorMessage(event.reason);
     reportClientError(event.reason, { type: "unhandled-rejection" });
     console.error(`[Unhandled Rejection] ${message}`, {
       url: window.location.href,
       timestamp: new Date().toISOString(),
-      reason: event.reason
+      reason: event.reason,
     });
     this.setState({
       hasError: true,
@@ -67,6 +93,7 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
   };
 
   componentDidCatch(error: unknown, errorInfo: React.ErrorInfo) {
+    if (reloadOnceForStaleChunk(error)) return;
     reportClientError(error, {
       type: "react",
       componentStack: errorInfo.componentStack,
@@ -75,11 +102,20 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
       url: window.location.href,
       timestamp: new Date().toISOString(),
       componentStack: errorInfo.componentStack,
-      error
+      error,
     });
   }
 
   componentDidMount() {
+    // A healthy mount means the reload (if one just happened) worked —
+    // clear the guard so a later deploy this same session can also
+    // trigger one, instead of the flag blocking it for the rest of the tab's
+    // lifetime.
+    try {
+      sessionStorage.removeItem(CHUNK_RELOAD_KEY);
+    } catch {
+      // ignore — same best-effort as the guard's own sessionStorage use
+    }
     window.addEventListener("error", this.handleWindowError);
     window.addEventListener(
       "unhandledrejection",

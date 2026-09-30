@@ -14,13 +14,14 @@ export default async function WebhooksPage() {
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Webhooks</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Configure HTTP endpoints to receive real-time notifications from RefreeG.
+          Configure HTTP endpoints to receive real-time notifications from
+          RefreeG.
         </p>
       </div>
 
       <div className="grid gap-10 lg:grid-cols-1">
         <WebhookManager initialWebhooks={webhooks} />
-        
+
         <div className="border-t pt-10">
           <WebhookLogViewer />
         </div>

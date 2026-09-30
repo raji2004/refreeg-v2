@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createPetition, updatePetition } from "@/actions/petition-actions";
 import type { PetitionFormData } from "@/types";
 import { toast } from "@/components/ui/use-toast";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 
 export function usePetition() {
   const router = useRouter();
@@ -64,7 +64,7 @@ export function usePetition() {
 
   const createUserPetition = async (
     userId: string,
-    petitionData: PetitionFormData
+    petitionData: PetitionFormData,
   ) => {
     return createMutation.mutateAsync({ userId, petitionData });
   };
@@ -72,7 +72,7 @@ export function usePetition() {
   const updateUserPetition = async (
     petitionId: string,
     userId: string,
-    petitionData: Partial<PetitionFormData>
+    petitionData: Partial<PetitionFormData>,
   ) => {
     return updateMutation.mutateAsync({ petitionId, userId, petitionData });
   };

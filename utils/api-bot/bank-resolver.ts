@@ -43,7 +43,7 @@ export async function resolveBankDetails(
     bankDetails.bank_account_name = bankAcc.bank_account_name;
     bankDetails.sub_account_code = bankAcc.sub_account_code;
   } else if (data.bank_account_number && data.bank_code && data.bank_account_name) {
-    // Create sub-account for direct details
+    
     try {
       const subAccount = await Paystack.createSubaccount({
         business_name: data.title || "RefreeG Campaign",
@@ -53,7 +53,7 @@ export async function resolveBankDetails(
       });
       bankDetails.sub_account_code = subAccount.subaccount_code;
 
-      // Auto-save this as a bank profile for the developer
+      
       let newBank;
       try {
         newBank = await prisma.api_bank_accounts.create({

@@ -37,7 +37,7 @@ export async function createSubscription(data: CreateSubscriptionData) {
 
 export async function updateSubscriptionStatus(
   subscriptionCode: string,
-  status: string
+  status: string,
 ) {
   try {
     await prisma.subscriptions.updateMany({

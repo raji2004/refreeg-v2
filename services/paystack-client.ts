@@ -1,5 +1,5 @@
-// Client-side Paystack service for frontend operations
-// This uses the PUBLIC key and should only be used in client components
+
+
 
 interface PaystackConfig {
   key: string;

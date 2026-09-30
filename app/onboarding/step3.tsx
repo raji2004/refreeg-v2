@@ -65,19 +65,17 @@ export default function Step3({
     boolean | null
   >(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-  // Load saved data on mount and extract OAuth data
+
   useEffect(() => {
     const savedData =
       onboardingData.profile && Object.keys(onboardingData.profile).length > 0
         ? onboardingData.profile
         : {};
 
-    // Extract OAuth data from NextAuth session
     const oauthFirstName = user?.name?.split(" ")[0] || "";
     const oauthLastName = user?.name?.split(" ").slice(1).join(" ") || "";
-    const oauthPhone = user?.phone || ""; // NextAuth might not have phone unless we add it
+    const oauthPhone = user?.phone || "";
 
-    // Pre-fill username with a smart suggestion if empty
     const existingUsername = savedData.username || "";
     const usernameFill =
       existingUsername || suggestUsername(user?.email, user?.name);
@@ -92,14 +90,11 @@ export default function Step3({
       email: savedData.email || user?.email || prev.email,
     }));
 
-    // Set profile photo URL prioritizing saved data, then NextAuth image
     setProfilePhotoUrl(savedData.profilePhoto || user?.image || null);
 
-    // Load consent data
     setIsConsentChecked(onboardingData.consent || false);
   }, [onboardingData.profile, onboardingData.consent, user]);
 
-  // Check username availability
   useEffect(() => {
     const checkUsername = async () => {
       if (formData.username.length < 3) {
@@ -114,13 +109,11 @@ export default function Step3({
           user?.id,
         );
 
-        // If the username equals their current username (if they already had one), it's available for them
-        // (NextAuth user objects in onboarding might not have a username assigned yet, but just in case)
         if (isAvailable) {
-          setIsUsernameAvailable(true); // Username is available
+          setIsUsernameAvailable(true);
           setErrors((prev) => ({ ...prev, username: "" }));
         } else {
-          setIsUsernameAvailable(false); // Username is taken
+          setIsUsernameAvailable(false);
           setErrors((prev) => ({
             ...prev,
             username: "Username is already taken",
@@ -141,13 +134,11 @@ export default function Step3({
     const newFormData = { ...formData, [field]: value };
     setFormData(newFormData);
 
-    // Update onboarding data immediately
     updateOnboardingData("profile", {
       ...onboardingData.profile,
       ...newFormData,
     });
 
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -157,7 +148,6 @@ export default function Step3({
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        // 5MB limit
         setErrors((prev) => ({
           ...prev,
           profilePhoto: "File size must be less than 5MB",
@@ -174,7 +164,6 @@ export default function Step3({
       }
 
       try {
-        // Compress the image before storing it
         const { compressImage } = await import("@/utils/image-compression");
         const compressedFile = await compressImage(file, 800, 0.8);
         setProfilePhoto(compressedFile);
@@ -183,7 +172,6 @@ export default function Step3({
         setProfilePhotoUrl(photoUrl);
         setErrors((prev) => ({ ...prev, profilePhoto: "" }));
 
-        // Update onboarding data with photo info
         updateOnboardingData("profile", {
           ...onboardingData.profile,
           ...formData,
@@ -252,20 +240,17 @@ export default function Step3({
 
   const handleSubmit = () => {
     if (!validateForm()) {
-      // Scroll to the error summary at the top of the form
       document
         .getElementById("error-summary")
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
-    // Save form data to onboarding data
     updateOnboardingData("profile", {
       ...onboardingData.profile,
       ...formData,
     });
 
-    // Call the parent's submit handler
     onNext({
       ...formData,
       profilePhoto,
@@ -282,9 +267,7 @@ export default function Step3({
     >
       <div
         className={`grid w-full grid-cols-1 items-center ${
-          isOrg
-            ? "max-w-3xl"
-            : "max-w-6xl gap-12 md:grid-cols-2"
+          isOrg ? "max-w-3xl" : "max-w-6xl gap-12 md:grid-cols-2"
         }`}
       >
         {/* Left Section: Form */}
@@ -307,7 +290,8 @@ export default function Step3({
 
           {isOrg && (
             <div className="mb-7 border-l-2 border-blue-700 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-              The workspace owner can manage organisation settings, invite team members, and access verification and payout controls.
+              The workspace owner can manage organisation settings, invite team
+              members, and access verification and payout controls.
             </div>
           )}
 

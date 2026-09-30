@@ -1,5 +1,4 @@
 "use server";
-import "server-only";
 
 import nodemailer from "nodemailer";
 import fs from "fs";
@@ -51,17 +50,25 @@ export async function sendMail({
     const template = loadTemplate(templateName);
     const html = template(context);
 
-    const info = await transporter.sendMail({
-      from,
-      to,
-      cc,
-      bcc,
-      subject,
-      html,
-    });
+    // Enforce a strict 10-second timeout to prevent hanging the main thread
+    const info = (await Promise.race([
+      transporter.sendMail({
+        from,
+        to,
+        cc,
+        bcc,
+        subject,
+        html,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("SMTP Timeout")), 10000),
+      ),
+    ])) as any;
 
     return { success: true, messageId: info.messageId };
   } catch (error) {
+    // Log it, but DO NOT throw. The user flow must continue.
+    console.error("[MailService] Failed to send email:", error);
     return { success: false, error };
   }
 }
@@ -113,6 +120,25 @@ export async function sendPasswordResetEmail(context: {
     context: {
       resetUrl: context.resetUrl,
       currentYear,
+    },
+  });
+}
+
+export async function sendEmailChangeConfirmEmail(context: {
+  email: string;
+  userName: string;
+  newEmail: string;
+  confirmUrl: string;
+}) {
+  return sendMail({
+    to: context.email,
+    subject: "Confirm your new RefreeG email",
+    templateName: "email-change-confirm",
+    context: {
+      userName: context.userName,
+      newEmail: context.newEmail,
+      confirmUrl: context.confirmUrl,
+      currentYear: new Date().getFullYear(),
     },
   });
 }
@@ -459,9 +485,9 @@ export async function sendLoginNotificationEmail(context: {
 
   const currentYear = new Date().getFullYear();
 
-  // Resolve IP server-side from the request headers instead of
-  // relying on a client-side fetch to api.ipify.org.
-  // This is faster and more secure for production.
+  
+  
+  
   let ipAddress = "Unknown IP";
   try {
     const headersList = await headers();
@@ -470,7 +496,7 @@ export async function sendLoginNotificationEmail(context: {
 
     let detectedIp = (xff?.split(",")[0] || xri || "Unknown IP").trim();
 
-    // Label localhost clearly for local development
+    
     if (detectedIp === "::1" || detectedIp === "127.0.0.1") {
       detectedIp = `${detectedIp} (Localhost)`;
     }
@@ -1105,6 +1131,46 @@ export async function sendProofUpdateRejectedEmail(params: {
         params.rejectionReason ||
         "The update didn't clearly show how the funds were used.",
       dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/dashboard/causes`,
+      currentYear,
+    },
+  });
+}
+
+/**
+ * "recovered image only" causes (see prisma/schema/cause.prisma
+ * `reconstruction_note`) never got a real title back — don't print that
+ * placeholder string to the campaign owner as if it were their title.
+ */
+function isPlaceholderCauseTitle(title: string): boolean {
+  return /^untitled campaign\b/i.test(title.trim());
+}
+
+export async function sendCauseRecoveredEmail(params: {
+  to: string;
+  userName?: string;
+  causeTitle: string;
+  causeImage?: string | null;
+  causeRaised: number;
+  causeGoal: number;
+}) {
+  if (!params.to) return;
+  const currentYear = new Date().getFullYear();
+  const titleIsPlaceholder = isPlaceholderCauseTitle(params.causeTitle);
+  return sendMail({
+    to: params.to,
+    subject: "Important: your RefreeG campaign",
+    templateName: "cause-recovered",
+    context: {
+      userName: params.userName || "there",
+      recipientEmail: params.to,
+      causeTitle: titleIsPlaceholder
+        ? "A campaign linked to this account"
+        : params.causeTitle,
+      titleIsPlaceholder,
+      causeImage: params.causeImage || "",
+      causeRaised: params.causeRaised.toLocaleString(),
+      causeGoal: params.causeGoal.toLocaleString(),
+      signInUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/auth/signin`,
       currentYear,
     },
   });

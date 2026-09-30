@@ -11,6 +11,7 @@ jest.mock("@/lib/prisma", () => ({
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+    donation: { count: jest.fn() },
   },
 }));
 
@@ -29,13 +30,12 @@ import {
   isProfileComplete,
   hasCompletedOnboarding,
   getCurrentOnboardingStep,
-  getSolanaWallet,
-  updateSolanaWallet,
 } from "@/actions/profile-actions";
 
 const mockPrisma = prisma as unknown as {
   user: { findUnique: jest.Mock; update: jest.Mock };
   kyc_verifications: { findFirst: jest.Mock; update: jest.Mock };
+  donation: { count: jest.Mock };
 };
 
 const baseUser = {
@@ -82,6 +82,22 @@ describe("profile-actions", () => {
         email: "user@test.com",
         full_name: "Test User",
         username: "testuser",
+      });
+    });
+
+    it("counts donations with an indexed per-user query, not a _count include", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(baseUser);
+      mockPrisma.donation.count.mockResolvedValue(4);
+
+      const result = await getProfile("user-1");
+
+      expect(result?.causes_count).toBe(4);
+      expect(mockPrisma.donation.count).toHaveBeenCalledWith({
+        where: { userId: "user-1" },
+      });
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: "user-1" },
+        omit: { password: true },
       });
     });
 
@@ -280,29 +296,6 @@ describe("profile-actions", () => {
       const result = await getCurrentOnboardingStep("user-1");
 
       expect(result).toBe(4);
-    });
-  });
-
-  describe("getSolanaWallet / updateSolanaWallet", () => {
-    it("returns solana wallet from profile", async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({
-        solana_wallet: "sol-wallet-123",
-      });
-
-      const result = await getSolanaWallet("user-1");
-
-      expect(result).toBe("sol-wallet-123");
-    });
-
-    it("updates solana wallet and revalidates settings", async () => {
-      mockPrisma.user.update.mockResolvedValue({
-        solana_wallet: "new-sol-wallet",
-      });
-
-      const result = await updateSolanaWallet("user-1", "new-sol-wallet");
-
-      expect(result).toBe("new-sol-wallet");
-      expect(revalidatePath).toHaveBeenCalledWith("/dashboard/settings");
     });
   });
 });

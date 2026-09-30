@@ -139,26 +139,38 @@ export function OrganizationDashboard({
                 {workspace.name}
               </h1>
               <p className="mt-1 text-sm text-slate-500">
-                {[workspace.industry, workspace.address].filter(Boolean).join(" · ") ||
-                  "Manage your organisation activity and team."}
+                {[workspace.industry, workspace.address]
+                  .filter(Boolean)
+                  .join(" · ") || "Manage your organisation activity and team."}
               </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button asChild variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-950">
+            <Button
+              asChild
+              variant="outline"
+              className="border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-950"
+            >
               <Link href={personalProfileHref}>
                 <UserRound className="mr-2 h-4 w-4" />
                 My profile
               </Link>
             </Button>
-            <Button asChild variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-950">
+            <Button
+              asChild
+              variant="outline"
+              className="border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-950"
+            >
               <Link href={publicProfileHref}>
                 <ExternalLink className="mr-2 h-4 w-4" />
                 Organisation profile
               </Link>
             </Button>
-            <Button asChild className="bg-blue-700 text-white hover:bg-blue-800">
+            <Button
+              asChild
+              className="bg-blue-700 text-white hover:bg-blue-800"
+            >
               <Link href="/dashboard/settings/organization">
                 <Settings className="mr-2 h-4 w-4" />
                 Organisation settings
@@ -174,7 +186,9 @@ export function OrganizationDashboard({
               <div
                 key={metric.label}
                 className={`p-5 ${
-                  index > 0 ? "border-t border-slate-200 sm:border-l sm:border-t-0" : ""
+                  index > 0
+                    ? "border-t border-slate-200 sm:border-l sm:border-t-0"
+                    : ""
                 } ${index === 2 ? "sm:border-l-0 xl:border-l" : ""}`}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -183,7 +197,9 @@ export function OrganizationDashboard({
                   </p>
                   <Icon className="h-4 w-4 text-blue-700" />
                 </div>
-                <p className="mt-3 text-2xl font-semibold text-slate-950">{metric.value}</p>
+                <p className="mt-3 text-2xl font-semibold text-slate-950">
+                  {metric.value}
+                </p>
                 <p className="mt-1 text-xs text-slate-500">{metric.detail}</p>
               </div>
             );
@@ -196,7 +212,9 @@ export function OrganizationDashboard({
           <div className="flex items-start gap-3">
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
             <div>
-              <h2 className="text-sm font-semibold text-slate-950">Workspace status</h2>
+              <h2 className="text-sm font-semibold text-slate-950">
+                Workspace status
+              </h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
                 {profile?.is_verified
                   ? "The workspace owner is verified. Your organisation can access protected fundraising and payout features."
@@ -206,7 +224,11 @@ export function OrganizationDashboard({
           </div>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button asChild variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-950">
+          <Button
+            asChild
+            variant="outline"
+            className="border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-950"
+          >
             <Link href="/dashboard/settings/organization">
               <UsersRound className="mr-2 h-4 w-4" />
               Manage team
@@ -233,10 +255,16 @@ export function OrganizationDashboard({
 
         <Tabs defaultValue="campaigns" className="mt-5 space-y-5">
           <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl bg-slate-100 p-1 sm:max-w-sm">
-            <TabsTrigger value="campaigns" className="rounded-lg py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <TabsTrigger
+              value="campaigns"
+              className="rounded-lg py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
               Campaigns
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="rounded-lg py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <TabsTrigger
+              value="analytics"
+              className="rounded-lg py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
               Analytics
             </TabsTrigger>
           </TabsList>

@@ -15,7 +15,6 @@ import {
   Shield,
   UserCog,
   ClipboardCheckIcon,
-  Wallet,
   Share2,
   Flag,
   Activity,
@@ -23,7 +22,7 @@ import {
   Sparkles,
   Building2,
   CircleUserRound,
-  ShieldCheck
+  ShieldCheck,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useAuth } from "@/hooks/use-auth";
@@ -54,13 +53,8 @@ const userNavItems = [
     icon: Users,
   },
   {
-    title: "Crypto Wallet",
-    href: "/dashboard/crypto",
-    icon: Wallet,
-  },
-  {
     title: "Settings",
-    href: "/dashboard/settings",
+    href: "/dashboard/settings/profile",
     icon: Settings,
   },
   {

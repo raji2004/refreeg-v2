@@ -15,39 +15,52 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log("Didit webhook received:", body);
 
-    // Make extraction robust for Didit V3 payloads which might use camelCase or different keys
-    const sessionId = body.session_id || body.id || body.session || (body.data && body.data.id) || (body.data && body.data.session_id);
-    const status = body.status || (body.data && body.data.status); // e.g. "Approved" or "Declined"
+    const sessionId =
+      body.session_id ||
+      body.id ||
+      body.session ||
+      (body.data && body.data.id) ||
+      (body.data && body.data.session_id);
+    const status = body.status || (body.data && body.data.status);
 
-    const vendorData = body.vendor_data || body.vendorData || (body.data && body.data.vendor_data) || (body.data && body.data.vendorData); // This is the user.id we sent!
+    const vendorData =
+      body.vendor_data ||
+      body.vendorData ||
+      (body.data && body.data.vendor_data) ||
+      (body.data && body.data.vendorData);
 
     if (!sessionId) {
       console.error("[Didit Webhook] Missing session_id in payload:", body);
-      return NextResponse.json({ error: "Missing session_id" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing session_id" },
+        { status: 400 },
+      );
     }
 
-    // Find the pending KYC verification. We prefer finding by vendorData (user.id) 
-    // to handle cases where they completed an older session after clicking the button twice.
     let kyc = null;
     if (vendorData) {
       kyc = await prisma.kyc_verifications.findFirst({
-        where: { user_id: vendorData, document_type: "didit", status: "pending" },
-        orderBy: { created_at: "desc" }
+        where: {
+          user_id: vendorData,
+          document_type: "didit",
+          status: "pending",
+        },
+        orderBy: { created_at: "desc" },
       });
     }
 
-    // Fallback to session ID if vendor_data wasn't passed back
     if (!kyc) {
       kyc = await prisma.kyc_verifications.findFirst({
-        where: { document_url: sessionId, document_type: "didit" }
+        where: { document_url: sessionId, document_type: "didit" },
       });
     }
 
     let isNewRecord = false;
     if (!kyc) {
-      // If no record exists (because they just started the session and we didn't save it), create it now.
       if (vendorData) {
-        const user = await prisma.user.findUnique({ where: { id: vendorData } });
+        const user = await prisma.user.findUnique({
+          where: { id: vendorData },
+        });
         if (user) {
           isNewRecord = true;
           kyc = await prisma.kyc_verifications.create({
@@ -56,20 +69,31 @@ export async function POST(request: Request) {
               document_type: "didit",
               document_url: sessionId,
               status: "pending",
-              verification_notes: "Automated verification processed via Didit webhook",
-              full_name: (user as any).full_name || (user as any).fullName || "Didit User",
-            }
+              verification_notes:
+                "Automated verification processed via Didit webhook",
+              full_name:
+                (user as any).full_name ||
+                (user as any).fullName ||
+                "Didit User",
+            },
           });
         }
       }
 
       if (!kyc) {
-        return NextResponse.json({ error: "KYC record not found and could not be created" }, { status: 404 });
+        return NextResponse.json(
+          { error: "KYC record not found and could not be created" },
+          { status: 404 },
+        );
       }
     }
 
-    if (kyc.status !== "pending" && kyc.status !== "resubmitted" && !isNewRecord) {
-       return NextResponse.json({ message: "Already processed" });
+    if (
+      kyc.status !== "pending" &&
+      kyc.status !== "resubmitted" &&
+      !isNewRecord
+    ) {
+      return NextResponse.json({ message: "Already processed" });
     }
 
     const lowerStatus = status?.toLowerCase() || "";
@@ -77,18 +101,26 @@ export async function POST(request: Request) {
     const isRejected = lowerStatus === "declined" || lowerStatus === "rejected";
     const isResubmitted = lowerStatus === "resubmitted";
     const isExpired = lowerStatus === "expired" || lowerStatus === "abandoned";
-    
-    // Clear Expired Links: If the session has expired or was abandoned, delete the pending record
+
     if (isExpired && kyc.status === "pending") {
-      console.log(`[Didit] Deleting expired/abandoned session for user ${kyc.user_id}`);
+      console.log(
+        `[Didit] Deleting expired/abandoned session for user ${kyc.user_id}`,
+      );
       await prisma.kyc_verifications.delete({
-        where: { id: kyc.id }
+        where: { id: kyc.id },
       });
-      return NextResponse.json({ success: true, message: "Expired session cleared" });
+      return NextResponse.json({
+        success: true,
+        message: "Expired session cleared",
+      });
     }
 
     // Extract rejection reason if available
-    const rejectionReason = body.decision_reason || body.reason || body.message || "Your document or selfie did not meet our verification requirements.";
+    const rejectionReason =
+      body.decision_reason ||
+      body.reason ||
+      body.message ||
+      "Your document or selfie did not meet our verification requirements.";
 
     // Default to pending if it's "in progress", "in review", etc.
     let newStatus = "pending";
@@ -97,20 +129,30 @@ export async function POST(request: Request) {
     if (isResubmitted) newStatus = "resubmitted";
 
     // Only consider it manual review if status explicitly mentions review or pending
-    const requiresManualReview = lowerStatus.includes("review") || lowerStatus === "pending";
+    const requiresManualReview =
+      lowerStatus.includes("review") || lowerStatus === "pending";
 
     // Extract additional KYC data if Didit provides it in the body or inside a nested data object
     const webhookData = body.data || body;
-    const dob = webhookData.date_of_birth || webhookData.dob || body.date_of_birth || body.dob;
+    const dob =
+      webhookData.date_of_birth ||
+      webhookData.dob ||
+      body.date_of_birth ||
+      body.dob;
     const address = webhookData.address || body.address;
     const city = webhookData.city || body.city;
-    const state = webhookData.state || webhookData.region || body.state || body.region;
+    const state =
+      webhookData.state || webhookData.region || body.state || body.region;
     const country = webhookData.country || body.country;
-    const postal = webhookData.postal_code || webhookData.zip || body.postal_code || body.zip;
+    const postal =
+      webhookData.postal_code ||
+      webhookData.zip ||
+      body.postal_code ||
+      body.zip;
     const phone = webhookData.phone || body.phone;
     const firstName = webhookData.first_name || body.first_name;
     const lastName = webhookData.last_name || body.last_name;
-    
+
     let fullName = kyc.full_name;
     if (firstName && lastName) {
       fullName = `${firstName} ${lastName}`;
@@ -123,7 +165,7 @@ export async function POST(request: Request) {
       where: { id: kyc.id },
       data: {
         status: newStatus,
-        verification_notes: `Automated Didit result: ${status}${isRejected || isResubmitted ? ` - ${rejectionReason}` : ''}`,
+        verification_notes: `Automated Didit result: ${status}${isRejected || isResubmitted ? ` - ${rejectionReason}` : ""}`,
         ...(fullName && fullName !== "Didit User" && { full_name: fullName }),
         ...(dob && { dob }),
         ...(address && { address }),
@@ -132,20 +174,21 @@ export async function POST(request: Request) {
         ...(country && { country }),
         ...(postal && { postal }),
         ...(phone && { phone }),
-      }
+      },
     });
 
-    // Update user record
     await prisma.user.update({
       where: { id: kyc.user_id },
-      data: { isVerified: isApproved }
+      data: { isVerified: isApproved },
     });
 
-    // Send Emails
-    const userProfile = await prisma.user.findUnique({ where: { id: kyc.user_id }, select: { email: true } });
+    const userProfile = await prisma.user.findUnique({
+      where: { id: kyc.user_id },
+      select: { email: true },
+    });
     if (userProfile?.email) {
       const userName = kyc.full_name || "User";
-      
+
       try {
         if (isApproved) {
           await sendKycApprovedEmail(userProfile.email, userName);
@@ -155,21 +198,31 @@ export async function POST(request: Request) {
             console.error("Referral reward error:", err);
           }
         } else if (isRejected) {
-          await sendKycRejectedEmail(userProfile.email, userName, rejectionReason);
+          await sendKycRejectedEmail(
+            userProfile.email,
+            userName,
+            rejectionReason,
+          );
         } else if (isResubmitted) {
-          await sendKycResubmittedEmail(userProfile.email, userName, rejectionReason);
+          await sendKycResubmittedEmail(
+            userProfile.email,
+            userName,
+            rejectionReason,
+          );
         } else if (newStatus === "pending" && requiresManualReview) {
-          // Didit is explicitly in manual review
           await sendKycSubmittedEmail(userProfile.email, userName);
           await sendKycSubmissionAdminNotification(
             userProfile.email,
             userName,
             kyc.user_id,
-            "https://verification.didit.me/admin" // Or wherever admins check Didit
+            "https://verification.didit.me/admin",
           );
         }
       } catch (emailError) {
-        console.error("Failed to send KYC emails, but DB was updated:", emailError);
+        console.error(
+          "Failed to send KYC emails, but DB was updated:",
+          emailError,
+        );
       }
     }
 
@@ -184,6 +237,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Didit webhook error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }

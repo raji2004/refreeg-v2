@@ -22,10 +22,16 @@ import {
   getUserCausesWithStats,
   getUserPetitionsWithStats,
 } from "@/actions/dashboard-actions";
-import { getProfile } from "@/actions/profile-actions";
+import { getCachedProfile } from "@/lib/profile-cache";
 import { getOrganizationWorkspace } from "@/actions/organization-actions";
+import {
+  getMatchedCauses,
+  getMatchedCausesCount,
+} from "@/actions/interest-actions";
+import { getPlatformWeeklyDelivered } from "@/actions/dashboard-actions";
 import { getMediaUrl } from "@/lib/s3/media";
 import { OrganizationDashboard } from "@/components/organization-dashboard";
+import { DashboardFirstRun } from "@/components/dashboard-first-run";
 
 import { Metadata } from "next";
 
@@ -64,16 +70,23 @@ export default async function DashboardPage({
   const search = params.search?.trim() || "";
   const modeFilter = params.mode || "all";
 
-  const [stats, petitionStats, donationTrends, userCauses, userPetitions] =
-    await Promise.all([
-      getDashboardStats(user.id as string),
-      getPetitionDashboardStats(user.id as string),
-      getDonationTrends(user.id as string),
-      getUserCausesWithStats(user.id as string),
-      getUserPetitionsWithStats(user.id as string),
-    ]);
-
-  const profile = await getProfile(user.id as string);
+  const [
+    stats,
+    petitionStats,
+    donationTrends,
+    userCauses,
+    userPetitions,
+    profile,
+    weeklyDelivered,
+  ] = await Promise.all([
+    getDashboardStats(user.id as string),
+    getPetitionDashboardStats(user.id as string),
+    getDonationTrends(user.id as string),
+    getUserCausesWithStats(user.id as string),
+    getUserPetitionsWithStats(user.id as string),
+    getCachedProfile(user.id as string),
+    getPlatformWeeklyDelivered(),
+  ]);
 
   if (profile?.account_type === "organization") {
     const organizationResult = await getOrganizationWorkspace();
@@ -117,8 +130,35 @@ export default async function DashboardPage({
     amount: Number(item.amount ?? 0),
   }));
 
+  const interests = profile?.interests || [];
+  const hasBank = !!(profile?.account_number && profile?.bank_name);
+  const [matchedCauses, matchedCount] = await Promise.all([
+    getMatchedCauses(interests, 4),
+    getMatchedCausesCount(interests),
+  ]);
+  const checklist = [
+    { label: "Email confirmed", done: true },
+    {
+      label: "Add a payment method",
+      done: hasBank,
+      href: "/dashboard/settings",
+    },
+    {
+      label: "Verify your identity",
+      done: !!profile?.is_verified,
+      href: "/dashboard/settings/kyc-setup",
+    },
+  ];
+
   return (
     <div className="space-y-4 px-2 py-2 sm:space-y-6 sm:px-4 sm:py-4 lg:px-6">
+      <DashboardFirstRun
+        matchedCauses={matchedCauses}
+        matchedCount={matchedCount}
+        checklist={checklist}
+        weeklyDelivered={weeklyDelivered}
+      />
+
       <section className="overflow-hidden rounded-[24px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_30%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.10),transparent_22%),linear-gradient(135deg,#ffffff_0%,#eff6ff_45%,#f8fafc_100%)] px-4 pb-5 pt-4 shadow-[0_28px_70px_-48px_rgba(15,23,42,0.55)] sm:rounded-[32px] sm:px-8 sm:pb-8 sm:pt-5">
         <div className="grid gap-5 sm:gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)] xl:items-end">
           <div>

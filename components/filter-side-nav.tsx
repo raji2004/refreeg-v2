@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useState, useEffect } from "react";
 
 interface FilterSideNavProps {
@@ -39,13 +40,43 @@ const categoryLabels: Record<string, string> = {
 };
 
 const nigerianStates = [
-  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa",
-  "Benue", "Borno", "Cross River", "Delta", "Ebonyi", "Edo",
-  "Ekiti", "Enugu", "Federal Capital Territory (Abuja)", "Gombe",
-  "Imo", "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi",
-  "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun",
-  "Ondo", "Osun", "Oyo", "Plateau", "Rivers", "Sokoto",
-  "Taraba", "Yobe", "Zamfara",
+  "Abia",
+  "Adamawa",
+  "Akwa Ibom",
+  "Anambra",
+  "Bauchi",
+  "Bayelsa",
+  "Benue",
+  "Borno",
+  "Cross River",
+  "Delta",
+  "Ebonyi",
+  "Edo",
+  "Ekiti",
+  "Enugu",
+  "Federal Capital Territory (Abuja)",
+  "Gombe",
+  "Imo",
+  "Jigawa",
+  "Kaduna",
+  "Kano",
+  "Katsina",
+  "Kebbi",
+  "Kogi",
+  "Kwara",
+  "Lagos",
+  "Nasarawa",
+  "Niger",
+  "Ogun",
+  "Ondo",
+  "Osun",
+  "Oyo",
+  "Plateau",
+  "Rivers",
+  "Sokoto",
+  "Taraba",
+  "Yobe",
+  "Zamfara",
 ];
 
 export function FilterSideNav({ isOpen, onClose }: FilterSideNavProps) {
@@ -53,12 +84,10 @@ export function FilterSideNav({ isOpen, onClose }: FilterSideNavProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Local state for selected category (single-select to match the existing category filter)
   const [selectedCategory, setSelectedCategory] = useState<string>(
-    searchParams.get("category") || "all"
+    searchParams.get("category") || "all",
   );
 
-  // Sync local state when URL changes
   useEffect(() => {
     setSelectedCategory(searchParams.get("category") || "all");
   }, [searchParams]);
@@ -74,17 +103,14 @@ export function FilterSideNav({ isOpen, onClose }: FilterSideNavProps) {
   const handleApplyFilters = () => {
     const next = new URLSearchParams(searchParams.toString());
 
-    // Reset to page 1
     next.delete("page");
 
-    // Apply category
     if (selectedCategory && selectedCategory !== "all") {
       next.set("category", selectedCategory);
     } else {
       next.delete("category");
     }
 
-    // Remove the filter panel param
     next.delete("filter");
 
     const query = next.toString();
@@ -152,7 +178,10 @@ export function FilterSideNav({ isOpen, onClose }: FilterSideNavProps) {
                           handleCategoryToggle(cat, checked as boolean)
                         }
                       />
-                      <Label htmlFor={`cat-${cat}`} className="text-sm font-normal capitalize">
+                      <Label
+                        htmlFor={`cat-${cat}`}
+                        className="text-sm font-normal capitalize"
+                      >
                         {categoryLabels[cat] || cat}
                       </Label>
                     </div>
@@ -169,11 +198,11 @@ export function FilterSideNav({ isOpen, onClose }: FilterSideNavProps) {
                 <AccordionContent className="mt-2 space-y-2 pl-6 text-left max-h-60 overflow-y-auto">
                   {nigerianStates.map((state) => (
                     <div key={state} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`loc-${state}`}
-                        disabled
-                      />
-                      <Label htmlFor={`loc-${state}`} className="text-sm font-normal text-muted-foreground">
+                      <Checkbox id={`loc-${state}`} disabled />
+                      <Label
+                        htmlFor={`loc-${state}`}
+                        className="text-sm font-normal text-muted-foreground"
+                      >
                         {state}
                       </Label>
                     </div>
@@ -191,7 +220,11 @@ export function FilterSideNav({ isOpen, onClose }: FilterSideNavProps) {
             <Button onClick={handleApplyFilters} className="w-full">
               Apply Filters
             </Button>
-            <Button onClick={handleClearFilters} variant="outline" className="w-full">
+            <Button
+              onClick={handleClearFilters}
+              variant="outline"
+              className="w-full"
+            >
               Clear All
             </Button>
           </div>

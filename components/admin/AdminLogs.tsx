@@ -37,7 +37,7 @@ const getActionBadgeColor = (action: string) => {
     action.includes("unblock") ||
     action.includes("appoint")
   ) {
-    return "default"; // or "success" if available, but default is usually black/primary
+    return "default";
   }
   if (
     action.includes("reject") ||

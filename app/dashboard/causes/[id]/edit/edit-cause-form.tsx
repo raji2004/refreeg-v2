@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import Image from "next/image";
 import { isProxyMediaUrl } from "@/lib/s3/media";
 import { Button } from "@/components/ui/button";
@@ -170,16 +170,16 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
     image: cause.image || "",
     sections: cause.sections || [{ heading: "", description: "" }],
     startDate: new Date(),
-    endDate: cause.days_active != null 
-      ? new Date(Date.now() + cause.days_active * 24 * 60 * 60 * 1000) 
-      : undefined,
+    endDate:
+      cause.days_active != null
+        ? new Date(Date.now() + cause.days_active * 24 * 60 * 60 * 1000)
+        : undefined,
     multimedia: cause.multimedia || [],
     videoLinks: (cause as any).video_links || [],
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [videoLinkInput, setVideoLinkInput] = useState("");
   const [videoLinkError, setVideoLinkError] = useState<string | null>(null);
-
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -295,8 +295,9 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
       return;
     }
 
-    const existingVideoCount = (formData.multimedia || []).filter(isVideoFile)
-      .length;
+    const existingVideoCount = (formData.multimedia || []).filter(
+      isVideoFile,
+    ).length;
     const incomingVideos = files.filter((f) => f.type.startsWith("video/"));
     if (existingVideoCount + incomingVideos.length > MAX_VIDEOS_PER_CAUSE) {
       setErrors((prev) => ({
@@ -542,8 +543,14 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="summary" className="text-base font-semibold text-gray-700">
-                    Short Summary <span className="text-gray-400 font-normal">(optional)</span>
+                  <Label
+                    htmlFor="summary"
+                    className="text-base font-semibold text-gray-700"
+                  >
+                    Short Summary{" "}
+                    <span className="text-gray-400 font-normal">
+                      (optional)
+                    </span>
                   </Label>
                   <Input
                     id="summary"
@@ -554,7 +561,7 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                     maxLength={200}
                     className={cn(
                       "h-12 premium-input",
-                      errors.summary ? "border-red-500" : ""
+                      errors.summary ? "border-red-500" : "",
                     )}
                   />
                   {errors.summary && (
@@ -564,7 +571,10 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="location" className="text-base font-semibold text-gray-700">
+                  <Label
+                    htmlFor="location"
+                    className="text-base font-semibold text-gray-700"
+                  >
                     Location <span className="text-red-500">*</span>
                   </Label>
                   <CampaignLocationAutocomplete
@@ -582,7 +592,8 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                     className="h-12 premium-input"
                   />
                   <p className="text-xs text-slate-500">
-                    Type at least two letters, then select a place from the list.
+                    Type at least two letters, then select a place from the
+                    list.
                   </p>
                   {errors.location && (
                     <p className="text-sm text-red-500 font-medium">
@@ -778,7 +789,10 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <Label htmlFor="start-date" className="text-base font-semibold text-gray-700 block mb-2">
+                <Label
+                  htmlFor="start-date"
+                  className="text-base font-semibold text-gray-700 block mb-2"
+                >
                   Start Date
                 </Label>
                 <Popover>
@@ -805,7 +819,9 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                       mode="single"
                       selected={formData.startDate}
                       onSelect={(date) => handleDateChange(date, "startDate")}
-                      disabled={(date) => isBefore(date, startOfDay(new Date()))}
+                      disabled={(date) =>
+                        isBefore(date, startOfDay(new Date()))
+                      }
                       initialFocus
                     />
                   </PopoverContent>
@@ -818,7 +834,10 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
               </div>
 
               <div className="space-y-4">
-                <Label htmlFor="end-date" className="text-base font-semibold text-gray-700 block mb-2">
+                <Label
+                  htmlFor="end-date"
+                  className="text-base font-semibold text-gray-700 block mb-2"
+                >
                   End Date
                 </Label>
                 <Popover>
@@ -1071,7 +1090,9 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                   <MultimediaCarousel
                     media={[
                       ...(formData.multimedia?.map((item) =>
-                        typeof item === "string" ? item : URL.createObjectURL(item),
+                        typeof item === "string"
+                          ? item
+                          : URL.createObjectURL(item),
                       ) || []),
                       ...(formData.videoLinks || []),
                     ]}
@@ -1098,7 +1119,10 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
                         )}
                         {formData.category && (
                           <div className="flex items-center gap-1.5 text-sm font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-                            {categories.find((c) => c.id === formData.category)?.name}
+                            {
+                              categories.find((c) => c.id === formData.category)
+                                ?.name
+                            }
                           </div>
                         )}
                       </div>
@@ -1193,7 +1217,7 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
       <FormStepper steps={steps} currentStep={currentStep} />
 
       <main className="max-w-4xl mx-auto mt-12">
-        <form 
+        <form
           className="space-y-12"
           onKeyDown={(e) => {
             if (
@@ -1231,7 +1255,9 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
             </Button>
             <Button
               type="button"
-              onClick={currentStep === 5 ? (e: any) => handleSubmit(e) : nextStep}
+              onClick={
+                currentStep === 5 ? (e: any) => handleSubmit(e) : nextStep
+              }
               disabled={isLoading}
               className="premium-button-primary h-12 px-10 min-w-[160px]"
             >

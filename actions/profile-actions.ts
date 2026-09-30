@@ -10,7 +10,6 @@ import type {
 } from "@/types";
 import { KycStatus, KycVerification } from "@/types/kyc-types";
 
-// Helper function to map Prisma Profile to the expected Profile type
 function mapPrismaToProfile(p: any): Profile {
   return {
     id: p.id,
@@ -19,8 +18,10 @@ function mapPrismaToProfile(p: any): Profile {
     first_name: p.firstName,
     last_name: p.lastName,
     username: p.username,
+    display_name: p.displayName ?? null,
     phone: p.phone,
     location: p.location,
+    donation_preference: p.donationPreference ?? "named",
     account_number: p.accountNumber,
     bank_name: p.bankName,
     account_name: p.accountName,
@@ -28,29 +29,41 @@ function mapPrismaToProfile(p: any): Profile {
     flutterwave_sub_account_id: p.flutterwaveSubAccountId || null,
     profile_photo: p.profilePhoto,
     is_blocked: p.isBlocked ?? false,
+    referral_code: p.referralCode || null,
     created_at: p.createdAt.toISOString(),
     updated_at: p.updatedAt?.toISOString() || new Date().toISOString(),
     account_type: p.accountType as any,
     is_verified: p.isVerified ?? false,
+    total_points: p.total_points ?? 0,
+    interests: p.interests ?? [],
     gender: p.gender,
     bio: p.bio,
-    solana_wallet: p.solana_wallet,
     twitter_url: p.twitter_url,
     facebook_url: p.facebook_url,
     instagram_url: p.instagram_url,
     linkedin_url: p.linkedin_url,
+    crypto_wallets: p.crypto_wallets ?? null,
   } as Profile;
 }
 
 export async function getProfile(userId: string): Promise<Profile | null> {
   try {
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-    });
+    // A Prisma `_count` include makes Postgres GROUP BY the whole causes and
+    // donations tables on every profile read; a filtered count uses the
+    // user_id index instead.
+    const [profile, donationCount] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        omit: { password: true },
+      }),
+      prisma.donation.count({ where: { userId } }),
+    ]);
 
     if (!profile) return null;
 
-    return mapPrismaToProfile(profile);
+    const mapped = mapPrismaToProfile(profile);
+    mapped.causes_count = donationCount;
+    return mapped;
   } catch (error) {
     console.error("Error fetching profile:", error);
     throw error;
@@ -79,18 +92,37 @@ export async function updateProfile(
         fullName: profileData.name,
         email: profileData.email,
         username: profileData.username,
-        phone: profileData.phone,
+        phone: profileData.phone || null,
         bio: profileData.bio,
-        accountType: profileData.account_type,
-        profilePhoto: profileData.profile_photo,
-        twitter_url: profileData.twitter_url || null,
-        facebook_url: profileData.facebook_url || null,
-        instagram_url: profileData.instagram_url || null,
-        linkedin_url: profileData.linkedin_url || null,
+        location: profileData.location || null,
+        displayName: profileData.display_name || null,
+        donationPreference: profileData.donation_preference || "named",
+        ...(profileData.interests !== undefined
+          ? { interests: profileData.interests }
+          : {}),
+        ...(profileData.account_type !== undefined
+          ? { accountType: profileData.account_type }
+          : {}),
+        ...(profileData.profile_photo !== undefined
+          ? { profilePhoto: profileData.profile_photo }
+          : {}),
+        ...(profileData.twitter_url !== undefined
+          ? { twitter_url: profileData.twitter_url || null }
+          : {}),
+        ...(profileData.facebook_url !== undefined
+          ? { facebook_url: profileData.facebook_url || null }
+          : {}),
+        ...(profileData.instagram_url !== undefined
+          ? { instagram_url: profileData.instagram_url || null }
+          : {}),
+        ...(profileData.linkedin_url !== undefined
+          ? { linkedin_url: profileData.linkedin_url || null }
+          : {}),
       },
     });
 
     revalidatePath("/dashboard/settings");
+    revalidatePath("/dashboard/settings/profile");
     revalidatePath(`/profile/${userId}`);
     revalidatePath("/");
 
@@ -105,7 +137,7 @@ export async function updateProfilePhoto(
   userId: string,
   photoFile: File,
 ): Promise<string> {
-  const ext = photoFile.name.split('.').pop() || 'jpg';
+  const ext = photoFile.name.split(".").pop() || "jpg";
   const uniqueId = Math.random().toString(36).substring(2, 15);
   try {
     const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
@@ -166,13 +198,13 @@ export async function createOnboardingProfile(
 ): Promise<any> {
   const existingProfile = await prisma.user.findUnique({
     where: { id: userId },
-    select: { profilePhoto: true },
+    select: { profilePhoto: true, accountType: true },
   });
 
   let profilePhotoUrl: string | null = existingProfile?.profilePhoto ?? null;
 
   if (profileData.profilePhoto) {
-    const ext = profileData.profilePhoto.name.split('.').pop() || 'jpg';
+    const ext = profileData.profilePhoto.name.split(".").pop() || "jpg";
     const uniqueId = Math.random().toString(36).substring(2, 15);
     try {
       const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
@@ -213,7 +245,12 @@ export async function createOnboardingProfile(
   if (profileData.lastName) updateData.lastName = profileData.lastName;
   if (profileData.username) updateData.username = profileData.username;
   if (profileData.location) updateData.location = profileData.location;
-  if (profileData.accountType) updateData.accountType = profileData.accountType;
+  if (profileData.accountType) {
+    updateData.accountType =
+      existingProfile?.accountType === "individual"
+        ? "individual"
+        : profileData.accountType;
+  }
   if (profileData.gender) updateData.gender = profileData.gender;
 
   try {
@@ -411,10 +448,27 @@ export async function saveStep1Progress(
   accountType: string,
 ): Promise<void> {
   try {
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountType: true },
+    });
+
+    if (
+      existing?.accountType === "individual" &&
+      accountType === "organization"
+    ) {
+      throw new Error(
+        "Individual accounts cannot be converted to organization accounts.",
+      );
+    }
+
     await prisma.user.update({
       where: { id: userId },
       data: {
-        accountType: accountType,
+        accountType:
+          existing?.accountType === "organization"
+            ? "organization"
+            : accountType,
       },
     });
 
@@ -595,16 +649,23 @@ export async function isProfileComplete(
   }
 }
 
-export async function hasKycVerification(userId: string): Promise<KycVerification | null> {
+export async function hasKycVerification(
+  userId: string,
+): Promise<KycVerification | null> {
   try {
     const data = await prisma.kyc_verifications.findFirst({
-      where: { user_id: userId }
+      where: { user_id: userId },
     });
 
     if (!data) return null;
 
-    if (data.document_url && !data.document_url.startsWith('http') && !data.document_url.startsWith('/api/s3/image')) {
-      (data as any).document_url = `/api/s3/image?key=${encodeURIComponent(data.document_url)}`;
+    if (
+      data.document_url &&
+      !data.document_url.startsWith("http") &&
+      !data.document_url.startsWith("/api/s3/image")
+    ) {
+      (data as any).document_url =
+        `/api/s3/image?key=${encodeURIComponent(data.document_url)}`;
     }
 
     return data as unknown as KycVerification;
@@ -636,87 +697,7 @@ export async function updateKycStatus(
   }
 }
 
-export async function getSolanaWallet(userId: string): Promise<string | null> {
-  try {
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { solana_wallet: true },
-    });
-
-    return profile?.solana_wallet ?? null;
-  } catch (error) {
-    console.error("Error fetching Solana wallet:", error);
-    return null;
-  }
-}
-
-export async function updateSolanaWallet(
-  userId: string,
-  walletAddress: string | null,
-): Promise<string | null> {
-  try {
-    const profile = await prisma.user.update({
-      where: { id: userId },
-      data: { solana_wallet: walletAddress },
-      select: { solana_wallet: true },
-    });
-
-    revalidatePath("/dashboard/settings");
-    return profile.solana_wallet ?? null;
-  } catch (error) {
-    console.error("Error updating Solana wallet:", error);
-    throw error;
-  }
-}
-
-export async function getPolygonWallet(userId: string): Promise<string | null> {
-  try {
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { crypto_wallets: true },
-    });
-
-    const wallets = profile?.crypto_wallets as { ethereum?: string } | null;
-    return wallets?.ethereum ?? null;
-  } catch (error) {
-    console.error("Error fetching Polygon wallet:", error);
-    return null;
-  }
-}
-
-export async function updatePolygonWallet(
-  userId: string,
-  walletAddress: string | null,
-): Promise<string | null> {
-  try {
-    // We need to fetch existing crypto_wallets to preserve other keys if they exist
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { crypto_wallets: true },
-    });
-    
-    const currentWallets = profile?.crypto_wallets as Record<string, any> || {};
-    
-    if (walletAddress === null) {
-      delete currentWallets.ethereum;
-    } else {
-      currentWallets.ethereum = walletAddress;
-    }
-
-    const updatedProfile = await prisma.user.update({
-      where: { id: userId },
-      data: { crypto_wallets: currentWallets },
-      select: { crypto_wallets: true },
-    });
-
-    revalidatePath("/dashboard/settings");
-    const updatedWallets = updatedProfile.crypto_wallets as { ethereum?: string } | null;
-    return updatedWallets?.ethereum ?? null;
-  } catch (error) {
-    console.error("Error updating Polygon wallet:", error);
-    throw error;
-  }
-}
+// 👇 REMOVED: getSolanaWallet, updateSolanaWallet, getPolygonWallet, updatePolygonWallet
 
 export async function getProfileByUsername(
   username: string,

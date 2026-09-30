@@ -1,5 +1,7 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
+
 type ClientErrorContext = {
   type: "window" | "unhandled-rejection" | "react";
   componentStack?: string | null;
@@ -15,7 +17,8 @@ function details(error: unknown) {
 
   return {
     name: "Error",
-    message: typeof error === "string" ? error : "An unexpected error occurred.",
+    message:
+      typeof error === "string" ? error : "An unexpected error occurred.",
     stack: undefined,
   };
 }
@@ -30,7 +33,16 @@ export function reportClientError(error: unknown, context: ClientErrorContext) {
   if (now - (recentlyReported.get(dedupeKey) ?? 0) < DEDUPE_WINDOW_MS) return;
   recentlyReported.set(dedupeKey, now);
 
-  const stack = [report.stack, context.componentStack].filter(Boolean).join("\n");
+  Sentry.captureException(error, {
+    tags: { source: context.type },
+    contexts: context.componentStack
+      ? { react: { componentStack: context.componentStack } }
+      : undefined,
+  });
+
+  const stack = [report.stack, context.componentStack]
+    .filter(Boolean)
+    .join("\n");
   void fetch("/api/error-report", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

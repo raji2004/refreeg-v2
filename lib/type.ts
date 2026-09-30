@@ -42,7 +42,7 @@ export interface User {
   userType?: "individual" | "organization";
   bio: string;
   cryptoWallets?: {
-    [network: string]: string; // Just store the address directly
+    [network: string]: string;
   };
 }
 
@@ -166,7 +166,7 @@ export type Cause = {
   id: string;
   causeTitle: string;
   description: string;
-  sections: CauseSections[]; // Adjust the type based on your actual structure
+  sections: CauseSections[];
   uploadedImage: {
     src: string;
     name: string;
@@ -184,17 +184,19 @@ export type Cause = {
   state: string;
   currency: string;
   raisedAmount: number;
-  donationCount:number;
+  donationCount: number;
   profileImage: string;
   isBookmarked: boolean;
   onRemoveBookmark?: (id: string) => void;
-  daysLeft: string; // Add this
-  progressPercentage: number; // Add this
+  daysLeft: string;
+  progressPercentage: number;
   keywords: string[];
 };
 
-export interface TransactionData
-  extends Pick<User, "email" | "firstName" | "lastName" | "id"> {
+export interface TransactionData extends Pick<
+  User,
+  "email" | "firstName" | "lastName" | "id"
+> {
   amount: number;
   serviceFee: number;
   causeId: string;
@@ -220,24 +222,23 @@ export interface ICreateSubaccount {
   business_name: string;
 }
 
-export interface MainCauseCardProps
-  extends Omit<
-    Cause,
-    | "sections"
-    | "userId"
-    | "zipCode"
-    | "deadline"
-    | "causeCategory"
-    | "state"
-    | "currency"
-  > {
+export interface MainCauseCardProps extends Omit<
+  Cause,
+  | "sections"
+  | "userId"
+  | "zipCode"
+  | "deadline"
+  | "causeCategory"
+  | "state"
+  | "currency"
+> {
   daysLeft: string;
   progressPercentage: number;
   tags?: string[];
   hideDescription?: boolean;
   hideTags?: boolean;
   hideButton?: boolean;
-  isBookmarked: boolean; // Add isBookmarked to the interface
+  isBookmarked: boolean;
 }
 
 export type CauseCategory = {

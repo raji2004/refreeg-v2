@@ -24,7 +24,7 @@ import {
 
 import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
-import { H4, P } from "../typograpy";
+import { H4, P } from "../typography";
 import AnimatedCard from "./components/AnimatedCard";
 import { causePublicPath } from "@/lib/causes/slug";
 
@@ -36,6 +36,7 @@ type Cause = {
   goal: number;
   raised: number;
   days_active?: number;
+  paused?: boolean;
   profiles?: {
     full_name?: string;
   };
@@ -81,6 +82,11 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
                 className="object-cover"
                 unoptimized={isProxyMediaUrl(getMediaUrl(cause.image))}
               />
+              {cause.paused && (
+                <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-gold/90 px-2.5 py-1 text-xs font-medium text-ink backdrop-blur-sm">
+                  Paused
+                </div>
+              )}
             </div>
 
             <CardHeader className="flex flex-col flex-1 p-4">
@@ -127,13 +133,13 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
 
   return (
     <>
-      {/* ✅ MOBILE: Vertical list (only 3) */}
+      {}
       <div className="flex flex-col gap-4 md:hidden mt-6 mb-6">
         {causes.slice(0, 3).map((cause) => (
           <div key={cause.id}>{renderCard(cause)}</div>
         ))}
 
-        {/* See More Button */}
+        {}
         <Link href="/causes" className="w-full">
           <button className="w-full py-3 rounded-xl border border-gray-300 text-sm font-medium hover:bg-gray-100 transition">
             See More
@@ -141,7 +147,7 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
         </Link>
       </div>
 
-      {/* ✅ DESKTOP: Carousel */}
+      {}
       <div className="hidden md:block">
         <Carousel
           setApi={setApi}

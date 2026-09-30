@@ -5,6 +5,8 @@ import { getProfile } from "@/actions/profile-actions";
 import QuickDonateForm from "./QuickDonateForm";
 import type { Metadata } from "next";
 import { causePublicPath } from "@/lib/causes/slug";
+import { CausePausedNotice } from "@/components/cause-paused-notice";
+import { isAdminOrManager } from "@/actions/role-actions";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -36,6 +38,14 @@ export default async function QuickDonatePage({
   }
 
   const user = await getCurrentUser();
+
+  if (cause.paused && user?.id !== cause.user_id) {
+    const isAdmin = user?.id ? await isAdminOrManager(user.id) : false;
+    if (!isAdmin) {
+      return <CausePausedNotice title={cause.title} />;
+    }
+  }
+
   const profile = user ? await getProfile(user.id) : null;
 
   return (
@@ -48,8 +58,9 @@ export default async function QuickDonatePage({
       goal={cause.goal}
       raised={cause.raised}
       subaccount={(cause as any).user?.sub_account_code ?? undefined}
-      defaultName={profile?.full_name ?? ""}
+      defaultName={profile?.display_name || profile?.full_name || ""}
       defaultEmail={profile?.email ?? ""}
+      defaultAnonymous={profile?.donation_preference === "anonymous"}
       userId={user?.id}
     />
   );

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createReferralRecord } from "@/lib/referral-utils";
+import { deriveFullNameFromEmail } from "@/lib/auth/registration";
+
+const SIGNUP_EIZA_BONUS = 150;
 
 function createOrganizationSlug(name: string) {
   const base = name
@@ -21,7 +25,7 @@ export async function POST(req: Request) {
     if (!email || !otpCode) {
       return NextResponse.json(
         { error: "Email and OTP are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -35,25 +39,29 @@ export async function POST(req: Request) {
     if (!pending) {
       return NextResponse.json(
         { error: "No pending registration found for this email." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // 2. Check if locked out (too many failed attempts)
     if (pending.failedAttempts >= 5) {
-      await prisma.pendingRegistration.delete({ where: { email: normalizedEmail } });
+      await prisma.pendingRegistration.delete({
+        where: { email: normalizedEmail },
+      });
       return NextResponse.json(
         { error: "Too many failed attempts. Please sign up again." },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
     // 3. Check expiration
     if (new Date() > pending.expiresAt) {
-      await prisma.pendingRegistration.delete({ where: { email: normalizedEmail } });
+      await prisma.pendingRegistration.delete({
+        where: { email: normalizedEmail },
+      });
       return NextResponse.json(
         { error: "Verification code has expired. Please request a new one." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -61,10 +69,12 @@ export async function POST(req: Request) {
     if (pending.otpCode !== otpCode) {
       const newAttempts = pending.failedAttempts + 1;
       if (newAttempts >= 5) {
-        await prisma.pendingRegistration.delete({ where: { email: normalizedEmail } });
+        await prisma.pendingRegistration.delete({
+          where: { email: normalizedEmail },
+        });
         return NextResponse.json(
           { error: "Too many failed attempts. Please sign up again." },
-          { status: 429 }
+          { status: 429 },
         );
       }
       await prisma.pendingRegistration.update({
@@ -72,14 +82,18 @@ export async function POST(req: Request) {
         data: { failedAttempts: newAttempts },
       });
       return NextResponse.json(
-        { error: `Invalid verification code. ${5 - newAttempts} attempt(s) remaining.` },
-        { status: 400 }
+        {
+          error: `Invalid verification code. ${5 - newAttempts} attempt(s) remaining.`,
+        },
+        { status: 400 },
       );
     }
 
     // 5. Create the user/workspace and delete pending registration atomically.
     const newProfile = await prisma.$transaction(async (tx) => {
-      const nameParts = pending.fullName.trim().split(/\s+/).filter(Boolean);
+      const effectiveFullName =
+        pending.fullName?.trim() || deriveFullNameFromEmail(pending.email);
+      const nameParts = effectiveFullName.split(/\s+/).filter(Boolean);
       const firstName = nameParts[0] || null;
       const lastName = nameParts.slice(1).join(" ") || null;
 
@@ -87,7 +101,7 @@ export async function POST(req: Request) {
         data: {
           email: pending.email,
           password: pending.password,
-          fullName: pending.fullName,
+          fullName: effectiveFullName,
           firstName,
           lastName,
           phone:
@@ -98,6 +112,7 @@ export async function POST(req: Request) {
           emailVerified: new Date(),
           isVerified: false,
           onboarding_completed: false,
+          total_points: SIGNUP_EIZA_BONUS,
         },
       });
 
@@ -129,26 +144,19 @@ export async function POST(req: Request) {
 
       // --- Referral Integration ---
       if (pending.referralCode) {
-        const referrer = await tx.user.findUnique({
-          where: { referralCode: pending.referralCode },
-          select: { id: true, total_points: true }
+        // createReferralRecord is non-throwing and idempotent
+        await createReferralRecord({
+          referralCode: pending.referralCode,
+          newUserId: profile.id,
+          email: profile.email as string,
+          utmFields: {
+            utm_source: pending.utm_source,
+            utm_medium: pending.utm_medium,
+            utm_campaign: pending.utm_campaign,
+            ip_address: pending.ip_address,
+            user_agent: pending.user_agent,
+          },
         });
-
-        if (referrer) {
-          // 1. Create the referral record (v1 legacy support)
-          await tx.referrals_v1.create({
-            data: {
-              referrer_id_v1: referrer.id,
-              referee_id_v1: profile.id,
-              referee_email_v1: profile.email as string,
-              registered_v1: true,
-
-              reward_v1: null,
-              reward_status_v1: "PENDING",
-              kyc_verified_v1: false,
-            }
-          });
-        }
       }
       // ----------------------------
 
@@ -163,29 +171,39 @@ export async function POST(req: Request) {
     const secret = process.env.AUTH_SECRET || "fallback_secret";
     const timestamp = Date.now().toString();
     const b64Email = Buffer.from(normalizedEmail).toString("base64");
-    
+
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
-      "raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+      "raw",
+      encoder.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
     );
-    const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(`${b64Email}:${timestamp}`));
-    const hmac = Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('');
-    
+    const signature = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      encoder.encode(`${b64Email}:${timestamp}`),
+    );
+    const hmac = Array.from(new Uint8Array(signature))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
     const loginToken = `${b64Email}:${timestamp}:${hmac}`;
 
     return NextResponse.json(
-      { 
-        message: "Email verified successfully.", 
+      {
+        message: "Email verified successfully.",
         profileId: newProfile.id,
-        loginToken 
+        loginToken,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: any) {
     console.error("Verify OTP error:", error);
     return NextResponse.json(
       { error: "An unexpected error occurred during verification." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

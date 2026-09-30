@@ -3,10 +3,6 @@
  */
 jest.mock("@/lib/prisma", () => ({
   prisma: {
-    cause: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
     crypto_donations: {
       create: jest.fn(),
     },
@@ -27,14 +23,9 @@ jest.mock("@/lib/event-bus", () => ({
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { recordEvent } from "@/actions/event-reward-actions";
-import {
-  getRecipientSolanaWallet,
-  getRecipientPolygonWallet,
-  createCryptoDonation,
-} from "@/actions/crypto-actions";
+import { createCryptoDonation } from "@/actions/crypto-actions";
 
 const mockPrisma = prisma as unknown as {
-  cause: { findUnique: jest.Mock; update: jest.Mock };
   crypto_donations: { create: jest.Mock };
   $transaction: jest.Mock;
 };
@@ -43,46 +34,6 @@ describe("crypto-actions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (recordEvent as jest.Mock).mockResolvedValue({});
-  });
-
-  describe("getRecipientSolanaWallet", () => {
-    it("returns solana wallet from cause owner", async () => {
-      mockPrisma.cause.findUnique.mockResolvedValue({
-        user: { solana_wallet: "sol-wallet-abc" },
-      });
-
-      const result = await getRecipientSolanaWallet("cause-1");
-
-      expect(result).toBe("sol-wallet-abc");
-    });
-
-    it("returns null when cause or wallet is missing", async () => {
-      mockPrisma.cause.findUnique.mockResolvedValue(null);
-
-      const result = await getRecipientSolanaWallet("cause-1");
-
-      expect(result).toBeNull();
-    });
-  });
-
-  describe("getRecipientPolygonWallet", () => {
-    it("returns ethereum wallet from cause owner crypto_wallets", async () => {
-      mockPrisma.cause.findUnique.mockResolvedValue({
-        user: { crypto_wallets: { ethereum: "0xABC" } },
-      });
-
-      const result = await getRecipientPolygonWallet("cause-1");
-
-      expect(result).toBe("0xABC");
-    });
-
-    it("returns null on error", async () => {
-      mockPrisma.cause.findUnique.mockRejectedValue(new Error("db error"));
-
-      const result = await getRecipientPolygonWallet("cause-1");
-
-      expect(result).toBeNull();
-    });
   });
 
   describe("createCryptoDonation", () => {

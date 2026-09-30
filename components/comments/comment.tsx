@@ -32,7 +32,6 @@ export function CommentComponent({
   const [isLoadingReplies, setIsLoadingReplies] = useState(false);
   const [repliesCount, setRepliesCount] = useState(comment.replies_count || 0);
 
-  // Fetch replies when toggling showReplies to true
   const handleToggleReplies = async () => {
     if (!showReplies && replies.length === 0 && repliesCount > 0) {
       setIsLoadingReplies(true);

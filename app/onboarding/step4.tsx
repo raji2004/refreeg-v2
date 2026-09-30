@@ -10,12 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  Clock3,
-  Loader2,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowRight, Clock3, Loader2, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import { getProfile } from "@/actions/profile-actions";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
@@ -41,7 +36,6 @@ export default function Step4({
   const [isLoading, setIsLoading] = useState(true);
   const [isStartingKyc, setIsStartingKyc] = useState(false);
 
-  // Fetch profile data using the same method as UserNav
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user?.id) return;
@@ -61,7 +55,7 @@ export default function Step4({
 
   const handleSkip = () => {
     updateOnboardingData("kycCompleted", false);
-    // Clear all onboarding data and go to success page
+
     localStorage.removeItem("onboarding_account_type");
     localStorage.removeItem("onboarding_gender");
     localStorage.removeItem("onboarding_profile");
@@ -102,24 +96,32 @@ export default function Step4({
             Verify the organisation owner
           </h1>
           <p className="mt-3 text-base leading-7 text-slate-600">
-            Owner verification is required before the organisation can fundraise or receive payouts. It helps protect the workspace and builds trust with supporters.
+            Owner verification is required before the organisation can fundraise
+            or receive payouts. It helps protect the workspace and builds trust
+            with supporters.
           </p>
 
           <div className="mt-8 grid overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:grid-cols-2">
             <div className="p-5 sm:border-r sm:border-slate-200">
-              <h2 className="text-sm font-semibold text-slate-900">What you will need</h2>
+              <h2 className="text-sm font-semibold text-slate-900">
+                What you will need
+              </h2>
               <ul className="mt-3 space-y-2 text-sm text-slate-600">
                 <li>A valid government-issued ID</li>
                 <li>A clear live identity check</li>
               </ul>
             </div>
             <div className="border-t border-slate-200 p-5 sm:border-t-0">
-              <h2 className="text-sm font-semibold text-slate-900">What to expect</h2>
+              <h2 className="text-sm font-semibold text-slate-900">
+                What to expect
+              </h2>
               <p className="mt-3 flex items-center gap-2 text-sm text-slate-600">
                 <Clock3 className="h-4 w-4 text-blue-700" />
                 The process usually takes a few minutes.
               </p>
-              <p className="mt-2 text-sm text-slate-600">Your information is encrypted and handled securely.</p>
+              <p className="mt-2 text-sm text-slate-600">
+                Your information is encrypted and handled securely.
+              </p>
             </div>
           </div>
 
@@ -210,7 +212,7 @@ export default function Step4({
           </CardHeader>
 
           <CardContent className="space-y-8">
-            {/* Action buttons */}
+            {}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button
                 onClick={handleSkip}

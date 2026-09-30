@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { FaBoltLightning } from "react-icons/fa6";
 import { FaUsers, FaCheckSquare, FaSmile } from "react-icons/fa";
-import { H2, H3, P } from "../typograpy";
+import { H2, H3, P } from "../typography";
 import { useAnimateInView } from "@/hooks/use-animate-In-view";
 
 const features = [
@@ -66,7 +66,7 @@ export default function WhyItStandsOut() {
 
   return (
     <section className="w-full bg-[#002D62] mt-12 py-20 px-4">
-      {/* Pill */}
+      {}
       <motion.div
         ref={ref}
         initial={{ opacity: 0, y: 40 }}

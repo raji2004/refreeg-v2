@@ -55,7 +55,6 @@ export default function ProfileDropdown({
 }: ProfileDropdownProps) {
   const [isOpen, setIsOpen] = React.useState(false);
 
-  // Use custom menu items if provided, otherwise use default
   const menuItems: MenuItem[] = customMenuItems || [
     {
       label: "Profile",
@@ -115,7 +114,7 @@ export default function ProfileDropdown({
             </button>
           </DropdownMenuTrigger>
 
-          {/* Bending line indicator on the right */}
+          {}
           <div
             className={cn(
               "absolute -right-2 top-1/2 -translate-y-1/2 transition-all duration-200",

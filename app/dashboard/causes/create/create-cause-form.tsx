@@ -2,11 +2,11 @@
 
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DeviceLocationField } from "@/components/device-location-field";
+
 import { CampaignCategorySelect } from "@/components/campaign-category-select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -149,7 +149,7 @@ type CauseFormData = {
   title: string;
   summary: string;
   location: string;
-  deviceLocation: DeviceLocation;
+
   category: string;
   goal: string;
   currency: string;
@@ -178,8 +178,8 @@ const validateForm = (formData: FormData): FormErrors => {
     errors.summary = "Summary must be less than 200 characters";
   }
 
-  if (!formData.deviceLocation || !formData.location.trim()) {
-    errors.location = "Use your current location to continue";
+  if (!formData.location.trim()) {
+    errors.location = "Enter your location to continue";
   } else if (formData.location.trim().length > 100) {
     errors.location = "Location must be less than 100 characters";
   }
@@ -308,7 +308,7 @@ export default function CreateCauseForm() {
 
       setFormData((prev) => ({
         ...parsedDraft,
-        location: "",
+        location: parsedDraft.location || "",
         deviceLocation: null,
         coverImage: prev.coverImage,
         startDate,
@@ -321,15 +321,10 @@ export default function CreateCauseForm() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const {
-        coverImage,
-        multimedia,
-        deviceLocation,
-        ...dataToSave
-      } = formData;
+      const { coverImage, multimedia, deviceLocation, ...dataToSave } =
+        formData;
       const serializedData = {
         ...dataToSave,
-        location: "",
         locationVerified: false,
         startDate: dataToSave.startDate
           ? dataToSave.startDate.toISOString()
@@ -637,7 +632,7 @@ export default function CreateCauseForm() {
       title: formData.title,
       summary: formData.summary,
       location: formData.location,
-      deviceLocation: formData.deviceLocation!,
+      // deviceLocation: formData.deviceLocation!,
       category: formData.category,
       goal: formData.goal,
       currency: formData.currency,
@@ -799,8 +794,9 @@ export default function CreateCauseForm() {
                     htmlFor="location"
                     className="text-sm font-semibold text-gray-700 sm:text-base"
                   >
-                    Current location <span className="text-red-500">*</span>
+                    Location <span className="text-red-500">*</span>
                   </Label>
+                  {/* GPS verification temporarily disabled; retain for restoration.
                   <DeviceLocationField
                     value={formData.location}
                     invalid={Boolean(errors.location)}
@@ -824,9 +820,23 @@ export default function CreateCauseForm() {
                     }}
                     className="h-11 premium-input sm:h-12"
                   />
+                  */}
+                  <Input
+                    id="location"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    placeholder="City, state, country"
+                    maxLength={100}
+                    aria-invalid={Boolean(errors.location)}
+                    className={cn(
+                      "h-11 premium-input sm:h-12",
+                      errors.location && "border-red-500",
+                    )}
+                  />
                   <p className="text-xs text-slate-500">
-                    We use your device location to confirm the city. Your exact
-                    coordinates are not saved or shown publicly.
+                    Enter the city, state, and country where your cause is
+                    based.
                   </p>
                   {errors.location && (
                     <p className="text-sm text-red-500 font-medium">

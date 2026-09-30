@@ -9,9 +9,12 @@ export function SectionDonations() {
     <div className="space-y-12 animate-in fade-in duration-500">
       <div className="space-y-8">
         <header className="space-y-4">
-          <h1 className="text-3xl font-extrabold text-slate-900">Process Donations</h1>
+          <h1 className="text-3xl font-extrabold text-slate-900">
+            Process Donations
+          </h1>
           <p className="text-slate-500 text-lg font-medium leading-relaxed">
-            Securely accept payments for any campaign via our integrated payment gateways.
+            Securely accept payments for any campaign via our integrated payment
+            gateways.
           </p>
         </header>
 
@@ -20,10 +23,20 @@ export function SectionDonations() {
           <div className="space-y-1">
             <h5 className="font-bold text-amber-900">Test Mode Behavior</h5>
             <p className="text-sm text-amber-700 leading-relaxed">
-              When using a <strong>test API key</strong> (<code className="text-xs bg-amber-100 px-1 rounded">rg_test_sk_*</code>), 
-              donations are <strong>processed instantly</strong> without creating a real Paystack checkout. 
-              The response will have <code className="text-xs bg-amber-100 px-1 rounded">checkout_url: null</code> and 
-              <code className="text-xs bg-amber-100 px-1 rounded">mode: &quot;test&quot;</code>. Webhooks are still dispatched.
+              When using a <strong>test API key</strong> (
+              <code className="text-xs bg-amber-100 px-1 rounded">
+                rg_test_sk_*
+              </code>
+              ), donations are <strong>processed instantly</strong> without
+              creating a real Paystack checkout. The response will have{" "}
+              <code className="text-xs bg-amber-100 px-1 rounded">
+                checkout_url: null
+              </code>{" "}
+              and
+              <code className="text-xs bg-amber-100 px-1 rounded">
+                mode: &quot;test&quot;
+              </code>
+              . Webhooks are still dispatched.
             </p>
           </div>
         </div>
@@ -34,14 +47,55 @@ export function SectionDonations() {
           url="/api/bot/donations/initialize"
           description="Initiates a donation process. Returns a secure checkout URL for the donor (live mode) or simulates the donation instantly (test mode)."
           parameters={[
-            { name: "campaign_id", type: "uuid", required: true, description: "ID of the target campaign." },
-            { name: "amount", type: "number", required: true, description: "Donation amount in NGN." },
-            { name: "name", type: "string", required: true, description: "Donor display name." },
-            { name: "email", type: "string", required: true, description: "Donor email address." },
-            { name: "tip_amount", type: "number", required: false, description: "Optional platform tip in NGN." },
-            { name: "message", type: "string", required: false, description: "Personal message (optional)." },
-            { name: "is_anonymous", type: "boolean", required: false, description: "Whether to hide donor name publicly." },
-            { name: "callback_url", type: "string", required: false, description: "Where to redirect the user after payment (live mode only)." },
+            {
+              name: "campaign_id",
+              type: "uuid",
+              required: true,
+              description: "ID of the target campaign.",
+            },
+            {
+              name: "amount",
+              type: "number",
+              required: true,
+              description: "Donation amount in NGN.",
+            },
+            {
+              name: "name",
+              type: "string",
+              required: true,
+              description: "Donor display name.",
+            },
+            {
+              name: "email",
+              type: "string",
+              required: true,
+              description: "Donor email address.",
+            },
+            {
+              name: "tip_amount",
+              type: "number",
+              required: false,
+              description: "Optional platform tip in NGN.",
+            },
+            {
+              name: "message",
+              type: "string",
+              required: false,
+              description: "Personal message (optional).",
+            },
+            {
+              name: "is_anonymous",
+              type: "boolean",
+              required: false,
+              description: "Whether to hide donor name publicly.",
+            },
+            {
+              name: "callback_url",
+              type: "string",
+              required: false,
+              description:
+                "Where to redirect the user after payment (live mode only).",
+            },
           ]}
           requestExample={`{
   "campaign_id": "c8b3ecf6-02e1-450f...",
@@ -75,7 +129,7 @@ export function SectionDonations() {
         />
 
         <ApiEndpointDoc
-           title="Verify Donation"
+          title="Verify Donation"
           method="GET"
           url="/api/bot/donations/verify/[reference]"
           description="Verifies the outcome of a donation attempt using the unique transaction reference. For test references (starting with test_ref_), retrieves the pre-recorded test donation."
@@ -103,8 +157,12 @@ export function SectionRetrieveDonation() {
   return (
     <div className="space-y-12 animate-in fade-in duration-500">
       <header className="space-y-4">
-        <h1 className="text-3xl font-extrabold text-slate-900">Retrieve Donation</h1>
-        <p className="text-slate-500 text-lg">Retrieve detailed information about a single donation by its ID.</p>
+        <h1 className="text-3xl font-extrabold text-slate-900">
+          Retrieve Donation
+        </h1>
+        <p className="text-slate-500 text-lg">
+          Retrieve detailed information about a single donation by its ID.
+        </p>
       </header>
 
       <ApiEndpointDoc

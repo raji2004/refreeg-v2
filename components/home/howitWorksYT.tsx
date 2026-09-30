@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
-import { H2, P } from "../typograpy";
+import { H2, P } from "../typography";
 import YouTubeEmbed from "../YoutubeEmbed";
 import { motion, useInView } from "framer-motion";
 import { FaStairs } from "react-icons/fa6";

@@ -2,7 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import type { Donation, DonationWithCause, DonationFormData, PaymentProviderType } from "@/types";
+import type {
+  Donation,
+  DonationWithCause,
+  DonationFormData,
+  PaymentProviderType,
+} from "@/types";
 import { recordEvent } from "@/actions/event-reward-actions";
 import { sendDonationReceivedEmail } from "@/services/mail";
 import { syncMilestoneRequirements } from "@/lib/proof-milestones";
@@ -22,6 +27,7 @@ export async function createDonation(
   tipAmount: number = 0,
   paystackReference?: string | null,
   paymentProvider: PaymentProviderType = "paystack",
+  referrerCode?: string | null,
 ): Promise<Donation> {
   const donationAmount =
     typeof donationData.amount === "string"
@@ -33,8 +39,6 @@ export async function createDonation(
 
   let data;
   try {
-    // Idempotency: if a paystack reference is provided and we've already recorded
-    // a donation with that reference, skip creating a duplicate record.
     if (paystackReference) {
       const existing = await prisma.donation.findFirst({
         where: { paystack_reference: paystackReference },
@@ -42,7 +46,6 @@ export async function createDonation(
       });
 
       if (existing) {
-        // Fetch and return the existing donation
         const existingDonation = await prisma.donation.findUnique({
           where: { id: existing.id },
         });
@@ -68,7 +71,6 @@ export async function createDonation(
       },
     });
 
-    // Increment the cause raised amount
     await prisma.cause.update({
       where: { id: causeId },
       data: { raised: { increment: donationAmount } },
@@ -83,7 +85,22 @@ export async function createDonation(
     throw error;
   }
 
-  // Record event for reward tracking (only if user is logged in)
+  if (referrerCode) {
+    try {
+      const { recordDonorReferralAttribution } =
+        await import("@/actions/referral-attribution");
+      await recordDonorReferralAttribution({
+        donationId: data.id,
+        causeId,
+        referralCode: referrerCode,
+        donorEmail: donationData.email,
+        donorUserId: userId,
+      });
+    } catch (refErr) {
+      console.warn("Failed to record donor referral attribution:", refErr);
+    }
+  }
+
   if (userId) {
     try {
       await recordEvent({
@@ -98,11 +115,9 @@ export async function createDonation(
       });
     } catch (eventError) {
       console.error("Error recording donation event:", eventError);
-      // Don't throw - event tracking shouldn't break the main action
     }
   }
 
-  // Emit SSE event
   try {
     const { eventBus } = await import("@/lib/event-bus");
     eventBus.emit("donation", {
@@ -114,7 +129,6 @@ export async function createDonation(
     console.error("Error emitting fiat donation SSE:", e);
   }
 
-  // Auto-fulfill any pending pledge from the same donor for this cause
   if (donationData.email) {
     try {
       await prisma.pledges.updateMany({
@@ -127,11 +141,9 @@ export async function createDonation(
       });
     } catch (pledgeError) {
       console.error("Error fulfilling pledge:", pledgeError);
-      // Non-fatal — don't break the donation flow
     }
   }
 
-  // Milestone notifications for followers (50% and 100%)
   try {
     const cause = await prisma.cause.findUnique({
       where: { id: causeId },
@@ -155,7 +167,6 @@ export async function createDonation(
         }
 
         if (milestoneReached) {
-          // Fetch followers
           const followers = await prisma.campaign_follows.findMany({
             where: { cause_id: causeId },
             select: { email: true },
@@ -166,7 +177,6 @@ export async function createDonation(
             const appUrl =
               process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
 
-            // Call the follower-update API bridge (fire and forget)
             fetch(`${appUrl}/api/mail/follower-update`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -287,17 +297,88 @@ export async function listUserDonations(
       orderBy: { createdAt: "desc" },
     });
 
-    return data.map((item: any) => ({
-      ...mapPrismaToDonation(item),
-      cause: {
-        title: item.cause?.title || "Unknown Cause",
-        category: item.cause?.category || "Unknown",
-        status: item.cause?.status ?? null,
-        slug: item.cause?.slug || null,
-      },
-    }));
+    return data.map(mapDonationWithCause);
   } catch (error) {
     console.error("Error listing user donations:", error);
+    throw error;
+  }
+}
+
+function mapDonationWithCause(item: any): DonationWithCause {
+  return {
+    ...mapPrismaToDonation(item),
+    cause: {
+      title: item.cause?.title || "Unknown Cause",
+      category: item.cause?.category || "Unknown",
+      status: item.cause?.status ?? null,
+      slug: item.cause?.slug || null,
+    },
+  };
+}
+
+export interface UserDonationsPage {
+  donations: DonationWithCause[];
+  total: number;
+  totalAmount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export async function listUserDonationsPage(
+  userId: string,
+  {
+    timeframe = "all",
+    page = 1,
+    pageSize = 10,
+  }: {
+    timeframe?: "all" | "recent";
+    page?: number;
+    pageSize?: number;
+  } = {},
+): Promise<UserDonationsPage> {
+  const safePageSize = Math.min(Math.max(Math.floor(pageSize) || 10, 1), 50);
+  const safePage = Math.max(Math.floor(page) || 1, 1);
+
+  const where: any = { userId };
+  if (timeframe === "recent") {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    where.createdAt = { gte: thirtyDaysAgo };
+  }
+
+  try {
+    const [rows, summary] = await Promise.all([
+      prisma.donation.findMany({
+        where,
+        include: {
+          cause: {
+            select: { title: true, category: true, status: true, slug: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
+      }),
+      prisma.donation.aggregate({
+        where,
+        _sum: { amount: true },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const total = summary._count._all;
+
+    return {
+      donations: rows.map(mapDonationWithCause),
+      total,
+      totalAmount: Number(summary._sum.amount || 0),
+      page: safePage,
+      pageSize: safePageSize,
+      totalPages: Math.max(Math.ceil(total / safePageSize), 1),
+    };
+  } catch (error) {
+    console.error("Error listing user donations page:", error);
     throw error;
   }
 }

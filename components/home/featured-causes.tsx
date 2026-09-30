@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DonateButton } from "@/components/donate-button";
-import { H2, P, H4 } from "../typograpy";
+import { H2, P, H4 } from "../typography";
 import { Button } from "../ui/button";
 import { listCauses } from "@/actions/cause-actions";
 import AnimatedCard from "./components/AnimatedCard";
@@ -32,7 +32,6 @@ import { causePublicPath } from "@/lib/causes/slug";
 export async function FeaturedCauses() {
   const allCauses = await listCauses({ limit: 12, status: "approved" });
 
-  // Compute remaining days and filter out expired causes
   const featuredCauses = allCauses.filter((c) => !isCauseExpired(c));
 
   if (!featuredCauses || featuredCauses.length === 0) {
@@ -85,7 +84,6 @@ export async function FeaturedCauses() {
               ? Math.min(Math.round((cause.raised / cause.goal) * 100), 100)
               : 0;
 
-            // Compute remaining days dynamically
             const daysLeft = calculateDaysLeft(cause);
 
             return (
@@ -110,6 +108,11 @@ export async function FeaturedCauses() {
                             getMediaUrl(cause.image),
                           )}
                         />
+                        {cause.paused && (
+                          <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-gold/90 px-2.5 py-1 text-xs font-medium text-ink backdrop-blur-sm">
+                            Paused
+                          </div>
+                        )}
                       </div>
 
                       <CardHeader className="flex flex-col flex-1 p-4">
@@ -170,18 +173,8 @@ export async function FeaturedCauses() {
         </div>
       </Carousel>
 
-      {/* View All Causes Button */}
-      {/* <div className="flex justify-center mt-6">
-        <Link href="/causes">
-          <Button
-            variant="outline"
-            size="lg"
-            className="hover:bg-secondary/90 flex gap-2"
-          >
-            View More <ArrowRight />
-          </Button>
-        </Link>
-      </div> */}
+      {}
+      {}
     </div>
   );
 }

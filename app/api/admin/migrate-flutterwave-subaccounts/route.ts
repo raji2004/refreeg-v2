@@ -4,7 +4,6 @@ import Flutterwave from "@/services/flutterwave";
 
 export async function GET() {
   try {
-    // Only fetch users who have a Paystack subaccount but no Flutterwave one
     const users = await prisma.user.findMany({
       where: {
         subAccountCode: { not: null },
@@ -23,7 +22,9 @@ export async function GET() {
     });
 
     if (users.length === 0) {
-      return NextResponse.json({ message: "No users need migration at this time." });
+      return NextResponse.json({
+        message: "No users need migration at this time.",
+      });
     }
 
     const banks = await Flutterwave.listBanks();
@@ -31,7 +32,6 @@ export async function GET() {
 
     for (const user of users) {
       try {
-        // Find the matching Flutterwave bank code using the robust mapping
         const bankCode = await Flutterwave.getBankCode(user.bankName!);
 
         if (!bankCode) {
@@ -48,12 +48,12 @@ export async function GET() {
         const subaccount = await Flutterwave.createSubaccount({
           account_number: isTestMode ? "0690000031" : user.accountNumber!,
           bank_code: isTestMode ? "044" : bankCode,
-          business_name: user.fullName || user.username || "RefreeG Cause Creator",
+          business_name:
+            user.fullName || user.username || "RefreeG Cause Creator",
           business_email: user.email || "no-reply@refreeg.com",
         });
 
         if (subaccount?.subaccount_id) {
-          // Update the user's profile with the new flutterwaveSubAccountId
           await prisma.user.update({
             where: { id: user.id },
             data: { flutterwaveSubAccountId: subaccount.subaccount_id },
@@ -68,17 +68,22 @@ export async function GET() {
           results.push({
             email: user.email,
             status: "Failed",
-            reason: "Flutterwave did not return a subaccount_id (possibly invalid account number)",
+            reason:
+              "Flutterwave did not return a subaccount_id (possibly invalid account number)",
           });
         }
       } catch (err: any) {
-        const msg = err.response?.data?.message || err.message || "Unknown API Error";
+        const msg =
+          err.response?.data?.message || err.message || "Unknown API Error";
 
-        // If Flutterwave says the subaccount already exists, try to look it up
-        // by account number and save the existing ID to the DB
-        if (msg.toLowerCase().includes("already exists") && user.accountNumber) {
+        if (
+          msg.toLowerCase().includes("already exists") &&
+          user.accountNumber
+        ) {
           try {
-            const existingId = await Flutterwave.findSubaccountByAccountNumber(user.accountNumber);
+            const existingId = await Flutterwave.findSubaccountByAccountNumber(
+              user.accountNumber,
+            );
             if (existingId) {
               await prisma.user.update({
                 where: { id: user.id },
@@ -92,9 +97,7 @@ export async function GET() {
               });
               continue;
             }
-          } catch {
-            // Fall through to generic failure below
-          }
+          } catch {}
         }
 
         results.push({
@@ -113,7 +116,7 @@ export async function GET() {
   } catch (error: any) {
     return NextResponse.json(
       { error: "Migration script failed", details: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

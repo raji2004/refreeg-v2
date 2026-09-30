@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { DateRange } from "react-day-picker";
 import { addDays, subDays } from "date-fns";
 import {
@@ -97,7 +97,6 @@ export default function AdminAnalytics() {
 
     let csvContent = "data:text/csv;charset=utf-8,";
 
-    // Summary
     csvContent += "SUMMARY METRICS\n";
     csvContent += "Metric,Current,Trend,Previous\n";
     csvContent += `Total Donations,${analytics.totalDonations.current},${analytics.totalDonations.trend}%,${analytics.totalDonations.previous}\n`;

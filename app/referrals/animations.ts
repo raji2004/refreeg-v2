@@ -1,7 +1,5 @@
-// app/referrals/animations.ts
 import type { Variants } from "framer-motion";
 
-// Section entrance
 export const sectionVariant: Variants = {
   hidden: { opacity: 0, y: 20 },
   show: {
@@ -11,7 +9,6 @@ export const sectionVariant: Variants = {
   },
 };
 
-// Generic fade-up
 export const fadeUp: Variants = {
   hidden: { opacity: 0, y: 12 },
   show: {
@@ -21,7 +18,6 @@ export const fadeUp: Variants = {
   },
 };
 
-// Stagger children
 export const stagger: Variants = {
   hidden: {},
   show: {
@@ -31,19 +27,16 @@ export const stagger: Variants = {
   },
 };
 
-// Soft hover for icons / cards
 export const hoverSoft: Variants = {
   rest: { scale: 1, y: 0, transition: { duration: 0.2 } },
   hover: { scale: 1.03, y: -4, transition: { duration: 0.25 } },
 };
 
-// Mobile hover (slightly less movement)
 export const mobileHover: Variants = {
   rest: { scale: 1, y: 0, transition: { duration: 0.2 } },
   hover: { scale: 1.02, y: -3, transition: { duration: 0.25 } },
 };
 
-// Gentle floating for icons
 export const floating = {
   animate: {
     y: [0, -3, 0],
@@ -55,7 +48,6 @@ export const floating = {
   },
 };
 
-// Horizontal line grow
 export const lineGrow: Variants = {
   hidden: { scaleX: 0, opacity: 0 },
   show: {
@@ -65,7 +57,6 @@ export const lineGrow: Variants = {
   },
 };
 
-// Table row
 export const rowVariant: Variants = {
   hidden: { opacity: 0, y: 8 },
   show: {

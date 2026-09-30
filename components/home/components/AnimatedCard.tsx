@@ -20,7 +20,7 @@ export default function AnimatedCard({
         duration: 0.8,
       }}
       whileHover={{ scale: 1.04, zIndex: 5 }}
-      className="h-full overflow-visible" // ensure scaling isn't clipped
+      className="h-full overflow-visible"
     >
       {children}
     </motion.div>

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-/** Same rules as other /api/cron/* routes: CRON_SECRET required in production. */
-export function assertCronAuthorized(request: NextRequest): NextResponse | null {
+export function assertCronAuthorized(
+  request: NextRequest,
+): NextResponse | null {
   const secret = process.env.CRON_SECRET;
   const auth = request.headers.get("authorization");
   if (process.env.NODE_ENV === "production") {

@@ -49,17 +49,13 @@ jest.mock("@/lib/locations/campaign-location", () => ({
   resolveCampaignLocation: jest.fn(async (location?: string) =>
     location?.trim() ? location.trim() : "Lagos, Lagos, Nigeria",
   ),
-  resolveDeviceCampaignLocation: jest.fn(
-    async () => "Lagos, Lagos, Nigeria",
-  ),
+  resolveDeviceCampaignLocation: jest.fn(async () => "Lagos, Lagos, Nigeria"),
 }));
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/actions/auth-actions";
 import { isAdminOrManager } from "@/actions/role-actions";
-import {
-  sendCauseRejectedEmailForUser,
-} from "@/services/mail";
+import { sendCauseRejectedEmailForUser } from "@/services/mail";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -218,6 +214,15 @@ describe("cause-actions", () => {
   });
 
   describe("createCause", () => {
+    it.each([undefined, "   ", "x".repeat(101)])(
+      "rejects invalid manual location %s",
+      async (location) => {
+        await expect(
+          createCause("owner-1", { location } as any),
+        ).rejects.toThrow(/location/i);
+        expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+      },
+    );
     it("creates a cause without media uploads", async () => {
       const createdCause = {
         ...basePrismaCause,
@@ -225,11 +230,12 @@ describe("cause-actions", () => {
         goal: 5000,
         slug: "new-cause",
       };
+      const createRecord = jest.fn().mockResolvedValue(createdCause);
       mockPrisma.cause.findFirst.mockResolvedValue(null);
       mockPrisma.$transaction.mockImplementation(async (callback) =>
         callback({
           cause: {
-            create: jest.fn().mockResolvedValue(createdCause),
+            create: createRecord,
           },
           cause_sections: { createMany: jest.fn() },
         }),
@@ -244,12 +250,7 @@ describe("cause-actions", () => {
         category: "health",
         goal: 5000,
         sections: [],
-        deviceLocation: {
-          latitude: 6.5244,
-          longitude: 3.3792,
-          accuracy: 50,
-          capturedAt: Date.now(),
-        },
+        location: "  My town, Nigeria  ",
       } as any);
 
       expect(result).toEqual(
@@ -260,8 +261,11 @@ describe("cause-actions", () => {
         }),
       );
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard/causes");
-      expect(resolveDeviceCampaignLocation).toHaveBeenCalledWith(
-        expect.objectContaining({ latitude: 6.5244, longitude: 3.3792 }),
+      expect(resolveDeviceCampaignLocation).not.toHaveBeenCalled();
+      expect(createRecord).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ location: "My town, Nigeria" }),
+        }),
       );
     });
 
@@ -288,7 +292,8 @@ describe("cause-actions", () => {
       });
 
       const s3CoverKey = "uploads/causes/owner-1/draft-id/images/cover.jpg";
-      const s3GalleryKey = "uploads/causes/owner-1/draft-id/images/gallery1.jpg";
+      const s3GalleryKey =
+        "uploads/causes/owner-1/draft-id/images/gallery1.jpg";
 
       await createCause("owner-1", {
         title: "S3 Key Cause",
@@ -442,18 +447,18 @@ describe("cause-actions", () => {
     it("throws when user is not authenticated", async () => {
       mockGetCurrentUser.mockResolvedValue(null);
 
-      await expect(
-        updateCauseStatus(VALID_UUID, "approved"),
-      ).rejects.toThrow("Not authenticated");
+      await expect(updateCauseStatus(VALID_UUID, "approved")).rejects.toThrow(
+        "Not authenticated",
+      );
     });
 
     it("throws when user is not admin or manager", async () => {
       mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
       mockIsAdminOrManager.mockResolvedValue(false);
 
-      await expect(
-        updateCauseStatus(VALID_UUID, "approved"),
-      ).rejects.toThrow("Unauthorized");
+      await expect(updateCauseStatus(VALID_UUID, "approved")).rejects.toThrow(
+        "Unauthorized",
+      );
     });
 
     it("approves cause without pending edit", async () => {
@@ -523,9 +528,7 @@ describe("cause-actions", () => {
             email: "editor@example.com",
             profile_photo: null,
           },
-          cause_edit_sections: [
-            expect.objectContaining({ heading: "About" }),
-          ],
+          cause_edit_sections: [expect.objectContaining({ heading: "About" })],
         }),
       );
     });

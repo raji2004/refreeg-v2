@@ -1,4 +1,3 @@
-// actions/admin-user-actions.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -7,9 +6,6 @@ import { getUserRole } from "@/lib/auth/admin-auth";
 import { isAdminOrManager } from "./role-actions";
 import { revalidatePath } from "next/cache";
 
-/**
- * Block a user
- */
 export async function blockUser(userId: string): Promise<boolean> {
   const session = await auth();
 
@@ -32,7 +28,6 @@ export async function blockUser(userId: string): Promise<boolean> {
     },
   });
 
-  // Log the activity
   await prisma.logs.create({
     data: {
       action: "block-user",
@@ -45,9 +40,6 @@ export async function blockUser(userId: string): Promise<boolean> {
   return true;
 }
 
-/**
- * Unblock a user
- */
 export async function unblockUser(userId: string): Promise<boolean> {
   const session = await auth();
 
@@ -82,9 +74,6 @@ export async function unblockUser(userId: string): Promise<boolean> {
   return true;
 }
 
-/**
- * Check if a user is blocked
- */
 export async function isUserBlocked(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -94,9 +83,6 @@ export async function isUserBlocked(userId: string): Promise<boolean> {
   return user?.isBlocked || false;
 }
 
-/**
- * Delete a user account (admin version)
- */
 export async function deleteUserAsAdmin(
   userId: string,
 ): Promise<{ error: string | null }> {
@@ -112,33 +98,26 @@ export async function deleteUserAsAdmin(
   }
 
   try {
-    // Delete in correct order due to foreign key constraints
-    // 1. Delete KYC verifications
     await prisma.kyc_verifications.deleteMany({
       where: { user_id: userId },
     });
 
-    // 2. Delete user roles
     await prisma.role.deleteMany({
       where: { user_id: userId },
     });
 
-    // 3. Delete user wallet
     await prisma.userWallet.deleteMany({
       where: { userId },
     });
 
-    // 4. Delete user streaks
     await prisma.userStreak.deleteMany({
       where: { userId },
     });
 
-    // 5. Delete reward transactions
     await prisma.rewardTransaction.deleteMany({
       where: { userId },
     });
 
-    // 6. Delete sessions and accounts
     await prisma.session.deleteMany({
       where: { userId },
     });
@@ -146,12 +125,10 @@ export async function deleteUserAsAdmin(
       where: { userId },
     });
 
-    // 7. Finally delete the user
     await prisma.user.delete({
       where: { id: userId },
     });
 
-    // Log the activity
     await prisma.logs.create({
       data: {
         action: "delete-user",
@@ -170,9 +147,6 @@ export async function deleteUserAsAdmin(
   }
 }
 
-/**
- * Get user details for admin
- */
 export async function getUserDetailsForAdmin(userId: string) {
   const session = await auth();
 

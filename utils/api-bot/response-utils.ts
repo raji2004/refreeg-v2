@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { CORS_HEADERS } from "@/utils/api-bot/cors";
 
-/**
- * Standardized API Error Codes
- */
+
 export enum ApiErrorCode {
   INVALID_API_KEY = "invalid_api_key",
   RATE_LIMIT_EXCEEDED = "rate_limit_exceeded",
@@ -22,9 +20,7 @@ export enum ApiErrorCode {
   DATABASE_ERROR = "database_error",
 }
 
-/**
- * Success response helper
- */
+
 export function successResponse(data: any, status = 200) {
   return NextResponse.json(
     {
@@ -35,9 +31,7 @@ export function successResponse(data: any, status = 200) {
   );
 }
 
-/**
- * Error response helper
- */
+
 export function errorResponse(
   message: string,
   code: ApiErrorCode | string,
@@ -57,9 +51,7 @@ export function errorResponse(
   );
 }
 
-/**
- * Paginated response helper
- */
+
 export function paginatedResponse(
   data: any[],
   total: number,

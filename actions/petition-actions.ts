@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { DISCOVER_CACHE_TAG } from "@/lib/discover-constants";
 import type {
   Petition,
   PetitionWithUser,
@@ -76,13 +77,13 @@ export async function uploadFileToS3(
   petitionId: string,
   type: "cover" | "additional",
 ): Promise<string> {
-  const ext = file.name.split('.').pop() || 'file';
+  const ext = file.name.split(".").pop() || "file";
   const uniqueId = Math.random().toString(36).substring(2, 15);
   const isVideo = file.type.startsWith("video/");
-  
+
   try {
     const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
-    
+
     const s3Key = generateS3Key({
       entityType: "petitions",
       userId,
@@ -221,7 +222,12 @@ export async function updatePetition(
   petitionData: Partial<PetitionFormData>,
 ): Promise<Petition> {
   let coverImageUrl = petitionData.coverImage
-    ? await uploadFileToS3(petitionData.coverImage as File, userId, petitionId, "cover")
+    ? await uploadFileToS3(
+        petitionData.coverImage as File,
+        userId,
+        petitionId,
+        "cover",
+      )
     : petitionData.image;
 
   let daysActive = null;
@@ -322,14 +328,41 @@ export const listPetitions = cache(
       where.user_id = options.userId;
     }
 
+    if (options.search && options.search.trim()) {
+      where.title = { contains: options.search.trim(), mode: "insensitive" };
+    }
+
+    if (options.verifiedOnly) {
+      where.user = { isVerified: true };
+    }
+
+    let orderBy: any = { created_at: "desc" };
+    switch (options.sortBy) {
+      case "most-funded":
+        orderBy = [{ raised: "desc" }, { created_at: "desc" }];
+        break;
+      case "latest":
+      case "recommended":
+      default:
+        orderBy = { created_at: "desc" };
+        break;
+      // Petitions have no end_date, so "ending-soon" has no petition-side
+      // equivalent — falls back to newest first.
+    }
+
     const petitions = await prisma.petitions.findMany({
       where,
-      orderBy: { created_at: "desc" },
+      orderBy,
       take: options.limit || undefined,
       skip: options.offset || undefined,
       include: {
         user: {
-          select: { fullName: true, email: true, profilePhoto: true },
+          select: {
+            fullName: true,
+            email: true,
+            profilePhoto: true,
+            isVerified: true,
+          },
         },
       },
     });
@@ -347,6 +380,7 @@ export const listPetitions = cache(
             full_name: p.user.fullName || "",
             email: p.user.email || "",
             profile_photo: p.user.profilePhoto || null,
+            is_verified: !!p.user.isVerified,
           }
         : undefined,
     })) as unknown as Petition[];
@@ -358,9 +392,7 @@ export const listPetitions = cache(
   },
 );
 
-export async function countPetitions(
-  options: PetitionFilterOptions = {},
-): Promise<number> {
+function buildPetitionCountWhere(options: PetitionFilterOptions) {
   const where: any = {};
 
   if (options.category && options.category !== "all") {
@@ -377,7 +409,37 @@ export async function countPetitions(
     where.user_id = options.userId;
   }
 
-  return prisma.petitions.count({ where });
+  if (options.search && options.search.trim()) {
+    where.title = { contains: options.search.trim(), mode: "insensitive" };
+  }
+
+  if (options.verifiedOnly) {
+    where.user = { isVerified: true };
+  }
+
+  return where;
+}
+
+export async function countPetitions(
+  options: PetitionFilterOptions = {},
+): Promise<number> {
+  return prisma.petitions.count({ where: buildPetitionCountWhere(options) });
+}
+
+export async function countPetitionsByCategory(
+  options: PetitionFilterOptions = {},
+): Promise<Record<string, number>> {
+  const groups = await prisma.petitions.groupBy({
+    by: ["category"],
+    where: buildPetitionCountWhere(options),
+    _count: { _all: true },
+  });
+
+  const counts: Record<string, number> = {};
+  for (const group of groups) {
+    counts[group.category] = group._count._all;
+  }
+  return counts;
 }
 
 export async function updatePetitionStatus(
@@ -468,6 +530,7 @@ export async function updatePetitionStatus(
     }
 
     revalidatePath("/dashboard/admin/petitions");
+    revalidateTag(DISCOVER_CACHE_TAG);
     return {
       ...updatedPetition,
       goal: Number(updatedPetition.goal),
@@ -517,6 +580,7 @@ export async function updatePetitionStatus(
     }
 
     revalidatePath("/dashboard/admin/petitions");
+    revalidateTag(DISCOVER_CACHE_TAG);
     return {
       ...updatedPetition,
       goal: Number(updatedPetition.goal),

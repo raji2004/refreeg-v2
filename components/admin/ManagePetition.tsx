@@ -317,8 +317,8 @@ export default function ManagePetition() {
           <DialogHeader>
             <DialogTitle>Reject Petition</DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejecting &quot;{rejectDialog.title}&quot;. This
-              will be shown to the user.
+              Please provide a reason for rejecting &quot;{rejectDialog.title}
+              &quot;. This will be shown to the user.
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -457,7 +457,7 @@ export default function ManagePetition() {
                   </div>
                 )}
 
-              {/* Sections (handle sections on both main petition and edit rows) */}
+              {}
               {Array.isArray(
                 (detailDialog.petition as any).petition_edit_sections,
               ) &&
@@ -481,7 +481,7 @@ export default function ManagePetition() {
                 </div>
               ) : null}
 
-              {/* Multimedia Preview */}
+              {}
               {(((detailDialog.petition as any).multimedia &&
                 (detailDialog.petition as any).multimedia.length > 0) ||
                 ((detailDialog.petition as any).video_links &&

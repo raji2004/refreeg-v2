@@ -96,7 +96,43 @@ describe("Flutterwave Webhook", () => {
       }),
       undefined,
       "flw_123",
-      "flutterwave"
+      "flutterwave",
+      undefined,
+    );
+  });
+
+  it("should pass meta.ref_v1 to createDonation when present", async () => {
+    const req = mockRequest({
+      event: "charge.completed",
+      data: { tx_ref: "flw_456" },
+    });
+
+    (Flutterwave.verifyByReferenceFull as jest.Mock).mockResolvedValueOnce({
+      status: "successful",
+      meta: {
+        cause_id: "c2",
+        user_id: "u2",
+        amount: "2500",
+        customer_name: "Donor",
+        email: "donor@test.com",
+        ref_v1: "REF_DONOR_123",
+      },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+
+    expect(createDonation).toHaveBeenCalledWith(
+      "c2",
+      "u2",
+      expect.objectContaining({
+        amount: 2500,
+        email: "donor@test.com",
+      }),
+      undefined,
+      "flw_456",
+      "flutterwave",
+      "REF_DONOR_123",
     );
   });
 

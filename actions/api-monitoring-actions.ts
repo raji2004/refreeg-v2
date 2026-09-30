@@ -1,4 +1,3 @@
-// actions/api-monitoring-actions.ts
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -108,58 +107,33 @@ async function requireAdminAccess(): Promise<{
 export async function getApiMonitoringSummary(): Promise<ApiMonitoringSummary> {
   await requireAdminAccess();
 
-  // Get all API keys
-  const allKeys = await prisma.api_keys.findMany({
-    select: {
-      id: true,
-      revoked_at: true,
-      last_used_at: true,
-    },
-  });
+  const [
+    totalKeys,
+    activeKeys,
+    totalCampaigns,
+    activeCampaigns,
+    pendingReports,
+    successfulDonations,
+    totalRequestVolume,
+    totalErrors,
+  ] = await Promise.all([
+    prisma.api_keys.count(),
+    prisma.api_keys.count({
+      where: { revoked_at: null, last_used_at: { not: null } },
+    }),
+    prisma.api_campaigns.count(),
+    prisma.api_campaigns.count({ where: { status: "active" } }),
+    prisma.api_campaign_reports.count({ where: { status: "pending" } }),
+    prisma.api_donations.aggregate({
+      where: { status: "success" },
+      _sum: { amount: true },
+    }),
+    prisma.api_request_logs.count(),
+    prisma.api_request_logs.count({ where: { status_code: { gte: 400 } } }),
+  ]);
 
-  const activeKeys = allKeys.filter(
-    (key) => !key.revoked_at && !!key.last_used_at,
-  ).length;
-  const totalKeys = allKeys.length;
+  const donationVolume = Number(successfulDonations._sum.amount ?? 0);
 
-  // Get all API campaigns
-  const allCampaigns = await prisma.api_campaigns.findMany({
-    select: {
-      id: true,
-      status: true,
-    },
-  });
-
-  const totalCampaigns = allCampaigns.length;
-  const activeCampaigns = allCampaigns.filter(
-    (campaign) => campaign.status === "active",
-  ).length;
-
-  // Get pending reports
-  const pendingReports = await prisma.api_campaign_reports.count({
-    where: { status: "pending" },
-  });
-
-  // Get donations
-  const successfulDonations = await prisma.api_donations.findMany({
-    where: { status: "success" },
-    select: { amount: true },
-  });
-
-  const donationVolume = successfulDonations.reduce(
-    (sum, donation) => sum + Number(donation.amount),
-    0,
-  );
-
-  // Get request logs for error rate
-  const requestLogs = await prisma.api_request_logs.findMany({
-    select: { status_code: true },
-  });
-
-  const totalRequestVolume = requestLogs.length;
-  const totalErrors = requestLogs.filter(
-    (log) => Number(log.status_code) >= 400,
-  ).length;
   const requestErrorRate =
     totalRequestVolume > 0
       ? Number(((totalErrors / totalRequestVolume) * 100).toFixed(1))
@@ -181,7 +155,6 @@ export async function getApiMonitoringSummary(): Promise<ApiMonitoringSummary> {
 export async function listAdminApiCampaigns(): Promise<AdminApiCampaignRow[]> {
   await requireAdminAccess();
 
-  // Get all campaigns
   const campaigns = await prisma.api_campaigns.findMany({
     select: {
       id: true,
@@ -202,10 +175,8 @@ export async function listAdminApiCampaigns(): Promise<AdminApiCampaignRow[]> {
 
   if (campaigns.length === 0) return [];
 
-  // Get unique developer IDs
   const developerIds = [...new Set(campaigns.map((c) => c.developer_id))];
 
-  // Get profiles for developers
   const developers = await prisma.user.findMany({
     where: { id: { in: developerIds } },
     select: {
@@ -225,7 +196,6 @@ export async function listAdminApiCampaigns(): Promise<AdminApiCampaignRow[]> {
     ]),
   );
 
-  // Get API key names
   const apiKeyIds = [
     ...new Set(campaigns.map((c) => c.api_key_id).filter(Boolean)),
   ] as string[];
@@ -236,7 +206,6 @@ export async function listAdminApiCampaigns(): Promise<AdminApiCampaignRow[]> {
 
   const apiKeyMap = new Map(apiKeys.map((key) => [key.id, key.name]));
 
-  // Get report counts per campaign
   const reportCounts = await prisma.api_campaign_reports.groupBy({
     by: ["api_campaign_id"],
     _count: { id: true },
@@ -273,7 +242,6 @@ export async function listAdminApiCampaigns(): Promise<AdminApiCampaignRow[]> {
 export async function listAdminApiDonations(): Promise<AdminApiDonationRow[]> {
   await requireAdminAccess();
 
-  // Get all donations
   const donations = await prisma.api_donations.findMany({
     select: {
       id: true,
@@ -291,7 +259,6 @@ export async function listAdminApiDonations(): Promise<AdminApiDonationRow[]> {
 
   if (donations.length === 0) return [];
 
-  // Get campaign details
   const campaignIds = [...new Set(donations.map((d) => d.api_campaign_id))];
   const campaigns = await prisma.api_campaigns.findMany({
     where: { id: { in: campaignIds } },
@@ -304,7 +271,6 @@ export async function listAdminApiDonations(): Promise<AdminApiDonationRow[]> {
 
   const campaignMap = new Map(campaigns.map((c) => [c.id, c]));
 
-  // Get developer details
   const developerIds = [...new Set(campaigns.map((c) => c.developer_id))];
   const developers = await prisma.user.findMany({
     where: { id: { in: developerIds } },
@@ -354,7 +320,6 @@ export async function listAdminApiDonations(): Promise<AdminApiDonationRow[]> {
 export async function listCampaignReports(): Promise<CampaignReportRow[]> {
   await requireAdminAccess();
 
-  // Get all reports
   const reports = await prisma.api_campaign_reports.findMany({
     select: {
       id: true,
@@ -373,7 +338,6 @@ export async function listCampaignReports(): Promise<CampaignReportRow[]> {
 
   if (reports.length === 0) return [];
 
-  // Get campaign details
   const campaignIds = [...new Set(reports.map((r) => r.api_campaign_id))];
   const campaigns = await prisma.api_campaigns.findMany({
     where: { id: { in: campaignIds } },
@@ -386,7 +350,6 @@ export async function listCampaignReports(): Promise<CampaignReportRow[]> {
 
   const campaignMap = new Map(campaigns.map((c) => [c.id, c]));
 
-  // Get developer details
   const developerIds = [...new Set(reports.map((r) => r.developer_id))];
   const developers = await prisma.user.findMany({
     where: { id: { in: developerIds } },
@@ -407,7 +370,6 @@ export async function listCampaignReports(): Promise<CampaignReportRow[]> {
     ]),
   );
 
-  // Get API key names
   const apiKeyIds = [
     ...new Set(reports.map((r) => r.api_key_id).filter(Boolean)),
   ] as string[];
@@ -446,7 +408,6 @@ export async function listCampaignReports(): Promise<CampaignReportRow[]> {
 export async function getApiUsageAnalytics(): Promise<ApiUsageAnalytics> {
   await requireAdminAccess();
 
-  // Get recent request logs
   const logs = await prisma.api_request_logs.findMany({
     select: {
       id: true,
@@ -470,7 +431,6 @@ export async function getApiUsageAnalytics(): Promise<ApiUsageAnalytics> {
     };
   }
 
-  // Get API key prefixes
   const apiKeyIds = [
     ...new Set(logs.map((log) => log.api_key_id).filter(Boolean)),
   ] as string[];
@@ -481,7 +441,6 @@ export async function getApiUsageAnalytics(): Promise<ApiUsageAnalytics> {
 
   const keyMap = new Map(apiKeys.map((key) => [key.id, key.key_prefix]));
 
-  // Calculate endpoint statistics
   const endpointCounts = new Map<string, { count: number; errors: number }>();
   let errors = 0;
 
@@ -551,13 +510,11 @@ export async function takeDownApiCampaign(formData: FormData) {
     throw new Error("Campaign ID is required");
   }
 
-  // Update campaign status to cancelled
   await prisma.api_campaigns.update({
     where: { id: campaignId },
     data: { status: "cancelled" },
   });
 
-  // Update report status if report ID provided
   if (reportId) {
     await prisma.api_campaign_reports.update({
       where: { id: reportId },
@@ -569,7 +526,6 @@ export async function takeDownApiCampaign(formData: FormData) {
     });
   }
 
-  // Log the admin action
   await prisma.logs.create({
     data: {
       action: "take-down-api-campaign",

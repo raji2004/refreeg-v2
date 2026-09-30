@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { DISCOVER_CACHE_TAG } from "@/lib/discover-constants";
 import type {
   Cause,
   CauseWithUser,
@@ -20,10 +21,7 @@ import {
   validateCauseCoverImage,
   validateCauseGalleryImage,
 } from "@/lib/media/cause-cover";
-import {
-  resolveCampaignLocation,
-  resolveDeviceCampaignLocation,
-} from "@/lib/locations/campaign-location";
+import { resolveCampaignLocation } from "@/lib/locations/campaign-location";
 import { allocateUniqueCauseSlug } from "@/lib/causes/slug";
 
 const UUID_REGEX =
@@ -47,7 +45,7 @@ const mapPrismaToCause = (prismaCause: any): Cause => {
   return {
     ...prismaCause,
     user_id: prismaCause.userId,
-    // Convert Prisma Decimal to number for the frontend
+
     goal: prismaCause.goal ? Number(prismaCause.goal) : 0,
     raised: prismaCause.raised ? Number(prismaCause.raised) : 0,
     shared: prismaCause.shared ? Number(prismaCause.shared) : 0,
@@ -75,9 +73,32 @@ const mapPrismaToCause = (prismaCause: any): Cause => {
   } as unknown as Cause;
 };
 
-/**
- * Get a cause by ID or public slug
- */
+export async function getQuickDonateProps(causeId: string) {
+  const { getProfile } = await import("./profile-actions");
+  const cause = await getCause(causeId);
+  if (!cause) return null;
+
+  const user = await getCurrentUser();
+  const profile = user ? await getProfile(user.id) : null;
+
+  return {
+    causeId: cause.id,
+    causeSlug: cause.slug ?? null,
+    causeTitle: cause.title,
+    causeImage: cause.image ?? null,
+    causeMultimedia: cause.multimedia ?? [],
+    goal: cause.goal,
+    raised: cause.raised,
+    subaccount: cause.user?.sub_account_code ?? undefined,
+    defaultName: profile?.display_name || profile?.full_name || "",
+    defaultEmail: profile?.email ?? "",
+    defaultAnonymous: profile?.donation_preference === "anonymous",
+    userId: user?.id,
+
+    paused: !!cause.paused,
+  };
+}
+
 export async function getCause(causeId: string): Promise<CauseWithUser | null> {
   if (!causeId?.trim()) return null;
   const user = await getCurrentUser();
@@ -132,7 +153,6 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
 
   const isAdmin = user?.id ? await isAdminOrManager(user.id) : false;
 
-  // Block access if pending, rejected, OR compliance_paused (unless owner or admin)
   if (
     (data.status === "pending" ||
       data.status === "rejected" ||
@@ -144,7 +164,6 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
     return null;
   }
 
-  // Check if current user is following this cause
   let isFollowing = false;
   if (user?.id) {
     const followData = await prisma.campaign_follows.findFirst({
@@ -181,9 +200,6 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
   return cause;
 }
 
-/**
- * Upload a file to S3 storage
- */
 async function uploadFileToS3(
   file: File,
   userId: string,
@@ -234,11 +250,13 @@ export async function createCause(
   userId: string,
   causeData: CauseFormData,
 ): Promise<Cause> {
-  // The display label is always derived again on the server. Do not trust a
-  // location string supplied by the browser.
-  const location = await resolveDeviceCampaignLocation(
-    causeData.deviceLocation,
-  );
+  // GPS verification temporarily disabled while live location data is restored.
+  // const location = await resolveDeviceCampaignLocation(causeData.deviceLocation);
+  const location = causeData.location?.trim();
+  if (!location) throw new Error("Campaign location is required");
+  if (location.length > 100) {
+    throw new Error("Campaign location must be less than 100 characters");
+  }
   const causeId = crypto.randomUUID();
   let coverImageUrl: string | null = null;
   if (causeData.coverImage) {
@@ -527,7 +545,9 @@ export const listCauses = cache(
     let whereClause: any = {};
 
     // Category filter
-    if (options.category && options.category !== "all") {
+    if (options.categories && options.categories.length > 0) {
+      whereClause.category = { in: options.categories };
+    } else if (options.category && options.category !== "all") {
       whereClause.category = options.category;
     }
 
@@ -544,8 +564,9 @@ export const listCauses = cache(
     if (options.userId) {
       whereClause.userId = options.userId;
     } else {
-      // Hide compliance-paused causes from public listings
+      // Hide compliance-paused and paused causes from public listings
       whereClause.compliance_paused = false;
+      whereClause.paused = false;
     }
 
     // Search filter
@@ -554,6 +575,30 @@ export const listCauses = cache(
         contains: options.search.trim(),
         mode: "insensitive",
       };
+    }
+
+    // Location filter — Cause.location is free text, so this is a
+    // contains-match, not a structured lookup against State/City.
+    if (options.location && options.location.trim()) {
+      whereClause.location = {
+        contains: options.location.trim(),
+        mode: "insensitive",
+      };
+    }
+
+    // Urgent filter — only causes with an explicit end_date within 7 days
+    // can be expressed as a DB predicate; causes that derive daysLeft from
+    // days_active/created_at (see utils/cause/cause-utils.ts) aren't covered.
+    if (options.urgentOnly) {
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+      whereClause.end_date = { gt: new Date(), lte: sevenDaysFromNow };
+    }
+
+    // Verified-NGO filter — derived from the creator's account verification;
+    // there's no org-level verified field.
+    if (options.verifiedOnly) {
+      whereClause.user = { isVerified: true };
     }
 
     // Sorting
@@ -575,29 +620,65 @@ export const listCauses = cache(
         break;
     }
 
+    // Amount-still-needed range can't be expressed as a Prisma where clause
+    // (it's goal - raised, a column-to-column computation) — fetch a wider
+    // candidate slice and trim in JS when that filter is active.
+    const hasAmountRange =
+      options.minAmountNeeded != null || options.maxAmountNeeded != null;
+    const fetchTake =
+      hasAmountRange && options.limit ? options.limit * 4 : options.limit;
+
     try {
       const data = await prisma.cause.findMany({
         where: whereClause,
         include: {
           user: {
-            select: { fullName: true, email: true, profilePhoto: true },
+            select: {
+              fullName: true,
+              email: true,
+              profilePhoto: true,
+              isVerified: true,
+            },
           },
         },
         orderBy: orderByClause,
-        skip: options.offset,
-        take: options.limit,
+        skip: hasAmountRange ? undefined : options.offset,
+        take: fetchTake,
       });
 
-      const causes = data.map((d: any) => ({
+      let causes = data.map((d: any) => ({
         ...mapPrismaToCause(d),
         profiles: d.user
           ? {
               full_name: d.user.fullName,
               email: d.user.email,
               profile_photo: d.user.profilePhoto,
+              is_verified: !!d.user.isVerified,
             }
           : undefined,
       }));
+
+      if (hasAmountRange) {
+        causes = causes.filter((c) => {
+          const needed = Number(c.goal || 0) - Number(c.raised || 0);
+          if (
+            options.minAmountNeeded != null &&
+            needed < options.minAmountNeeded
+          )
+            return false;
+          if (
+            options.maxAmountNeeded != null &&
+            needed > options.maxAmountNeeded
+          )
+            return false;
+          return true;
+        });
+        const offset = options.offset || 0;
+        causes = causes.slice(
+          offset,
+          offset + (options.limit || causes.length),
+        );
+      }
 
       const isOwnerScoped = !!options.userId;
       const result = isOwnerScoped
@@ -620,9 +701,7 @@ export const listCauses = cache(
 /**
  * Count causes with filtering options
  */
-export async function countCauses(
-  options: CauseFilterOptions = {},
-): Promise<number> {
+function buildCauseCountWhere(options: CauseFilterOptions) {
   let whereClause: any = {};
 
   if (!options.userId) {
@@ -632,8 +711,9 @@ export async function countCauses(
     } else {
       whereClause.status = options.status;
     }
-    // Hide compliance-paused causes from public counts
+    // Hide compliance-paused and paused causes from public counts
     whereClause.compliance_paused = false;
+    whereClause.paused = false;
   } else {
     if (options.status) {
       whereClause.status = options.status;
@@ -655,11 +735,97 @@ export async function countCauses(
     };
   }
 
+  if (options.location && options.location.trim()) {
+    whereClause.location = {
+      contains: options.location.trim(),
+      mode: "insensitive",
+    };
+  }
+
+  if (options.urgentOnly) {
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    whereClause.end_date = { gt: new Date(), lte: sevenDaysFromNow };
+  }
+
+  if (options.verifiedOnly) {
+    whereClause.user = { isVerified: true };
+  }
+
+  return whereClause;
+}
+
+function hasAmountRangeFilter(options: CauseFilterOptions) {
+  return options.minAmountNeeded != null || options.maxAmountNeeded != null;
+}
+
+function withinAmountRange(
+  row: { goal: unknown; raised: unknown },
+  options: CauseFilterOptions,
+) {
+  const needed = Number(row.goal || 0) - Number(row.raised || 0);
+  if (options.minAmountNeeded != null && needed < options.minAmountNeeded)
+    return false;
+  if (options.maxAmountNeeded != null && needed > options.maxAmountNeeded)
+    return false;
+  return true;
+}
+
+export async function countCauses(
+  options: CauseFilterOptions = {},
+): Promise<number> {
+  const whereClause = buildCauseCountWhere(options);
+
   try {
+    if (hasAmountRangeFilter(options)) {
+      // No column-to-column (goal - raised) predicate in Prisma's filter
+      // API — count by fetching just the two numeric fields and filtering
+      // in JS instead of pulling full rows.
+      const rows = await prisma.cause.findMany({
+        where: whereClause,
+        select: { goal: true, raised: true },
+      });
+      return rows.filter((r) => withinAmountRange(r, options)).length;
+    }
+
     const count = await prisma.cause.count({ where: whereClause });
     return count;
   } catch (error) {
     console.error("Error counting causes:", error);
+    throw error;
+  }
+}
+
+export async function countCausesByCategory(
+  options: CauseFilterOptions = {},
+): Promise<Record<string, number>> {
+  const whereClause = buildCauseCountWhere(options);
+  const counts: Record<string, number> = {};
+
+  try {
+    if (hasAmountRangeFilter(options)) {
+      const rows = await prisma.cause.findMany({
+        where: whereClause,
+        select: { category: true, goal: true, raised: true },
+      });
+      for (const row of rows) {
+        if (!withinAmountRange(row, options)) continue;
+        counts[row.category] = (counts[row.category] ?? 0) + 1;
+      }
+      return counts;
+    }
+
+    const groups = await prisma.cause.groupBy({
+      by: ["category"],
+      where: whereClause,
+      _count: { _all: true },
+    });
+    for (const group of groups) {
+      counts[group.category] = group._count._all;
+    }
+    return counts;
+  } catch (error) {
+    console.error("Error counting causes by category:", error);
     throw error;
   }
 }
@@ -703,6 +869,8 @@ export async function updateCauseStatus(
               summary: edit.summary,
               location,
               status: "approved",
+              paused: false,
+              paused_at: null,
               updatedAt: new Date(),
             },
           });
@@ -729,6 +897,7 @@ export async function updateCauseStatus(
         });
 
         revalidatePath("/dashboard/admin/causes");
+        revalidateTag(DISCOVER_CACHE_TAG);
         return updated as unknown as Cause;
       } catch (updateError) {
         console.error("Error updating cause with approved edit:", updateError);
@@ -747,6 +916,7 @@ export async function updateCauseStatus(
           data: { status: "approved", updatedAt: new Date() },
         });
         revalidatePath("/dashboard/admin/causes");
+        revalidateTag(DISCOVER_CACHE_TAG);
         return updated as unknown as Cause;
       } catch (updateError) {
         console.error("Error approving cause:", updateError);
@@ -790,6 +960,7 @@ export async function updateCauseStatus(
       }
 
       revalidatePath("/dashboard/admin/causes");
+      revalidateTag(DISCOVER_CACHE_TAG);
       return data as unknown as Cause;
     } catch (error) {
       console.error("Error updating cause status:", error);
@@ -798,6 +969,40 @@ export async function updateCauseStatus(
   }
 
   throw new Error(`Invalid status value: ${status}`);
+}
+
+/**
+ * Locks a cause's detail page (still shown in listings) — used for causes
+ * missing real content instead of hiding them outright. Cleared
+ * automatically when a submitted edit for the cause is approved, or
+ * manually via unpauseCause.
+ */
+export async function pauseCause(causeId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  if (!(await isAdminOrManager(user.id))) throw new Error("Unauthorized");
+
+  await prisma.cause.update({
+    where: { id: causeId },
+    data: { paused: true, paused_at: new Date() },
+  });
+  revalidatePath("/dashboard/admin/causes");
+  revalidateTag(DISCOVER_CACHE_TAG);
+  revalidatePath("/causes");
+}
+
+export async function unpauseCause(causeId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  if (!(await isAdminOrManager(user.id))) throw new Error("Unauthorized");
+
+  await prisma.cause.update({
+    where: { id: causeId },
+    data: { paused: false, paused_at: null },
+  });
+  revalidatePath("/dashboard/admin/causes");
+  revalidateTag(DISCOVER_CACHE_TAG);
+  revalidatePath("/causes");
 }
 
 /**
@@ -905,6 +1110,7 @@ export async function updateCauseTrustMetrics(
     });
 
     revalidatePath("/dashboard/admin/causes");
+    revalidateTag(DISCOVER_CACHE_TAG);
     revalidatePath(`/causes/${causeId}`);
   } catch (error) {
     console.error("Error updating trust metrics:", error);

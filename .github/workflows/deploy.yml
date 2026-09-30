@@ -4,6 +4,16 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      send_recovery_emails:
+        description: >-
+          Send the "your campaign was recovered" notice (scripts/send-recovery-emails.ts)
+          to unclaimed reconstructed causes' recovered_owner_email after this deploy.
+          Off by default so ordinary push-to-main deploys never send anything — only
+          check this on the specific manual run where you also want the recovery
+          notice to go out (e.g. alongside setting SESSIONS_INVALIDATED_AFTER).
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -141,6 +151,16 @@ jobs:
           NEXT_PUBLIC_S3_DIRECT_UPLOAD: ${{ secrets.NEXT_PUBLIC_S3_DIRECT_UPLOAD }}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY }}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT: production
+          # SENTRY_ORG/PROJECT/AUTH_TOKEN are build-time-only — consumed by
+          # the Sentry webpack plugin to upload source maps and associate a
+          # release, never read by the running app. Deliberately NOT written
+          # to secrets.env below; no reason to ship an org-write-scoped auth
+          # token to the production server.
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm run build
 
       # ── 3. Package the minimal artifact ────────────────────────────────────
@@ -218,6 +238,7 @@ jobs:
           AUTH_TRUST_HOST: ${{ secrets.AUTH_TRUST_HOST }}
           AUTH_URL: ${{ secrets.AUTH_URL }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          SESSIONS_INVALIDATED_AFTER: ${{ secrets.SESSIONS_INVALIDATED_AFTER }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -242,6 +263,8 @@ jobs:
           NEXT_PUBLIC_S3_DIRECT_UPLOAD: ${{ secrets.NEXT_PUBLIC_S3_DIRECT_UPLOAD }}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY }}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           cat > secrets.env <<EOF
           DIDIT_WEBHOOK_SECRET=${DIDIT_WEBHOOK_SECRET}
@@ -259,6 +282,7 @@ jobs:
           AUTH_TRUST_HOST=${AUTH_TRUST_HOST}
           AUTH_URL=${AUTH_URL}
           AUTH_SECRET=${AUTH_SECRET}
+          SESSIONS_INVALIDATED_AFTER=${SESSIONS_INVALIDATED_AFTER}
           DATABASE_URL=${DATABASE_URL}
           DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
           GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
@@ -283,9 +307,11 @@ jobs:
           NEXT_PUBLIC_S3_DIRECT_UPLOAD=${NEXT_PUBLIC_S3_DIRECT_UPLOAD}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY=${NEXT_PUBLIC_PAYSTACK_PLAN_ID_MONTHLY}
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY=${NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY}
+          NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT=production
+          SENTRY_DSN=${SENTRY_DSN}
           NODE_ENV=production
           PORT=3000
-          API_PORT=4000
           EOF
           chmod 600 secrets.env
 
@@ -348,13 +374,21 @@ jobs:
             return 1
           }
 
-          check "https://refreeg.com/api/health" && frontend_ok=1 || frontend_ok=0
-          check "https://apps.refreeg.com/api/health" && api_ok=1 || api_ok=0
-
-          if [ "$frontend_ok" -eq 1 ] && [ "$api_ok" -eq 1 ]; then
-            exit 0
-          fi
+          check "https://refreeg.com/api/health" && exit 0
           exit 1
+
+      # ── 9b. Recovery emails (manual opt-in only, see workflow_dispatch input) ──
+      - name: Send recovery emails
+        if: github.event_name == 'workflow_dispatch' && inputs.send_recovery_emails == true
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+        run: npx tsx scripts/send-recovery-emails.ts
 
       # ── 10. Status badge note ─────────────────────────────────────────────
       - name: Status badge
