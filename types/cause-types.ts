@@ -75,7 +75,7 @@ export interface CauseFormData {
   category: string;
   goal: string | number;
   currency: string;
-  coverImage: File | null;
+  coverImage: File | string | null;
   image?: string;
   sections?: { heading: string; description: string }[];
   startDate?: Date | undefined;

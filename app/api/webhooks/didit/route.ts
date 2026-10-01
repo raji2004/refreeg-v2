@@ -63,6 +63,14 @@ export async function POST(request: Request) {
         });
         if (user) {
           isNewRecord = true;
+          const resolvedName =
+            user.fullName ||
+            (user.firstName && user.lastName
+              ? `${user.firstName} ${user.lastName}`
+              : user.firstName) ||
+            user.displayName ||
+            user.username ||
+            "Refreegerian";
           kyc = await prisma.kyc_verifications.create({
             data: {
               user_id: user.id,
@@ -71,10 +79,7 @@ export async function POST(request: Request) {
               status: "pending",
               verification_notes:
                 "Automated verification processed via Didit webhook",
-              full_name:
-                (user as any).full_name ||
-                (user as any).fullName ||
-                "Didit User",
+              full_name: resolvedName,
             },
           });
         }
@@ -184,10 +189,31 @@ export async function POST(request: Request) {
 
     const userProfile = await prisma.user.findUnique({
       where: { id: kyc.user_id },
-      select: { email: true },
+      select: {
+        email: true,
+        fullName: true,
+        firstName: true,
+        lastName: true,
+        displayName: true,
+        username: true,
+      },
     });
     if (userProfile?.email) {
-      const userName = kyc.full_name || "User";
+      const isPlaceholder =
+        !kyc.full_name ||
+        kyc.full_name.trim().toLowerCase() === "didit user" ||
+        kyc.full_name.trim().toLowerCase() === "user" ||
+        kyc.full_name.trim().toLowerCase() === "refreegerian";
+
+      const userName =
+        (!isPlaceholder && kyc.full_name ? kyc.full_name.trim() : null) ||
+        userProfile.fullName ||
+        (userProfile.firstName && userProfile.lastName
+          ? `${userProfile.firstName} ${userProfile.lastName}`
+          : userProfile.firstName) ||
+        userProfile.displayName ||
+        userProfile.username ||
+        "Refreegerian";
 
       try {
         if (isApproved) {
@@ -202,6 +228,13 @@ export async function POST(request: Request) {
             userProfile.email,
             userName,
             rejectionReason,
+          );
+          await sendKycSubmissionAdminNotification(
+            userProfile.email,
+            userName,
+            kyc.user_id,
+            "https://verification.didit.me/admin",
+            { isRejected: true, rejectionReason },
           );
         } else if (isResubmitted) {
           await sendKycResubmittedEmail(

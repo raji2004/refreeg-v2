@@ -26,7 +26,7 @@ export function MilestoneNotifications({
     (milestone: number) => {
       let title = "";
       let body = "";
-      let icon = "/icons/icon-192x192.png";
+      let icon = "/logo.png";
 
       switch (milestone) {
         case 25:

@@ -261,6 +261,20 @@ export async function sendBankAccountAddedEmail(context: {
   });
 }
 
+function formatBrandUserName(name?: string | null): string {
+  const trimmed = name?.trim();
+  if (
+    !trimmed ||
+    trimmed.toLowerCase() === "didit user" ||
+    trimmed.toLowerCase() === "user" ||
+    trimmed.toLowerCase() === "null" ||
+    trimmed.toLowerCase() === "undefined"
+  ) {
+    return "Refreegerian";
+  }
+  return trimmed;
+}
+
 export async function sendKycSubmittedEmail(
   userEmail: string,
   userName: string,
@@ -271,7 +285,7 @@ export async function sendKycSubmittedEmail(
     subject: "KYC Verification Submitted - Refreeg",
     templateName: "kyc-submitted",
     context: {
-      userName,
+      userName: formatBrandUserName(userName),
       organizationName: "Refreeg",
       reviewTimeframe: "3-5 business days",
       dashboardUrl: "https://www.refreeg.com/dashboard/settings?tab=kyc",
@@ -290,7 +304,7 @@ export async function sendKycApprovedEmail(
     subject: "KYC Verification Approved - Refreeg",
     templateName: "kyc-approved",
     context: {
-      userName,
+      userName: formatBrandUserName(userName),
       organizationName: "Refreeg",
       createCauseUrl: "https://www.refreeg.com/dashboard/settings?tab=kyc",
       currentYear,
@@ -309,7 +323,7 @@ export async function sendKycRejectedEmail(
     subject: "KYC Verification Update - Refreeg",
     templateName: "kyc-rejected",
     context: {
-      userName,
+      userName: formatBrandUserName(userName),
       organizationName: "Refreeg",
       rejectionReason,
       kycResubmitLink: "https://www.refreeg.com/dashboard/settings?tab=kyc",
@@ -329,7 +343,7 @@ export async function sendKycResubmittedEmail(
     subject: "Action Required: KYC Verification Update - Refreeg",
     templateName: "kyc-resubmitted",
     context: {
-      userName,
+      userName: formatBrandUserName(userName),
       organizationName: "Refreeg",
       resubmitReason,
       kycResubmitLink: "https://www.refreeg.com/dashboard/settings?tab=kyc",
@@ -355,7 +369,7 @@ export async function sendCauseRejectedEmailForUser(
     templateName: "cause-rejected",
     context: {
       ...context,
-      userName: profile.full_name || "User",
+      userName: formatBrandUserName(profile.full_name),
       organizationName: "Refreeg",
       causeResubmitLink: context.dashboardUrl,
     },
@@ -485,9 +499,6 @@ export async function sendLoginNotificationEmail(context: {
 
   const currentYear = new Date().getFullYear();
 
-  
-  
-  
   let ipAddress = "Unknown IP";
   try {
     const headersList = await headers();
@@ -496,7 +507,6 @@ export async function sendLoginNotificationEmail(context: {
 
     let detectedIp = (xff?.split(",")[0] || xri || "Unknown IP").trim();
 
-    
     if (detectedIp === "::1" || detectedIp === "127.0.0.1") {
       detectedIp = `${detectedIp} (Localhost)`;
     }
@@ -862,6 +872,10 @@ export async function sendKycSubmissionAdminNotification(
   userName: string,
   userId: string,
   kycReviewUrl: string,
+  options?: {
+    isRejected?: boolean;
+    rejectionReason?: string;
+  },
 ) {
   const { getAdminEmails } = await import("@/actions/role-actions");
   const adminEmails = await getAdminEmails();
@@ -870,10 +884,15 @@ export async function sendKycSubmissionAdminNotification(
     return { success: false, error: "No admin emails found" };
   }
 
+  const isRejected = options?.isRejected ?? false;
+  const subject = isRejected
+    ? "KYC Verification Declined: Action Required - Refreeg"
+    : "New KYC Submission Requires Review - Refreeg";
+
   const emailPromises = adminEmails.map((email: string) =>
     sendMail({
       to: email,
-      subject: "New KYC Submission Requires Review - Refreeg",
+      subject,
       templateName: "kyc-submission-admin-notification",
       context: {
         adminName: "Admin",
@@ -882,6 +901,8 @@ export async function sendKycSubmissionAdminNotification(
         kycReviewUrl,
         organizationName: "Refreeg",
         currentYear: new Date().getFullYear(),
+        isRejected,
+        rejectionReason: options?.rejectionReason,
       },
     }),
   );

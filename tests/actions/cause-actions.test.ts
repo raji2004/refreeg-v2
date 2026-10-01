@@ -49,17 +49,13 @@ jest.mock("@/lib/locations/campaign-location", () => ({
   resolveCampaignLocation: jest.fn(async (location?: string) =>
     location?.trim() ? location.trim() : "Lagos, Lagos, Nigeria",
   ),
-  resolveDeviceCampaignLocation: jest.fn(
-    async () => "Lagos, Lagos, Nigeria",
-  ),
+  resolveDeviceCampaignLocation: jest.fn(async () => "Lagos, Lagos, Nigeria"),
 }));
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/actions/auth-actions";
 import { isAdminOrManager } from "@/actions/role-actions";
-import {
-  sendCauseRejectedEmailForUser,
-} from "@/services/mail";
+import { sendCauseRejectedEmailForUser } from "@/services/mail";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -221,7 +217,9 @@ describe("cause-actions", () => {
     it.each([undefined, "   ", "x".repeat(101)])(
       "rejects invalid manual location %s",
       async (location) => {
-        await expect(createCause("owner-1", { location } as any)).rejects.toThrow(/location/i);
+        await expect(
+          createCause("owner-1", { location } as any),
+        ).rejects.toThrow(/location/i);
         expect(mockPrisma.$transaction).not.toHaveBeenCalled();
       },
     );
@@ -270,6 +268,54 @@ describe("cause-actions", () => {
         }),
       );
     });
+
+    it("creates a cause with direct S3 key strings for coverImage and multimedia", async () => {
+      let causeCreateData: any = null;
+      mockPrisma.cause.findFirst.mockResolvedValue(null);
+      mockPrisma.$transaction.mockImplementation(async (callback) =>
+        callback({
+          cause: {
+            create: jest.fn().mockImplementation(async ({ data }) => {
+              causeCreateData = data;
+              return {
+                ...basePrismaCause,
+                ...data,
+              };
+            }),
+          },
+          cause_sections: { createMany: jest.fn() },
+        }),
+      );
+      mockPrisma.user.findUnique.mockResolvedValue({
+        fullName: "Creator",
+        email: "creator@example.com",
+      });
+
+      const s3CoverKey = "uploads/causes/owner-1/draft-id/images/cover.jpg";
+      const s3GalleryKey =
+        "uploads/causes/owner-1/draft-id/images/gallery1.jpg";
+
+      await createCause("owner-1", {
+        title: "S3 Key Cause",
+        category: "tech",
+        goal: 10000,
+        currency: "NGN",
+        coverImage: s3CoverKey,
+        multimedia: [s3GalleryKey],
+        sections: [],
+        location: "Lagos, Nigeria",
+        deviceLocation: {
+          latitude: 6.5244,
+          longitude: 3.3792,
+          accuracy: 50,
+          capturedAt: Date.now(),
+        },
+      } as any);
+
+      expect(causeCreateData).toBeDefined();
+      expect(causeCreateData.image).toBe(s3CoverKey);
+      expect(causeCreateData.multimedia).toEqual([s3GalleryKey]);
+    });
   });
 
   describe("updateCause", () => {
@@ -305,6 +351,39 @@ describe("cause-actions", () => {
 
       expect(result).toEqual(edit);
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard/causes");
+    });
+
+    it("creates a pending cause edit with direct S3 key string for coverImage", async () => {
+      let editCreateData: any = null;
+      mockPrisma.cause_edits.findFirst.mockResolvedValue(null);
+      const edit = { id: "edit-2", status: "pending" };
+      mockPrisma.$transaction.mockImplementation(async (callback) =>
+        callback({
+          cause_edits: {
+            create: jest.fn().mockImplementation(async ({ data }) => {
+              editCreateData = data;
+              return edit;
+            }),
+          },
+          cause_edit_sections: { createMany: jest.fn() },
+        }),
+      );
+      mockPrisma.user.findUnique.mockResolvedValue({
+        fullName: "Owner",
+        email: "owner@example.com",
+      });
+
+      const s3CoverKey = "uploads/causes/owner-1/edit-id/images/cover.jpg";
+
+      await updateCause(VALID_UUID, "owner-1", {
+        title: "Updated Title",
+        category: "health",
+        goal: 8000,
+        coverImage: s3CoverKey,
+      } as any);
+
+      expect(editCreateData).toBeDefined();
+      expect(editCreateData.image).toBe(s3CoverKey);
     });
   });
 
@@ -369,18 +448,18 @@ describe("cause-actions", () => {
     it("throws when user is not authenticated", async () => {
       mockGetCurrentUser.mockResolvedValue(null);
 
-      await expect(
-        updateCauseStatus(VALID_UUID, "approved"),
-      ).rejects.toThrow("Not authenticated");
+      await expect(updateCauseStatus(VALID_UUID, "approved")).rejects.toThrow(
+        "Not authenticated",
+      );
     });
 
     it("throws when user is not admin or manager", async () => {
       mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
       mockIsAdminOrManager.mockResolvedValue(false);
 
-      await expect(
-        updateCauseStatus(VALID_UUID, "approved"),
-      ).rejects.toThrow("Unauthorized");
+      await expect(updateCauseStatus(VALID_UUID, "approved")).rejects.toThrow(
+        "Unauthorized",
+      );
     });
 
     it("approves cause without pending edit", async () => {
@@ -450,9 +529,7 @@ describe("cause-actions", () => {
             email: "editor@example.com",
             profile_photo: null,
           },
-          cause_edit_sections: [
-            expect.objectContaining({ heading: "About" }),
-          ],
+          cause_edit_sections: [expect.objectContaining({ heading: "About" })],
         }),
       );
     });
