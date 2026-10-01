@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getProfile } from "@/actions/profile-actions";
+import { getProfileById } from "@/lib/profile/get-profile";
 import { getSessionUser } from "@/lib/auth/session-user";
 import DeveloperNav from "./DeveloperNav";
 import {
@@ -22,7 +22,7 @@ export default async function DeveloperLayout({
   const user = await getSessionUser();
   if (!user) redirect("/auth/signin");
 
-  const profile = await getProfile(user.id);
+  const profile = await getProfileById(user.id);
 
   if (profile?.account_type !== "developer") {
     return (

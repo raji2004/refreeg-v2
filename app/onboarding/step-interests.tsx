@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { cn } from "@/lib/utils";
+import { toast } from "@/components/ui/use-toast";
 import {
   interestOptions,
   MIN_INTERESTS_REQUIRED,
@@ -62,6 +63,13 @@ export default function StepInterests({
       await saveUserInterests(user.id, { interests: selected });
       updateOnboardingData("interests", selected);
       onNext();
+    } catch (error) {
+      console.error("Error saving interests:", error);
+      toast({
+        title: "Couldn't save your interests",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }

@@ -1,4 +1,4 @@
-import { getProfile, getProfileByUsername } from "@/actions/profile-actions";
+import { getProfileByUsername } from "@/lib/profile/get-profile";
 import { getUserCauses } from "@/actions/cause-actions";
 import { listUserDonations } from "@/actions/donation-actions";
 import { getUserPetitions } from "@/actions/petition-actions";

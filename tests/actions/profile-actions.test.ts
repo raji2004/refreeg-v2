@@ -15,6 +15,12 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
+jest.mock("@/lib/auth/auth", () => ({ auth: jest.fn() }));
+jest.mock("@/lib/auth/admin-auth", () => ({
+  requireSelfOrStaff: jest.fn(),
+  requireAdminOrManager: jest.fn(),
+}));
+
 jest.mock("@/lib/s3/s3-utils", () => ({
   uploadToS3: jest.fn(),
   generateS3Key: jest.fn(() => "profiles/user-1/photo.jpg"),
@@ -22,6 +28,7 @@ jest.mock("@/lib/s3/s3-utils", () => ({
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireSelfOrStaff } from "@/lib/auth/admin-auth";
 import {
   getProfile,
   hasBankDetails,
@@ -77,6 +84,7 @@ describe("profile-actions", () => {
 
       const result = await getProfile("user-1");
 
+      expect(requireSelfOrStaff).toHaveBeenCalledWith("user-1");
       expect(result).toMatchObject({
         id: "user-1",
         email: "user@test.com",

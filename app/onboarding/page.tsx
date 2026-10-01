@@ -36,10 +36,8 @@ const StepInterests = dynamic(() => import("./step-interests"), {
 import NavigationLoader from "@/components/NavigationLoader";
 import OnboardingNav from "./onboardingNav";
 import {
-  hasCompletedOnboarding,
   createOnboardingProfile,
-  getCurrentOnboardingStep,
-  getOnboardingData,
+  getOnboardingState,
   saveStep1Progress,
   saveStep2Progress,
   completeOnboarding,
@@ -141,6 +139,7 @@ export default function OnboardingPage() {
   const searchParams = useSearchParams();
   const { data: session, status, update } = useSession();
   const completionDestinationRef = useRef<string | null>(null);
+  const hasLoadedRef = useRef(false);
 
   const isOrg = onboardingData.accountType === "organization";
   const stepSequence = useMemo(
@@ -171,83 +170,69 @@ export default function OnboardingPage() {
   };
 
   useEffect(() => {
-    const checkUser = async () => {
-      if (status === "loading") return;
+    if (status === "loading" || hasLoadedRef.current) return;
 
-      if (status === "unauthenticated" || !session?.user) {
-        router.push("/auth/signin");
-        return;
-      }
+    if (status === "unauthenticated" || !session?.user) {
+      router.push("/auth/signin");
+      return;
+    }
 
-      const currentUser = session.user;
+    const currentUser = session.user;
+    if ((currentUser as any).onboardingCompleted === true) {
+      if (!completionDestinationRef.current) router.push("/dashboard");
+      return;
+    }
 
-      const isCompletedInSession = (currentUser as any).onboardingCompleted;
+    hasLoadedRef.current = true;
 
-      if (isCompletedInSession === true) {
-        if (completionDestinationRef.current) return;
-        router.push("/dashboard");
-        return;
-      }
+    const loadState = async () => {
+      try {
+        const state = await getOnboardingState();
+        if (!state) {
+          router.push("/auth/signin");
+          return;
+        }
 
-      const hasCompleted = await hasCompletedOnboarding(
-        currentUser.id as string,
-      );
-      if (hasCompleted) {
-        if (isCompletedInSession === false) {
+        if (state.completed) {
           await update({ onboardingCompleted: true });
+          router.push("/dashboard");
+          return;
         }
-        router.push("/dashboard");
-        return;
-      }
 
+        const existingData = state.data;
+        let firstName = existingData.profile.firstName;
+        let lastName = existingData.profile.lastName;
+
+        if (!firstName && !lastName && currentUser.name) {
+          const nameParts = currentUser.name.split(" ");
+          firstName = nameParts[0] || "";
+          lastName = nameParts.slice(1).join(" ") || "";
+        }
+
+        setOnboardingData((prev) => ({
+          ...prev,
+          accountType: existingData.accountType,
+          gender: existingData.gender,
+          profile: {
+            ...prev.profile,
+            ...existingData.profile,
+            firstName,
+            lastName,
+            profilePhoto:
+              existingData.profile.profilePhoto || currentUser.image || "",
+          },
+        }));
+        setCurrentStepId(dbStepToStepId(state.step, existingData.accountType));
+      } catch (error) {
+        console.error("Error loading onboarding progress:", error);
+        setCurrentStepId("account-type");
+      }
       setUser(currentUser);
-
-      if (isLoading) {
-        try {
-          const [currentStepFromDB, existingData] = await Promise.all([
-            getCurrentOnboardingStep(currentUser.id as string),
-            getOnboardingData(currentUser.id as string),
-          ]);
-
-          const accountType = existingData.accountType || "";
-
-          let firstName = existingData.profile.firstName || "";
-          let lastName = existingData.profile.lastName || "";
-
-          if (!firstName && !lastName && currentUser.name) {
-            const nameParts = currentUser.name.split(" ");
-            firstName = nameParts[0] || "";
-            lastName = nameParts.slice(1).join(" ") || "";
-          }
-
-          setOnboardingData((prev) => ({
-            ...prev,
-            accountType,
-            gender: existingData.gender,
-            profile: {
-              ...prev.profile,
-              ...existingData.profile,
-              firstName: firstName,
-              lastName: lastName,
-              profilePhoto:
-                existingData.profile.profilePhoto || currentUser.image || "",
-            },
-          }));
-
-          const resumeStepId = dbStepToStepId(currentStepFromDB, accountType);
-          setCurrentStepId(resumeStepId);
-
-          setIsLoading(false);
-        } catch (error) {
-          console.error("Error loading onboarding progress:", error);
-          setCurrentStepId("account-type");
-          setIsLoading(false);
-        }
-      }
+      setIsLoading(false);
     };
 
-    checkUser();
-  }, [router, session, status, isLoading, update]);
+    loadState();
+  }, [router, session, status, update]);
 
   useEffect(() => {
     if (!user) return;
@@ -408,10 +393,6 @@ export default function OnboardingPage() {
 
   const updateOnboardingData = (key: string, value: any) => {
     setOnboardingData((prev) => ({ ...prev, [key]: value }));
-    localStorage.setItem(
-      `onboarding_${key}`,
-      typeof value === "string" ? value : JSON.stringify(value),
-    );
   };
 
   // ──── Render ────────────────────────────────────────────────────────

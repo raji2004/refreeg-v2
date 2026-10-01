@@ -67,7 +67,7 @@ import { categories } from "@/lib/categories";
 import {
   sendCauseUnderReviewEmail,
   sendIncompleteCauseSetupEmail,
-} from "@/services/mail";
+} from "@/actions/user-mail-actions";
 import {
   format,
   addDays,

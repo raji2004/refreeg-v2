@@ -70,6 +70,9 @@ export async function createSignature(
     }
 
     await checkAndSendPetitionGoalReachedEmail(petitionId);
+    sendSignedThankYouEmail(petitionId, signatureData).catch((err) =>
+      console.error("Failed to send signature confirmation email:", err),
+    );
 
     return {
       ...result,
@@ -86,6 +89,28 @@ export async function createSignature(
     console.error("Error creating signature:", error);
     throw new Error("Unable to process signature. Please try again.");
   }
+}
+
+// Sent server-side so the recipient is always the email just recorded on
+// this petition, never an arbitrary address from the client.
+async function sendSignedThankYouEmail(
+  petitionId: string,
+  signatureData: SignatureFormData,
+) {
+  const petition = await prisma.petitions.findUnique({
+    where: { id: petitionId },
+    select: { title: true },
+  });
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+  const { sendPetitionSignedEmailToUser } = await import("@/services/mail");
+
+  await sendPetitionSignedEmailToUser(
+    signatureData.email,
+    signatureData.isAnonymous ? "Supporter" : signatureData.name,
+    petition?.title || "the petition",
+    `${appUrl}/petitions/${petitionId}`,
+    signatureData.isAnonymous,
+  );
 }
 
 /**

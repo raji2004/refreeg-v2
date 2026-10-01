@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationSelector } from "@/components/location-selector";
-import { checkUsernameAvailability } from "@/actions/profile-actions";
 import { suggestUsername } from "@/utils/username";
 import {
   Tooltip,
@@ -65,8 +64,14 @@ export default function Step3({
     boolean | null
   >(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const hasPrefilledRef = useRef(false);
 
+  // Prefill once; re-running on every profile change refilled a cleared
+  // username with the suggestion.
   useEffect(() => {
+    if (hasPrefilledRef.current) return;
+    hasPrefilledRef.current = true;
+
     const savedData =
       onboardingData.profile && Object.keys(onboardingData.profile).length > 0
         ? onboardingData.profile
@@ -96,18 +101,22 @@ export default function Step3({
   }, [onboardingData.profile, onboardingData.consent, user]);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const checkUsername = async () => {
       if (formData.username.length < 3) {
         setIsUsernameAvailable(null);
+        setIsCheckingUsername(false);
         return;
       }
 
       setIsCheckingUsername(true);
       try {
-        const isAvailable = await checkUsernameAvailability(
-          formData.username,
-          user?.id,
+        const res = await fetch(
+          `/api/username-available?username=${encodeURIComponent(formData.username)}`,
+          { signal: controller.signal },
         );
+        const { available: isAvailable } = await res.json();
 
         if (isAvailable) {
           setIsUsernameAvailable(true);
@@ -120,15 +129,19 @@ export default function Step3({
           }));
         }
       } catch (error) {
+        if (controller.signal.aborted) return;
         console.error("Error checking username:", error);
       } finally {
-        setIsCheckingUsername(false);
+        if (!controller.signal.aborted) setIsCheckingUsername(false);
       }
     };
 
     const timeoutId = setTimeout(checkUsername, 500);
-    return () => clearTimeout(timeoutId);
-  }, [formData.username, user?.id]);
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [formData.username]);
 
   const handleChange = (field: string, value: string) => {
     const newFormData = { ...formData, [field]: value };

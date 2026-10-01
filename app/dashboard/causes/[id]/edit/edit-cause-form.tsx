@@ -52,7 +52,7 @@ import {
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { sendCauseEditedEmail } from "@/services/mail";
+import { sendCauseEditedEmail } from "@/actions/user-mail-actions";
 import { useToast } from "@/hooks/use-toast";
 import {
   isVideoFile,

@@ -19,7 +19,6 @@ import { Icons } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
 import { useSignature } from "@/hooks/use-signature";
 import { useProfile } from "@/hooks/use-profile";
-import { sendPetitionSignedEmailToUser } from "@/services/mail";
 import { ShareModal } from "@/components/share-modal";
 import { getBaseURL } from "@/lib/utils";
 
@@ -114,18 +113,6 @@ export function SignatureForm({
 
       if (onSuccess) {
         onSuccess();
-      }
-
-      try {
-        await sendPetitionSignedEmailToUser(
-          formData.email,
-          formData.isAnonymous ? "Supporter" : formData.name,
-          petitionData.title || "the petition",
-          `${window.location.origin}/petitions/${petitionId}`,
-          formData.isAnonymous,
-        );
-      } catch (emailError) {
-        console.error("Failed to send confirmation email:", emailError);
       }
 
       // Note: Notification to petition creator is now handled in the backend

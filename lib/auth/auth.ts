@@ -319,8 +319,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
-      if (trigger === "update" && session?.onboardingCompleted !== undefined) {
-        token.onboardingCompleted = session.onboardingCompleted;
+      // The client can only ask for a refresh; the value comes from the DB.
+      if (
+        trigger === "update" &&
+        session?.onboardingCompleted !== undefined &&
+        token.id
+      ) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { onboarding_completed: true, createdAt: true },
+        });
+        if (dbUser) {
+          token.onboardingCompleted =
+            dbUser.onboarding_completed === true ||
+            dbUser.createdAt < new Date("2024-12-21");
+        }
       }
       return token;
     },

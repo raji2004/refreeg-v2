@@ -22,7 +22,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useDonation } from "@/hooks/use-donation";
 import { useProfile } from "@/hooks/use-profile";
 import { calculateServiceFee, calculateProviderFee, cn } from "@/lib/utils";
-import { sendUnfinishedDonationEmail } from "@/services/mail";
+import { sendUnfinishedDonationEmail } from "@/actions/user-mail-actions";
 
 const MIN_DONATION_AMOUNT = 100;
 

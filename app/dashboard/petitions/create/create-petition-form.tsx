@@ -63,7 +63,7 @@ import { categories } from "@/lib/categories";
 import {
   sendPetitionUnderReviewEmail,
   sendIncompletePetitionDraftEmail,
-} from "@/services/mail";
+} from "@/actions/user-mail-actions";
 import {
   format,
   isBefore,

@@ -14,7 +14,8 @@ import {
   getVerificationStatus,
   updateVerificationStatus,
 } from "@/actions/kyc-actions";
-import { getProfile, updateProfile } from "@/actions/profile-actions";
+import { updateProfile } from "@/actions/profile-actions";
+import { getProfileById } from "@/lib/profile/get-profile";
 import {
   Shield,
   User,
@@ -42,7 +43,7 @@ export default async function KycReviewPage({
   const resolvedSearchParams = searchParams ? await searchParams : {};
 
   const { status: kyc, error: kycError } = await getVerificationStatus(userId);
-  const profile = await getProfile(userId);
+  const profile = await getProfileById(userId);
 
   if (kycError || !kyc) {
     return (

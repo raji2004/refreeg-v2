@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getCause } from "@/actions/cause-actions";
 import { auth } from "@/lib/auth/auth";
-import { getProfile } from "@/actions/profile-actions";
+import { getProfileById } from "@/lib/profile/get-profile";
 import { listDonationsForCause } from "@/actions/donation-actions";
 import { listCommentsForCause } from "@/actions/comment-actions";
 import { getApprovedProofUpdates } from "@/actions/proof-update-actions";
@@ -76,8 +76,8 @@ export default async function CauseDetailPage({
   }
 
   const [myprofile, creatorProfile] = await Promise.all([
-    user ? getProfile(user.id as string) : Promise.resolve(undefined),
-    getProfile(cause.user_id),
+    user ? getProfileById(user.id as string) : Promise.resolve(undefined),
+    getProfileById(cause.user_id),
   ]);
 
   const profile = {

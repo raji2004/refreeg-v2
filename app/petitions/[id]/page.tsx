@@ -10,7 +10,7 @@ import { SignatureForm } from "@/components/signature-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getPetition } from "@/actions/petition-actions";
 import { auth } from "@/lib/auth/auth";
-import { getProfile, getProfileByUsername } from "@/actions/profile-actions";
+import { getProfileById } from "@/lib/profile/get-profile";
 import {
   listSignaturesForPetition,
   checkUserSignature,
@@ -145,11 +145,11 @@ export default async function PetitionDetailPage({
           return [];
         }
       })(),
-      user ? getProfile(user.id as string) : Promise.resolve(undefined),
+      user ? getProfileById(user.id as string) : Promise.resolve(undefined),
       user
         ? checkUserSignature(petition.id, user.id as string)
         : Promise.resolve(false),
-      getProfile(petition.user_id),
+      getProfileById(petition.user_id),
     ]);
 
   const signers = initialSigners;

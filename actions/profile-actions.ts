@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth/auth";
 import type {
   Profile,
   ProfileFormData,
@@ -9,75 +10,20 @@ import type {
   OnboardingProfileData,
 } from "@/types";
 import { KycStatus, KycVerification } from "@/types/kyc-types";
-
-function mapPrismaToProfile(p: any): Profile {
-  return {
-    id: p.id,
-    email: p.email,
-    full_name: p.fullName,
-    first_name: p.firstName,
-    last_name: p.lastName,
-    username: p.username,
-    display_name: p.displayName ?? null,
-    phone: p.phone,
-    location: p.location,
-    donation_preference: p.donationPreference ?? "named",
-    account_number: p.accountNumber,
-    bank_name: p.bankName,
-    account_name: p.accountName,
-    sub_account_code: p.subAccountCode,
-    flutterwave_sub_account_id: p.flutterwaveSubAccountId || null,
-    profile_photo: p.profilePhoto,
-    is_blocked: p.isBlocked ?? false,
-    referral_code: p.referralCode || null,
-    created_at: p.createdAt.toISOString(),
-    updated_at: p.updatedAt?.toISOString() || new Date().toISOString(),
-    account_type: p.accountType as any,
-    is_verified: p.isVerified ?? false,
-    total_points: p.total_points ?? 0,
-    interests: p.interests ?? [],
-    gender: p.gender,
-    bio: p.bio,
-    twitter_url: p.twitter_url,
-    facebook_url: p.facebook_url,
-    instagram_url: p.instagram_url,
-    linkedin_url: p.linkedin_url,
-    crypto_wallets: p.crypto_wallets ?? null,
-  } as Profile;
-}
+import {
+  requireAdminOrManager,
+  requireSelfOrStaff,
+} from "@/lib/auth/admin-auth";
+import { getProfileById, mapPrismaToProfile } from "@/lib/profile/get-profile";
 
 export async function getProfile(userId: string): Promise<Profile | null> {
-  try {
-    // A Prisma `_count` include makes Postgres GROUP BY the whole causes and
-    // donations tables on every profile read; a filtered count uses the
-    // user_id index instead.
-    const [profile, donationCount] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: userId },
-        omit: { password: true },
-      }),
-      prisma.donation.count({ where: { userId } }),
-    ]);
-
-    if (!profile) return null;
-
-    const mapped = mapPrismaToProfile(profile);
-    mapped.causes_count = donationCount;
-    return mapped;
-  } catch (error) {
-    console.error("Error fetching profile:", error);
-    throw error;
-  }
+  await requireSelfOrStaff(userId);
+  return getProfileById(userId);
 }
 
 export async function hasBankDetails(userId: string): Promise<boolean> {
-  const profile = await getProfile(userId);
-  console.log("hasBankDetails check for user:", userId);
-  console.log("Profile data found:", {
-    exists: !!profile,
-    account_number: profile?.account_number,
-    bank_name: profile?.bank_name,
-  });
+  await requireSelfOrStaff(userId);
+  const profile = await getProfileById(userId);
   return !!(profile && profile.account_number && profile.bank_name);
 }
 
@@ -85,6 +31,7 @@ export async function updateProfile(
   userId: string,
   profileData: ProfileFormData,
 ): Promise<Profile> {
+  await requireSelfOrStaff(userId);
   try {
     const data = await prisma.user.update({
       where: { id: userId },
@@ -137,6 +84,7 @@ export async function updateProfilePhoto(
   userId: string,
   photoFile: File,
 ): Promise<string> {
+  await requireSelfOrStaff(userId);
   const ext = photoFile.name.split(".").pop() || "jpg";
   const uniqueId = Math.random().toString(36).substring(2, 15);
   try {
@@ -169,6 +117,7 @@ export async function updateBankDetails(
   userId: string,
   bankData: BankDetailsFormData,
 ): Promise<Profile> {
+  await requireSelfOrStaff(userId);
   try {
     const data = await prisma.user.update({
       where: { id: userId },
@@ -196,6 +145,7 @@ export async function createOnboardingProfile(
   profileData: OnboardingProfileData,
   oauthAvatarUrl?: string | null,
 ): Promise<any> {
+  await requireSelfOrStaff(userId);
   const existingProfile = await prisma.user.findUnique({
     where: { id: userId },
     select: { profilePhoto: true, accountType: true },
@@ -259,8 +209,6 @@ export async function createOnboardingProfile(
       data: updateData,
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/");
     return data;
   } catch (error: any) {
     console.error("Error creating/updating profile:", error);
@@ -268,108 +216,35 @@ export async function createOnboardingProfile(
   }
 }
 
-export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
-  try {
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        fullName: true,
-        phone: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        location: true,
-        createdAt: true,
-        onboarding_completed: true,
-      },
-    });
+const ONBOARDING_SELECT = {
+  accountType: true,
+  gender: true,
+  firstName: true,
+  lastName: true,
+  username: true,
+  location: true,
+  phone: true,
+  email: true,
+  profilePhoto: true,
+  createdAt: true,
+  onboarding_completed: true,
+} as const;
 
-    if (!profile) {
-      return false;
-    }
+type OnboardingRow = {
+  accountType: string | null;
+  gender: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  username: string | null;
+  location: string | null;
+  phone: string | null;
+  email: string | null;
+  profilePhoto: string | null;
+  createdAt: Date;
+  onboarding_completed: boolean | null;
+};
 
-    if (profile.onboarding_completed === true) {
-      return true;
-    }
-
-    // Preserve access for legacy accounts that predate the onboarding wizard.
-    return new Date(profile.createdAt) < new Date("2024-12-21");
-  } catch (error) {
-    console.error("Error checking onboarding completion:", error);
-    return false;
-  }
-}
-
-export async function getCurrentOnboardingStep(
-  userId: string,
-): Promise<number> {
-  try {
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        accountType: true,
-        gender: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        location: true,
-        phone: true,
-        email: true,
-        profilePhoto: true,
-      },
-    });
-
-    if (!profile) {
-      return 1;
-    }
-
-    if (!profile.accountType) {
-      return 1;
-    }
-
-    if (profile.accountType !== "organization" && !profile.gender) {
-      return 2;
-    }
-
-    const hasProfileData = !!(
-      profile.firstName &&
-      profile.lastName &&
-      profile.username &&
-      profile.location &&
-      profile.phone &&
-      profile.email
-    );
-
-    if (!hasProfileData) {
-      return 3;
-    }
-
-    // For organization accounts, check if org setup is complete (Step 3B)
-    if (profile.accountType === "organization") {
-      const org = await prisma.organization.findFirst({
-        where: { ownerId: userId },
-        select: { logoUrl: true, preferences: true },
-      });
-      // Org setup step: logo is optional, but we use a flag in preferences
-      // to know the user has visited the step. If preferences is still the
-      // default empty object "{}", they haven't been through org setup.
-      const prefs = org?.preferences as Record<string, unknown> | null;
-      const hasVisitedOrgSetup = prefs && Object.keys(prefs).length > 0;
-      if (!hasVisitedOrgSetup) {
-        // Return a special value — the orchestrator maps this to step 3B
-        return 3.5;
-      }
-    }
-
-    return 4;
-  } catch (error) {
-    console.error("Error determining onboarding step:", error);
-    return 1;
-  }
-}
-
-export async function getOnboardingData(userId: string): Promise<{
+export type OnboardingData = {
   accountType: string;
   gender: string;
   profile: {
@@ -381,65 +256,123 @@ export async function getOnboardingData(userId: string): Promise<{
     email: string;
     profilePhoto?: string;
   };
-}> {
-  try {
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        accountType: true,
-        gender: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        location: true,
-        phone: true,
-        email: true,
-        profilePhoto: true,
-      },
+};
+
+function loadOnboardingRow(userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: ONBOARDING_SELECT,
+  }) as Promise<OnboardingRow | null>;
+}
+
+function isOnboardingDone(profile: OnboardingRow | null): boolean {
+  if (!profile) return false;
+  if (profile.onboarding_completed === true) return true;
+  // Preserve access for legacy accounts that predate the onboarding wizard.
+  return new Date(profile.createdAt) < new Date("2024-12-21");
+}
+
+async function onboardingStepFor(
+  userId: string,
+  profile: OnboardingRow | null,
+): Promise<number> {
+  if (!profile?.accountType) return 1;
+
+  if (profile.accountType !== "organization" && !profile.gender) return 2;
+
+  const hasProfileData = !!(
+    profile.firstName &&
+    profile.lastName &&
+    profile.username &&
+    profile.location &&
+    profile.phone &&
+    profile.email
+  );
+  if (!hasProfileData) return 3;
+
+  if (profile.accountType === "organization") {
+    const org = await prisma.organization.findFirst({
+      where: { ownerId: userId },
+      select: { preferences: true },
     });
+    // Preferences stay "{}" until the owner has been through org setup (3B).
+    const prefs = org?.preferences as Record<string, unknown> | null;
+    if (!prefs || Object.keys(prefs).length === 0) return 3.5;
+  }
 
-    if (!profile) {
-      return {
-        accountType: "",
-        gender: "",
-        profile: {
-          firstName: "",
-          lastName: "",
-          username: "",
-          location: "",
-          phone: "",
-          email: "",
-        },
-      };
-    }
+  return 4;
+}
 
-    return {
-      accountType: profile.accountType || "",
-      gender: profile.gender || "",
-      profile: {
-        firstName: profile.firstName || "",
-        lastName: profile.lastName || "",
-        username: profile.username || "",
-        location: profile.location || "",
-        phone: profile.phone || "",
-        email: profile.email || "",
-        profilePhoto: profile.profilePhoto || undefined,
-      },
-    };
+function onboardingDataFrom(profile: OnboardingRow | null): OnboardingData {
+  return {
+    accountType: profile?.accountType || "",
+    gender: profile?.gender || "",
+    profile: {
+      firstName: profile?.firstName || "",
+      lastName: profile?.lastName || "",
+      username: profile?.username || "",
+      location: profile?.location || "",
+      phone: profile?.phone || "",
+      email: profile?.email || "",
+      profilePhoto: profile?.profilePhoto || undefined,
+    },
+  };
+}
+
+// Everything the onboarding page needs on load, for the signed-in user, in
+// one round trip.
+export async function getOnboardingState(): Promise<{
+  completed: boolean;
+  step: number;
+  data: OnboardingData;
+} | null> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return null;
+
+  const profile = await loadOnboardingRow(userId);
+  if (isOnboardingDone(profile)) {
+    return { completed: true, step: 4, data: onboardingDataFrom(profile) };
+  }
+
+  return {
+    completed: false,
+    step: await onboardingStepFor(userId, profile),
+    data: onboardingDataFrom(profile),
+  };
+}
+
+export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
+  await requireSelfOrStaff(userId);
+  try {
+    return isOnboardingDone(await loadOnboardingRow(userId));
+  } catch (error) {
+    console.error("Error checking onboarding completion:", error);
+    return false;
+  }
+}
+
+export async function getCurrentOnboardingStep(
+  userId: string,
+): Promise<number> {
+  await requireSelfOrStaff(userId);
+  try {
+    return await onboardingStepFor(userId, await loadOnboardingRow(userId));
+  } catch (error) {
+    console.error("Error determining onboarding step:", error);
+    return 1;
+  }
+}
+
+export async function getOnboardingData(
+  userId: string,
+): Promise<OnboardingData> {
+  await requireSelfOrStaff(userId);
+  try {
+    return onboardingDataFrom(await loadOnboardingRow(userId));
   } catch (error) {
     console.error("Error fetching onboarding data:", error);
-    return {
-      accountType: "",
-      gender: "",
-      profile: {
-        firstName: "",
-        lastName: "",
-        username: "",
-        location: "",
-        phone: "",
-        email: "",
-      },
-    };
+    return onboardingDataFrom(null);
   }
 }
 
@@ -447,6 +380,7 @@ export async function saveStep1Progress(
   userId: string,
   accountType: string,
 ): Promise<void> {
+  await requireSelfOrStaff(userId);
   try {
     const existing = await prisma.user.findUnique({
       where: { id: userId },
@@ -471,8 +405,6 @@ export async function saveStep1Progress(
             : accountType,
       },
     });
-
-    revalidatePath("/onboarding");
   } catch (error) {
     console.error("Error in saveStep1Progress:", error);
     throw error;
@@ -483,6 +415,7 @@ export async function saveStep2Progress(
   userId: string,
   gender: string,
 ): Promise<void> {
+  await requireSelfOrStaff(userId);
   try {
     await prisma.user.update({
       where: { id: userId },
@@ -490,8 +423,6 @@ export async function saveStep2Progress(
         gender: gender,
       },
     });
-
-    revalidatePath("/onboarding");
   } catch (error) {
     console.error("Error in saveStep2Progress:", error);
     throw error;
@@ -532,6 +463,7 @@ export async function checkUsernameAvailability(
  * Fetch the organization onboarding data for the owner to pre-fill Step 3B.
  */
 export async function getOrganizationOnboardingData(userId: string) {
+  await requireSelfOrStaff(userId);
   try {
     const org = await prisma.organization.findFirst({
       where: { ownerId: userId },
@@ -578,6 +510,7 @@ export async function getOrganizationOnboardingData(userId: string) {
 }
 
 export async function completeOnboarding(userId: string): Promise<void> {
+  await requireSelfOrStaff(userId);
   const profile = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -619,6 +552,7 @@ export async function completeOnboarding(userId: string): Promise<void> {
 export async function isProfileComplete(
   userId: string,
 ): Promise<{ isComplete: boolean; missingFields: string[] }> {
+  await requireSelfOrStaff(userId);
   try {
     const profile = await prisma.user.findUnique({
       where: { id: userId },
@@ -652,6 +586,7 @@ export async function isProfileComplete(
 export async function hasKycVerification(
   userId: string,
 ): Promise<KycVerification | null> {
+  await requireSelfOrStaff(userId);
   try {
     const data = await prisma.kyc_verifications.findFirst({
       where: { user_id: userId },
@@ -680,6 +615,7 @@ export async function updateKycStatus(
   status: KycStatus,
   notes?: string,
 ) {
+  await requireAdminOrManager();
   try {
     const data = await prisma.kyc_verifications.update({
       where: { id: verificationId },
@@ -698,20 +634,3 @@ export async function updateKycStatus(
 }
 
 // 👇 REMOVED: getSolanaWallet, updateSolanaWallet, getPolygonWallet, updatePolygonWallet
-
-export async function getProfileByUsername(
-  username: string,
-): Promise<Profile | null> {
-  try {
-    const profile = await prisma.user.findUnique({
-      where: { username },
-    });
-
-    if (!profile) return null;
-
-    return mapPrismaToProfile(profile);
-  } catch (error) {
-    console.error("Error in getProfileByUsername:", error);
-    return null;
-  }
-}

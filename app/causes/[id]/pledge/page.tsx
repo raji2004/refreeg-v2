@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getCause } from "@/actions/cause-actions";
 import { getSessionUser } from "@/lib/auth/session-user";
-import { getProfile } from "@/actions/profile-actions";
+import { getProfileById } from "@/lib/profile/get-profile";
 import PledgeScreen from "@/app/campaign/_components/pledge-screen";
 import { causePublicPath } from "@/lib/causes/slug";
 
@@ -24,7 +24,7 @@ export default async function CausePledgePage({
   }
 
   const user = await getSessionUser();
-  const myprofile = user ? await getProfile(user.id) : undefined;
+  const myprofile = user ? await getProfileById(user.id) : undefined;
 
   const profile = {
     email: myprofile?.email || "",

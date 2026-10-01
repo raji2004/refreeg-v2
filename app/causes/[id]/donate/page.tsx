@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getCause } from "@/actions/cause-actions";
 import { getCurrentUser } from "@/actions/auth-actions";
-import { getProfile } from "@/actions/profile-actions";
+import { getProfileById } from "@/lib/profile/get-profile";
 import QuickDonateForm from "./QuickDonateForm";
 import type { Metadata } from "next";
 import { causePublicPath } from "@/lib/causes/slug";
@@ -46,7 +46,7 @@ export default async function QuickDonatePage({
     }
   }
 
-  const profile = user ? await getProfile(user.id) : null;
+  const profile = user ? await getProfileById(user.id) : null;
 
   return (
     <QuickDonateForm

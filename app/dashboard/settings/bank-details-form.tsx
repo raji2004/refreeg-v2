@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/popover";
 import { Icons } from "@/components/icons";
 import { useBank } from "@/hooks/use-bank";
-import { sendBankAccountAddedEmail } from "@/services/mail";
+import { sendBankAccountAddedEmail } from "@/actions/user-mail-actions";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown } from "lucide-react";

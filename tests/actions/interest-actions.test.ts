@@ -7,6 +7,11 @@ jest.mock("@/lib/prisma", () => ({
 }));
 
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
+jest.mock("@/lib/auth/auth", () => ({ auth: jest.fn() }));
+jest.mock("@/lib/auth/admin-auth", () => ({
+  requireSelfOrStaff: jest.fn(),
+  requireAdminOrManager: jest.fn(),
+}));
 
 jest.mock("@/actions/cause-actions", () => ({
   listCauses: jest.fn(),

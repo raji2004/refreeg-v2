@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireSelfOrStaff } from "@/lib/auth/admin-auth";
 import { countCausesByCategory, listCauses } from "@/actions/cause-actions";
 import { interestOptions } from "@/lib/interest-categories";
 import type { Cause } from "@/types/cause-types";
@@ -61,6 +61,7 @@ export async function saveUserInterests(
   userId: string,
   data: { interests: string[]; location?: string },
 ): Promise<void> {
+  await requireSelfOrStaff(userId);
   await prisma.user.update({
     where: { id: userId },
     data: {
@@ -68,6 +69,4 @@ export async function saveUserInterests(
       interest_location: data.location || null,
     },
   });
-
-  revalidatePath("/dashboard");
 }

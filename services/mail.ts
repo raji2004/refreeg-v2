@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import nodemailer from "nodemailer";
 import fs from "fs";
@@ -7,7 +7,7 @@ import Handlebars from "handlebars";
 import type { TemplateDelegate } from "handlebars";
 import { headers } from "next/headers";
 import { getCurrentUser } from "@/actions/auth-actions";
-import { getProfile } from "@/actions/profile-actions";
+import { getProfileById } from "@/lib/profile/get-profile";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -152,7 +152,7 @@ export async function sendCauseUnderReviewEmail(context: {
   if (!user) {
     return { success: false, error: "User not found" };
   }
-  const profile = await getProfile(user.id);
+  const profile = await getProfileById(user.id);
   const currentYear = new Date().getFullYear();
 
   return sendMail({
@@ -178,7 +178,7 @@ export async function sendPetitionUnderReviewEmail(context: {
   if (!user) {
     return { success: false, error: "User not found" };
   }
-  const profile = await getProfile(user.id);
+  const profile = await getProfileById(user.id);
   return sendMail({
     to: profile?.email || "",
     subject: "Your Petition is Under Review",
@@ -196,7 +196,7 @@ export async function sendPetitionApprovedEmailForUser(
   userId: string,
   context: { petitionName: string },
 ) {
-  const profile = await getProfile(userId);
+  const profile = await getProfileById(userId);
   if (!profile?.email) throw new Error("Recipient email not found");
 
   const petitionLink =
@@ -219,7 +219,7 @@ export async function sendPetitionRejectedEmailForUser(
   userId: string,
   context: { petitionName: string; rejectionReason?: string },
 ) {
-  const profile = await getProfile(userId);
+  const profile = await getProfileById(userId);
   if (!profile?.email) throw new Error("Recipient email not found");
 
   const petitionResubmitLink =
@@ -247,7 +247,7 @@ export async function sendBankAccountAddedEmail(context: {
   if (!user) {
     return { success: false, error: "User not found" };
   }
-  const profile = await getProfile(user.id);
+  const profile = await getProfileById(user.id);
   const currentYear = new Date().getFullYear();
   return sendMail({
     to: profile?.email || "",
@@ -346,7 +346,7 @@ export async function sendCauseRejectedEmailForUser(
     dashboardUrl: string;
   },
 ) {
-  const profile = await getProfile(userId);
+  const profile = await getProfileById(userId);
   if (!profile?.email) throw new Error("Recipient email not found");
 
   return sendMail({
@@ -478,16 +478,13 @@ export async function sendLoginNotificationEmail(context: {
     if (!user) {
       return { success: false, error: "User not found" };
     }
-    const profile = await getProfile(user.id);
+    const profile = await getProfileById(user.id);
     profileEmail = profile?.email || "";
     profileName = profile?.full_name || "User";
   }
 
   const currentYear = new Date().getFullYear();
 
-  
-  
-  
   let ipAddress = "Unknown IP";
   try {
     const headersList = await headers();
@@ -496,7 +493,6 @@ export async function sendLoginNotificationEmail(context: {
 
     let detectedIp = (xff?.split(",")[0] || xri || "Unknown IP").trim();
 
-    
     if (detectedIp === "::1" || detectedIp === "127.0.0.1") {
       detectedIp = `${detectedIp} (Localhost)`;
     }
@@ -533,7 +529,7 @@ export async function sendCauseEditedEmail({
   if (!user) {
     return { success: false, error: "User not found" };
   }
-  const profile = await getProfile(user.id);
+  const profile = await getProfileById(user.id);
   const currentYear = new Date().getFullYear();
 
   return sendMail({
@@ -691,7 +687,7 @@ export async function sendIncompleteCauseSetupEmail(context: {
   if (!user) {
     return { success: false, error: "User not found" };
   }
-  const profile = await getProfile(user.id);
+  const profile = await getProfileById(user.id);
   const currentYear = new Date().getFullYear();
   return sendMail({
     to: profile?.email || "",
@@ -713,7 +709,7 @@ export async function sendIncompleteKycVerificationEmail(context: {
   if (!user) {
     return { success: false, error: "User not found" };
   }
-  const profile = await getProfile(user.id);
+  const profile = await getProfileById(user.id);
   const currentYear = new Date().getFullYear();
   return sendMail({
     to: profile?.email || "",
@@ -734,7 +730,7 @@ export async function sendIncompletePetitionDraftEmail(context: {
   if (!user) {
     return { success: false, error: "User not found" };
   }
-  const profile = await getProfile(user.id);
+  const profile = await getProfileById(user.id);
   const currentYear = new Date().getFullYear();
   return sendMail({
     to: profile?.email || "",
@@ -757,7 +753,7 @@ export async function sendUnfinishedDonationEmail(context: {
   if (!user) {
     return { success: false, error: "User not found" };
   }
-  const profile = await getProfile(user.id);
+  const profile = await getProfileById(user.id);
   const currentYear = new Date().getFullYear();
   return sendMail({
     to: profile?.email || "",

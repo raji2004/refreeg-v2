@@ -55,6 +55,7 @@ const config: Config = {
     "^next-auth/react$": "<rootDir>/__mocks__/next-auth-react.ts",
     "^next/navigation$": "<rootDir>/__mocks__/next-navigation.ts",
     "^nextjs-toploader/app$": "<rootDir>/__mocks__/next-navigation.ts",
+    "^server-only$": "<rootDir>/__mocks__/styleMock.js",
     "^next/cache$": "<rootDir>/__mocks__/next-cache.ts",
     "\\.(css|less|scss|sass)$": "<rootDir>/__mocks__/styleMock.js",
   },

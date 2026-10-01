@@ -53,3 +53,20 @@ export async function requireAdminOrManager() {
 
   return session.user;
 }
+
+// For server actions that take a userId from the client: only that user, or
+// staff, may act on it.
+export async function requireSelfOrStaff(userId: string) {
+  const session = await auth();
+  const currentUserId = session?.user?.id;
+
+  if (!currentUserId) {
+    throw new Error("Not authenticated");
+  }
+
+  if (currentUserId !== userId && !(await isManager(currentUserId))) {
+    throw new Error("Not authorized");
+  }
+
+  return session.user;
+}

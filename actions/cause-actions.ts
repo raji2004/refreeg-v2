@@ -74,12 +74,12 @@ const mapPrismaToCause = (prismaCause: any): Cause => {
 };
 
 export async function getQuickDonateProps(causeId: string) {
-  const { getProfile } = await import("./profile-actions");
+  const { getProfileById } = await import("@/lib/profile/get-profile");
   const cause = await getCause(causeId);
   if (!cause) return null;
 
   const user = await getCurrentUser();
-  const profile = user ? await getProfile(user.id) : null;
+  const profile = user ? await getProfileById(user.id) : null;
 
   return {
     causeId: cause.id,
