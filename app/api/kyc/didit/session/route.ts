@@ -78,6 +78,27 @@ export async function POST(request: Request) {
     const sessionUrl =
       data.url || `https://verification.didit.me/v3/session/${sessionId}`;
 
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        fullName: true,
+        firstName: true,
+        lastName: true,
+        displayName: true,
+        username: true,
+      },
+    });
+
+    const resolvedName =
+      dbUser?.fullName ||
+      (dbUser?.firstName && dbUser?.lastName
+        ? `${dbUser.firstName} ${dbUser.lastName}`
+        : dbUser?.firstName) ||
+      dbUser?.displayName ||
+      user.name ||
+      dbUser?.username ||
+      "Refreegerian";
+
     await prisma.kyc_verifications.create({
       data: {
         user_id: user.id,
@@ -85,8 +106,7 @@ export async function POST(request: Request) {
         document_url: `${sessionId}:::${sessionUrl}`,
         status: "pending",
         verification_notes: "Session initialized via Didit",
-        full_name:
-          (user as any).full_name || (user as any).fullName || "Didit User",
+        full_name: resolvedName,
       },
     });
 
