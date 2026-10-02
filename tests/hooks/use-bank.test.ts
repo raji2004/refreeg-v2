@@ -51,12 +51,12 @@ describe("useBank", () => {
       () =>
         useBank({
           userId: "user-123",
+          businessEmail: "user@example.com",
           initialData: {
             account_number: "0000000000",
             bank_name: "Access Bank",
             account_name: "John Doe",
             sub_account_code: "SUB_123",
-            flutterwave_sub_account_id: "FLW_SUB_456",
           },
         }),
       { wrapper: createWrapper() },
@@ -72,7 +72,7 @@ describe("useBank", () => {
 
   it("updates form data when handleBankChange is called", async () => {
     const { result } = renderHook(
-      () => useBank({ userId: "user-1" }),
+      () => useBank({ userId: "user-1", businessEmail: "user@example.com" }),
       { wrapper: createWrapper() },
     );
 
@@ -117,6 +117,7 @@ describe("useBank", () => {
       () =>
         useBank({
           userId: "user-1",
+          businessEmail: "user@example.com",
           initialData: {
             account_number: "",
             bank_name: "",

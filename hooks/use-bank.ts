@@ -12,9 +12,10 @@ interface UseBankProps {
     sub_account_code: string | null;
   };
   userId: string;
+  businessEmail: string;
 }
 
-export function useBank({ initialData, userId }: UseBankProps) {
+export function useBank({ initialData, userId, businessEmail }: UseBankProps) {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -186,11 +187,15 @@ export function useBank({ initialData, userId }: UseBankProps) {
       if (!bank) {
         throw new Error("Bank not found");
       }
+      if (!businessEmail) {
+        throw new Error("An account email is required to save a bank account");
+      }
 
       const data: ICreateSubaccount = {
         bank_code: bank.code,
         account_number: formData.accountNumber,
         business_name: formData.accountName,
+        business_email: businessEmail,
         percentage_charge: 0,
       };
 
@@ -225,6 +230,7 @@ export function useBank({ initialData, userId }: UseBankProps) {
         title: "Success",
         description: "Bank details updated successfully",
       });
+      return true;
     } catch (error: any) {
       console.error("Error updating bank details:", error);
       toast({
@@ -232,6 +238,7 @@ export function useBank({ initialData, userId }: UseBankProps) {
         description: error.message || "Failed to update bank details",
         variant: "destructive",
       });
+      return false;
     } finally {
       setIsSubmitting(false);
     }
