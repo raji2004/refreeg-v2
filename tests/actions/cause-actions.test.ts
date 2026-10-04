@@ -35,6 +35,16 @@ jest.mock("@/actions/role-actions", () => ({
   isAdminOrManager: jest.fn(),
 }));
 
+// after() needs a live request; run the callback inline instead.
+jest.mock("next/server", () => ({
+  ...jest.requireActual("next/server"),
+  after: (fn: () => unknown) => fn(),
+}));
+
+jest.mock("@/lib/media/cause-image-render", () => ({
+  warmCauseImage: jest.fn().mockResolvedValue("rendered"),
+}));
+
 jest.mock("@/services/mail", () => ({
   sendCauseSubmissionAdminNotification: jest.fn().mockResolvedValue(undefined),
   sendCauseRejectedEmailForUser: jest.fn().mockResolvedValue(undefined),
@@ -58,6 +68,7 @@ import { isAdminOrManager } from "@/actions/role-actions";
 import { sendCauseRejectedEmailForUser } from "@/services/mail";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { warmCauseImage } from "@/lib/media/cause-image-render";
 import {
   getCause,
   createCause,
@@ -315,6 +326,7 @@ describe("cause-actions", () => {
       expect(causeCreateData).toBeDefined();
       expect(causeCreateData.image).toBe(s3CoverKey);
       expect(causeCreateData.multimedia).toEqual([s3GalleryKey]);
+      expect(warmCauseImage).toHaveBeenCalledWith(s3CoverKey);
     });
   });
 
