@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { after } from "next/server";
+import { warmCauseImage } from "@/lib/media/cause-image-render";
 import { DISCOVER_CACHE_TAG } from "@/lib/discover-constants";
 import type {
   Cause,
@@ -378,6 +380,13 @@ export async function createCause(
       console.error("Error sending cause admin notification:", error);
     }
 
+    // Render the card image now so the first visitor doesn't pay for it.
+    after(() =>
+      warmCauseImage(coverImageUrl).catch((err) =>
+        console.error("Cause cover warm failed:", err),
+      ),
+    );
+
     revalidatePath("/dashboard/causes");
     return mapPrismaToCause(cause);
   } catch (causeError) {
@@ -528,6 +537,13 @@ export async function updateCause(
     } catch (error) {
       console.error("Error sending cause edit admin notification:", error);
     }
+
+    // Render the card image now so the first visitor doesn't pay for it.
+    after(() =>
+      warmCauseImage(coverImageUrl).catch((err) =>
+        console.error("Cause cover warm failed:", err),
+      ),
+    );
 
     revalidatePath("/dashboard/causes");
     return editData;
