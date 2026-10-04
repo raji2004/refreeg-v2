@@ -3,6 +3,15 @@
 import type React from "react";
 import { usePathname } from "next/navigation";
 
+/**
+ * Dashboard content chrome (max-width, padding, the rounded card look).
+ * The sidebar this used to render itself (DashboardNav) is now supplied
+ * globally by components/app-shell/app-shell.tsx, so this only owns the
+ * content-area styling — not navigation.
+ *
+ * Settings uses the cream/ink system (docs/DESIGN_GUIDE.md) and skips the
+ * legacy glass card so it can sit flush on AppShell's cream background.
+ */
 export default function ClientLayoutWrapper({
   children,
 }: {
@@ -11,6 +20,7 @@ export default function ClientLayoutWrapper({
   const pathname = usePathname();
   const hideNav = pathname.startsWith("/dashboard/settings/kyc-setup");
   const isSettings = pathname.startsWith("/dashboard/settings") && !hideNav;
+  const isDashboardRoot = pathname === "/dashboard";
 
   if (hideNav) {
     return (
@@ -22,7 +32,7 @@ export default function ClientLayoutWrapper({
     );
   }
 
-  if (isSettings) {
+  if (isSettings || isDashboardRoot) {
     return <div className="min-h-full w-full bg-cream">{children}</div>;
   }
 
