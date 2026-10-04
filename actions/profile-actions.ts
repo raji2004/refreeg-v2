@@ -42,6 +42,7 @@ function mapPrismaToProfile(p: any): Profile {
     facebook_url: p.facebook_url,
     instagram_url: p.instagram_url,
     linkedin_url: p.linkedin_url,
+    crypto_wallets: p.crypto_wallets ?? null,
   } as Profile;
 }
 

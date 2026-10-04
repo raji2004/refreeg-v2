@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,7 +89,10 @@ import {
   MAX_VIDEOS_PER_CAUSE,
   validateGalleryVideo,
 } from "@/lib/media/video";
-import { resolveMultimediaForSubmit } from "@/lib/s3/upload-client";
+import {
+  resolveMultimediaForSubmit,
+  uploadFileWithPresign,
+} from "@/lib/s3/upload-client";
 import {
   CAUSE_COVER_ACCEPT,
   CAUSE_COVER_DESCRIPTION,
@@ -150,7 +153,7 @@ type CauseFormData = {
   category: string;
   goal: string;
   currency: string;
-  coverImage: File | null;
+  coverImage: File | string | null;
   sections: { heading: string; description: string }[];
   startDate: Date | undefined;
   endDate: Date | undefined;
@@ -442,7 +445,10 @@ export default function CreateCauseForm() {
       return;
     }
 
-    setFormData((prev) => ({ ...prev, coverImage: file }));
+    const { compressImage } = await import("@/utils/image-compression");
+    const compressed = await compressImage(file, 1600, 0.8);
+
+    setFormData((prev) => ({ ...prev, coverImage: compressed }));
     if (errors.coverImage) {
       setErrors((prev) => ({ ...prev, coverImage: undefined }));
     }
@@ -638,8 +644,17 @@ export default function CreateCauseForm() {
       video_links: formData.videoLinks,
     };
     try {
-      // Videos go direct to S3 via presign; images stay as Files for server action
       const draftEntityId = crypto.randomUUID();
+
+      if (formData.coverImage instanceof File) {
+        const { key } = await uploadFileWithPresign(formData.coverImage, {
+          entityType: "causes",
+          entityId: draftEntityId,
+          mediaType: "images",
+        });
+        causeData.coverImage = key;
+      }
+
       causeData.multimedia = await resolveMultimediaForSubmit(
         formData.multimedia || [],
         { entityType: "causes", entityId: draftEntityId },

@@ -29,6 +29,7 @@ jest.mock("@/lib/event-bus", () => ({
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import {
   recordEvent,
   addRewards,
@@ -39,7 +40,7 @@ import {
 
 const mockPrisma = prisma as unknown as {
   events: { findFirst: jest.Mock; create: jest.Mock };
-  rewardTransaction: { create: jest.Mock };
+  rewardTransaction: { create: jest.Mock; findMany: jest.Mock };
   userWallet: { findUnique: jest.Mock; upsert: jest.Mock };
   userStreak: { findUnique: jest.Mock; upsert: jest.Mock };
 };
@@ -221,34 +222,67 @@ describe("event-reward-actions", () => {
 
   describe("getUserWallet", () => {
     it("returns wallet and recent transactions", async () => {
-      const wallet = { userId: "user-1", balance: 500 };
-      const transactions = [{ id: "tx-1", amount: 50 }];
-      mockPrisma.userWallet.findUnique.mockResolvedValue(wallet);
-      mockPrisma.rewardTransaction.findMany = jest
-        .fn()
-        .mockResolvedValue(transactions);
+      const createdAt = new Date("2026-01-01T00:00:00.000Z");
+      mockPrisma.userWallet.findUnique.mockResolvedValue({
+        userId: "user-1",
+        balance: new Prisma.Decimal(500),
+      });
+      mockPrisma.rewardTransaction.findMany = jest.fn().mockResolvedValue([
+        {
+          id: "tx-1",
+          userId: "user-1",
+          amount: new Prisma.Decimal(50),
+          transactionType: "comment",
+          event_id: null,
+          status: "completed",
+          createdAt,
+          updatedAt: createdAt,
+        },
+      ]);
 
       const result = await getUserWallet("user-1");
 
-      expect(result.wallet).toEqual(wallet);
-      expect(result.transactions).toEqual(transactions);
+      expect(result.wallet).toEqual({ balance: 500 });
+      expect(result.transactions).toEqual([
+        {
+          id: "tx-1",
+          user_id: "user-1",
+          amount: 50,
+          transaction_type: "comment",
+          event_id: "",
+          status: "completed",
+          created_at: createdAt.toISOString(),
+          updated_at: createdAt.toISOString(),
+        },
+      ]);
       expect(result.walletError).toBeNull();
     });
   });
 
   describe("getUserStats", () => {
     it("returns streak data when present", async () => {
-      const streak = {
+      const date = new Date("2026-01-01T00:00:00.000Z");
+      mockPrisma.userStreak.findUnique.mockResolvedValue({
+        id: "streak-1",
         userId: "user-1",
         weeklyStreak: 3,
         isMonthlyActive: true,
-        lastActiveDate: new Date("2026-01-01"),
-      };
-      mockPrisma.userStreak.findUnique.mockResolvedValue(streak);
+        lastActiveDate: date,
+        createdAt: date,
+        updatedAt: date,
+      });
 
       const result = await getUserStats("user-1");
 
-      expect(result).toEqual(streak);
+      expect(result).toEqual({
+        id: "streak-1",
+        user_id: "user-1",
+        weekly_streak: 3,
+        is_monthly_active: true,
+        last_active_date: date.toISOString(),
+        created_at: date.toISOString(),
+        updated_at: date.toISOString(),
+      });
     });
 
     it("returns default stats when no streak record exists", async () => {
@@ -257,10 +291,13 @@ describe("event-reward-actions", () => {
       const result = await getUserStats("user-1");
 
       expect(result).toEqual({
-        userId: "user-1",
-        weeklyStreak: 0,
-        isMonthlyActive: false,
-        lastActiveDate: null,
+        id: "",
+        user_id: "user-1",
+        weekly_streak: 0,
+        is_monthly_active: false,
+        last_active_date: null,
+        created_at: "",
+        updated_at: "",
       });
     });
   });

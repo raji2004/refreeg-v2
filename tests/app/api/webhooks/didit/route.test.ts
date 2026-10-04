@@ -60,40 +60,162 @@ describe("Didit Webhook POST", () => {
   });
 
   it("extracts session_id properly from Didit V3 payload (id)", async () => {
-    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({ id: "kyc-1", user_id: "user-1", status: "pending" });
+    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+      id: "kyc-1",
+      user_id: "user-1",
+      status: "pending",
+    });
     mockPrisma.user.findUnique.mockResolvedValue({ email: "test@test.com" });
-    
-    const req = createRequest({ id: "uuid-123", status: "Approved", vendorData: "user-1" });
+
+    const req = createRequest({
+      id: "uuid-123",
+      status: "Approved",
+      vendorData: "user-1",
+    });
     const res = await POST(req);
-    
+
     expect(res.status).toBe(200);
     expect(mockPrisma.kyc_verifications.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: "approved" }) })
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "approved" }),
+      }),
     );
   });
 
   it("extracts session_id properly from nested data (Didit V3)", async () => {
-    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({ id: "kyc-1", user_id: "user-1", status: "pending" });
+    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+      id: "kyc-1",
+      user_id: "user-1",
+      status: "pending",
+    });
     mockPrisma.user.findUnique.mockResolvedValue({ email: "test@test.com" });
-    
-    const req = createRequest({ data: { id: "uuid-123", status: "Approved", vendorData: "user-1" } });
+
+    const req = createRequest({
+      data: { id: "uuid-123", status: "Approved", vendorData: "user-1" },
+    });
     const res = await POST(req);
-    
+
     expect(res.status).toBe(200);
   });
 
   it("handles email failure gracefully and returns 200", async () => {
-    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({ id: "kyc-1", user_id: "user-1", status: "pending" });
+    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+      id: "kyc-1",
+      user_id: "user-1",
+      status: "pending",
+    });
     mockPrisma.user.findUnique.mockResolvedValue({ email: "test@test.com" });
-    
+
     // Simulate email crash (e.g. localhost)
-    (sendKycApprovedEmail as jest.Mock).mockRejectedValue(new Error("Email failed"));
-    
-    const req = createRequest({ session_id: "uuid-123", status: "Approved", vendor_data: "user-1" });
+    (sendKycApprovedEmail as jest.Mock).mockRejectedValue(
+      new Error("Email failed"),
+    );
+
+    const req = createRequest({
+      session_id: "uuid-123",
+      status: "Approved",
+      vendor_data: "user-1",
+    });
     const res = await POST(req);
-    
+
     // Should still return 200 despite email error
     expect(res.status).toBe(200);
     expect(mockPrisma.kyc_verifications.update).toHaveBeenCalled();
+  });
+
+  it("resolves user's account name from profile when kyc full_name is 'Didit User'", async () => {
+    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+      id: "kyc-1",
+      user_id: "user-1",
+      status: "pending",
+      full_name: "Didit User",
+    });
+    mockPrisma.user.findUnique.mockResolvedValue({
+      email: "jane@example.com",
+      fullName: "Jane Doe",
+      firstName: "Jane",
+      lastName: "Doe",
+    });
+
+    const req = createRequest({
+      id: "uuid-123",
+      status: "Approved",
+      vendorData: "user-1",
+    });
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(sendKycApprovedEmail).toHaveBeenCalledWith(
+      "jane@example.com",
+      "Jane Doe",
+    );
+  });
+
+  it("falls back to 'Refreegerian' brand tone when neither KYC nor profile has a name", async () => {
+    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+      id: "kyc-1",
+      user_id: "user-1",
+      status: "pending",
+      full_name: "Didit User",
+    });
+    mockPrisma.user.findUnique.mockResolvedValue({
+      email: "anon@example.com",
+      fullName: null,
+      firstName: null,
+      lastName: null,
+      displayName: null,
+      username: null,
+    });
+
+    const req = createRequest({
+      id: "uuid-123",
+      status: "Approved",
+      vendorData: "user-1",
+    });
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(sendKycApprovedEmail).toHaveBeenCalledWith(
+      "anon@example.com",
+      "Refreegerian",
+    );
+  });
+
+  it("notifies admins via sendKycSubmissionAdminNotification when KYC is declined/rejected", async () => {
+    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+      id: "kyc-1",
+      user_id: "user-1",
+      status: "pending",
+      full_name: "Test User",
+    });
+    mockPrisma.user.findUnique.mockResolvedValue({
+      email: "user@example.com",
+      fullName: "Test User",
+    });
+
+    const { sendKycRejectedEmail, sendKycSubmissionAdminNotification } =
+      await import("@/services/mail");
+
+    const req = createRequest({
+      id: "uuid-456",
+      status: "Declined",
+      decision_reason: "Document unreadable",
+      vendorData: "user-1",
+    });
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(sendKycRejectedEmail).toHaveBeenCalledWith(
+      "user@example.com",
+      "Test User",
+      "Document unreadable",
+    );
+    expect(sendKycSubmissionAdminNotification).toHaveBeenCalledWith(
+      "user@example.com",
+      "Test User",
+      "user-1",
+      "https://verification.didit.me/admin",
+      { isRejected: true, rejectionReason: "Document unreadable" },
+    );
   });
 });

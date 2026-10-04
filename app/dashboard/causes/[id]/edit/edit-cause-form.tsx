@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import Image from "next/image";
 import { isProxyMediaUrl } from "@/lib/s3/media";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,10 @@ import {
   MAX_VIDEOS_PER_CAUSE,
   validateGalleryVideo,
 } from "@/lib/media/video";
-import { resolveMultimediaForSubmit } from "@/lib/s3/upload-client";
+import {
+  resolveMultimediaForSubmit,
+  uploadFileWithPresign,
+} from "@/lib/s3/upload-client";
 import {
   CAUSE_COVER_ACCEPT,
   CAUSE_COVER_DESCRIPTION,
@@ -226,7 +229,9 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
         setErrors((prev) => ({ ...prev, coverImage: validationError }));
         return;
       }
-      setFormData((prev) => ({ ...prev, coverImage: file }));
+      const { compressImage } = await import("@/utils/image-compression");
+      const compressed = await compressImage(file, 1600, 0.8);
+      setFormData((prev) => ({ ...prev, coverImage: compressed }));
     }
 
     if (errors.coverImage) {
@@ -439,7 +444,8 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
       return;
     }
 
-    const causeData: Partial<FormData> & {
+    const causeData: Partial<Omit<FormData, "coverImage">> & {
+      coverImage?: File | string | null;
       video_links?: string[];
       summary?: string;
       location?: string;
@@ -459,6 +465,15 @@ export default function EditCauseForm({ cause }: EditCauseFormProps) {
     };
 
     try {
+      if (formData.coverImage instanceof File) {
+        const { key } = await uploadFileWithPresign(formData.coverImage, {
+          entityType: "causes",
+          entityId: cause.id,
+          mediaType: "images",
+        });
+        causeData.coverImage = key;
+      }
+
       causeData.multimedia = await resolveMultimediaForSubmit(
         formData.multimedia || [],
         { entityType: "causes", entityId: cause.id },

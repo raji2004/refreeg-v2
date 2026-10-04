@@ -1,7 +1,8 @@
 "use client";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useEffect, useRef } from "react";
 
 interface UserSearchProps {

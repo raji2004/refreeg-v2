@@ -59,15 +59,16 @@ export interface DonationFormData {
 }
 
 export interface SignatureFormData {
-  amount: string | number;
+  amount?: string | number;
   name: string;
   email: string;
-  message: string;
+  message?: string;
   isAnonymous: boolean;
 }
 
-export interface TransactionData
-  extends Partial<Pick<Profile, "email" | "full_name" | "id">> {
+export interface TransactionData extends Partial<
+  Pick<Profile, "email" | "full_name" | "id">
+> {
   amount: number;
   serviceFee: number;
   providerFee?: number;
@@ -96,7 +97,7 @@ export interface ICreateSubaccount {
   account_number: string;
   percentage_charge?: number;
   business_name: string;
-  business_email: string;
+  business_email?: string;
   business_mobile?: string;
 }
 

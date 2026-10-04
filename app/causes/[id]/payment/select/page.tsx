@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { usePayment } from "@/hooks/use-payment";
 import { Icons } from "@/components/icons";
 import { calculateProviderFee } from "@/lib/utils";

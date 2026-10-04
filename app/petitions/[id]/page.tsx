@@ -18,7 +18,6 @@ import {
 import { notFound } from "next/navigation";
 import { ShareModal } from "@/components/share-modal";
 import { getBaseURL } from "@/lib/utils";
-import SolanaDonationButtonWrapper from "@/components/crypto-details/Solana[Redacted]/SolanaDonationButtonWrapper";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertCircle,

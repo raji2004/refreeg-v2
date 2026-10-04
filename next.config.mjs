@@ -1,5 +1,4 @@
 import path from "path";
-import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import { withSentryConfig } from "@sentry/nextjs";
 
 let userConfig = undefined;
@@ -45,7 +44,7 @@ const nextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 30,
-    deviceSizes: [320, 420, 640, 768, 1024, 1280, 1536, 1920],
+    deviceSizes: [640, 1080, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
@@ -86,31 +85,11 @@ const nextConfig = {
     ],
   },
 
-  webpack(config, { dev, isServer }) {
+  webpack(config) {
     config.resolve.alias = {
       ...config.resolve.alias,
       handlebars: "handlebars/dist/handlebars.js",
     };
-
-    if (!dev && !isServer) {
-      config.plugins.push(
-        new MiniCssExtractPlugin({
-          filename: "static/css/[name].[contenthash].css",
-          chunkFilename: "static/css/[id].[contenthash].css",
-        }),
-      );
-
-      const cssRule = config.module.rules.find(
-        (r) => r.test && r.test.toString().includes(".css"),
-      );
-      if (cssRule) {
-        cssRule.use = [
-          MiniCssExtractPlugin.loader,
-          "css-loader",
-          "postcss-loader",
-        ];
-      }
-    }
 
     return config;
   },

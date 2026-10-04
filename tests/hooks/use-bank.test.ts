@@ -99,16 +99,19 @@ describe("useBank", () => {
       .mockResolvedValueOnce({ json: async () => mockBanksResponse })
       .mockResolvedValueOnce({
         json: async () => ({
-        success: true,
-        data: {
-          subaccount_code: "SUB_123",
-          flutterwave_sub_account_id: "FLW_SUB_456",
-        },
-      }),
+          success: true,
+          data: {
+            subaccount_code: "SUB_123",
+            flutterwave_sub_account_id: "FLW_SUB_456",
+          },
+        }),
       });
 
     const client = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const wrapper = ({ children }: { children: React.ReactNode }) =>
       React.createElement(QueryClientProvider, { client }, children);

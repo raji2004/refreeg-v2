@@ -158,7 +158,7 @@ const Flutterwave = {
       account_bank: data.bank_code,
       account_number: data.account_number,
       business_name: data.business_name,
-      business_email: data.business_email,
+      business_email: data.business_email || "no-reply@refreeg.com",
       business_contact_mobile: data.business_mobile || "08000000000",
       business_mobile: data.business_mobile || "08000000000",
       split_type: "percentage",

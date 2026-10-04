@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";

@@ -258,14 +258,18 @@ export async function createCause(
     throw new Error("Campaign location must be less than 100 characters");
   }
   const causeId = crypto.randomUUID();
-  let coverImageUrl = null;
+  let coverImageUrl: string | null = null;
   if (causeData.coverImage) {
-    coverImageUrl = await uploadFileToS3(
-      causeData.coverImage,
-      userId,
-      causeId,
-      "cover",
-    );
+    if (typeof causeData.coverImage === "string") {
+      coverImageUrl = causeData.coverImage;
+    } else {
+      coverImageUrl = await uploadFileToS3(
+        causeData.coverImage,
+        userId,
+        causeId,
+        "cover",
+      );
+    }
   }
 
   let daysActive = null;
@@ -404,14 +408,21 @@ export async function updateCause(
     );
   }
 
-  let coverImageUrl = causeData.coverImage
-    ? await uploadFileToS3(
+  let coverImageUrl: string | null = null;
+  if (causeData.coverImage) {
+    if (typeof causeData.coverImage === "string") {
+      coverImageUrl = causeData.coverImage;
+    } else {
+      coverImageUrl = await uploadFileToS3(
         causeData.coverImage as File,
         userId,
         causeId,
         "cover",
-      )
-    : causeData.image || null;
+      );
+    }
+  } else {
+    coverImageUrl = causeData.image || null;
+  }
 
   let daysActive = null;
   if (causeData.startDate && causeData.endDate) {

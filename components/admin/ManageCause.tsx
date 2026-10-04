@@ -48,14 +48,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, ShieldCheck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import NavigationLoader from "../NavigationLoader";
 const MultimediaCarousel = dynamic(() => import("../MultimediaCarousel"), {
   loading: () => <Skeleton className="h-64 w-full" />,
 });
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -100,34 +99,36 @@ export default function ManageCauses() {
     isLoading: boolean;
   }>({ open: false, cause: null, isLoading: false });
 
-  const [trustMetricsDialog, setTrustMetricsDialog] = useState<{
-    open: boolean;
-    causeId: string;
-    metrics: {
-      impact: string;
-      readability: string;
-      transparency: string;
-      status: string;
-    };
+  const [previewMetrics, setPreviewMetrics] = useState<{
+    impact: string;
+    readability: string;
+    transparency: string;
+    status: string;
   }>({
-    open: false,
-    causeId: "",
-    metrics: {
-      impact: "B+",
-      readability: "A",
-      transparency: "High",
-      status: "pending",
-    },
+    impact: "B+",
+    readability: "A",
+    transparency: "High",
+    status: "pending",
   });
 
   const { showNotification } = useNotifications();
 
   const handleApprove = async (causeId: string) => {
     try {
+      if (previewMetrics) {
+        await updateCauseTrustMetrics(causeId, {
+          trust_score: {
+            impact: previewMetrics.impact,
+            readability: previewMetrics.readability,
+            transparency: previewMetrics.transparency,
+          },
+          verified_status: previewMetrics.status,
+        }).catch((e) => console.error("Metrics sync on approve failed:", e));
+      }
       await approveCause(causeId);
       showNotification("Cause Approved", {
         body: "A new cause has been approved and is now live!",
-        icon: "/icons/icon-192x192.png",
+        icon: "/logo.png",
       });
     } catch (error) {
       console.error("Error approving cause:", error);
@@ -144,40 +145,21 @@ export default function ManageCauses() {
   };
 
   const handleReject = async () => {
-    await rejectCause(rejectDialog.causeId, rejectDialog.reason);
-    setRejectDialog((prev) => ({ ...prev, open: false }));
-  };
-
-  const openTrustMetricsDialog = (cause: any) => {
-    setTrustMetricsDialog({
-      open: true,
-      causeId: cause.id,
-      metrics: {
-        impact: cause.trust_score?.impact || "B+",
-        readability: cause.trust_score?.readability || "A",
-        transparency: cause.trust_score?.transparency || "High",
-        status: cause.verified_status || "pending",
-      },
-    });
-  };
-
-  const handleUpdateTrustMetrics = async () => {
     try {
-      await updateCauseTrustMetrics(trustMetricsDialog.causeId, {
-        trust_score: {
-          impact: trustMetricsDialog.metrics.impact,
-          readability: trustMetricsDialog.metrics.readability,
-          transparency: trustMetricsDialog.metrics.transparency,
-        },
-        verified_status: trustMetricsDialog.metrics.status,
-      });
-      setTrustMetricsDialog((prev) => ({ ...prev, open: false }));
-      showNotification("Metrics Updated", {
-        body: "Cause trust metrics have been updated.",
-      });
-      router.refresh();
+      if (rejectDialog.causeId && previewMetrics) {
+        await updateCauseTrustMetrics(rejectDialog.causeId, {
+          trust_score: {
+            impact: previewMetrics.impact,
+            readability: previewMetrics.readability,
+            transparency: previewMetrics.transparency,
+          },
+          verified_status: previewMetrics.status,
+        }).catch((e) => console.error("Metrics sync on reject failed:", e));
+      }
+      await rejectCause(rejectDialog.causeId, rejectDialog.reason);
+      setRejectDialog((prev) => ({ ...prev, open: false }));
     } catch (error) {
-      console.error("Error updating trust metrics:", error);
+      console.error("Error rejecting cause:", error);
     }
   };
 
@@ -196,6 +178,12 @@ export default function ManageCauses() {
           created_at: item.created_at,
           updated_at: item.updated_at,
           raised: item.raised || 0,
+          trust_score: item.trust_score || {
+            impact: "B+",
+            readability: "A",
+            transparency: "High",
+          },
+          verified_status: item.verified_status || "pending",
           user: {
             name: item.profiles?.full_name || "Anonymous",
             email: item.profiles?.email || "",
@@ -210,9 +198,23 @@ export default function ManageCauses() {
           multimedia: item.multimedia || [],
           video_links: item.video_links || [],
         };
+        setPreviewMetrics({
+          impact: detailed.trust_score?.impact || "B+",
+          readability: detailed.trust_score?.readability || "A",
+          transparency: detailed.trust_score?.transparency || "High",
+          status: detailed.verified_status || "pending",
+        });
         setDetailDialog({ open: true, isLoading: false, cause: detailed });
       } else {
         const detailed = await getCause(item.id);
+        if (detailed) {
+          setPreviewMetrics({
+            impact: (detailed as any).trust_score?.impact || "B+",
+            readability: (detailed as any).trust_score?.readability || "A",
+            transparency: (detailed as any).trust_score?.transparency || "High",
+            status: (detailed as any).verified_status || "pending",
+          });
+        }
         setDetailDialog({ open: true, isLoading: false, cause: detailed });
       }
     } catch (e) {
@@ -349,56 +351,8 @@ export default function ManageCauses() {
                             <DropdownMenuItem
                               onClick={() => openDetailDialog(item)}
                             >
-                              Preview
+                              Inspect
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => openTrustMetricsDialog(item)}
-                            >
-                              Trust Metrics
-                            </DropdownMenuItem>
-                            {activeTab === "pending" && (
-                              <>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    openRejectDialog(
-                                      item.type === "edit"
-                                        ? (item as any).original_cause_id
-                                        : item.id,
-                                      item.title,
-                                    )
-                                  }
-                                >
-                                  Reject
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleApprove(
-                                      item.type === "edit"
-                                        ? (item as any).original_cause_id
-                                        : item.id,
-                                    )
-                                  }
-                                >
-                                  Approve
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            {activeTab === "rejected" && (
-                              <DropdownMenuItem
-                                onClick={() => handleApprove(item.id)}
-                              >
-                                Approve
-                              </DropdownMenuItem>
-                            )}
-                            {activeTab === "approved" && (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  openRejectDialog(item.id, item.title)
-                                }
-                              >
-                                Take Down
-                              </DropdownMenuItem>
-                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -448,135 +402,6 @@ export default function ManageCauses() {
             >
               Reject Cause
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={trustMetricsDialog.open}
-        onOpenChange={(open) =>
-          setTrustMetricsDialog((prev) => ({ ...prev, open }))
-        }
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Trust Metrics</DialogTitle>
-            <DialogDescription>
-              Adjust the quality scores and verification status for this cause.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="impact" className="text-right">
-                Impact Score
-              </Label>
-              <Select
-                value={trustMetricsDialog.metrics.impact}
-                onValueChange={(val) =>
-                  setTrustMetricsDialog((prev) => ({
-                    ...prev,
-                    metrics: { ...prev.metrics, impact: val },
-                  }))
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select score" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-"].map(
-                    (s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="readability" className="text-right">
-                Readability
-              </Label>
-              <Select
-                value={trustMetricsDialog.metrics.readability}
-                onValueChange={(val) =>
-                  setTrustMetricsDialog((prev) => ({
-                    ...prev,
-                    metrics: { ...prev.metrics, readability: val },
-                  }))
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select score" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["High", "Medium", "Low"].map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="transparency" className="text-right">
-                Transparency
-              </Label>
-              <Select
-                value={trustMetricsDialog.metrics.transparency}
-                onValueChange={(val) =>
-                  setTrustMetricsDialog((prev) => ({
-                    ...prev,
-                    metrics: { ...prev.metrics, transparency: val },
-                  }))
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select score" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["High", "Medium", "Low"].map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">
-                Status
-              </Label>
-              <Select
-                value={trustMetricsDialog.metrics.status}
-                onValueChange={(val) =>
-                  setTrustMetricsDialog((prev) => ({
-                    ...prev,
-                    metrics: { ...prev.metrics, status: val },
-                  }))
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending Review</SelectItem>
-                  <SelectItem value="in_review">In Review</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() =>
-                setTrustMetricsDialog((prev) => ({ ...prev, open: false }))
-              }
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleUpdateTrustMetrics}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -652,6 +477,175 @@ export default function ManageCauses() {
                           : "N/A"}
                       </p>
                     )}
+                  </div>
+                </div>
+
+                {/* Trust & Quality Metrics (Integrated into Preview) */}
+                <div className="p-4 border border-brand/20 bg-brand/5 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-5 w-5 text-brand" />
+                      <h3 className="font-semibold text-sm text-foreground">
+                        Trust & Quality Metrics
+                      </h3>
+                    </div>
+                    <Badge
+                      variant={
+                        previewMetrics.status === "verified"
+                          ? "default"
+                          : previewMetrics.status === "in_review"
+                            ? "secondary"
+                            : "outline"
+                      }
+                      className="capitalize text-xs font-medium"
+                    >
+                      {previewMetrics.status.replace("_", " ")}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Evaluate and set the quality scores and verification status
+                    for this cause. Changes are automatically saved when you
+                    approve or reject.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                    <div>
+                      <Label
+                        htmlFor="preview-impact"
+                        className="text-xs font-medium text-muted-foreground block mb-1"
+                      >
+                        Impact Score
+                      </Label>
+                      <Select
+                        value={previewMetrics.impact}
+                        onValueChange={(val) =>
+                          setPreviewMetrics((prev) => ({
+                            ...prev,
+                            impact: val,
+                          }))
+                        }
+                      >
+                        <SelectTrigger
+                          id="preview-impact"
+                          className="h-9 bg-background"
+                        >
+                          <SelectValue placeholder="Impact" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[
+                            "A+",
+                            "A",
+                            "A-",
+                            "B+",
+                            "B",
+                            "B-",
+                            "C+",
+                            "C",
+                            "C-",
+                          ].map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="preview-readability"
+                        className="text-xs font-medium text-muted-foreground block mb-1"
+                      >
+                        Readability
+                      </Label>
+                      <Select
+                        value={previewMetrics.readability}
+                        onValueChange={(val) =>
+                          setPreviewMetrics((prev) => ({
+                            ...prev,
+                            readability: val,
+                          }))
+                        }
+                      >
+                        <SelectTrigger
+                          id="preview-readability"
+                          className="h-9 bg-background"
+                        >
+                          <SelectValue placeholder="Readability" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["High", "Medium", "Low"].map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="preview-transparency"
+                        className="text-xs font-medium text-muted-foreground block mb-1"
+                      >
+                        Transparency
+                      </Label>
+                      <Select
+                        value={previewMetrics.transparency}
+                        onValueChange={(val) =>
+                          setPreviewMetrics((prev) => ({
+                            ...prev,
+                            transparency: val,
+                          }))
+                        }
+                      >
+                        <SelectTrigger
+                          id="preview-transparency"
+                          className="h-9 bg-background"
+                        >
+                          <SelectValue placeholder="Transparency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["High", "Medium", "Low"].map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="preview-status"
+                        className="text-xs font-medium text-muted-foreground block mb-1"
+                      >
+                        Verification Status
+                      </Label>
+                      <Select
+                        value={previewMetrics.status}
+                        onValueChange={(val) =>
+                          setPreviewMetrics((prev) => ({
+                            ...prev,
+                            status: val,
+                          }))
+                        }
+                      >
+                        <SelectTrigger
+                          id="preview-status"
+                          className="h-9 bg-background"
+                        >
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">
+                            Pending Review
+                          </SelectItem>
+                          <SelectItem value="in_review">In Review</SelectItem>
+                          <SelectItem value="verified">Verified</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>
