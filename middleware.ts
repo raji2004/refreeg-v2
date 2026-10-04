@@ -1,4 +1,9 @@
-import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
+import {
+  NextFetchEvent,
+  NextRequest,
+  NextResponse,
+  type NextMiddleware,
+} from "next/server";
 import { auth } from "@/lib/auth/auth";
 
 const PUBLIC_API_PREFIXES = [
@@ -112,7 +117,9 @@ const handleAuth = auth(async (req) => {
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
   if (needsSession(req.nextUrl.pathname)) {
-    return handleAuth(req, event);
+    // auth()'s return type is a union with the route-handler signature;
+    // called with (req, event) it runs as middleware.
+    return (handleAuth as unknown as NextMiddleware)(req, event);
   }
 
   return rememberReferral(req);
@@ -126,7 +133,9 @@ export const config = {
     "/onboarding/:path*",
     "/auth",
     "/auth/:path*",
-    "/api/:path*",
+    // Every API route except the public image proxy, whose cacheable
+    // responses must not pick up auth cookies.
+    "/api/((?!s3/image).*)",
     {
       source:
         "/((?!_next/static|_next/image|favicon.ico|api/|dashboard|onboarding|auth|monitoring|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",

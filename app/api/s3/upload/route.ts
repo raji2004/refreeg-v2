@@ -6,19 +6,10 @@ import {
   type S3EntityType,
   type S3MediaType,
 } from "@/lib/s3/s3-utils";
-import { ALLOWED_VIDEO_MIME_TYPES, MAX_VIDEO_BYTES } from "@/lib/media/video";
+import { validateUpload } from "@/lib/s3/upload-policy";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const ALLOWED_ENTITY_TYPES: S3EntityType[] = [
-  "causes",
-  "petitions",
-  "profiles",
-  "kyc",
-];
-
-const ALLOWED_MEDIA_TYPES: S3MediaType[] = ["images", "videos", "documents"];
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,34 +31,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing file" }, { status: 400 });
     }
 
-    if (!ALLOWED_ENTITY_TYPES.includes(entityType)) {
-      return NextResponse.json(
-        { error: "Invalid entityType" },
-        { status: 400 },
-      );
-    }
-
-    if (!ALLOWED_MEDIA_TYPES.includes(mediaType)) {
-      return NextResponse.json({ error: "Invalid mediaType" }, { status: 400 });
-    }
-
-    if (mediaType === "videos") {
-      if (
-        !(ALLOWED_VIDEO_MIME_TYPES as readonly string[]).includes(file.type)
-      ) {
-        return NextResponse.json(
-          { error: "Videos must be video/mp4 or video/webm" },
-          { status: 400 },
-        );
-      }
-      if (file.size > MAX_VIDEO_BYTES) {
-        return NextResponse.json(
-          {
-            error: `Video exceeds ${Math.round(MAX_VIDEO_BYTES / (1024 * 1024))}MB limit`,
-          },
-          { status: 400 },
-        );
-      }
+    const invalid = validateUpload({
+      entityType,
+      mediaType,
+      entityId,
+      contentType: file.type,
+      size: file.size,
+    });
+    if (invalid) {
+      return NextResponse.json({ error: invalid }, { status: 400 });
     }
 
     const filename = (file.name || "upload.bin").replace(
@@ -84,7 +56,7 @@ export async function POST(request: NextRequest) {
     });
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    await uploadToS3(buffer, key, file.type || "application/octet-stream");
+    await uploadToS3(buffer, key, file.type);
 
     return NextResponse.json({ key });
   } catch (error: any) {

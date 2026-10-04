@@ -6,6 +6,7 @@ import {
   writeCachedCauseImage,
 } from "@/lib/media/cause-image-cache";
 import { findLegacyNormalizedCenterCrop } from "@/lib/media/legacy-normalized-image";
+import { createRenderQueue } from "@/lib/media/render-queue";
 import { s3Client } from "@/lib/s3/s3-client";
 import { generatePresignedGetUrl, getBucketName } from "@/lib/s3/s3-utils";
 
@@ -19,8 +20,19 @@ export const runtime = "nodejs";
 
 const CLEAN_PRESENTATION = "clean-v3";
 
+// This box is small and also runs Postgres: keep libvips from caching decoded
+// images or spreading one job across every core.
+sharp.cache(false);
+sharp.concurrency(1);
+
+// After a deploy every cover is a cache miss at once: share one render per
+// key and run at most two at a time; the rest queue.
+const renderQueue = createRenderQueue(2);
+
 async function presentCauseImage(key: string) {
-  const cached = await readCachedCauseImage(key);
+  // Versioned so changing the crop, width or quality invalidates old files.
+  const cacheKey = `${CLEAN_PRESENTATION}:w${CAUSE_CARD_MAX_WIDTH}:q${CAUSE_CARD_JPEG_QUALITY}:${key}`;
+  const cached = await readCachedCauseImage(cacheKey);
   if (cached) {
     return new Response(cached.body, {
       headers: {
@@ -31,6 +43,28 @@ async function presentCauseImage(key: string) {
     });
   }
 
+  const { output, presentation } = await renderQueue.run(cacheKey, async () => {
+    const result = await renderCauseImage(key);
+    try {
+      await writeCachedCauseImage(cacheKey, result.output, "image/jpeg");
+    } catch (error) {
+      console.error("Cause image cache write failed:", error);
+    }
+    return result;
+  });
+
+  return new Response(new Uint8Array(output), {
+    headers: {
+      "Cache-Control": CAUSE_IMAGE_CACHE_CONTROL,
+      "Content-Type": "image/jpeg",
+      "X-RefreeG-Media-Presentation": presentation,
+    },
+  });
+}
+
+async function renderCauseImage(
+  key: string,
+): Promise<{ output: Buffer; presentation: string }> {
   const object = await s3Client.send(
     new GetObjectCommand({ Bucket: getBucketName(), Key: key }),
   );
@@ -77,19 +111,7 @@ async function presentCauseImage(key: string) {
     .jpeg({ quality: CAUSE_CARD_JPEG_QUALITY, mozjpeg: true })
     .toBuffer();
 
-  try {
-    await writeCachedCauseImage(key, output, "image/jpeg");
-  } catch (error) {
-    console.error("Cause image cache write failed:", error);
-  }
-
-  return new Response(new Uint8Array(output), {
-    headers: {
-      "Cache-Control": CAUSE_IMAGE_CACHE_CONTROL,
-      "Content-Type": "image/jpeg",
-      "X-RefreeG-Media-Presentation": presentation,
-    },
-  });
+  return { output, presentation };
 }
 
 export async function GET(req: Request) {

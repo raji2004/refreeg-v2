@@ -55,12 +55,17 @@ module.exports = {
         // always listens on all interfaces, reachable via 127.0.0.1 (required
         // for the ALB health check target and any localhost check).
         HOSTNAME: "0.0.0.0",
+        // Scaled hosts live under /opt, not the single box's /mnt/data path.
+        CAUSE_IMAGE_CACHE_DIR: "/opt/refreeg/shared/image-cache",
       },
 
       // ── Resource limits ───────────────────────────────────────────────────
-      max_memory_restart: "300M",  // restart if process exceeds 300 MB
-      instances: 1,                // single instance per host (ASG scales horizontally instead)
-      exec_mode: "fork",           // fork mode (cluster mode needs more RAM)
+      // Next.js + Sharp idles near 310 MB, so 300 MB restarted constantly.
+      // Two processes x 900 MB still fits a 4 GB t4g.medium (DB is on RDS).
+      max_memory_restart: "900M",
+      node_args: "--max-old-space-size=640",
+      instances: 1, // single instance per host (ASG scales horizontally instead)
+      exec_mode: "fork", // fork mode (cluster mode needs more RAM)
 
       // ── Logging ───────────────────────────────────────────────────────────
       out_file: "/opt/refreeg/shared/logs/frontend.out.log",
@@ -70,9 +75,9 @@ module.exports = {
 
       // ── Restart policy ────────────────────────────────────────────────────
       autorestart: true,
-      restart_delay: 3000,         // wait 3 s before restarting
-      max_restarts: 10,            // give up after 10 rapid crashes
-      min_uptime: "10s",           // crash if process dies within 10 s
+      restart_delay: 3000, // wait 3 s before restarting
+      max_restarts: 10, // give up after 10 rapid crashes
+      min_uptime: "10s", // crash if process dies within 10 s
     },
 
     {
@@ -86,10 +91,12 @@ module.exports = {
         PORT: 4000,
         // See the "frontend" app above.
         HOSTNAME: "0.0.0.0",
+        CAUSE_IMAGE_CACHE_DIR: "/opt/refreeg/shared/image-cache",
       },
 
       // ── Resource limits ───────────────────────────────────────────────────
-      max_memory_restart: "300M",
+      max_memory_restart: "900M",
+      node_args: "--max-old-space-size=640",
       instances: 1,
       exec_mode: "fork",
 
