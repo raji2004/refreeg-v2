@@ -71,7 +71,7 @@ module.exports = {
       },
 
       // ── Resource limits ───────────────────────────────────────────────────
-      max_memory_restart: "400M", // restart if process exceeds 400 MB
+      max_memory_restart: "900M", // restart if process exceeds 900 MB
       instances: 1, // single instance (small EC2 – keep RAM low)
       exec_mode: "fork", // fork mode (cluster mode needs more RAM)
 

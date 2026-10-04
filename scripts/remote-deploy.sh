@@ -21,7 +21,7 @@ fi
 echo "Disk space OK (${FREE_KB} KB free)."
 
 # ── 2. Load environment variables from secrets.env (shared across releases) ──
-mkdir -p "$SHARED_DIR/logs"
+mkdir -p "$SHARED_DIR/logs" "$SHARED_DIR/image-cache"
 if [[ -f "${APP_DIR}/secrets.env" ]]; then
   mv "${APP_DIR}/secrets.env" "${SHARED_DIR}/secrets.env"
 fi

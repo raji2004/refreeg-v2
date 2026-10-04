@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 
 const PUBLIC_API_PREFIXES = [
@@ -25,7 +25,31 @@ function absoluteUrl(path: string, req: Request): URL {
   return new URL(path, `${proto}://${host}`);
 }
 
-export default auth(async (req) => {
+function rememberReferral(req: NextRequest) {
+  const refV1 = req.nextUrl.searchParams.get("ref_v1");
+  if (!refV1) return NextResponse.next();
+
+  const response = NextResponse.next();
+  response.cookies.set("ref_v1", refV1, {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 60 * 30,
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+  });
+  return response;
+}
+
+function needsSession(pathname: string) {
+  return (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/api")
+  );
+}
+
+const handleAuth = auth(async (req) => {
   const { pathname } = req.nextUrl;
   const user = req.auth?.user;
 
@@ -83,22 +107,30 @@ export default auth(async (req) => {
     return NextResponse.redirect(absoluteUrl("/onboarding", req));
   }
 
-  const refV1 = req.nextUrl.searchParams.get("ref_v1");
-  if (refV1) {
-    const response = NextResponse.next();
-    response.cookies.set("ref_v1", refV1, {
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 60 * 30,
-      path: "/",
-      secure: process.env.NODE_ENV === "production",
-    });
-    return response;
-  }
+  return rememberReferral(req);
 });
+
+export default function middleware(req: NextRequest, event: NextFetchEvent) {
+  if (needsSession(req.nextUrl.pathname)) {
+    return handleAuth(req, event);
+  }
+
+  return rememberReferral(req);
+}
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/dashboard",
+    "/dashboard/:path*",
+    "/onboarding",
+    "/onboarding/:path*",
+    "/auth",
+    "/auth/:path*",
+    "/api/:path*",
+    {
+      source:
+        "/((?!_next/static|_next/image|favicon.ico|api/|dashboard|onboarding|auth|monitoring|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+      has: [{ type: "query", key: "ref_v1" }],
+    },
   ],
 };

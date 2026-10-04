@@ -1,9 +1,18 @@
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
+import {
+  readCachedCauseImage,
+  writeCachedCauseImage,
+} from "@/lib/media/cause-image-cache";
 import { findLegacyNormalizedCenterCrop } from "@/lib/media/legacy-normalized-image";
 import { s3Client } from "@/lib/s3/s3-client";
 import { generatePresignedGetUrl, getBucketName } from "@/lib/s3/s3-utils";
+
+const CAUSE_IMAGE_CACHE_CONTROL =
+  "public, max-age=2592000, s-maxage=31536000, stale-while-revalidate=86400";
+const CAUSE_CARD_MAX_WIDTH = 1200;
+const CAUSE_CARD_JPEG_QUALITY = 75;
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,6 +20,17 @@ export const runtime = "nodejs";
 const CLEAN_PRESENTATION = "clean-v3";
 
 async function presentCauseImage(key: string) {
+  const cached = await readCachedCauseImage(key);
+  if (cached) {
+    return new Response(cached.body, {
+      headers: {
+        "Cache-Control": CAUSE_IMAGE_CACHE_CONTROL,
+        "Content-Type": cached.contentType,
+        "X-RefreeG-Media-Presentation": "cached",
+      },
+    });
+  }
+
   const object = await s3Client.send(
     new GetObjectCommand({ Bucket: getBucketName(), Key: key }),
   );
@@ -48,11 +68,25 @@ async function presentCauseImage(key: string) {
     }
   }
 
+  output = await sharp(output, { failOn: "none" })
+    .resize({
+      width: CAUSE_CARD_MAX_WIDTH,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .jpeg({ quality: CAUSE_CARD_JPEG_QUALITY, mozjpeg: true })
+    .toBuffer();
+
+  try {
+    await writeCachedCauseImage(key, output, "image/jpeg");
+  } catch (error) {
+    console.error("Cause image cache write failed:", error);
+  }
+
   return new Response(new Uint8Array(output), {
     headers: {
-      "Cache-Control":
-        "public, max-age=2592000, s-maxage=31536000, stale-while-revalidate=86400",
-      "Content-Type": object.ContentType || "image/jpeg",
+      "Cache-Control": CAUSE_IMAGE_CACHE_CONTROL,
+      "Content-Type": "image/jpeg",
       "X-RefreeG-Media-Presentation": presentation,
     },
   });
