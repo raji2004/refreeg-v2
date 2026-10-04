@@ -14,7 +14,7 @@ interface SignersListProps {
 export function SignersList({ signers, petitionTitle }: SignersListProps) {
   const totalAmount = signers.reduce(
     (sum, signer) => sum + (signer.amount || 0),
-    0
+    0,
   );
 
   return (

@@ -26,7 +26,6 @@ export default function Numbers() {
     },
   ];
 
-  // Animation variants
   const container = {
     hidden: { opacity: 0 },
     visible: {
@@ -37,7 +36,11 @@ export default function Numbers() {
 
   const item = {
     hidden: { opacity: 0, y: 40 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } as any },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" } as any,
+    },
   };
 
   return (
@@ -48,7 +51,6 @@ export default function Numbers() {
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
     >
-
       {stats.map((itemData, index) => (
         <motion.div
           key={index}
@@ -73,13 +75,14 @@ export default function Numbers() {
           </div>
 
           <div className="flex flex-col sm:items-center w-full">
-            <div className="text-lg sm:text-2xl font-bold">{itemData.value}</div>
+            <div className="text-lg sm:text-2xl font-bold">
+              {itemData.value}
+            </div>
             <div className="text-gray-600 text-sm sm:text-base font-medium">
               {itemData.label}
             </div>
           </div>
         </motion.div>
-
       ))}
     </motion.div>
   );

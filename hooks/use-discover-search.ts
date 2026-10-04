@@ -31,22 +31,17 @@ function saveRecentSearch(query: string) {
     const next = [query, ...existing].slice(0, RECENT_SEARCHES_LIMIT);
     window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
   } catch {
-    // best-effort only
+    
   }
 }
 
-/**
- * Shared search state/fetch logic behind Discover's search — the desktop
- * ⌘K overlay (discover-search.tsx) and the dedicated mobile search page
- * (app/causes/search/page.tsx) both drive off this instead of duplicating
- * the debounce/fetch/recent-searches wiring.
- */
+
 export function useDiscoverSearch({
   active,
   onNavigate,
 }: {
   active: boolean;
-  /** Called right before any select-driven navigation — e.g. the desktop overlay closes itself; the full-page surface has nothing to do here. */
+  
   onNavigate?: () => void;
 }) {
   const router = useRouter();

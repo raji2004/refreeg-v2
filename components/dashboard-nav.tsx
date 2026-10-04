@@ -22,7 +22,7 @@ import {
   Sparkles,
   Building2,
   CircleUserRound,
-  ShieldCheck
+  ShieldCheck,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useAuth } from "@/hooks/use-auth";

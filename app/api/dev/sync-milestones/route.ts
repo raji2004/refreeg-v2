@@ -1,4 +1,3 @@
-// app/api/dev/sync-milestones/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { syncMilestoneRequirements } from "@/lib/proof-milestones";
 

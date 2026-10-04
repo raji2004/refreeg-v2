@@ -12,7 +12,13 @@ const DiditKycForm = dynamic(() => import("./DiditKycForm"), {
   ssr: false,
 });
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
@@ -29,18 +35,17 @@ type KycSetupClientProps = {
 export default function KycSetupClient(props: KycSetupClientProps) {
   const router = useRouter();
 
-  // Poll for updates if the status is pending
   useEffect(() => {
     if (props.currentKyc?.status === "pending") {
       const interval = setInterval(() => {
         router.refresh();
-      }, 5000); // Check every 5 seconds
+      }, 5000);
       return () => clearInterval(interval);
     }
   }, [props.currentKyc?.status, router]);
 
   console.log("[KYC Setup] Client wrapper received props:", props);
-  
+
   if (props.currentKyc?.status === "pending") {
     return (
       <Card className="w-full max-w-lg mx-auto mt-10">
@@ -48,7 +53,9 @@ export default function KycSetupClient(props: KycSetupClientProps) {
           <div className="mx-auto bg-amber-100 p-4 rounded-full mb-4">
             <Clock className="w-10 h-10 text-amber-600" />
           </div>
-          <CardTitle className="text-2xl font-montserrat">KYC Under Review</CardTitle>
+          <CardTitle className="text-2xl font-montserrat">
+            KYC Under Review
+          </CardTitle>
           <CardDescription>
             Your identity verification is currently being reviewed by Didit.
             Please check back later or check your email for updates.
@@ -56,7 +63,9 @@ export default function KycSetupClient(props: KycSetupClientProps) {
         </CardHeader>
         <CardContent>
           <Link href="/dashboard" className="w-full">
-            <Button className="w-full" variant="outline">Return to Dashboard</Button>
+            <Button className="w-full" variant="outline">
+              Return to Dashboard
+            </Button>
           </Link>
         </CardContent>
       </Card>
@@ -70,14 +79,18 @@ export default function KycSetupClient(props: KycSetupClientProps) {
           <div className="mx-auto bg-green-100 p-4 rounded-full mb-4">
             <CheckCircle2 className="w-10 h-10 text-green-600" />
           </div>
-          <CardTitle className="text-2xl font-montserrat">KYC Approved!</CardTitle>
+          <CardTitle className="text-2xl font-montserrat">
+            KYC Approved!
+          </CardTitle>
           <CardDescription>
             Your identity has been successfully verified.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Link href="/dashboard" className="w-full">
-            <Button className="w-full" variant="default">Go to Dashboard</Button>
+            <Button className="w-full" variant="default">
+              Go to Dashboard
+            </Button>
           </Link>
         </CardContent>
       </Card>

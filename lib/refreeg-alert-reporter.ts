@@ -28,7 +28,8 @@ export function errorDetails(error: unknown) {
 
   return {
     name: "Error",
-    message: typeof error === "string" ? error : "An unexpected error occurred.",
+    message:
+      typeof error === "string" ? error : "An unexpected error occurred.",
     stack: undefined,
   };
 }
@@ -39,7 +40,8 @@ export async function reportToRefreegAlert(report: RefreegErrorReport) {
   if (!endpoint || !apiKey) return false;
 
   const name = clip(report.name, 80) || "Error";
-  const message = clip(report.message, 1_000) || "An unexpected error occurred.";
+  const message =
+    clip(report.message, 1_000) || "An unexpected error occurred.";
   const path = clip(report.path, 500);
   const stack = clip(report.stack, 1_000);
   const key = `${report.source}:${name}:${message.slice(0, 160)}:${path ?? "unknown"}`;
@@ -57,7 +59,11 @@ export async function reportToRefreegAlert(report: RefreegErrorReport) {
       },
       body: JSON.stringify({
         fingerprint: await fingerprint(key),
-        title: `${report.source === "browser" ? "Browser" : "Server"} ${name}: ${message}`.slice(0, 200),
+        title:
+          `${report.source === "browser" ? "Browser" : "Server"} ${name}: ${message}`.slice(
+            0,
+            200,
+          ),
         errorMessage,
         severity: report.severity ?? "HIGH",
         serviceName: "RefreeG Website",

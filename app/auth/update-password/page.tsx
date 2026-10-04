@@ -33,7 +33,7 @@ function UpdatePasswordForm() {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      return; // Handled by UI validation usually, but good to have
+      return;
     }
 
     if (!token) {
@@ -107,18 +107,24 @@ function UpdatePasswordForm() {
                 required
               />
               {password && confirmPassword && password !== confirmPassword && (
-                <p className="text-xs text-destructive">Passwords do not match</p>
+                <p className="text-xs text-destructive">
+                  Passwords do not match
+                </p>
               )}
             </div>
             <Button
               type="submit"
               className="w-full"
-              disabled={isLoading || password !== confirmPassword || password.length < 8}
+              disabled={
+                isLoading || password !== confirmPassword || password.length < 8
+              }
             >
               {isLoading ? (
                 <>
                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                  {isCauseProfileFlow ? "Setting password..." : "Updating password..."}
+                  {isCauseProfileFlow
+                    ? "Setting password..."
+                    : "Updating password..."}
                 </>
               ) : isCauseProfileFlow ? (
                 "Set Password & Complete Profile"
@@ -137,13 +143,15 @@ export default function UpdatePasswordPage() {
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-        <Suspense fallback={
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-center">Loading...</CardTitle>
-            </CardHeader>
-          </Card>
-        }>
+        <Suspense
+          fallback={
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-center">Loading...</CardTitle>
+              </CardHeader>
+            </Card>
+          }
+        >
           <UpdatePasswordForm />
         </Suspense>
       </div>

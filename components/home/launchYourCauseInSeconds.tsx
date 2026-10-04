@@ -66,7 +66,7 @@ export default function LaunchYourCauseInSeconds() {
   return (
     <section className="w-full py-16 bg-white" ref={ref}>
       <div>
-        {/* Heading */}
+        {}
         <motion.div
           className="text-start mb-8"
           initial={{ opacity: 0, y: 40 }}
@@ -93,7 +93,7 @@ export default function LaunchYourCauseInSeconds() {
           </MotionP>
         </motion.div>
 
-        {/* Cards */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {cards.map((card, idx) => {
             const Icon = card.icon;

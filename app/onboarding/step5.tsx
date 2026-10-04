@@ -3,11 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowRight,
-  Building2,
-  Check,
-} from "lucide-react";
+import { ArrowRight, Building2, Check } from "lucide-react";
 
 interface Step5Props {
   user: any;
@@ -32,21 +28,25 @@ export default function Step5({
           className="w-full max-w-3xl"
         >
           <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-              <Building2 className="h-7 w-7" />
-              <span className="absolute ml-12 mt-12 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-white">
-                <Check className="h-3.5 w-3.5 stroke-[3]" />
-              </span>
+            <Building2 className="h-7 w-7" />
+            <span className="absolute ml-12 mt-12 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-white">
+              <Check className="h-3.5 w-3.5 stroke-[3]" />
+            </span>
           </div>
 
           <h1 className="mt-7 text-3xl font-semibold text-slate-950 sm:text-4xl">
             Your organisation is ready
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
-            Welcome, {onboardingData?.profile?.firstName || user?.name || "Owner"}. You can now manage your workspace, invite colleagues, and create your first cause.
+            Welcome,{" "}
+            {onboardingData?.profile?.firstName || user?.name || "Owner"}. You
+            can now manage your workspace, invite colleagues, and create your
+            first cause.
           </p>
 
           <p className="mx-auto mt-7 max-w-xl border-l-2 border-blue-700 bg-slate-50 px-4 py-3 text-left text-sm leading-6 text-slate-600">
-            If you postponed owner verification, complete it before launching a fundraiser or receiving payouts.
+            If you postponed owner verification, complete it before launching a
+            fundraiser or receiving payouts.
           </p>
 
           <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
@@ -72,7 +72,7 @@ export default function Step5({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
-      {/* Image */}
+      {}
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -80,7 +80,7 @@ export default function Step5({
         className="mb-10"
       >
         <Image
-          src="/onboardingSuccess.png" // replace with your imported Figma image
+          src="/onboardingSuccess.png"
           alt="Success Illustration"
           width={250}
           height={250}
@@ -88,7 +88,7 @@ export default function Step5({
         />
       </motion.div>
 
-      {/* Text */}
+      {}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -103,7 +103,7 @@ export default function Step5({
         </p>
       </motion.div>
 
-      {/* Buttons */}
+      {}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

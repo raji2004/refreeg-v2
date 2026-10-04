@@ -46,15 +46,15 @@ export default function CampaignQualityLab({
   proofUpdates = [],
 }: CampaignQualityLabProps) {
   const {
-  donation,
-  setDonation,
-  tip,
-  setTip,
+    donation,
+    setDonation,
+    tip,
+    setTip,
     recurring,
     setRecurring,
-  serviceFee,
+    serviceFee,
     providerFee,
-  totalWithTip,
+    totalWithTip,
   } = useCampaignDonation(0);
 
   const [activeTab, setActiveTab] = useState<TabKey>("Comments");

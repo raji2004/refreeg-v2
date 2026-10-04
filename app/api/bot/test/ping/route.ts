@@ -5,21 +5,29 @@ import { logApiRequest } from "@/utils/api-bot/request-logger";
 
 export async function GET(request: NextRequest) {
   const startedAt = Date.now();
-  // 1. Rate limiting check (100 req / minute by default)
+
   const rateLimitResult = rateLimit(request);
   if (rateLimitResult?.errorResponse) {
-    await logApiRequest({ request, statusCode: 429, errorCode: "rate_limited", startedAt });
+    await logApiRequest({
+      request,
+      statusCode: 429,
+      errorCode: "rate_limited",
+      startedAt,
+    });
     return rateLimitResult.errorResponse;
   }
 
-  // 2. Auth check
   const authResult = await validateApiKey(request);
   if (authResult.errorResponse) {
-    await logApiRequest({ request, statusCode: 401, errorCode: "unauthorized", startedAt });
+    await logApiRequest({
+      request,
+      statusCode: 401,
+      errorCode: "unauthorized",
+      startedAt,
+    });
     return authResult.errorResponse;
   }
 
-  // 3. Success
   const response = NextResponse.json({
     status: "success",
     data: {

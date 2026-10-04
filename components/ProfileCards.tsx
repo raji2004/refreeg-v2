@@ -1,4 +1,3 @@
-// components/profile/ProfileCards.tsx
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { causePublicPath } from "@/lib/causes/slug";
 
-// Component for empty states
 export function EmptyState({
   title,
   description,
@@ -46,7 +44,6 @@ export function EmptyState({
   );
 }
 
-// Component for cause cards
 export function CauseCard({ cause }: { cause: any }) {
   const progressPercentage = Math.min(
     Math.round((cause.raised / cause.goal) * 100),
@@ -96,7 +93,6 @@ export function CauseCard({ cause }: { cause: any }) {
   );
 }
 
-// Component for donation cards
 export function DonationCard({ donation }: { donation: any }) {
   return (
     <div className="border rounded-lg p-4 hover:shadow-sm transition-shadow">
@@ -126,7 +122,6 @@ export function DonationCard({ donation }: { donation: any }) {
   );
 }
 
-// Component for petition cards
 export function PetitionCard({ petition }: { petition: any }) {
   const signatureCount = petition.signatures ?? 0;
   const goal = petition.goal ?? 0;

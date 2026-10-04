@@ -10,10 +10,6 @@ type RawImage = {
   channels: number;
 };
 
-/**
- * Finds the two symmetric full-height seams created by the retired uploader,
- * which placed a sharp portrait over a blurred 16:9 copy of itself.
- */
 export function findLegacyNormalizedCenterCrop({
   data,
   width,
@@ -80,8 +76,7 @@ export function findLegacyNormalizedCenterCrop({
   const runnerUp = candidates.find(
     (candidate) => Math.abs(candidate.left - best.left) > 3,
   );
-  const distinctiveness =
-    best.score / Math.max(runnerUp?.score ?? 1, 1);
+  const distinctiveness = best.score / Math.max(runnerUp?.score ?? 1, 1);
   const balance =
     Math.min(best.leftScore, best.rightScore) /
     Math.max(best.leftScore, best.rightScore);

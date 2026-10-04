@@ -36,8 +36,8 @@ interface DonationFormProps {
   subaccount?: string;
   flutterwaveSubAccountId?: string;
   status: "pending" | "rejected" | "approved" | "expired";
-  causeName?: string; // Add causeName prop
-  causeUrl?: string; // Add causeUrl prop for the continue link
+  causeName?: string;
+  causeUrl?: string;
   recurring?: "one_time" | "weekly" | "monthly";
   tip?: number;
   onTipChange?: (tip: number) => void;
@@ -61,8 +61,8 @@ export function DonationForm({
   status,
   subaccount,
   flutterwaveSubAccountId,
-  causeName = "this cause", // Default value
-  causeUrl = "/causes", // Default value
+  causeName = "this cause",
+  causeUrl = "/causes",
   recurring = "one_time",
   tip = 10,
   onTipChange,
@@ -92,27 +92,22 @@ export function DonationForm({
   const [amountError, setAmountError] = useState("");
   const [submitError, setSubmitError] = useState("");
 
-  // Sync internal amount with prop when prop changes
   useEffect(() => {
     if (initialAmount > 0) {
       setFormData((prev) => ({ ...prev, amount: initialAmount.toString() }));
     }
   }, [initialAmount]);
 
-  // Track donation attempt progress
   const [donationAttempt, setDonationAttempt] = useState({
     hasStarted: false,
     startTime: null as number | null,
   });
 
-  // Note: Donations can continue even after the goal is reached
-  // The form is only disabled if the cause status is pending or rejected
   const isDisabled =
     status === "pending" || status === "rejected" || status === "expired"
       ? true
       : false;
 
-  // Track when user starts filling donation form
   useEffect(() => {
     const hasStartedFilling =
       formData.amount || formData.name || formData.email;
@@ -123,7 +118,6 @@ export function DonationForm({
         startTime: Date.now(),
       });
 
-      // Save donation attempt to localStorage
       localStorage.setItem(
         "donationAttempt",
         JSON.stringify({
@@ -132,7 +126,6 @@ export function DonationForm({
           causeUrl,
           formData: {
             amount: formData.amount,
-            // Don't save sensitive info like name/email for privacy
           },
           timestamp: Date.now(),
         }),
@@ -148,7 +141,6 @@ export function DonationForm({
     donationAttempt.hasStarted,
   ]);
 
-  // Track inactivity and send reminder
   useEffect(() => {
     let inactivityTimer: NodeJS.Timeout;
 
@@ -158,22 +150,18 @@ export function DonationForm({
         formData.amount || formData.name || formData.email;
 
       if (savedAttempt || hasStartedFilling) {
-        // Reset timer on any form interaction
         const resetTimer = () => {
           clearTimeout(inactivityTimer);
-          inactivityTimer = setTimeout(sendReminder, 1 * 60 * 60 * 1000); // 1 hour for donations
+          inactivityTimer = setTimeout(sendReminder, 1 * 60 * 60 * 1000);
         };
 
-        // Set up event listeners for form interactions
         const events = ["input", "change", "click", "keydown"];
         events.forEach((event) => {
           document.addEventListener(event, resetTimer, { passive: true });
         });
 
-        // Start the initial timer
         resetTimer();
 
-        // Cleanup function
         return () => {
           clearTimeout(inactivityTimer);
           events.forEach((event) => {

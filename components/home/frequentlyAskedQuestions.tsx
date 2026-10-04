@@ -27,7 +27,7 @@ export default function FAQ() {
 
   return (
     <div className="container px-6 py-16">
-      {/* Heading */}
+      {}
       <motion.div
         ref={headingRef}
         initial={{ opacity: 0, y: 20 }}

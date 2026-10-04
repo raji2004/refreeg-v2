@@ -10,7 +10,9 @@ export default function JavascriptSdkDocsPage() {
 
       <section className="rounded-lg border p-5">
         <h2 className="font-semibold">Install</h2>
-        <pre className="mt-3 overflow-x-auto rounded-md bg-slate-950 p-4 text-sm text-slate-50">npm install refreeg-js</pre>
+        <pre className="mt-3 overflow-x-auto rounded-md bg-slate-950 p-4 text-sm text-slate-50">
+          npm install refreeg-js
+        </pre>
       </section>
 
       <section className="rounded-lg border p-5">

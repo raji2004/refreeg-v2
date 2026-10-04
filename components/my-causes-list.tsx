@@ -19,7 +19,7 @@ import {
   FileText,
   PencilLine,
   Plus,
-  PauseCircle, // 👈 Added for Suspended state
+  PauseCircle,
 } from "lucide-react";
 import { getUserCausesWithStatus } from "@/actions/cause-actions";
 import { CauseDropdown } from "./cause-dropdown";
@@ -48,7 +48,6 @@ const formatDate = (value: string | Date | null | undefined) => {
   }).format(date);
 };
 
-// 👇 Updated to accept isPaused and return Amber/Yellow for suspended
 const getStatusDetails = (status: string, isPaused: boolean) => {
   if (isPaused) {
     return {
@@ -115,7 +114,7 @@ export async function MyCausesList({ status, userId }: MyCausesListProps) {
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
             You don&apos;t have any active causes.
           </p>
-        ) : status === "suspended" ? ( 
+        ) : status === "suspended" ? (
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
             You don&apos;t have any suspended causes. Great job keeping your
             campaigns compliant!
@@ -147,7 +146,6 @@ export async function MyCausesList({ status, userId }: MyCausesListProps) {
         const progress =
           goal > 0 ? Math.min(Math.max((raised / goal) * 100, 0), 100) : 0;
 
-        // 👇 Pass compliance_paused to the status helper
         const statusDetails = getStatusDetails(
           cause.status,
           !!cause.compliance_paused,

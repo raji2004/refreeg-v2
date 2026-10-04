@@ -131,7 +131,9 @@ export async function resolveDeviceCampaignLocation(
 
   const nearest = candidates
     .filter(
-      (city): city is CityCandidate & {
+      (
+        city,
+      ): city is CityCandidate & {
         latitude: number;
         longitude: number;
       } => city.latitude !== null && city.longitude !== null,

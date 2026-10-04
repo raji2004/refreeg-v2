@@ -3,7 +3,7 @@
 import { CommentsSection } from "./comment-section";
 import { TabsContent } from "@/components/ui/tabs";
 import { Comment } from "@/types/common-types";
-import { useState } from "react"; // Remove useEffect import
+import { useState } from "react";
 
 export function CommentsTabWrapper({
   initialComments,
@@ -17,19 +17,15 @@ export function CommentsTabWrapper({
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [commentCount, setCommentCount] = useState(initialComments.length);
 
-  // Handle new comments from the CommentsSection
   const handleCommentAdded = (newComment: Comment) => {
-    setComments(prev => [newComment, ...prev]);
-    setCommentCount(prev => prev + 1);
+    setComments((prev) => [newComment, ...prev]);
+    setCommentCount((prev) => prev + 1);
   };
 
-  // Handle deleted comments from the CommentsSection
   const handleCommentDeleted = (deletedCommentId: string) => {
-    setComments(prev => prev.filter(c => c.id !== deletedCommentId));
-    setCommentCount(prev => prev - 1);
+    setComments((prev) => prev.filter((c) => c.id !== deletedCommentId));
+    setCommentCount((prev) => prev - 1);
   };
-
-  // REMOVED the useEffect that was changing document.title
 
   return (
     <TabsContent value="comments" forceMount className="space-y-6">

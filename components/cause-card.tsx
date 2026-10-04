@@ -55,7 +55,6 @@ export function CauseCard({
     <Link href={causePublicPath(cause)} className="group block h-full">
       <AnimatedCard>
         <Card className="overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-2xl shadow-md h-full flex flex-col border border-gray-200/80 bg-white">
-          {/* Image Section */}
           <div className="aspect-video w-full overflow-hidden relative">
             <Image
               src={getMediaUrl(cause.image) || "/placeholder.svg"}
@@ -65,7 +64,6 @@ export function CauseCard({
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               unoptimized={isProxyMediaUrl(getMediaUrl(cause.image))}
             />
-            {/* Category Badge Overlay */}
             <div className="absolute top-3 left-3">
               <Badge
                 variant="secondary"
@@ -75,7 +73,6 @@ export function CauseCard({
                 <span>{catConfig.name}</span>
               </Badge>
             </div>
-            {/* Days Left / Expired / Paused Overlay */}
             {cause.paused ? (
               <div className="absolute top-3 right-3">
                 <Badge
@@ -136,14 +133,12 @@ export function CauseCard({
             )}
           </div>
 
-          {/* Content */}
           <CardHeader className="flex flex-col flex-1 p-4 pb-2">
             <CardTitle className="space-y-1.5">
               <H4 className="line-clamp-2 leading-snug group-hover:text-blue-900 transition-colors duration-200">
                 {cause.title}
               </H4>
               <div className="flex items-center gap-2">
-                {/* Creator avatar + name */}
                 {cause.profiles?.profile_photo ? (
                   <Image
                     src={getMediaUrl(cause.profiles.profile_photo)}
@@ -166,14 +161,12 @@ export function CauseCard({
               </div>
             </CardTitle>
 
-            {/* Summary snippet */}
             {cause.summary && (
               <P className="text-xs text-muted-foreground line-clamp-2 mt-2 leading-relaxed">
                 {cause.summary}
               </P>
             )}
 
-            {/* Location */}
             {cause.location && (
               <div className="flex items-center gap-1 mt-1.5">
                 <MapPin className="h-3 w-3 text-muted-foreground" />
@@ -184,7 +177,6 @@ export function CauseCard({
             )}
           </CardHeader>
 
-          {/* Progress + Footer */}
           <div className="mt-auto w-full">
             <CardContent className="px-4 pb-2">
               <div className="flex justify-between items-center text-xs text-muted-foreground mb-1.5">

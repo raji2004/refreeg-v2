@@ -66,7 +66,7 @@ export default function WhyItStandsOut() {
 
   return (
     <section className="w-full bg-[#002D62] mt-12 py-20 px-4">
-      {/* Pill */}
+      {}
       <motion.div
         ref={ref}
         initial={{ opacity: 0, y: 40 }}

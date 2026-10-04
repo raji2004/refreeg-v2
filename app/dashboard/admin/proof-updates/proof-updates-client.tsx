@@ -38,7 +38,7 @@ export default function ProofUpdatesClient({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null); // 👈 ADD THIS
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const handleApprove = async (id: string) => {
     setBusyId(id);
@@ -137,7 +137,7 @@ export default function ProofUpdatesClient({
                     <button
                       key={m.url}
                       type="button"
-                      onClick={() => setPreviewUrl(url)} // 👈 Open modal instead of redirecting
+                      onClick={() => setPreviewUrl(url)}
                       className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 hover:border-emerald-500 transition-colors"
                     >
                       <Image
@@ -225,7 +225,7 @@ export default function ProofUpdatesClient({
           </div>
         );
       })}
-            {/* 👇 ADD THIS PREVIEW MODAL 👇 */}
+      {}
       {previewUrl && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4"
@@ -241,11 +241,18 @@ export default function ProofUpdatesClient({
           >
             <XCircle className="h-8 w-8" />
           </button>
-          
-          {previewUrl.includes("video") || previewUrl.endsWith(".mp4") || previewUrl.endsWith(".webm") ? (
-            <video src={previewUrl} controls autoPlay className="max-h-[85vh] max-w-full rounded-lg" onClick={(e) => e.stopPropagation()} />
+
+          {previewUrl.includes("video") ||
+          previewUrl.endsWith(".mp4") ||
+          previewUrl.endsWith(".webm") ? (
+            <video
+              src={previewUrl}
+              controls
+              autoPlay
+              className="max-h-[85vh] max-w-full rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={previewUrl}
               alt="Proof preview"
@@ -255,7 +262,6 @@ export default function ProofUpdatesClient({
           )}
         </div>
       )}
-    </div> // <-- This is the existing closing div for the main container
+    </div>
   );
 }
-

@@ -32,7 +32,6 @@ function AdBanner({
     }
 
     try {
-      // @ts-ignore
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (error: any) {
       console.error(error.message);

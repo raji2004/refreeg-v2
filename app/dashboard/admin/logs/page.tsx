@@ -11,14 +11,12 @@ import {
 } from "@/components/ui/card";
 
 export default async function AdminLogsPage() {
-  // Get authenticated user from NextAuth
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect("/auth/signin");
   }
 
-  // Check if user has admin or manager role
   const role = await getUserRole(session.user.id);
 
   if (role !== "admin" && role !== "manager") {

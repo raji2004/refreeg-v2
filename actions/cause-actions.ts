@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { DISCOVER_CACHE_TAG } from "@/lib/discover-constants";
 import type {
   Cause,
   CauseWithUser,
@@ -20,10 +21,7 @@ import {
   validateCauseCoverImage,
   validateCauseGalleryImage,
 } from "@/lib/media/cause-cover";
-import {
-  resolveCampaignLocation,
-  // resolveDeviceCampaignLocation,
-} from "@/lib/locations/campaign-location";
+import { resolveCampaignLocation } from "@/lib/locations/campaign-location";
 import { allocateUniqueCauseSlug } from "@/lib/causes/slug";
 
 const UUID_REGEX =
@@ -47,7 +45,7 @@ const mapPrismaToCause = (prismaCause: any): Cause => {
   return {
     ...prismaCause,
     user_id: prismaCause.userId,
-    // Convert Prisma Decimal to number for the frontend
+
     goal: prismaCause.goal ? Number(prismaCause.goal) : 0,
     raised: prismaCause.raised ? Number(prismaCause.raised) : 0,
     shared: prismaCause.shared ? Number(prismaCause.shared) : 0,
@@ -75,10 +73,6 @@ const mapPrismaToCause = (prismaCause: any): Cause => {
   } as unknown as Cause;
 };
 
-/**
- * Get a cause by ID or public slug
- */
-/** Fetches exactly what QuickDonateForm needs, for opening it inside a modal from the grid. */
 export async function getQuickDonateProps(causeId: string) {
   const { getProfile } = await import("./profile-actions");
   const cause = await getCause(causeId);
@@ -100,9 +94,7 @@ export async function getQuickDonateProps(causeId: string) {
     defaultEmail: profile?.email ?? "",
     defaultAnonymous: profile?.donation_preference === "anonymous",
     userId: user?.id,
-    // Real gate against paying into a paused campaign — the card/detail-page
-    // UI already hides the Give button, but this is the server-side check
-    // that actually matters (a client could otherwise call this directly).
+
     paused: !!cause.paused,
   };
 }
@@ -161,7 +153,6 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
 
   const isAdmin = user?.id ? await isAdminOrManager(user.id) : false;
 
-  // Block access if pending, rejected, OR compliance_paused (unless owner or admin)
   if (
     (data.status === "pending" ||
       data.status === "rejected" ||
@@ -173,7 +164,6 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
     return null;
   }
 
-  // Check if current user is following this cause
   let isFollowing = false;
   if (user?.id) {
     const followData = await prisma.campaign_follows.findFirst({
@@ -210,9 +200,6 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
   return cause;
 }
 
-/**
- * Upload a file to S3 storage
- */
 async function uploadFileToS3(
   file: File,
   userId: string,
@@ -547,7 +534,9 @@ export const listCauses = cache(
     let whereClause: any = {};
 
     // Category filter
-    if (options.category && options.category !== "all") {
+    if (options.categories && options.categories.length > 0) {
+      whereClause.category = { in: options.categories };
+    } else if (options.category && options.category !== "all") {
       whereClause.category = options.category;
     }
 
@@ -625,9 +614,8 @@ export const listCauses = cache(
     // candidate slice and trim in JS when that filter is active.
     const hasAmountRange =
       options.minAmountNeeded != null || options.maxAmountNeeded != null;
-    const fetchTake = hasAmountRange && options.limit
-      ? options.limit * 4
-      : options.limit;
+    const fetchTake =
+      hasAmountRange && options.limit ? options.limit * 4 : options.limit;
 
     try {
       const data = await prisma.cause.findMany({
@@ -675,7 +663,10 @@ export const listCauses = cache(
           return true;
         });
         const offset = options.offset || 0;
-        causes = causes.slice(offset, offset + (options.limit || causes.length));
+        causes = causes.slice(
+          offset,
+          offset + (options.limit || causes.length),
+        );
       }
 
       const isOwnerScoped = !!options.userId;
@@ -699,9 +690,7 @@ export const listCauses = cache(
 /**
  * Count causes with filtering options
  */
-export async function countCauses(
-  options: CauseFilterOptions = {},
-): Promise<number> {
+function buildCauseCountWhere(options: CauseFilterOptions) {
   let whereClause: any = {};
 
   if (!options.userId) {
@@ -752,11 +741,32 @@ export async function countCauses(
     whereClause.user = { isVerified: true };
   }
 
-  try {
-    const hasAmountRange =
-      options.minAmountNeeded != null || options.maxAmountNeeded != null;
+  return whereClause;
+}
 
-    if (hasAmountRange) {
+function hasAmountRangeFilter(options: CauseFilterOptions) {
+  return options.minAmountNeeded != null || options.maxAmountNeeded != null;
+}
+
+function withinAmountRange(
+  row: { goal: unknown; raised: unknown },
+  options: CauseFilterOptions,
+) {
+  const needed = Number(row.goal || 0) - Number(row.raised || 0);
+  if (options.minAmountNeeded != null && needed < options.minAmountNeeded)
+    return false;
+  if (options.maxAmountNeeded != null && needed > options.maxAmountNeeded)
+    return false;
+  return true;
+}
+
+export async function countCauses(
+  options: CauseFilterOptions = {},
+): Promise<number> {
+  const whereClause = buildCauseCountWhere(options);
+
+  try {
+    if (hasAmountRangeFilter(options)) {
       // No column-to-column (goal - raised) predicate in Prisma's filter
       // API — count by fetching just the two numeric fields and filtering
       // in JS instead of pulling full rows.
@@ -764,20 +774,47 @@ export async function countCauses(
         where: whereClause,
         select: { goal: true, raised: true },
       });
-      return rows.filter((r) => {
-        const needed = Number(r.goal || 0) - Number(r.raised || 0);
-        if (options.minAmountNeeded != null && needed < options.minAmountNeeded)
-          return false;
-        if (options.maxAmountNeeded != null && needed > options.maxAmountNeeded)
-          return false;
-        return true;
-      }).length;
+      return rows.filter((r) => withinAmountRange(r, options)).length;
     }
 
     const count = await prisma.cause.count({ where: whereClause });
     return count;
   } catch (error) {
     console.error("Error counting causes:", error);
+    throw error;
+  }
+}
+
+export async function countCausesByCategory(
+  options: CauseFilterOptions = {},
+): Promise<Record<string, number>> {
+  const whereClause = buildCauseCountWhere(options);
+  const counts: Record<string, number> = {};
+
+  try {
+    if (hasAmountRangeFilter(options)) {
+      const rows = await prisma.cause.findMany({
+        where: whereClause,
+        select: { category: true, goal: true, raised: true },
+      });
+      for (const row of rows) {
+        if (!withinAmountRange(row, options)) continue;
+        counts[row.category] = (counts[row.category] ?? 0) + 1;
+      }
+      return counts;
+    }
+
+    const groups = await prisma.cause.groupBy({
+      by: ["category"],
+      where: whereClause,
+      _count: { _all: true },
+    });
+    for (const group of groups) {
+      counts[group.category] = group._count._all;
+    }
+    return counts;
+  } catch (error) {
+    console.error("Error counting causes by category:", error);
     throw error;
   }
 }
@@ -849,6 +886,7 @@ export async function updateCauseStatus(
         });
 
         revalidatePath("/dashboard/admin/causes");
+        revalidateTag(DISCOVER_CACHE_TAG);
         return updated as unknown as Cause;
       } catch (updateError) {
         console.error("Error updating cause with approved edit:", updateError);
@@ -867,6 +905,7 @@ export async function updateCauseStatus(
           data: { status: "approved", updatedAt: new Date() },
         });
         revalidatePath("/dashboard/admin/causes");
+        revalidateTag(DISCOVER_CACHE_TAG);
         return updated as unknown as Cause;
       } catch (updateError) {
         console.error("Error approving cause:", updateError);
@@ -910,6 +949,7 @@ export async function updateCauseStatus(
       }
 
       revalidatePath("/dashboard/admin/causes");
+      revalidateTag(DISCOVER_CACHE_TAG);
       return data as unknown as Cause;
     } catch (error) {
       console.error("Error updating cause status:", error);
@@ -936,6 +976,7 @@ export async function pauseCause(causeId: string): Promise<void> {
     data: { paused: true, paused_at: new Date() },
   });
   revalidatePath("/dashboard/admin/causes");
+  revalidateTag(DISCOVER_CACHE_TAG);
   revalidatePath("/causes");
 }
 
@@ -949,6 +990,7 @@ export async function unpauseCause(causeId: string): Promise<void> {
     data: { paused: false, paused_at: null },
   });
   revalidatePath("/dashboard/admin/causes");
+  revalidateTag(DISCOVER_CACHE_TAG);
   revalidatePath("/causes");
 }
 
@@ -1057,6 +1099,7 @@ export async function updateCauseTrustMetrics(
     });
 
     revalidatePath("/dashboard/admin/causes");
+    revalidateTag(DISCOVER_CACHE_TAG);
     revalidatePath(`/causes/${causeId}`);
   } catch (error) {
     console.error("Error updating trust metrics:", error);

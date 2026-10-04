@@ -8,7 +8,6 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  // Secure the cron endpoint
   const authHeader = req.headers.get("authorization");
   if (
     process.env.CRON_SECRET &&
@@ -41,12 +40,14 @@ export async function POST(req: NextRequest) {
     if (!r.cause.compliance_paused) causesToPause.set(r.cause.id, r.cause);
   }
 
-  for (const [causeId, cause] of causesToPause.entries()) {
-    await prisma.cause.update({
-      where: { id: causeId },
+  if (causesToPause.size > 0) {
+    await prisma.cause.updateMany({
+      where: { id: { in: [...causesToPause.keys()] } },
       data: { compliance_paused: true, compliance_paused_at: now },
     });
+  }
 
+  for (const cause of causesToPause.values()) {
     if (cause.user?.email) {
       try {
         await sendProofCausePausedEmail({

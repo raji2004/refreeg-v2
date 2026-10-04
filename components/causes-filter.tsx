@@ -77,10 +77,8 @@ export function CausesFilter({ selectedCategory }: CausesFilterProps) {
   const searchParams = useSearchParams();
 
   const handleCategoryChange = (categoryId: string) => {
-    // Preserve existing params (search, sort, etc.)
     const params = new URLSearchParams(searchParams.toString());
 
-    // Reset to page 1 on category change
     params.delete("page");
 
     if (categoryId !== "all") {

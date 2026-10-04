@@ -43,16 +43,16 @@ export function AuthBrandPanel({
         className,
       )}
     >
-      {/* Background ambient lighting/gradient subtle texture */}
+      {}
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Top: Logo */}
+      {}
       <div className="relative z-10">
         <AuthLogo variant="white" />
       </div>
 
-      {/* Center: Main message and features */}
+      {}
       <div className="relative z-10 my-auto py-10 max-w-lg">
         <h1 className="font-fraunces text-3xl xl:text-5xl font-normal leading-[1.15] text-white tracking-tight mb-4">
           {headline}
@@ -82,7 +82,7 @@ export function AuthBrandPanel({
         )}
       </div>
 
-      {/* Bottom: Testimonial or Context Card */}
+      {}
       <div className="relative z-10">
         {testimonial && (
           <div className="rounded-2xl bg-white/[0.05] border border-white/10 p-4 xl:p-5 backdrop-blur-sm">

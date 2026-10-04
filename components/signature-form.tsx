@@ -20,8 +20,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSignature } from "@/hooks/use-signature";
 import { useProfile } from "@/hooks/use-profile";
 import { sendPetitionSignedEmailToUser } from "@/services/mail";
-import { ShareModal } from "@/components/share-modal"; // Add this import
-import { getBaseURL } from "@/lib/utils"; // Add this import
+import { ShareModal } from "@/components/share-modal";
+import { getBaseURL } from "@/lib/utils";
 
 interface SignatureFormProps {
   petitionId: string;
@@ -62,11 +62,11 @@ export function SignatureForm({
 
   const baseUrl = getBaseURL();
 
-  // Check if form should be disabled
-  // Note: Signatures can continue even after the petition goal is reached
-  // The form is only disabled if the user has already signed, or if the petition status is pending or rejected
   const isFormDisabled =
-    hasSigned || status === "pending" || status === "rejected" || status === "expired";
+    hasSigned ||
+    status === "pending" ||
+    status === "rejected" ||
+    status === "expired";
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -85,7 +85,6 @@ export function SignatureForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Prevent submission if already signed
     if (hasSigned) {
       setFriendlyError("You have already signed this petition.");
       return;
@@ -96,12 +95,13 @@ export function SignatureForm({
         petitionId,
         profile?.id && profile.id !== "" ? profile.id : null,
         {
-        amount: 1,
-        email: formData.email,
-        name: formData.name,
-        message: formData.message,
-        isAnonymous: formData.isAnonymous,
-      });
+          amount: 1,
+          email: formData.email,
+          name: formData.name,
+          message: formData.message,
+          isAnonymous: formData.isAnonymous,
+        },
+      );
 
       if (!ok) {
         setFriendlyError(
@@ -112,12 +112,10 @@ export function SignatureForm({
 
       setFriendlyError(null);
 
-      // Call the onSuccess callback if provided
       if (onSuccess) {
         onSuccess();
       }
 
-      // Send confirmation email to the signer
       try {
         await sendPetitionSignedEmailToUser(
           formData.email,

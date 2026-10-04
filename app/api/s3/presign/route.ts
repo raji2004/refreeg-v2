@@ -6,10 +6,7 @@ import {
   type S3EntityType,
   type S3MediaType,
 } from "@/lib/s3/s3-utils";
-import {
-  ALLOWED_VIDEO_MIME_TYPES,
-  MAX_VIDEO_BYTES,
-} from "@/lib/media/video";
+import { ALLOWED_VIDEO_MIME_TYPES, MAX_VIDEO_BYTES } from "@/lib/media/video";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +28,6 @@ type PresignBody = {
   fileSize?: number;
 };
 
-/**
- * Issues a short-lived S3 PUT URL so the browser can upload media
- * directly (required for videos — do not buffer through server actions).
- *
- * Note: the S3 bucket must allow CORS PUT from this app origin.
- */
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -64,10 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!ALLOWED_MEDIA_TYPES.includes(mediaType)) {
-      return NextResponse.json(
-        { error: "Invalid mediaType" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid mediaType" }, { status: 400 });
     }
 
     if (mediaType === "videos") {

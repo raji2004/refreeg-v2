@@ -72,18 +72,11 @@ function FeatureCard({
   return (
     <div
       className={`feature-card w-full md:w-1/3 px-4 py-8 text-left ${
-        hasBorder
-          ? "border-b md:border-b-0 md:border-r border-white/10"
-          : ""
+        hasBorder ? "border-b md:border-b-0 md:border-r border-white/10" : ""
       }`}
     >
       <div className="feature-icon inline-flex rounded-full bg-[#CFF454] p-2 mb-6">
-        <Image
-          src={icon}
-          alt={title}
-          width={iconWidth}
-          height={iconHeight}
-        />
+        <Image src={icon} alt={title} width={iconWidth} height={iconHeight} />
       </div>
 
       <h3 className="mb-3 md:mb-2 lg:mb-3 text-xl lg:text-2xl font-semibold text-[#FFD8D8]">
@@ -123,7 +116,7 @@ export function MoneyTrail() {
             trigger: headingRef.current,
             start: "top 80%",
           },
-        }
+        },
       );
 
       gsap.from(".feature-card", {

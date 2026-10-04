@@ -59,14 +59,14 @@ const Carousel = React.forwardRef<
       children,
       ...props
     },
-    ref
+    ref,
   ) => {
     const [carouselRef, api] = useEmblaCarousel(
       {
         ...opts,
         axis: orientation === "horizontal" ? "x" : "y",
       },
-      plugins
+      plugins,
     );
     const [canScrollPrev, setCanScrollPrev] = React.useState(false);
     const [canScrollNext, setCanScrollNext] = React.useState(false);
@@ -96,7 +96,7 @@ const Carousel = React.forwardRef<
       (index: number) => {
         api?.scrollTo(index);
       },
-      [api]
+      [api],
     );
 
     const handleKeyDown = React.useCallback(
@@ -109,7 +109,7 @@ const Carousel = React.forwardRef<
           scrollNext();
         }
       },
-      [scrollPrev, scrollNext]
+      [scrollPrev, scrollNext],
     );
 
     React.useEffect(() => {
@@ -163,7 +163,7 @@ const Carousel = React.forwardRef<
         </div>
       </CarouselContext.Provider>
     );
-  }
+  },
 );
 Carousel.displayName = "Carousel";
 
@@ -180,7 +180,7 @@ const CarouselContent = React.forwardRef<
         className={cn(
           "flex",
           orientation === "horizontal" ? "-ml-4" : "-mt-4 flex-col",
-          className
+          className,
         )}
         {...props}
       />
@@ -203,7 +203,7 @@ const CarouselItem = React.forwardRef<
       className={cn(
         "min-w-0 shrink-0 grow-0 basis-full",
         orientation === "horizontal" ? "pl-4" : "pt-4",
-        className
+        className,
       )}
       {...props}
     />
@@ -228,7 +228,7 @@ const CarouselPrevious = React.forwardRef<
           ? "-left-12 top-1/2 -translate-y-1/2"
           : "-top-12 left-1/2 -translate-x-1/2 rotate-90",
         "disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-300 disabled:opacity-100",
-        className
+        className,
       )}
       disabled={!canScrollPrev}
       onClick={scrollPrev}
@@ -258,7 +258,7 @@ const CarouselNext = React.forwardRef<
           ? "-right-12 top-1/2 -translate-y-1/2"
           : "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",
         "disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-300 disabled:opacity-100",
-        className
+        className,
       )}
       disabled={!canScrollNext}
       onClick={scrollNext}
@@ -297,7 +297,7 @@ const CarouselPagination = React.forwardRef<
             onClick={() => scrollTo(index)}
             className={cn(
               "h-2.5 w-2.5 rounded-full bg-slate-300/80 transition-all duration-200 hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2",
-              isActive ? "scale-125 bg-slate-900" : "scale-100"
+              isActive ? "scale-125 bg-slate-900" : "scale-100",
             )}
             aria-label={`Go to slide ${index + 1}`}
             aria-current={isActive ? "true" : undefined}

@@ -15,7 +15,7 @@ import {
 function normalizeRedirectPath(target?: string | null): string | null {
   if (!target) return null;
   if (!target.startsWith("/")) return null;
-  // Prevent protocol-relative redirects (e.g. //evil.com)
+  
   if (target.startsWith("//")) return null;
   return target;
 }
@@ -32,8 +32,8 @@ export function useAuth() {
     try {
       const normalizedEmail = email.trim().toLowerCase();
 
-      // If user on login attempt has a cause but no profile details (or no password set),
-      // direct them to set up a new password first, then the profile flow.
+      
+      
       const causeCheck = await checkCauseUserLoginAction(normalizedEmail);
       if (causeCheck?.isCauseUserWithoutProfile && causeCheck.token) {
         toast({

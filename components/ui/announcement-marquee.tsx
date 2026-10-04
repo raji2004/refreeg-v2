@@ -1,8 +1,15 @@
 import Link from "next/link";
 
-import { ANNOUNCEMENT_PLACEHOLDER_ITEMS, mapLiveRecordsToAnnouncementItems } from "@/lib/announcement-feed";
+import {
+  ANNOUNCEMENT_PLACEHOLDER_ITEMS,
+  mapLiveRecordsToAnnouncementItems,
+} from "@/lib/announcement-feed";
 import { cn } from "@/lib/utils";
-import { AnnouncementItem, AnnouncementStatus, LiveAnnouncementRecord } from "@/types/announcement";
+import {
+  AnnouncementItem,
+  AnnouncementStatus,
+  LiveAnnouncementRecord,
+} from "@/types/announcement";
 
 interface AnnouncementMarqueeProps {
   items?: AnnouncementItem[];
@@ -29,7 +36,11 @@ function formatAmount(amount: number, currency: string): string {
   }).format(amount);
 }
 
-export function AnnouncementStatusTag({ status }: { status: AnnouncementStatus }) {
+export function AnnouncementStatusTag({
+  status,
+}: {
+  status: AnnouncementStatus;
+}) {
   return (
     <span className="font-semibold text-[11px] tracking-[0.26em] text-[hsl(var(--announcement-status))]">
       {statusLabels[status]}
@@ -44,18 +55,29 @@ export function AnnouncementTickerItem({ item }: { item: AnnouncementItem }) {
       <span className="font-semibold text-[hsl(var(--announcement-foreground))]">
         {formatAmount(item.amount, item.currency)}
       </span>
-      <span aria-hidden="true" className="font-semibold text-[hsl(var(--announcement-foreground))]">
+      <span
+        aria-hidden="true"
+        className="font-semibold text-[hsl(var(--announcement-foreground))]"
+      >
         →
       </span>
-      <span className="font-medium text-[hsl(var(--announcement-foreground))]">{item.headline}</span>
+      <span className="font-medium text-[hsl(var(--announcement-foreground))]">
+        {item.headline}
+      </span>
       {item.reference ? (
-        <span className="font-medium text-[hsl(var(--announcement-foreground))]">• {item.reference}</span>
+        <span className="font-medium text-[hsl(var(--announcement-foreground))]">
+          • {item.reference}
+        </span>
       ) : null}
     </>
   );
 
   if (!item.href) {
-    return <div className="flex items-center gap-3 whitespace-nowrap px-8 py-3">{content}</div>;
+    return (
+      <div className="flex items-center gap-3 whitespace-nowrap px-8 py-3">
+        {content}
+      </div>
+    );
   }
 
   return (
@@ -106,7 +128,9 @@ export function AnnouncementMarquee({
     >
       <ul
         className="flex w-max items-center animate-announcement-marquee hover:[animation-play-state:paused]"
-        style={{ ["--marquee-duration" as string]: `${Math.max(speedSeconds, 12)}s` }}
+        style={{
+          ["--marquee-duration" as string]: `${Math.max(speedSeconds, 12)}s`,
+        }}
       >
         {marqueeItems.map((item, index) => (
           <li key={`${item.id}-${index}`} className="list-none">

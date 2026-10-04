@@ -60,7 +60,8 @@ function VerifyOtpContent() {
       const data = await res.json();
 
       if (!res.ok) {
-        const errorMsg = data.error || "That code doesn't match. Please try again.";
+        const errorMsg =
+          data.error || "That code doesn't match. Please try again.";
         setErrorMessage(errorMsg);
         toast.error(errorMsg);
         setIsVerifying(false);
@@ -140,7 +141,7 @@ function VerifyOtpContent() {
 
   return (
     <div className="flex min-h-screen w-full bg-[#FCFBFA]">
-      {/* Left Brand Panel (Desktop) */}
+      {}
       <AuthBrandPanel
         headline="One code, three characters at a time."
         subtitle="Letters and numbers, read in two beats. Paste it whole or type it — we strip spaces and the dash for you."
@@ -176,8 +177,8 @@ function VerifyOtpContent() {
               Enter your code
             </h1>
             <p className="mt-2 text-sm text-neutral-600 leading-relaxed">
-              Sent to <span className="font-medium text-neutral-900">{email}</span>{" "}
-              ·{" "}
+              Sent to{" "}
+              <span className="font-medium text-neutral-900">{email}</span> ·{" "}
               <Link
                 href={`/auth/signup?email=${encodeURIComponent(email)}`}
                 className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"

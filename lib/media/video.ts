@@ -1,6 +1,5 @@
-/** Gallery video limits for cause create/edit (Phase 1). */
 export const MAX_VIDEOS_PER_CAUSE = 2;
-export const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50MB
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 export const MAX_VIDEO_DURATION_SEC = 90;
 export const ALLOWED_VIDEO_MIME_TYPES = ["video/mp4", "video/webm"] as const;
 
@@ -43,10 +42,6 @@ export function getVideoDuration(file: File): Promise<number> {
   });
 }
 
-/**
- * Validates a gallery video before upload.
- * Returns an error message or null if OK.
- */
 export async function validateGalleryVideo(
   file: File,
   opts?: { existingVideoCount?: number },

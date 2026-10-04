@@ -2,7 +2,7 @@ import { getProfile, getProfileByUsername } from "@/actions/profile-actions";
 import { getUserCauses } from "@/actions/cause-actions";
 import { listUserDonations } from "@/actions/donation-actions";
 import { getUserPetitions } from "@/actions/petition-actions";
-import { getCurrentUser } from "@/actions/auth-actions";
+import { getSessionUser } from "@/lib/auth/session-user";
 import { getOrganizationPublicProfile } from "@/actions/organization-actions";
 import PublicProfile from "@/components/PublicProfile";
 import OrganizationPublicProfile from "@/components/organization-public-profile";
@@ -27,7 +27,7 @@ export default async function PublicProfilePage({
   const { username } = await params;
   const { view } = await searchParams;
 
-  const currentUser = await getCurrentUser();
+  const currentUser = await getSessionUser();
 
   const profile = await getProfileByUsername(username);
   if (!profile) {
@@ -70,9 +70,7 @@ export default async function PublicProfilePage({
   }
 
   const donations = await listUserDonations(userId).then((items) =>
-    items.filter(
-      (donation) => (donation.cause as any)?.status === "approved",
-    ),
+    items.filter((donation) => (donation.cause as any)?.status === "approved"),
   );
 
   return (

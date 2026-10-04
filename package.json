@@ -16,7 +16,13 @@
     "test:e2e:prod": "PLAYWRIGHT_BASE_URL=https://apps.refreeg.com playwright test",
     "test:e2e:prod:mobile": "PLAYWRIGHT_BASE_URL=https://apps.refreeg.com playwright test --project=mobile-chrome",
     "test:e2e:multimedia": "playwright test e2e/causes-multimedia.spec.ts",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,md,mjs}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^2.0.29",
@@ -128,10 +134,13 @@
     "dotenv": "^17.4.2",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.2.6",
+    "husky": "^9.1.7",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
+    "lint-staged": "^17.5.1",
     "mini-css-extract-plugin": "^2.9.4",
     "postcss": "^8",
+    "prettier": "^3.9.9",
     "prisma": "^6.19.3",
     "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",

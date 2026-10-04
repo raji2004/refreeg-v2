@@ -19,7 +19,6 @@ import Link from "next/link";
 import ApiSidebar from "@/components/docs/api/ApiSidebar";
 import ApiPlayground from "@/components/docs/api/ApiPlayground";
 
-// New Section Imports
 import SectionIntro from "@/components/docs/api/SectionIntro";
 import SectionAuth from "@/components/docs/api/SectionAuth";
 import SectionAiBlueprint from "@/components/docs/api/SectionAiBlueprint";
@@ -121,7 +120,6 @@ export default function ApiDocsPage() {
     : null;
 
   const renderContent = () => {
-    // If searching, show search results
     if (searchQuery && filteredItems) {
       if (filteredItems.length === 0) {
         return (
@@ -224,12 +222,31 @@ export default function ApiDocsPage() {
 
   return (
     <div className="w-full bg-white min-h-screen text-slate-900 selection:bg-blue-100 italic-none">
-      {/* Top Navigation Bar */}
+      {}
       <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white/80 backdrop-blur-md">
-        {/* Autofill Trap - Prevents browser from filling search bars with user emails */}
-        <div style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden" }} aria-hidden="true">
-          <input type="text" name="fake_user_name_trap" tabIndex={-1} autoComplete="username" />
-          <input type="password" name="fake_password_trap" tabIndex={-1} autoComplete="current-password" />
+        {}
+        <div
+          style={{
+            position: "absolute",
+            opacity: 0,
+            height: 0,
+            width: 0,
+            overflow: "hidden",
+          }}
+          aria-hidden="true"
+        >
+          <input
+            type="text"
+            name="fake_user_name_trap"
+            tabIndex={-1}
+            autoComplete="username"
+          />
+          <input
+            type="password"
+            name="fake_password_trap"
+            tabIndex={-1}
+            autoComplete="current-password"
+          />
         </div>
         <div className="mx-auto flex h-16 max-w-[1500px] items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-4">
@@ -254,16 +271,20 @@ export default function ApiDocsPage() {
 
           <div className="flex items-center gap-3">
             <div className="relative hidden lg:block mr-4">
-              <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="relative">
+              <form
+                autoComplete="off"
+                onSubmit={(e) => e.preventDefault()}
+                className="relative"
+              >
                 <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="search"
                   name="dg_doc_search_v2"
                   id="dg_doc_search_v2"
                   autoComplete="new-password"
-                  data-lpignore="true" 
+                  data-lpignore="true"
                   readOnly
-                  onFocus={(e) => e.target.removeAttribute('readOnly')}
+                  onFocus={(e) => e.target.removeAttribute("readOnly")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search API documentation…"
@@ -285,17 +306,12 @@ export default function ApiDocsPage() {
               <Key className="w-4 h-4" />
               Get API Keys
             </Link>
-            {/* <button
-              onClick={() => setMobileOpen(true)}
-              className="md:hidden p-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
-            >
-              <Menu className="w-6 h-6" />
-            </button> */}
+            {}
           </div>
         </div>
       </header>
 
-      {/* Mobile Navigation Trigger */}
+      {}
       <div className="md:hidden sticky top-[60px] z-40 w-full bg-white/95 backdrop-blur-sm border-b border-slate-100 px-4 py-3 flex items-center justify-between">
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -312,7 +328,7 @@ export default function ApiDocsPage() {
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {}
       {mobileOpen && (
         <div className="fixed inset-0 z-[60] md:hidden">
           <div
@@ -331,7 +347,11 @@ export default function ApiDocsPage() {
             <div className="p-2">
               <div className="px-4 py-6 border-b border-slate-50 mb-4">
                 <div className="relative">
-                  <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="relative">
+                  <form
+                    autoComplete="off"
+                    onSubmit={(e) => e.preventDefault()}
+                    className="relative"
+                  >
                     <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="search"
@@ -340,7 +360,7 @@ export default function ApiDocsPage() {
                       autoComplete="new-password"
                       data-lpignore="true"
                       readOnly
-                      onFocus={(e) => e.target.removeAttribute('readOnly')}
+                      onFocus={(e) => e.target.removeAttribute("readOnly")}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search..."

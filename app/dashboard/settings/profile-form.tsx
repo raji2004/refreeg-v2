@@ -23,12 +23,7 @@ import {
 
 type AppearanceMode = "named" | "anonymous";
 type EditableField =
-  | "full_name"
-  | "display_name"
-  | "phone"
-  | "location"
-  | "interests"
-  | null;
+  "full_name" | "display_name" | "phone" | "location" | "interests" | null;
 
 type FormState = {
   full_name: string;
@@ -98,9 +93,7 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
     bio: profile?.bio || "",
     username: profile?.username || "",
     display_name:
-      profile?.display_name ||
-      shortDisplayName(profile?.full_name || "") ||
-      "",
+      profile?.display_name || shortDisplayName(profile?.full_name || "") || "",
     location: profile?.location || "",
     interests: profile?.interests ?? [],
   });
@@ -175,10 +168,9 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
       interests: data.interests,
       ...(profile.account_type
         ? {
-            account_type:
-              profile.account_type as NonNullable<
-                ProfileFormData["account_type"]
-              >,
+            account_type: profile.account_type as NonNullable<
+              ProfileFormData["account_type"]
+            >,
           }
         : {}),
     };
@@ -296,7 +288,10 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
               size="sm"
               className="border-ink/20"
             >
-              <Link href={publicProfileHref} className="flex items-center gap-2">
+              <Link
+                href={publicProfileHref}
+                className="flex items-center gap-2"
+              >
                 <Eye className="h-4 w-4" />
                 View public profile
               </Link>
@@ -428,7 +423,9 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
               onIdleAction={() => setEmailModalOpen(true)}
             >
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-[15px] leading-6 text-ink">{formData.email}</p>
+                <p className="text-[15px] leading-6 text-ink">
+                  {formData.email}
+                </p>
                 <span className="rounded-md bg-verified-soft px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-forest">
                   VERIFIED
                 </span>
@@ -456,7 +453,9 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
                     autoFocus
                   />
                   {formErrors.phone ? (
-                    <p className="text-xs text-destructive">{formErrors.phone}</p>
+                    <p className="text-xs text-destructive">
+                      {formErrors.phone}
+                    </p>
                   ) : null}
                 </div>
               ) : (
@@ -609,10 +608,7 @@ function ProfileRow({
   return (
     <div
       data-profile-row={label}
-      className={cn(
-        "px-5 py-5 sm:px-6",
-        !last && "border-b border-hairline",
-      )}
+      className={cn("px-5 py-5 sm:px-6", !last && "border-b border-hairline")}
     >
       {editing ? (
         <div className="space-y-2">
@@ -620,14 +616,8 @@ function ProfileRow({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
             <div className="min-w-0 flex-1">{children}</div>
             <div className="flex shrink-0 items-center gap-2 sm:pt-0.5">
-              <SettingsSaveButton
-                saving={saving}
-                onClick={onSave}
-              />
-              <SettingsCancelButton
-                onClick={onCancel}
-                disabled={saving}
-              />
+              <SettingsSaveButton saving={saving} onClick={onSave} />
+              <SettingsCancelButton onClick={onCancel} disabled={saving} />
             </div>
           </div>
         </div>

@@ -1,33 +1,23 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 
-/**
- * Public API route prefixes that do NOT require a user session.
- * These routes either use their own auth (API keys) or are intentionally public.
- */
 const PUBLIC_API_PREFIXES = [
-  "/api/auth", // NextAuth routes
-  "/api/health", // Monitoring health checks
-  "/api/error-report", // Same-origin browser error intake (rate limited)
-  "/api/bot", // Developer API — authenticated via API keys
-  "/api/webhooks", // Incoming webhooks (Paystack, etc.)
-  "/api/payments", // Guest donation checkout + verification
-  "/api/cron", // Scheduled jobs (CRON_SECRET)
-  "/api/cities", // Public lookup data
-  "/api/countries", // Public lookup data
-  "/api/states", // Public lookup data
-  "/api/mail", // Donor-facing email endpoints (no auth required)
-  "/api/s3", // S3 image proxy (public images)
-  "/api/dev", // Temporary local dev/testing routes
-  "/api/leaderboard", // Public leaderboard rankings
+  "/api/auth",
+  "/api/health",
+  "/api/error-report",
+  "/api/bot",
+  "/api/webhooks",
+  "/api/payments",
+  "/api/cron",
+  "/api/cities",
+  "/api/countries",
+  "/api/states",
+  "/api/mail",
+  "/api/s3",
+  "/api/dev",
+  "/api/leaderboard",
 ];
 
-// Builds an absolute URL from the request's own forwarded headers instead
-// of req.url/req.nextUrl — in this self-hosted standalone deployment,
-// req.url has been observed to resolve to the server's bind address
-// (0.0.0.0:3000, from ecosystem.config.js's HOSTNAME) instead of the real
-// public host when the reverse proxy doesn't send X-Forwarded-Host (see
-// nginx/nginx.conf). Explicit headers are safe regardless of proxy config.
 function absoluteUrl(path: string, req: Request): URL {
   const host =
     req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
@@ -39,9 +29,6 @@ export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   const user = req.auth?.user;
 
-  // ── 1. Protect API routes ─────────────────────────────────────────
-  // Return 401 for authenticated API routes when no session exists.
-  // Public API routes (bot, webhooks, lookups, mail) are excluded.
   if (pathname.startsWith("/api")) {
     const isPublicApi = PUBLIC_API_PREFIXES.some((prefix) =>
       pathname.startsWith(prefix),
@@ -55,7 +42,6 @@ export default auth(async (req) => {
     }
   }
 
-  // ── 2. Redirect unauthenticated users away from protected pages ───
   const isProtectedRoute =
     pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding");
 
@@ -65,8 +51,6 @@ export default auth(async (req) => {
     return NextResponse.redirect(signInUrl);
   }
 
-  // Admin authorization is enforced in each /dashboard/admin page (Node runtime).
-  // Middleware runs on Edge and cannot call Prisma.
   if (pathname.startsWith("/dashboard/admin") && user) {
     const role = (user as { role?: string }).role;
     if (role === "user") {
@@ -74,19 +58,6 @@ export default auth(async (req) => {
     }
   }
 
-  // ── 3. Redirect authenticated users away from auth pages ──────────
-  // Excludes /auth/callback: that's the OAuth landing route, not a page a
-  // signed-in user would browse to — it needs to run its own onboarding
-  // check and honor the original ?redirect= target (app/auth/callback/route.ts),
-  // which a blanket redirect here would otherwise skip for a user who just
-  // finished signing in with Google.
-  //
-  // Also excludes /auth/signin and /auth/signup: those two used to
-  // silently bounce a still-signed-in visitor straight to /dashboard,
-  // making it impossible to ever reach the actual form to sign in as
-  // someone else. They now render an explicit "Signed in as X — Continue /
-  // Sign in as someone else" card instead (see AlreadySignedInCard) —
-  // still fast for the common case, but never a silent decision.
   const AUTH_PAGES_WITH_OWN_SESSION_HANDLING = [
     "/auth/callback",
     "/auth/signin",
@@ -102,7 +73,6 @@ export default auth(async (req) => {
     return NextResponse.redirect(absoluteUrl("/dashboard", req));
   }
 
-  // ── 4. Onboarding Redirect ────────────────────────────────────────
   const isOnboardingCompleted = (req.auth?.user as any)?.onboardingCompleted;
 
   if (
@@ -113,19 +83,13 @@ export default auth(async (req) => {
     return NextResponse.redirect(absoluteUrl("/onboarding", req));
   }
 
-  // ── 5. ref_v1 cookie — capture referral code from any URL for OAuth ──
-  // When a visitor arrives via a referral link (?ref_v1=CODE) on any page
-  // (signup, cause pages, etc.), we persist the code in a short-lived
-  // HttpOnly cookie. The NextAuth signIn event reads this cookie to attribute
-  // Google OAuth signups to the correct referrer without losing the code
-  // during the OAuth redirect roundtrip.
   const refV1 = req.nextUrl.searchParams.get("ref_v1");
   if (refV1) {
     const response = NextResponse.next();
     response.cookies.set("ref_v1", refV1, {
       httpOnly: true,
       sameSite: "lax",
-      maxAge: 60 * 30, // 30 minutes
+      maxAge: 60 * 30,
       path: "/",
       secure: process.env.NODE_ENV === "production",
     });
@@ -135,13 +99,6 @@ export default auth(async (req) => {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

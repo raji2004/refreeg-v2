@@ -16,7 +16,7 @@ import {
   type DiscoverFilters,
   type DiscoverItem,
 } from "@/actions/discover-actions";
-import { listBookmarkedIds, toggleBookmark } from "@/actions/bookmark-actions";
+import { toggleBookmark } from "@/actions/bookmark-actions";
 import { DISCOVER_RESULT_CAP } from "@/lib/discover-constants";
 
 const PAGE_SIZE = 12;
@@ -26,12 +26,14 @@ export function DiscoverGrid({
   filters,
   initialItems,
   initialHasMore,
+  initialBookmarks,
   onRemoveFilter,
   onClearFilters,
 }: {
   filters: DiscoverFilters;
   initialItems: DiscoverItem[];
   initialHasMore: boolean;
+  initialBookmarks: string[];
   onRemoveFilter: (key: keyof DiscoverFilters) => void;
   onClearFilters: () => void;
 }) {
@@ -42,15 +44,22 @@ export function DiscoverGrid({
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingFresh, setLoadingFresh] = useState(false);
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
+  const [bookmarked, setBookmarked] = useState<Set<string>>(
+    () => new Set(initialBookmarks),
+  );
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const isFirstRender = useRef(true);
 
   const [giveModal, setGiveModal] = useState<{ id: string } | null>(null);
-  const [pledgeModal, setPledgeModal] = useState<
-    { id: string; title: string; daysLeft: number | null } | null
-  >(null);
-  const [signModal, setSignModal] = useState<{ id: string; title: string } | null>(null);
+  const [pledgeModal, setPledgeModal] = useState<{
+    id: string;
+    title: string;
+    daysLeft: number | null;
+  } | null>(null);
+  const [signModal, setSignModal] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   useEffect(() => {
     try {
@@ -74,16 +83,6 @@ export function DiscoverGrid({
       // best-effort only
     }
   };
-
-  useEffect(() => {
-    listBookmarkedIds()
-      .then((rows) => {
-        setBookmarked(new Set(rows.map((r) => `${r.targetType}:${r.targetId}`)));
-      })
-      .catch(() => {
-        // Non-critical — bookmarks just won't show as saved this load.
-      });
-  }, [user?.id]);
 
   // Refetch from scratch whenever the active filter set changes.
   useEffect(() => {
@@ -177,7 +176,10 @@ export function DiscoverGrid({
         return next;
       });
       toast({
-        title: err instanceof Error ? err.message : "Couldn't save that — try again.",
+        title:
+          err instanceof Error
+            ? err.message
+            : "Couldn't save that — try again.",
         variant: "destructive",
       });
     }
@@ -226,11 +228,22 @@ export function DiscoverGrid({
       {loadingFresh ? (
         <div className={gridClass}>
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className={view === "grid" ? "h-[360px] w-full rounded-xl" : "h-32 w-full rounded-xl"} />
+            <Skeleton
+              key={i}
+              className={
+                view === "grid"
+                  ? "h-[360px] w-full rounded-xl"
+                  : "h-32 w-full rounded-xl"
+              }
+            />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <DiscoverEmptyState filters={filters} onRemoveFilter={onRemoveFilter} onClearAll={onClearFilters} />
+        <DiscoverEmptyState
+          filters={filters}
+          onRemoveFilter={onRemoveFilter}
+          onClearAll={onClearFilters}
+        />
       ) : (
         <>
           <div className={gridClass}>
@@ -245,9 +258,15 @@ export function DiscoverGrid({
                   onToggleBookmark={() => handleToggleBookmark(item)}
                   onGiveClick={() => setGiveModal({ id: item.id })}
                   onPledgeClick={() =>
-                    setPledgeModal({ id: item.id, title: item.title, daysLeft: item.daysLeft })
+                    setPledgeModal({
+                      id: item.id,
+                      title: item.title,
+                      daysLeft: item.daysLeft,
+                    })
                   }
-                  onSignClick={() => setSignModal({ id: item.id, title: item.title })}
+                  onSignClick={() =>
+                    setSignModal({ id: item.id, title: item.title })
+                  }
                 />
               );
             })}

@@ -9,7 +9,7 @@ import { SettingsNav } from "./settings-nav";
 interface SettingsShellProps {
   children: ReactNode;
   isOrganization?: boolean;
-  /** Hide the desktop sub-rail (e.g. on the settings index itself). */
+
   hideNav?: boolean;
   className?: string;
 }
@@ -21,7 +21,12 @@ export function SettingsShell({
   className,
 }: SettingsShellProps) {
   return (
-    <div className={cn("mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8", className)}>
+    <div
+      className={cn(
+        "mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8",
+        className,
+      )}
+    >
       <Link
         href="/dashboard/settings"
         className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-ink/60 transition-colors hover:text-ink lg:hidden"

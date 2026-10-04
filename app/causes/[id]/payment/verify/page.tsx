@@ -9,12 +9,16 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { usePayment } from "@/hooks/use-payment";
 import { useQueryState } from "nuqs";
 
-export default function PaymentVerification({ params }: { params: Promise<{ id: string }> }) {
+export default function PaymentVerification({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
   const { id } = use(params);
   const [reference] = useQueryState("reference");
-  const [txRef] = useQueryState("tx_ref"); // Flutterwave uses tx_ref
-  const [transactionId] = useQueryState("transaction_id"); // Flutterwave numeric ID
+  const [txRef] = useQueryState("tx_ref");
+  const [transactionId] = useQueryState("transaction_id");
   const [providerQuery] = useQueryState("provider");
   const { verifyPayment, error } = usePayment();
   const [verificationStatus, setVerificationStatus] = useState<
@@ -37,9 +41,12 @@ export default function PaymentVerification({ params }: { params: Promise<{ id: 
 
       try {
         setHasVerified(true);
-        // Verify payment using reference (Paystack) or txRef (Flutterwave)
-        // Pass providerQuery directly, usePayment handles fallback to localStorage
-        const isSuccessful = await verifyPayment(finalReference, providerQuery as any, transactionId || undefined);
+
+        const isSuccessful = await verifyPayment(
+          finalReference,
+          providerQuery as any,
+          transactionId || undefined,
+        );
 
         if (isSuccessful) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -56,7 +63,14 @@ export default function PaymentVerification({ params }: { params: Promise<{ id: 
     };
 
     verifyPaymentStatus();
-  }, [reference, txRef, providerQuery, transactionId, verifyPayment, hasVerified]);
+  }, [
+    reference,
+    txRef,
+    providerQuery,
+    transactionId,
+    verifyPayment,
+    hasVerified,
+  ]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

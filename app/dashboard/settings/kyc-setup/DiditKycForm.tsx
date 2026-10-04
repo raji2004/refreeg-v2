@@ -33,7 +33,6 @@ export default function DiditKycForm({ userId }: DiditKycFormProps) {
         throw new Error(data.error || "Failed to create session");
       }
 
-      // dynamically import to avoid SSR issues with window
       const { DiditSdk } = await import("@didit-protocol/sdk-web");
 
       if (DiditSdk && data.url) {
@@ -42,7 +41,6 @@ export default function DiditKycForm({ userId }: DiditKycFormProps) {
         });
 
         DiditSdk.shared.onComplete = () => {
-          // Reload page to reflect isVerified status after webhook completes
           window.location.reload();
         };
       } else {

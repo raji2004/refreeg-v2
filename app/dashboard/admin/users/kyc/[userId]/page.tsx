@@ -205,7 +205,9 @@ export default async function KycReviewPage({
                     Date of Birth:
                   </span>
                 </div>
-                <span className="text-gray-700">{kyc.dob || profile.date_of_birth || "-"}</span>
+                <span className="text-gray-700">
+                  {kyc.dob || profile.date_of_birth || "-"}
+                </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <div className="flex items-center gap-2 sm:gap-3">
@@ -273,7 +275,9 @@ export default async function KycReviewPage({
                     Country:
                   </span>
                 </div>
-                <span className="text-gray-700">{kyc.country || profile.country_of_residence || "-"}</span>
+                <span className="text-gray-700">
+                  {kyc.country || profile.country_of_residence || "-"}
+                </span>
               </div>
             </div>
           </div>

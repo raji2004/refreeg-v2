@@ -329,7 +329,7 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Statistics */}
+        {}
         <Numbers />
       </div>
     </section>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Sparkles } from "lucide-react";
 import { MyPetitionsList } from "@/components/my-petitions-list";
-import { getCurrentUser } from "@/actions/auth-actions";
+import { getSessionUser } from "@/lib/auth/session-user";
 
 const validStatuses = ["all", "approved", "pending", "rejected"];
 
@@ -13,7 +13,7 @@ export default async function MyPetitionsPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
 
   if (!user) {
     redirect("/auth/signin");

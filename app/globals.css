@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -37,6 +35,16 @@ select:focus {
   box-shadow: none !important;
   border-color: #003366 !important;
   /* optional: keep blue border, or set your brand */
+}
+
+/* Design-guide dialogs: forest focus, bone field, ink text. */
+[data-design-dialog] input:focus,
+[data-design-dialog] textarea:focus,
+[data-design-dialog] select:focus {
+  background-color: hsl(var(--surface)) !important;
+  color: hsl(var(--ink)) !important;
+  border-color: hsl(var(--forest)) !important;
+  box-shadow: 0 0 0 3px hsl(var(--forest) / 0.2) !important;
 }
 
 @layer base {

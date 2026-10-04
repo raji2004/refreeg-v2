@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     if (!user?.id) {
       return NextResponse.json(
         { error: "User not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (Number.isNaN(amountInCrypto) || Number.isNaN(amountInNaira)) {
       return NextResponse.json(
         { error: "Invalid donation amounts" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     console.error("Crypto donation error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

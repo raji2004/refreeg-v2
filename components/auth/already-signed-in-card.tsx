@@ -6,14 +6,6 @@ import { signOut as nextAuthSignOut } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-/**
- * Shown on /auth/signin and /auth/signup instead of the form when a valid
- * session already exists — middleware.ts no longer silently redirects those
- * two pages away to /dashboard (see that file), since that made it
- * impossible to ever reach the form to sign in as someone else. This gives
- * an explicit choice instead, the same pattern Google's own "choose an
- * account" screen uses.
- */
 export function AlreadySignedInCard({
   name,
   email,
@@ -31,9 +23,6 @@ export function AlreadySignedInCard({
   const handleSwitchAccount = async () => {
     setSwitching(true);
     try {
-      // redirect:false — no navigation here. Clearing the session makes
-      // useSession() (read by the parent page) flip to unauthenticated,
-      // which swaps this card out for the real form in place.
       await nextAuthSignOut({ redirect: false });
     } finally {
       setSwitching(false);

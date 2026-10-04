@@ -11,13 +11,13 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/actions/auth-actions", () => ({
-  getCurrentUser: jest.fn(),
+jest.mock("@/lib/auth/session-user", () => ({
+  getSessionUser: jest.fn(),
 }));
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/actions/auth-actions";
+import { getSessionUser } from "@/lib/auth/session-user";
 import {
   getWebhooks,
   createWebhook,
@@ -33,7 +33,7 @@ const mockPrisma = prisma as unknown as {
   };
   api_webhook_logs: { findMany: jest.Mock };
 };
-const mockGetCurrentUser = getCurrentUser as jest.Mock;
+const mockGetCurrentUser = getSessionUser as jest.Mock;
 
 const mockUser = { id: "user-1", email: "user@example.com" };
 

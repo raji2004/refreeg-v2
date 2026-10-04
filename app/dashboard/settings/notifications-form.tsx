@@ -189,10 +189,7 @@ export function NotificationsForm() {
           {rows.map((row, index) => (
             <div
               key={row.id}
-              className={cn(
-                "px-5 py-5 sm:px-6",
-                index === 0 && "pt-4",
-              )}
+              className={cn("px-5 py-5 sm:px-6", index === 0 && "pt-4")}
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)] sm:items-center">
                 <div className="min-w-0 pr-4">

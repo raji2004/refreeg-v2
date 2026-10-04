@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ArrowRight, BarChart3, Eye, Plus } from "lucide-react";
-import { getCurrentUser } from "@/actions";
+import { getSessionUser } from "@/lib/auth/session-user";
 import { getUserPetitionsWithStats } from "@/actions/dashboard-actions";
 
 const getProgress = (current: number, goal: number) => {
@@ -38,7 +38,7 @@ export async function DashboardPetitions({
   let petitionsWithSigners = initialPetitions;
 
   if (!petitionsWithSigners) {
-    const user = await getCurrentUser();
+    const user = await getSessionUser();
     if (!user) {
       return (
         <div className="rounded-[24px] border border-slate-200 bg-white p-8 text-center shadow-[0_18px_40px_-34px_rgba(15,23,42,0.45)]">
@@ -92,7 +92,10 @@ export async function DashboardPetitions({
             Launch your first petition to start gathering supporters and track
             signature progress from one place.
           </p>
-          <Link href="/dashboard/petitions/create" className="block sm:inline-block">
+          <Link
+            href="/dashboard/petitions/create"
+            className="block sm:inline-block"
+          >
             <Button className="mt-6 h-11 w-full rounded-2xl bg-blue-600 px-5 text-white hover:bg-blue-700 sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Create your first petition
@@ -171,7 +174,8 @@ export async function DashboardPetitions({
                         className="min-w-0 break-words text-slate-500 sm:max-w-[60%] sm:text-right"
                         title={`${petition.signatures} of ${petition.goal.toLocaleString()}`}
                       >
-                        {petition.signatures} of {petition.goal.toLocaleString()}
+                        {petition.signatures} of{" "}
+                        {petition.goal.toLocaleString()}
                       </span>
                     </div>
                     <Progress value={progress} className="h-2.5" />
@@ -191,7 +195,10 @@ export async function DashboardPetitions({
                       Analytics
                     </Button>
                   </Link>
-                  <Link href={`/petitions/${petition.id}`} className="w-full sm:w-auto">
+                  <Link
+                    href={`/petitions/${petition.id}`}
+                    className="w-full sm:w-auto"
+                  >
                     <Button
                       variant="ghost"
                       className="h-11 w-full rounded-2xl px-5 text-slate-700 hover:bg-slate-100 hover:text-slate-950"

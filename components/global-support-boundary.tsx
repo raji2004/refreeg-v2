@@ -25,14 +25,6 @@ function getErrorMessage(error: unknown) {
   return "An unexpected error occurred.";
 }
 
-// A deploy prunes the previous release's directory (see
-// scripts/remote-deploy.sh) — anyone with a tab already open when that
-// happens gets a 404 the next time it fetches a JS chunk (a route
-// transition, a next/dynamic import) referencing the old build's hash.
-// That's not a real app error, just a stale page — reloading once fetches
-// the current HTML/chunk manifest and fixes it silently. The sessionStorage
-// guard stops a reload loop if the fetch keeps failing for some other
-// reason (e.g. actually offline).
 const CHUNK_RELOAD_KEY = "refreeg:chunk-reload-attempted";
 
 function isChunkLoadError(error: unknown): boolean {
@@ -51,8 +43,6 @@ function reloadOnceForStaleChunk(error: unknown): boolean {
     if (sessionStorage.getItem(CHUNK_RELOAD_KEY)) return false;
     sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
   } catch {
-    // sessionStorage unavailable (private mode, etc.) — fall through to
-    // the normal error screen rather than risk reloading forever.
     return false;
   }
   window.location.reload();
@@ -79,7 +69,7 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
     console.error(`[Window Error] ${message}`, {
       url: window.location.href,
       timestamp: new Date().toISOString(),
-      error: event.error
+      error: event.error,
     });
     this.setState({
       hasError: true,
@@ -94,7 +84,7 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
     console.error(`[Unhandled Rejection] ${message}`, {
       url: window.location.href,
       timestamp: new Date().toISOString(),
-      reason: event.reason
+      reason: event.reason,
     });
     this.setState({
       hasError: true,
@@ -112,7 +102,7 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
       url: window.location.href,
       timestamp: new Date().toISOString(),
       componentStack: errorInfo.componentStack,
-      error
+      error,
     });
   }
 

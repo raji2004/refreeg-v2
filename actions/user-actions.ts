@@ -97,12 +97,10 @@ export async function deleteUserAccount(
       return { error: "You can only delete your own account" };
     }
 
-    // 1. Delete KYC verifications via Prisma
     await prisma.kyc_verifications.deleteMany({
       where: { user_id: userId },
     });
 
-    // 2. Delete User via Prisma (Cascades to Roles, Accounts, Sessions)
     await prisma.user.delete({
       where: { id: userId },
     });
@@ -135,12 +133,10 @@ export async function deleteUserAsAdmin(
       };
     }
 
-    // 1. Delete KYC verifications via Prisma
     await prisma.kyc_verifications.deleteMany({
       where: { user_id: userId },
     });
 
-    // 2. Delete User via Prisma (Cascades to Roles, Accounts, Sessions)
     await prisma.user.delete({
       where: { id: userId },
     });

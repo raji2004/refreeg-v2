@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth/auth";
 import { isAdminOrManager } from "./role-actions";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { DISCOVER_CACHE_TAG } from "@/lib/discover-constants";
 import {
   sendPetitionApprovedEmailForUser,
   sendPetitionRejectedEmailForUser,
@@ -31,9 +32,6 @@ type AdminPetitionRow = {
   };
 };
 
-/**
- * List petitions for admin with filters
- */
 export async function listAdminPetitions(
   status?: PetitionStatus,
 ): Promise<AdminPetitionRow[]> {
@@ -113,9 +111,6 @@ export async function listAdminPetitions(
   }));
 }
 
-/**
- * Get pending petition edits
- */
 export async function getPetitionEdits() {
   const session = await auth();
 
@@ -191,9 +186,6 @@ export async function getPetitionEdits() {
   return result;
 }
 
-/**
- * Update petition status
- */
 export async function updatePetitionStatus(
   petitionId: string,
   status: "approved" | "rejected",
@@ -315,5 +307,6 @@ export async function updatePetitionStatus(
   }
 
   revalidatePath("/dashboard/admin/petitions");
+  revalidateTag(DISCOVER_CACHE_TAG);
   return { success: true };
 }

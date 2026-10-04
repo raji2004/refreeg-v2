@@ -15,14 +15,21 @@ export function AcceptInvitationButton({ token }: { token: string }) {
     setIsAccepting(true);
     const result = await acceptOrganizationInvitation(token);
     if (result.success) {
-      toast({ title: "Invitation accepted", description: "Welcome to the organization workspace." });
+      toast({
+        title: "Invitation accepted",
+        description: "Welcome to the organization workspace.",
+      });
       router.push("/dashboard/settings/organization");
       router.refresh();
       return;
     }
 
     setIsAccepting(false);
-    toast({ title: "Could not accept invitation", description: result.error, variant: "destructive" });
+    toast({
+      title: "Could not accept invitation",
+      description: result.error,
+      variant: "destructive",
+    });
   };
 
   return (

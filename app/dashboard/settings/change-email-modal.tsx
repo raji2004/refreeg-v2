@@ -87,7 +87,10 @@ export function ChangeEmailModal({
           "gap-0 overflow-hidden rounded-2xl border border-hairline bg-white p-0 shadow-[0_24px_64px_rgba(15,18,28,0.18)] sm:max-w-[420px]",
         )}
       >
-        <form onSubmit={handleSubmit} className="px-6 pb-6 pt-7 sm:px-7 sm:pb-7 sm:pt-8">
+        <form
+          onSubmit={handleSubmit}
+          className="px-6 pb-6 pt-7 sm:px-7 sm:pb-7 sm:pt-8"
+        >
           <DialogHeader className="space-y-0 text-left">
             <DialogTitle className="font-fraunces text-[28px] font-semibold leading-tight text-ink">
               Change your email

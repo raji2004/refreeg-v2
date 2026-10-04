@@ -145,7 +145,7 @@ export function KycTab({ profile, user }: KycTabProps) {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      {/* Main Status Card */}
+      {}
       {!kycData ? (
         <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white to-slate-50/50 pointer-events-none" />
@@ -157,25 +157,42 @@ export function KycTab({ profile, user }: KycTabProps) {
               Secure Your RefreeG Account
             </h2>
             <p className="text-slate-600 max-w-2xl mx-auto mb-10 text-base md:text-lg">
-              Identity verification keeps the RefreeG community safe and trusted. 
-              By verifying your identity, you unlock the ability to create petitions, launch donation campaigns, and access all premium platform features.
+              Identity verification keeps the RefreeG community safe and
+              trusted. By verifying your identity, you unlock the ability to
+              create petitions, launch donation campaigns, and access all
+              premium platform features.
             </p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl mb-12 text-left">
               <div className="p-5 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                 <Shield className="h-6 w-6 text-blue-500 mb-3" />
-                <h4 className="font-semibold text-slate-900 mb-2">Platform Trust</h4>
-                <p className="text-sm text-slate-500 leading-relaxed">Show supporters you are a verified creator, increasing engagement and donations.</p>
+                <h4 className="font-semibold text-slate-900 mb-2">
+                  Platform Trust
+                </h4>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  Show supporters you are a verified creator, increasing
+                  engagement and donations.
+                </p>
               </div>
               <div className="p-5 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                 <CheckCircle className="h-6 w-6 text-emerald-500 mb-3" />
-                <h4 className="font-semibold text-slate-900 mb-2">Unlock Features</h4>
-                <p className="text-sm text-slate-500 leading-relaxed">Gain full access to campaign creation, wallet withdrawals, and premium tools.</p>
+                <h4 className="font-semibold text-slate-900 mb-2">
+                  Unlock Features
+                </h4>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  Gain full access to campaign creation, wallet withdrawals, and
+                  premium tools.
+                </p>
               </div>
               <div className="p-5 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                 <Clock className="h-6 w-6 text-amber-500 mb-3" />
-                <h4 className="font-semibold text-slate-900 mb-2">Fast Process</h4>
-                <p className="text-sm text-slate-500 leading-relaxed">Our automated system verifies your identity securely in just a few minutes.</p>
+                <h4 className="font-semibold text-slate-900 mb-2">
+                  Fast Process
+                </h4>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  Our automated system verifies your identity securely in just a
+                  few minutes.
+                </p>
               </div>
             </div>
 
@@ -199,15 +216,17 @@ export function KycTab({ profile, user }: KycTabProps) {
                 {getStatusIcon()}
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 tracking-tight">Identity Verification</h3>
-                <p className="text-sm text-slate-500 mt-1">{getStatusMessage()}</p>
+                <h3 className="text-lg font-semibold text-slate-900 tracking-tight">
+                  Identity Verification
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  {getStatusMessage()}
+                </p>
               </div>
             </div>
-            <div className="flex-shrink-0">
-              {getStatusBadge()}
-            </div>
+            <div className="flex-shrink-0">{getStatusBadge()}</div>
           </div>
-          
+
           <CardContent className="p-6">
             {error && (
               <Alert variant="destructive" className="mb-6">
@@ -217,28 +236,38 @@ export function KycTab({ profile, user }: KycTabProps) {
             )}
 
             <div className="flex flex-col sm:flex-row gap-4 items-center">
-              {(kycData?.status === "rejected" || kycData?.status === "resubmitted" || kycData?.status === "in_progress") && (
+              {(kycData?.status === "rejected" ||
+                kycData?.status === "resubmitted" ||
+                kycData?.status === "in_progress") && (
                 <Button
                   onClick={() => router.push("/dashboard/settings/kyc-setup")}
-                  variant={kycData.status === "rejected" ? "destructive" : "default"}
+                  variant={
+                    kycData.status === "rejected" ? "destructive" : "default"
+                  }
                   className={`transition-colors duration-200 px-6 ${kycData.status === "resubmitted" ? "bg-orange-600 hover:bg-orange-700 text-white" : ""}`}
                 >
                   <Shield className="h-4 w-4 mr-2" />
-                  {kycData.status === "rejected" ? "Resubmit Application" : "Resume Verification"}
+                  {kycData.status === "rejected"
+                    ? "Resubmit Application"
+                    : "Resume Verification"}
                 </Button>
               )}
 
               {kycData?.status === "pending" && (
                 <div className="flex items-center gap-2 text-amber-700 bg-amber-50/80 px-4 py-2.5 rounded-lg border border-amber-200/50">
                   <Clock className="h-5 w-5" />
-                  <span className="text-sm font-medium">Your application is in the review queue</span>
+                  <span className="text-sm font-medium">
+                    Your application is in the review queue
+                  </span>
                 </div>
               )}
 
               {kycData?.status === "approved" && (
                 <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50/80 px-4 py-2.5 rounded-lg border border-emerald-200/50">
                   <CheckCircle className="h-5 w-5" />
-                  <span className="text-sm font-medium">All features unlocked</span>
+                  <span className="text-sm font-medium">
+                    All features unlocked
+                  </span>
                 </div>
               )}
             </div>
@@ -268,18 +297,30 @@ export function KycTab({ profile, user }: KycTabProps) {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <User className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm font-medium text-slate-500 w-24">Full Name</span>
-                    <span className="text-sm text-slate-900">{kycData.full_name || "-"}</span>
+                    <span className="text-sm font-medium text-slate-500 w-24">
+                      Full Name
+                    </span>
+                    <span className="text-sm text-slate-900">
+                      {kycData.full_name || "-"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm font-medium text-slate-500 w-24">Date of Birth</span>
-                    <span className="text-sm text-slate-900">{kycData.dob || "-"}</span>
+                    <span className="text-sm font-medium text-slate-500 w-24">
+                      Date of Birth
+                    </span>
+                    <span className="text-sm text-slate-900">
+                      {kycData.dob || "-"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm font-medium text-slate-500 w-24">Phone</span>
-                    <span className="text-sm text-slate-900">{kycData.phone || "-"}</span>
+                    <span className="text-sm font-medium text-slate-500 w-24">
+                      Phone
+                    </span>
+                    <span className="text-sm text-slate-900">
+                      {kycData.phone || "-"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -292,21 +333,33 @@ export function KycTab({ profile, user }: KycTabProps) {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <MapPin className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm font-medium text-slate-500 w-24">Address</span>
-                    <span className="text-sm text-slate-900">{kycData.address || "-"}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-4 w-4 text-slate-400 opacity-0" />
-                    <span className="text-sm font-medium text-slate-500 w-24">City/State</span>
+                    <span className="text-sm font-medium text-slate-500 w-24">
+                      Address
+                    </span>
                     <span className="text-sm text-slate-900">
-                      {[kycData.city, kycData.state].filter(Boolean).join(", ") || "-"}
+                      {kycData.address || "-"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <MapPin className="h-4 w-4 text-slate-400 opacity-0" />
-                    <span className="text-sm font-medium text-slate-500 w-24">Postal/Country</span>
+                    <span className="text-sm font-medium text-slate-500 w-24">
+                      City/State
+                    </span>
                     <span className="text-sm text-slate-900">
-                      {[kycData.postal, kycData.country].filter(Boolean).join(", ") || "-"}
+                      {[kycData.city, kycData.state]
+                        .filter(Boolean)
+                        .join(", ") || "-"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-4 w-4 text-slate-400 opacity-0" />
+                    <span className="text-sm font-medium text-slate-500 w-24">
+                      Postal/Country
+                    </span>
+                    <span className="text-sm text-slate-900">
+                      {[kycData.postal, kycData.country]
+                        .filter(Boolean)
+                        .join(", ") || "-"}
                     </span>
                   </div>
                 </div>
@@ -347,7 +400,9 @@ export function KycTab({ profile, user }: KycTabProps) {
                         width={400}
                         height={300}
                         className="object-contain rounded max-h-64 opacity-90 group-hover:opacity-100 transition-opacity"
-                        unoptimized={isProxyMediaUrl(getMediaUrl(kycData.document_url))}
+                        unoptimized={isProxyMediaUrl(
+                          getMediaUrl(kycData.document_url),
+                        )}
                       />
                       <p className="text-xs text-slate-500 mt-3 font-medium">
                         Click image to view full size
@@ -375,7 +430,9 @@ export function KycTab({ profile, user }: KycTabProps) {
                       alt="Full size document"
                       fill
                       className="object-contain rounded-lg bg-slate-950"
-                      unoptimized={isProxyMediaUrl(getMediaUrl(kycData.document_url))}
+                      unoptimized={isProxyMediaUrl(
+                        getMediaUrl(kycData.document_url),
+                      )}
                     />
                     <button
                       onClick={() => setPreviewOpen(false)}
@@ -387,16 +444,26 @@ export function KycTab({ profile, user }: KycTabProps) {
                 </div>
               )}
 
-              {(kycData?.status === "rejected" || kycData?.status === "resubmitted") && kycData?.verification_notes && (
-                <div className={`p-4 border rounded-lg mt-6 ${kycData.status === "rejected" ? "bg-red-50 border-red-100" : "bg-orange-50 border-orange-100"}`}>
-                  <h3 className={`text-sm font-semibold mb-1 ${kycData.status === "rejected" ? "text-red-800" : "text-orange-800"}`}>
-                    {kycData.status === "rejected" ? "Rejection Reason" : "Reason for Resubmission"}
-                  </h3>
-                  <p className={`text-sm ${kycData.status === "rejected" ? "text-red-600" : "text-orange-600"}`}>
-                    {kycData.verification_notes}
-                  </p>
-                </div>
-              )}
+              {(kycData?.status === "rejected" ||
+                kycData?.status === "resubmitted") &&
+                kycData?.verification_notes && (
+                  <div
+                    className={`p-4 border rounded-lg mt-6 ${kycData.status === "rejected" ? "bg-red-50 border-red-100" : "bg-orange-50 border-orange-100"}`}
+                  >
+                    <h3
+                      className={`text-sm font-semibold mb-1 ${kycData.status === "rejected" ? "text-red-800" : "text-orange-800"}`}
+                    >
+                      {kycData.status === "rejected"
+                        ? "Rejection Reason"
+                        : "Reason for Resubmission"}
+                    </h3>
+                    <p
+                      className={`text-sm ${kycData.status === "rejected" ? "text-red-600" : "text-orange-600"}`}
+                    >
+                      {kycData.verification_notes}
+                    </p>
+                  </div>
+                )}
             </div>
           </CardContent>
         </Card>

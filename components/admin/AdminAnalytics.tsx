@@ -97,7 +97,6 @@ export default function AdminAnalytics() {
 
     let csvContent = "data:text/csv;charset=utf-8,";
 
-    // Summary
     csvContent += "SUMMARY METRICS\n";
     csvContent += "Metric,Current,Trend,Previous\n";
     csvContent += `Total Donations,${analytics.totalDonations.current},${analytics.totalDonations.trend}%,${analytics.totalDonations.previous}\n`;

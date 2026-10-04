@@ -11,27 +11,12 @@ import { headers } from "next/headers";
 import { createReferralRecord } from "@/lib/referral-utils";
 import { deriveFullNameFromEmail } from "@/lib/auth/registration";
 
-// Idle timeout: session cookie/JWT expiry, renewed on activity (sliding window).
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
-// How often the sliding window is renewed while the user is active.
-const SESSION_UPDATE_AGE_SECONDS = 60 * 60 * 24; // 1 day
-// Absolute cap on a session's lifetime, regardless of activity, so a
-// continuously-active session cannot renew itself forever.
-const ABSOLUTE_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
-/**
- * Global session-invalidation cutoff — a kill switch for incident response.
- * Set SESSIONS_INVALIDATED_AFTER to an ISO timestamp (e.g. the moment a
- * breach was contained) and every session issued before that instant stops
- * being accepted on its next request, forcing a fresh sign-in for everyone.
- * Unset (or set to an empty value) to disable — the default, no-op state.
- *
- * Kept as a plain env-var comparison (no DB read) so this stays safe to run
- * from the `jwt` callback, which also executes from middleware.ts on the
- * Edge runtime — Prisma calls there would break it (see that file's note on
- * admin-role checks being deferred to Node-runtime pages for the same
- * reason). A per-user cutoff would need a DB read and can't live here.
- */
+const SESSION_UPDATE_AGE_SECONDS = 60 * 60 * 24;
+
+const ABSOLUTE_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30;
+
 const SESSIONS_INVALIDATED_AFTER_MS = process.env.SESSIONS_INVALIDATED_AFTER
   ? new Date(process.env.SESSIONS_INVALIDATED_AFTER).getTime()
   : null;
@@ -52,9 +37,6 @@ function parseUserRole(role: unknown): UserRole | undefined {
   return undefined;
 }
 
-/**
- * Derive a human-readable device label from the browser's User-Agent.
- */
 function getDeviceLabel(userAgent: string | null): string {
   if (!userAgent) return "Unknown Device";
   if (/android/i.test(userAgent)) return "Android";
@@ -65,13 +47,6 @@ function getDeviceLabel(userAgent: string | null): string {
   return "Unknown Device";
 }
 
-// Wrap PrismaAdapter to map NextAuth's default `name`/`image` fields to our
-// schema's `fullName`/`profilePhoto` fields, and split `name` into
-// firstName/lastName up front. Without this, firstName/lastName stayed
-// blank until the user manually completed the onboarding form — fine
-// normally, but for an account that never properly reaches onboarding
-// (e.g. onboarding_completed already true from a data-recovery
-// reconstruction), it left those fields permanently empty.
 const baseAdapter = PrismaAdapter(prisma);
 const customAdapter: Adapter = {
   ...baseAdapter,
@@ -79,7 +54,9 @@ const customAdapter: Adapter = {
     const { name, image, ...rest } = data;
     const effectiveName =
       name || (rest.email ? deriveFullNameFromEmail(rest.email) : null);
-    const [firstName, ...lastNameParts] = (effectiveName || "").trim().split(/\s+/);
+    const [firstName, ...lastNameParts] = (effectiveName || "")
+      .trim()
+      .split(/\s+/);
     const user = await prisma.user.create({
       data: {
         ...rest,
@@ -129,14 +106,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const secret = process.env.AUTH_SECRET || "fallback_secret";
 
         try {
-          // Token format: base64(email):timestamp:hmac
           const [b64Email, timestamp, hmac] = tokenStr.split(":");
           if (!b64Email || !timestamp || !hmac) return null;
 
           const email = Buffer.from(b64Email, "base64").toString("utf-8");
           if (email !== credentials.email) return null;
 
-          // Expire after 5 minutes
           if (Date.now() - parseInt(timestamp) > 5 * 60 * 1000) return null;
 
           const encoder = new TextEncoder();
@@ -164,11 +139,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           if (!user) return null;
 
-          return { 
-            id: user.id, 
-            email: user.email, 
+          return {
+            id: user.id,
+            email: user.email,
             name: user.fullName,
-            onboarding_completed: user.onboarding_completed 
+            onboarding_completed: user.onboarding_completed,
           };
         } catch (error) {
           console.error("Auto login token verification failed", error);
@@ -184,7 +159,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        console.error(`[NextAuth] authorize called with email: ${credentials?.email}`);
+        console.error(
+          `[NextAuth] authorize called with email: ${credentials?.email}`,
+        );
         if (!credentials?.email || !credentials?.password) {
           console.error(`[NextAuth] missing credentials`);
           return null;
@@ -196,35 +173,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             include: { roles: { select: { role: true } } },
           });
 
-        if (!user) {
-          console.error(`[NextAuth] user not found for email: ${credentials.email}`);
-          return null;
-        }
-        if (!user.password) {
-          console.error(`[NextAuth] user has no password for email: ${credentials.email}`);
-          return null;
-        }
+          if (!user) {
+            console.error(
+              `[NextAuth] user not found for email: ${credentials.email}`,
+            );
+            return null;
+          }
+          if (!user.password) {
+            console.error(
+              `[NextAuth] user has no password for email: ${credentials.email}`,
+            );
+            return null;
+          }
 
-        const valid = await bcrypt.compare(
-          credentials.password as string,
-          user.password,
-        );
+          const valid = await bcrypt.compare(
+            credentials.password as string,
+            user.password,
+          );
 
-        if (!valid) {
-          console.error(`[NextAuth] password mismatch for email: ${credentials.email}`);
-          return null;
-        }
+          if (!valid) {
+            console.error(
+              `[NextAuth] password mismatch for email: ${credentials.email}`,
+            );
+            return null;
+          }
 
-        console.error(`[NextAuth] user authenticated successfully: ${credentials.email}`);
-        return { 
-          id: user.id, 
-          email: user.email, 
-          name: user.fullName,
-          onboarding_completed: user.onboarding_completed,
-          roles: user.roles,
-          role: user.roles?.[0]?.role || "user",
-          tier: user.current_tier || "Explorer",
-        };
+          console.error(
+            `[NextAuth] user authenticated successfully: ${credentials.email}`,
+          );
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.fullName,
+            onboarding_completed: user.onboarding_completed,
+            roles: user.roles,
+            role: user.roles?.[0]?.role || "user",
+            tier: user.current_tier || "Explorer",
+          };
         } catch (error) {
           console.error("[NextAuth] ERROR in authorize:", error);
           return null;
@@ -242,7 +227,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             process.env.NODE_ENV === "production" ? "https" : "http";
           const host = reqHeaders.get("host") || "localhost:3000";
 
-          // Fire and forget so we don't block the login request
           fetch(`${protocol}://${host}/api/auth/login-notify`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -255,18 +239,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             }),
           }).catch((e) => console.error("Login notification API error:", e));
 
-          // ── OAuth referral attribution ──
-          // Read the ref_v1 cookie set by middleware when the user arrived
-          // via a referral link. Only create a referral record for genuinely
-          // new accounts (created within the last 10 seconds via OAuth).
-          const refV1Cookie = reqHeaders.get("cookie")
+          const refV1Cookie = reqHeaders
+            .get("cookie")
             ?.split(";")
             .map((c) => c.trim())
             .find((c) => c.startsWith("ref_v1="))
             ?.split("=")[1];
 
           if (refV1Cookie && user.id) {
-            // Detect new OAuth user: account created within the last 10 seconds
             const dbUser = await prisma.user.findUnique({
               where: { id: user.id },
               select: { createdAt: true, email: true },
@@ -277,14 +257,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               Date.now() - new Date(dbUser.createdAt).getTime() < 10_000;
 
             if (isNewUser) {
-              // Non-blocking — createReferralRecord is non-throwing
               createReferralRecord({
                 referralCode: refV1Cookie,
                 newUserId: user.id,
                 email: user.email,
-                // UTM fields unavailable for OAuth (lost during redirect)
               }).catch((e) =>
-                console.error("[OAuth] createReferralRecord error:", e)
+                console.error("[OAuth] createReferralRecord error:", e),
               );
             }
           }
@@ -296,9 +274,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      // Enforce an absolute session lifetime regardless of activity, so a
-      // continuously-active session can't renew its sliding window forever.
-      // Returning null here invalidates the token and clears the cookie.
       if (
         !user &&
         typeof token.loginTime === "number" &&
@@ -307,7 +282,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return null;
       }
 
-      // Incident-response kill switch — see SESSIONS_INVALIDATED_AFTER_MS above.
       if (
         !user &&
         SESSIONS_INVALIDATED_AFTER_MS != null &&
@@ -319,19 +293,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       const userId = user?.id;
       if (userId) {
-        // Stamp the original sign-in time; this persists across token
-        // refreshes since we only set it when a fresh `user` is present.
         token.loginTime = Date.now();
         token.id = userId;
         token.onboardingCompleted = (user as any).onboarding_completed;
 
-        // If the role was already fetched during credentials authorize, use it
         if ((user as any).role) {
           token.role = (user as any).role;
           token.tier = (user as any).tier;
         } else {
           try {
-            // Attempt to fetch fresh profile data for OAuth...
             const dbUser = await prisma.user.findUnique({
               where: { id: userId },
               select: { roles: { select: { role: true } }, current_tier: true },
@@ -339,13 +309,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.role = dbUser?.roles?.[0]?.role || "user";
             token.tier = dbUser?.current_tier || "Explorer";
           } catch (error) {
-            console.error("[NextAuth] ERROR in jwt callback fetching dbUser:", error);
+            console.error(
+              "[NextAuth] ERROR in jwt callback fetching dbUser:",
+              error,
+            );
             token.role = "user";
             token.tier = "Explorer";
           }
         }
       }
-      // Handle session updates from the client
+
       if (trigger === "update" && session?.onboardingCompleted !== undefined) {
         token.onboardingCompleted = session.onboardingCompleted;
       }
@@ -356,12 +329,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         (session.user as any).onboardingCompleted = token.onboardingCompleted;
         session.user.role = parseUserRole(token.role);
-        // Exposes when this session was actually issued, so Node-runtime
-        // code (e.g. app/dashboard/layout.tsx) can compare it against a
-        // per-user sessions_invalidated_after cutoff — see
-        // lib/auth/session-guard.ts. Plain field copy, no DB read, so it's
-        // safe to compute here even though this callback also runs from
-        // middleware on the Edge runtime.
+
         (session.user as any).loginTime = token.loginTime;
       }
       return session;

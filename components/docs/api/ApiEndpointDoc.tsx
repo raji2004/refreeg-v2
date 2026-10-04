@@ -46,10 +46,14 @@ export default function ApiEndpointDoc({
           </h2>
         )}
         <div className="flex items-center gap-3">
-          <span className={`px-2 py-1 rounded font-bold text-[12px] border ${methodColor}`}>
+          <span
+            className={`px-2 py-1 rounded font-bold text-[12px] border ${methodColor}`}
+          >
             {method}
           </span>
-          <code className="text-gray-800 font-mono text-sm font-semibold">{url}</code>
+          <code className="text-gray-800 font-mono text-sm font-semibold">
+            {url}
+          </code>
         </div>
         <p className="text-gray-600 leading-relaxed text-[16px]">
           {description}
@@ -65,24 +69,41 @@ export default function ApiEndpointDoc({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="px-4 py-3 text-[13px] font-semibold text-gray-700">Field</th>
-                  <th className="px-4 py-3 text-[13px] font-semibold text-gray-700">Type</th>
-                  <th className="px-4 py-3 text-[13px] font-semibold text-gray-700">Required</th>
-                  <th className="px-4 py-3 text-[13px] font-semibold text-gray-700">Description</th>
+                  <th className="px-4 py-3 text-[13px] font-semibold text-gray-700">
+                    Field
+                  </th>
+                  <th className="px-4 py-3 text-[13px] font-semibold text-gray-700">
+                    Type
+                  </th>
+                  <th className="px-4 py-3 text-[13px] font-semibold text-gray-700">
+                    Required
+                  </th>
+                  <th className="px-4 py-3 text-[13px] font-semibold text-gray-700">
+                    Description
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {parameters.map((param) => (
-                  <tr key={param.name} className="hover:bg-gray-50/50 transition-colors">
+                  <tr
+                    key={param.name}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
                     <td className="px-4 py-3">
-                      <code className="text-blue-600 font-mono text-[13px] font-semibold">{param.name}</code>
+                      <code className="text-blue-600 font-mono text-[13px] font-semibold">
+                        {param.name}
+                      </code>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-gray-500 text-[13px] italic">{param.type}</span>
+                      <span className="text-gray-500 text-[13px] italic">
+                        {param.type}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       {param.required ? (
-                        <span className="text-red-500 text-[12px] font-medium">Yes</span>
+                        <span className="text-red-500 text-[12px] font-medium">
+                          Yes
+                        </span>
                       ) : (
                         <span className="text-gray-400 text-[12px]">No</span>
                       )}
@@ -125,4 +146,3 @@ export default function ApiEndpointDoc({
     </div>
   );
 }
-

@@ -1,9 +1,3 @@
-/**
- * Provider-agnostic pledge processing.
- *
- * Wraps the original pledge-paystack logic so both Paystack and Flutterwave
- * webhooks can call the same functions, just passing a provider name.
- */
 import { createDonation } from "@/actions/donation-actions";
 import { prisma } from "@/lib/prisma";
 import { verifyTransactionFull } from "@/services/payment-provider";
@@ -26,7 +20,7 @@ export async function processPledgeAuthorizationSuccess(
       authorization_code?: string;
       reusable?: boolean;
     };
-    // Flutterwave uses card.token for tokenized charges
+
     card?: { token?: string };
     customer?: { email?: string };
   };
@@ -40,13 +34,15 @@ export async function processPledgeAuthorizationSuccess(
     return { ok: false as const, reason: "not_success" };
   }
 
-  // Flutterwave stores custom data in `meta`, Paystack in `metadata`
   const meta = full.metadata || full.meta || {};
-  if (!meta || String(meta.pledge_flow) !== "authorization" || !meta.pledge_id) {
+  if (
+    !meta ||
+    String(meta.pledge_flow) !== "authorization" ||
+    !meta.pledge_id
+  ) {
     return { ok: false as const, reason: "not_pledge_auth" };
   }
 
-  // Extract the reusable token/auth code depending on provider
   let authCode: string | undefined;
   if (provider === "flutterwave") {
     authCode = full.card?.token;
@@ -55,10 +51,13 @@ export async function processPledgeAuthorizationSuccess(
   }
 
   if (!authCode) {
-    console.error(`Pledge authorization webhook (${provider}): missing authorization code`, {
-      reference,
-      pledgeId: meta.pledge_id,
-    });
+    console.error(
+      `Pledge authorization webhook (${provider}): missing authorization code`,
+      {
+        reference,
+        pledgeId: meta.pledge_id,
+      },
+    );
     return { ok: false as const, reason: "no_auth_code" };
   }
 
@@ -76,8 +75,7 @@ export async function processPledgeAuthorizationSuccess(
     return { ok: true as const, reason: "already_processed" };
   }
 
-  const authEmail =
-    full.customer?.email || String(meta.email || "");
+  const authEmail = full.customer?.email || String(meta.email || "");
 
   const isReusable =
     provider === "flutterwave" ? true : full.authorization?.reusable;
@@ -90,7 +88,10 @@ export async function processPledgeAuthorizationSuccess(
       first_transaction_reference: reference,
       paystack_payment_status: "authorized",
       ...(isReusable === false
-        ? { last_charge_error: "Card marked non-reusable; charge on date may fail." }
+        ? {
+            last_charge_error:
+              "Card marked non-reusable; charge on date may fail.",
+          }
         : {}),
     },
   });
@@ -102,8 +103,7 @@ export async function processPledgeAuthorizationSuccess(
   });
 
   const futureAmount = Number(meta.future_pledge_amount ?? meta.amount);
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
 
   await sendPledgeConfirmationEmail({
     to: String(meta.email),
@@ -149,13 +149,21 @@ export async function processPledgeScheduledChargeSuccess(
 
   const pledge = await prisma.pledges.findUnique({
     where: { id: pledgeId },
-    select: { id: true, status: true, user_id: true, paystack_payment_status: true },
+    select: {
+      id: true,
+      status: true,
+      user_id: true,
+      paystack_payment_status: true,
+    },
   });
 
   if (!pledge) {
     return { ok: false as const, reason: "pledge_not_found" };
   }
-  if (pledge.status === "fulfilled" || pledge.paystack_payment_status === "charged") {
+  if (
+    pledge.status === "fulfilled" ||
+    pledge.paystack_payment_status === "charged"
+  ) {
     return { ok: true as const, reason: "already_fulfilled" };
   }
 
@@ -197,6 +205,7 @@ export async function processPledgeScheduledChargeSuccess(
  */
 export async function chargeDuePledgesForToday() {
   // Re-export from pledge-paystack for backward compat
-  const { chargeDuePledgesForToday: original } = await import("@/lib/pledge-paystack");
+  const { chargeDuePledgesForToday: original } =
+    await import("@/lib/pledge-paystack");
   return original();
 }

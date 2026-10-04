@@ -22,9 +22,7 @@ import {
 import { FaFacebookF, FaTiktok } from "react-icons/fa6";
 import { FaWhatsapp } from "react-icons/fa";
 import { Switch } from "@/components/ui/switch";
-import {
-  getOrganizationOnboardingData,
-} from "@/actions/profile-actions";
+import { getOrganizationOnboardingData } from "@/actions/profile-actions";
 import {
   updateOrganization,
   updateOrganizationLogo,
@@ -93,7 +91,6 @@ export default function Step3BOrgSetup({
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Fetch existing org data
   useEffect(() => {
     const loadOrgData = async () => {
       if (!user?.id) return;
@@ -191,7 +188,6 @@ export default function Step3BOrgSetup({
 
     setIsSaving(true);
     try {
-      // 1. Save org details + preferences (creates or updates organization)
       const updateResult = await updateOrganization({
         name: formData.name.trim(),
         adminEmail: user.email || "",
@@ -216,7 +212,6 @@ export default function Step3BOrgSetup({
         throw new Error(updateResult.error);
       }
 
-      // 2. Upload logo if a new one was selected (now organization is guaranteed to exist)
       if (logoFile) {
         const logoResult = await updateOrganizationLogo(logoFile);
         if (!logoResult.success) {
@@ -225,7 +220,6 @@ export default function Step3BOrgSetup({
             description: logoResult.error,
             variant: "destructive",
           });
-          // Continue anyway — logo is optional
         }
       }
 
@@ -254,7 +248,7 @@ export default function Step3BOrgSetup({
   return (
     <div className="flex h-full items-center justify-center bg-transparent px-0">
       <div className="w-full max-w-3xl">
-        {/* Left Section: Form */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -265,13 +259,19 @@ export default function Step3BOrgSetup({
             Organisation details
           </h1>
           <p className="text-gray-500 mb-8">
-            Confirm your public identity and choose the notifications your team needs.
+            Confirm your public identity and choose the notifications your team
+            needs.
           </p>
 
           <div className="space-y-6">
-            {/* Organization Logo */}
+            {}
             <div className="flex flex-col items-start space-y-2">
-              <Label>Organisation Logo <span className="text-gray-400 text-xs font-normal">(optional)</span></Label>
+              <Label>
+                Organisation Logo{" "}
+                <span className="text-gray-400 text-xs font-normal">
+                  (optional)
+                </span>
+              </Label>
               <div className="flex items-center gap-4">
                 <label
                   htmlFor="logo-upload"
@@ -317,7 +317,7 @@ export default function Step3BOrgSetup({
               )}
             </div>
 
-            {/* Organization Name */}
+            {}
             <div className="flex flex-col space-y-2">
               <Label htmlFor="orgName">
                 Organisation Name<span className="text-red-500">*</span>
@@ -391,7 +391,8 @@ export default function Step3BOrgSetup({
                     Public profile
                   </h3>
                   <p className="mt-1 text-sm leading-6 text-slate-500">
-                    Help supporters understand your mission and find your organisation online. Add only the channels you use.
+                    Help supporters understand your mission and find your
+                    organisation online. Add only the channels you use.
                   </p>
                 </div>
                 <span className="mt-1 w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
@@ -607,7 +608,6 @@ export default function Step3BOrgSetup({
             </div>
           </div>
         </motion.div>
-
       </div>
     </div>
   );

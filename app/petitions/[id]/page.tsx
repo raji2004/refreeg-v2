@@ -36,7 +36,6 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
-// Mock data for a petition
 const mockPetition = {
   id: "1",
   title: "Clean Water Initiative",
@@ -54,7 +53,6 @@ const mockPetition = {
   status: "approved",
 };
 
-// Mock Signers data
 const mockSigners = [
   {
     id: "1",
@@ -125,7 +123,6 @@ export default async function PetitionDetailPage({
 }) {
   const { id } = await params;
 
-  // Primary parallel fetch
   const [petition, initialSigners, session] = await Promise.all([
     getPetition(id),
     listSignaturesForPetition(id),
@@ -138,11 +135,8 @@ export default async function PetitionDetailPage({
     notFound();
   }
 
-  // Secondary parallel fetches
   const [commentsResult, myProfile, hasSigned, creatorProfile] =
     await Promise.all([
-      // Dynamic import and call for comments to keep initial bundle smaller if needed,
-      // though in server component it just affects server execution time.
       (async () => {
         try {
           const { listPetitionComments } =
@@ -166,7 +160,6 @@ export default async function PetitionDetailPage({
   );
   const comments = commentsResult;
 
-  // Map signer messages to comment shape and merge with petition comments
   const signerMessages = (signers || [])
     .filter((s: any) => s.message && String(s.message).trim() !== "")
     .map((s: any) => ({

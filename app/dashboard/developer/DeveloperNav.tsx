@@ -18,13 +18,13 @@ export default function DeveloperNav() {
       {navItems.map((item) => {
         const isActive = pathname === item.href;
         return (
-          <Link 
+          <Link
             key={item.href}
-            href={item.href} 
+            href={item.href}
             className={`text-sm font-medium px-4 py-2 rounded-md transition-colors border-b-2 ${
-              isActive 
-                ? 'border-primary bg-primary/5 text-primary' 
-                : 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
+              isActive
+                ? "border-primary bg-primary/5 text-primary"
+                : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
             {item.name}

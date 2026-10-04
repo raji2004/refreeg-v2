@@ -87,7 +87,6 @@ export async function POST(request: Request) {
           );
         }
 
-        // FIRE-AND-FORGET: Process in background
         Promise.resolve().then(async () => {
           try {
             await processSuccessfulCharge(reference);
@@ -96,7 +95,6 @@ export async function POST(request: Request) {
           }
         });
 
-        // Return 200 OK immediately to Paystack
         return new NextResponse(
           JSON.stringify({
             message: "Donation received, processing in background",
@@ -114,7 +112,6 @@ export async function POST(request: Request) {
           );
         }
 
-        // FIRE-AND-FORGET
         Promise.resolve().then(async () => {
           try {
             await createSubscription({

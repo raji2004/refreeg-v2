@@ -70,21 +70,29 @@ export function DiscoverEmptyState({
 
   const handleSaveAlert = async () => {
     setSavingAlert(true);
-    const label = activeFilterKeys(filters)
-      .map((k) => FILTER_LABELS[k])
-      .filter(Boolean)
-      .join(", ") || "All campaigns";
+    const label =
+      activeFilterKeys(filters)
+        .map((k) => FILTER_LABELS[k])
+        .filter(Boolean)
+        .join(", ") || "All campaigns";
     const { error } = await createSavedSearchAlert({
       label: `Alert: ${label}`,
       query: filters as Record<string, unknown>,
     });
     setSavingAlert(false);
     if (error) {
-      toast({ title: "Could not save alert", description: error, variant: "destructive" });
+      toast({
+        title: "Could not save alert",
+        description: error,
+        variant: "destructive",
+      });
       return;
     }
     setAlertSaved(true);
-    toast({ title: "Alert saved", description: "We'll keep this filter set on your saved searches." });
+    toast({
+      title: "Alert saved",
+      description: "We'll keep this filter set on your saved searches.",
+    });
   };
 
   return (
@@ -102,7 +110,11 @@ export function DiscoverEmptyState({
         action={
           <div className="flex flex-wrap items-center justify-center gap-2">
             {suggestion && suggestion.count > 0 && (
-              <Button variant="ink" size="sm" onClick={() => onRemoveFilter(suggestion.key)}>
+              <Button
+                variant="ink"
+                size="sm"
+                onClick={() => onRemoveFilter(suggestion.key)}
+              >
                 Remove {FILTER_LABELS[suggestion.key]}
               </Button>
             )}

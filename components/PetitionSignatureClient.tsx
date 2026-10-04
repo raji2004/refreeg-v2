@@ -13,15 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-/**
- * Props from app/petitions/[id]/page.tsx server component:
- * - petition: the full petition object
- * - user: the logged-in user object (or null/undefined for guest)
- * - profile: the user's profile info (object)
- * - petitionStatus: the status string ('approved' or ...)
- * - creatorProfile: the petition creator's profile obj
- * - hasSigned: whether the current user has already signed this petition
- */
 const PetitionSignatureClient = ({
   petition,
   user,
@@ -57,7 +48,7 @@ const PetitionSignatureClient = ({
           if (!user) setShowSignupModal(true);
         }}
       />
-      {/* Modal for unauthenticated users */}
+      {}
       <Dialog open={showSignupModal} onOpenChange={setShowSignupModal}>
         <DialogContent>
           <DialogHeader>

@@ -34,8 +34,8 @@ export default function SectionHeader({
     align === "left"
       ? "items-start text-left"
       : align === "right"
-      ? "items-end text-right"
-      : "items-center text-center";
+        ? "items-end text-right"
+        : "items-center text-center";
 
   return (
     <div

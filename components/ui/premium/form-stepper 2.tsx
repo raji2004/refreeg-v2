@@ -12,7 +12,7 @@ interface FormStepperProps {
 export function FormStepper({ steps, currentStep }: FormStepperProps) {
   return (
     <div className="w-full max-w-4xl mx-auto mb-8 md:mb-12 px-4">
-      {/* Mobile Step Indicator (Simplified) */}
+      {}
       <div className="flex md:hidden items-center justify-between mb-4">
         <div className="flex flex-col">
           <span className="text-xs font-bold uppercase tracking-wider text-brand">
@@ -39,7 +39,7 @@ export function FormStepper({ steps, currentStep }: FormStepperProps) {
         </div>
       </div>
 
-      {/* Desktop/Tablet Step Indicator (Full) */}
+      {}
       <div className="hidden md:flex items-center justify-between">
         {steps.map((step, index) => {
           const stepNumber = index + 1;
@@ -51,7 +51,7 @@ export function FormStepper({ steps, currentStep }: FormStepperProps) {
               key={step}
               className="flex flex-col items-center relative flex-1"
             >
-              {/* Line between steps */}
+              {}
               {index > 0 && (
                 <div className="absolute top-5 -left-1/2 w-full h-[2px] bg-gray-100 -z-10">
                   <motion.div

@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// Temporarily disabled while live location data is restored.
-// import { DeviceLocationField } from "@/components/device-location-field";
+
 import { CampaignCategorySelect } from "@/components/campaign-category-select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -147,7 +146,7 @@ type CauseFormData = {
   title: string;
   summary: string;
   location: string;
-  // deviceLocation: DeviceLocation;
+
   category: string;
   goal: string;
   currency: string;
@@ -176,7 +175,6 @@ const validateForm = (formData: FormData): FormErrors => {
     errors.summary = "Summary must be less than 200 characters";
   }
 
-  // GPS verification is temporarily disabled; require a manually entered location.
   if (!formData.location.trim()) {
     errors.location = "Enter your location to continue";
   } else if (formData.location.trim().length > 100) {
@@ -320,12 +318,8 @@ export default function CreateCauseForm() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const {
-        coverImage,
-        multimedia,
-        deviceLocation,
-        ...dataToSave
-      } = formData;
+      const { coverImage, multimedia, deviceLocation, ...dataToSave } =
+        formData;
       const serializedData = {
         ...dataToSave,
         locationVerified: false,
@@ -826,7 +820,8 @@ export default function CreateCauseForm() {
                     )}
                   />
                   <p className="text-xs text-slate-500">
-                    Enter the city, state, and country where your cause is based.
+                    Enter the city, state, and country where your cause is
+                    based.
                   </p>
                   {errors.location && (
                     <p className="text-sm text-red-500 font-medium">

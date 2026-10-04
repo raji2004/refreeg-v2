@@ -10,7 +10,6 @@ import type {
 } from "@/types";
 import { KycStatus, KycVerification } from "@/types/kyc-types";
 
-// Helper function to map Prisma Profile to the expected Profile type
 function mapPrismaToProfile(p: any): Profile {
   return {
     id: p.id,
@@ -48,17 +47,21 @@ function mapPrismaToProfile(p: any): Profile {
 
 export async function getProfile(userId: string): Promise<Profile | null> {
   try {
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        _count: { select: { causes: true, donations: true } },
-      },
-    });
+    // A Prisma `_count` include makes Postgres GROUP BY the whole causes and
+    // donations tables on every profile read; a filtered count uses the
+    // user_id index instead.
+    const [profile, donationCount] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        omit: { password: true },
+      }),
+      prisma.donation.count({ where: { userId } }),
+    ]);
 
     if (!profile) return null;
 
     const mapped = mapPrismaToProfile(profile);
-    mapped.causes_count = profile._count?.donations ?? 0;
+    mapped.causes_count = donationCount;
     return mapped;
   } catch (error) {
     console.error("Error fetching profile:", error);
@@ -180,9 +183,32 @@ export async function updateBankDetails(
     });
 
     revalidatePath("/dashboard/settings");
+    revalidatePath("/dashboard/settings/bank");
     return mapPrismaToProfile(data);
   } catch (error) {
     console.error("Error updating bank details:", error);
+    throw error;
+  }
+}
+
+export async function clearBankDetails(userId: string): Promise<Profile> {
+  try {
+    const data = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        accountNumber: null,
+        bankName: null,
+        accountName: null,
+        subAccountCode: null,
+        flutterwaveSubAccountId: null,
+      },
+    });
+
+    revalidatePath("/dashboard/settings");
+    revalidatePath("/dashboard/settings/bank");
+    return mapPrismaToProfile(data);
+  } catch (error) {
+    console.error("Error clearing bank details:", error);
     throw error;
   }
 }
@@ -449,14 +475,22 @@ export async function saveStep1Progress(
       select: { accountType: true },
     });
 
-    if (existing?.accountType === "individual" && accountType === "organization") {
-      throw new Error("Individual accounts cannot be converted to organization accounts.");
+    if (
+      existing?.accountType === "individual" &&
+      accountType === "organization"
+    ) {
+      throw new Error(
+        "Individual accounts cannot be converted to organization accounts.",
+      );
     }
 
     await prisma.user.update({
       where: { id: userId },
       data: {
-        accountType: existing?.accountType === "organization" ? "organization" : accountType,
+        accountType:
+          existing?.accountType === "organization"
+            ? "organization"
+            : accountType,
       },
     });
 
