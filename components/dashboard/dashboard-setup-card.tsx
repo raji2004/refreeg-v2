@@ -19,10 +19,11 @@ interface DashboardSetupCardProps {
 export function DashboardSetupCard({ items }: DashboardSetupCardProps) {
   const completedCount = items.filter((item) => item.done).length;
   const totalCount = items.length;
-  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const progressPercent =
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <div className="rounded-2xl border border-ink/10 bg-white p-5 shadow-subtle">
+    <div className="border-t border-ink/10 pt-5">
       <div className="flex items-center justify-between">
         <Eyebrow className="text-[11px] font-bold uppercase tracking-wider text-ink/50">
           Finish setting up
@@ -33,14 +34,21 @@ export function DashboardSetupCard({ items }: DashboardSetupCardProps) {
       </div>
 
       <div className="mt-2.5">
-        <Progress value={progressPercent} indicatorVariant="cyan" className="h-1 bg-[#f0ede6]" />
+        <Progress
+          value={progressPercent}
+          indicatorVariant="cyan"
+          className="h-1 bg-[#f0ede6]"
+        />
       </div>
 
       <div className="mt-4 space-y-3">
         {items.map((item) => {
           if (item.done) {
             return (
-              <div key={item.id} className="flex items-center gap-3 text-sm text-ink/75">
+              <div
+                key={item.id}
+                className="flex items-center gap-3 text-sm text-ink/75"
+              >
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0b5d3b] text-white">
                   <Check className="h-3 w-3 stroke-[3]" />
                 </span>

@@ -100,7 +100,7 @@ export async function getUserDonorGivingStats(userId: string) {
       }),
       (prisma as any).pledges
         ? (prisma as any).pledges.count({
-            where: { user_id: userId, status: { not: "cancelled" } },
+            where: { user_id: userId, status: "pending" },
           })
         : Promise.resolve(0),
     ]);
@@ -120,7 +120,7 @@ export async function getUserDonorGivingStats(userId: string) {
   }
 }
 
-/** Platform-wide donation total for the last 7 days — used by the first-run dashboard's "Delivered this week" callout. */
+/** Platform-wide donation total for the last 7 days, for the dashboard's "Delivered this week" card. */
 export async function getPlatformWeeklyDelivered(): Promise<number> {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -153,29 +153,9 @@ export async function getPlatformWeeklyDeliveredStats(): Promise<{
       }),
     ]);
 
-    const weeklyAmount = Number(agg._sum.amount || 0);
-    const weeklyCount = distinctCauses.length;
-
-    if (weeklyAmount > 0) {
-      return {
-        amount: weeklyAmount,
-        campaignsCount: weeklyCount,
-      };
-    }
-
-    // Fall back to all-time platform delivered donations if no donations were made this week
-    const [allTimeAgg, totalApprovedCauses] = await Promise.all([
-      prisma.donation.aggregate({
-        _sum: { amount: true },
-      }),
-      prisma.cause.count({
-        where: { status: "approved" },
-      }),
-    ]);
-
     return {
-      amount: Number(allTimeAgg._sum.amount || 0),
-      campaignsCount: totalApprovedCauses || 0,
+      amount: Number(agg._sum.amount || 0),
+      campaignsCount: distinctCauses.length,
     };
   } catch (error) {
     console.error("Error fetching weekly delivered stats:", error);
@@ -582,5 +562,25 @@ export async function getPetitionAnalytics(petitionId: string) {
   } catch (error) {
     console.error("Error fetching petition analytics:", error);
     return null;
+  }
+}
+
+/** Number of completed donations per cause, for the dashboard cards' "N gave". */
+export async function getCauseGiftCounts(
+  causeIds: string[],
+): Promise<Record<string, number>> {
+  if (causeIds.length === 0) return {};
+  try {
+    const grouped = await prisma.donation.groupBy({
+      by: ["causeId"],
+      _count: { causeId: true },
+      where: { causeId: { in: causeIds }, status: "completed" },
+    });
+    return Object.fromEntries(
+      grouped.map((g) => [g.causeId, g._count.causeId]),
+    );
+  } catch (error) {
+    console.error("Error fetching cause gift counts:", error);
+    return {};
   }
 }

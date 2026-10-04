@@ -21,10 +21,10 @@ export function DashboardGivingCard({
   givenSoFar,
   campaignsBacked,
   livePledges,
-  eizaBalance = 150,
+  eizaBalance = 0,
 }: DashboardGivingCardProps) {
   return (
-    <div className="rounded-2xl border border-ink/10 bg-white p-5 shadow-subtle">
+    <div className="py-1">
       <Eyebrow className="text-[11px] font-bold uppercase tracking-wider text-ink/50">
         Your giving
       </Eyebrow>

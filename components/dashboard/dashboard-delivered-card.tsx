@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Eyebrow } from "@/components/ui/eyebrow";
 
 interface DashboardDeliveredCardProps {
@@ -31,10 +30,9 @@ export function DashboardDeliveredCard({
       </p>
 
       <p className="mt-2 text-xs leading-relaxed text-white/80">
-        Across {campaignsCount} {campaignsCount === 1 ? "campaign" : "campaigns"}, every naira receipted.{" "}
-        <Link href="/causes" className="underline underline-offset-2 transition-colors hover:text-lime">
-          See the ledger.
-        </Link>
+        Across {campaignsCount}{" "}
+        {campaignsCount === 1 ? "campaign" : "campaigns"}, every naira
+        receipted.
       </p>
     </div>
   );

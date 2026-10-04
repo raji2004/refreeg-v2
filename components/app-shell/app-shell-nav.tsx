@@ -24,12 +24,22 @@ type NavItem = {
 };
 
 const mainNavItems: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, requiresAuth: true },
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    requiresAuth: true,
+  },
   { title: "Discover", href: "/causes", icon: Compass, requiresAuth: false },
-  { title: "My giving", href: "/dashboard/donations", icon: HeartHandshake, requiresAuth: true },
+  {
+    title: "My giving",
+    href: "/dashboard/donations",
+    icon: HeartHandshake,
+    requiresAuth: true,
+  },
   { title: "Wallet", href: "/wallet", icon: Wallet, requiresAuth: true },
   { title: "Petitions", href: "/petitions", icon: Flag, requiresAuth: false },
-  { title: "Bounties", href: "/bounties", icon: Trophy, requiresAuth: true, badge: "41" },
+  { title: "Bounties", href: "/bounties", icon: Trophy, requiresAuth: true },
 ];
 
 const isPathActive = (pathname: string, href: string) => {
@@ -52,9 +62,15 @@ export function AppShellNav({
       href: "/saved",
       icon: Bookmark,
       requiresAuth: true,
-      count: isAuthenticated && savedCount !== undefined ? savedCount : undefined,
+      count:
+        isAuthenticated && savedCount !== undefined ? savedCount : undefined,
     },
-    { title: "Settings", href: "/dashboard/settings/profile", icon: Settings, requiresAuth: true },
+    {
+      title: "Settings",
+      href: "/dashboard/settings/profile",
+      icon: Settings,
+      requiresAuth: true,
+    },
   ];
 
   const renderItem = (item: NavItem) => {
@@ -76,7 +92,12 @@ export function AppShellNav({
             : "font-medium text-ink/75 hover:bg-ink/5 hover:text-ink",
         )}
       >
-        <Icon className={cn("h-4 w-4 shrink-0", active ? "text-ink" : "text-ink/70")} />
+        <Icon
+          className={cn(
+            "h-4 w-4 shrink-0",
+            active ? "text-ink" : "text-ink/70",
+          )}
+        />
         <span className="flex-1 truncate">{item.title}</span>
         {item.badge ? (
           <span className="rounded-full bg-[#fde8e4] px-2 py-0.5 text-[11px] font-semibold text-[#c8401c]">
@@ -94,7 +115,9 @@ export function AppShellNav({
     <nav className="flex flex-col">
       <div className="flex flex-col gap-1">{mainNavItems.map(renderItem)}</div>
       <div className="my-3 border-t border-ink/5" />
-      <div className="flex flex-col gap-1">{secondaryNavItems.map(renderItem)}</div>
+      <div className="flex flex-col gap-1">
+        {secondaryNavItems.map(renderItem)}
+      </div>
     </nav>
   );
 }
