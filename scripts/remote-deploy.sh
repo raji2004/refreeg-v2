@@ -21,7 +21,7 @@ fi
 echo "Disk space OK (${FREE_KB} KB free)."
 
 # ── 2. Load environment variables from secrets.env (shared across releases) ──
-mkdir -p "$SHARED_DIR/logs"
+mkdir -p "$SHARED_DIR/logs" "$SHARED_DIR/image-cache" "$SHARED_DIR/next-image-cache"
 if [[ -f "${APP_DIR}/secrets.env" ]]; then
   mv "${APP_DIR}/secrets.env" "${SHARED_DIR}/secrets.env"
 fi
@@ -46,6 +46,13 @@ mkdir -p "$RELEASE_DIR"
 tar -xzf "${APP_DIR}/${TARBALL}" -C "$RELEASE_DIR"
 rm -f "${APP_DIR}/${TARBALL}"   # free space immediately
 echo "Extraction complete."
+
+# Next's image optimizer caches resized images in .next/cache/images, which
+# would otherwise start empty in every release. Only that folder is shared;
+# the rest of .next/cache stays per-release so build-specific data never leaks.
+mkdir -p "${RELEASE_DIR}/.next/cache"
+rm -rf "${RELEASE_DIR}/.next/cache/images"
+ln -sfn "${SHARED_DIR}/next-image-cache" "${RELEASE_DIR}/.next/cache/images"
 
 # ── 4. Record the currently-live release (for rollback) before cutover ───────
 if [[ -L "$CURRENT_LINK" ]]; then
