@@ -1,147 +1,52 @@
-import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
-import sharp from "sharp";
 import {
-  readCachedCauseImage,
-  writeCachedCauseImage,
-} from "@/lib/media/cause-image-cache";
-import { findLegacyNormalizedCenterCrop } from "@/lib/media/legacy-normalized-image";
-import { createRenderQueue } from "@/lib/media/render-queue";
-import { s3Client } from "@/lib/s3/s3-client";
-import { generatePresignedGetUrl, getBucketName } from "@/lib/s3/s3-utils";
+  CLEAN_PRESENTATION,
+  isCauseImageKey,
+  loadCauseImage,
+  normalizeMediaKey,
+} from "@/lib/media/cause-image-render";
+import { generatePresignedGetUrl } from "@/lib/s3/s3-utils";
 
 const CAUSE_IMAGE_CACHE_CONTROL =
   "public, max-age=2592000, s-maxage=31536000, stale-while-revalidate=86400";
-const CAUSE_CARD_MAX_WIDTH = 1200;
-const CAUSE_CARD_JPEG_QUALITY = 75;
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const CLEAN_PRESENTATION = "clean-v3";
-
-// This box is small and also runs Postgres: keep libvips from caching decoded
-// images or spreading one job across every core.
-sharp.cache(false);
-sharp.concurrency(1);
-
-// After a deploy every cover is a cache miss at once: share one render per
-// key and run at most two at a time; the rest queue.
-const renderQueue = createRenderQueue(2);
-
 async function presentCauseImage(key: string) {
-  // Versioned so changing the crop, width or quality invalidates old files.
-  const cacheKey = `${CLEAN_PRESENTATION}:w${CAUSE_CARD_MAX_WIDTH}:q${CAUSE_CARD_JPEG_QUALITY}:${key}`;
-  const cached = await readCachedCauseImage(cacheKey);
-  if (cached) {
-    return new Response(cached.body, {
+  const image = await loadCauseImage(key);
+
+  return new Response(
+    image.kind === "cached" ? image.body : new Uint8Array(image.output),
+    {
       headers: {
         "Cache-Control": CAUSE_IMAGE_CACHE_CONTROL,
-        "Content-Type": cached.contentType,
-        "X-RefreeG-Media-Presentation": "cached",
+        "Content-Type":
+          image.kind === "cached" ? image.contentType : "image/jpeg",
+        "X-RefreeG-Media-Presentation":
+          image.kind === "cached" ? "cached" : image.presentation,
       },
-    });
-  }
-
-  const { output, presentation } = await renderQueue.run(cacheKey, async () => {
-    const result = await renderCauseImage(key);
-    try {
-      await writeCachedCauseImage(cacheKey, result.output, "image/jpeg");
-    } catch (error) {
-      console.error("Cause image cache write failed:", error);
-    }
-    return result;
-  });
-
-  return new Response(new Uint8Array(output), {
-    headers: {
-      "Cache-Control": CAUSE_IMAGE_CACHE_CONTROL,
-      "Content-Type": "image/jpeg",
-      "X-RefreeG-Media-Presentation": presentation,
     },
-  });
-}
-
-async function renderCauseImage(
-  key: string,
-): Promise<{ output: Buffer; presentation: string }> {
-  const object = await s3Client.send(
-    new GetObjectCommand({ Bucket: getBucketName(), Key: key }),
   );
-  if (!object.Body) throw new Error("S3 image has no body");
-
-  const input = Buffer.from(await object.Body.transformToByteArray());
-  const metadata = await sharp(input, { failOn: "none" }).metadata();
-  let output: Buffer<ArrayBufferLike> = input;
-  let presentation = "original";
-
-  if (metadata.width && metadata.height) {
-    const analysis = await sharp(input, { failOn: "none" })
-      .resize({ width: 1000, fit: "inside", withoutEnlargement: true })
-      .removeAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-    const crop = findLegacyNormalizedCenterCrop({
-      data: analysis.data,
-      width: analysis.info.width,
-      height: analysis.info.height,
-      channels: analysis.info.channels,
-    });
-
-    if (crop) {
-      const scale = metadata.width / analysis.info.width;
-      const left = Math.max(0, Math.round(crop.left * scale));
-      const width = Math.min(
-        metadata.width - left,
-        Math.round(crop.width * scale),
-      );
-      output = await sharp(input, { failOn: "none" })
-        .extract({ left, top: 0, width, height: metadata.height })
-        .toBuffer();
-      presentation = "recovered-portrait";
-    }
-  }
-
-  output = await sharp(output, { failOn: "none" })
-    .resize({
-      width: CAUSE_CARD_MAX_WIDTH,
-      fit: "inside",
-      withoutEnlargement: true,
-    })
-    .jpeg({ quality: CAUSE_CARD_JPEG_QUALITY, mozjpeg: true })
-    .toBuffer();
-
-  return { output, presentation };
 }
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    let key = searchParams.get("key");
+    const rawKey = searchParams.get("key");
 
-    if (!key) {
+    if (!rawKey) {
       return NextResponse.json(
         { error: "Missing key parameter" },
         { status: 400 },
       );
     }
 
-    try {
-      const decoded = decodeURIComponent(key);
-
-      if (decoded.includes("/api/s3/image")) {
-        const inner = new URL(decoded, "http://localhost");
-        const innerKey = inner.searchParams.get("key");
-        if (innerKey) key = decodeURIComponent(innerKey);
-      } else {
-        key = decoded;
-      }
-    } catch (e) {}
+    const key = normalizeMediaKey(rawKey);
 
     if (
       searchParams.get("presentation") === CLEAN_PRESENTATION &&
-      key.startsWith("uploads/causes/") &&
-      key.includes("/images/")
+      isCauseImageKey(key)
     ) {
       try {
         return await presentCauseImage(key);
