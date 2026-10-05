@@ -9,9 +9,11 @@ import { usePathname } from "next/navigation";
  * globally by components/app-shell/app-shell.tsx, so this only owns the
  * content-area styling — not navigation.
  *
- * Settings uses the cream/ink system (docs/DESIGN_GUIDE.md) and skips the
- * legacy glass card so it can sit flush on AppShell's cream background.
+ * Pages migrated to the cream/ink system (docs/DESIGN_GUIDE.md) skip the
+ * legacy glass card so they sit flush on AppShell's cream background.
  */
+const CREAM_ROUTES = ["/dashboard/settings", "/dashboard/donations"];
+
 export default function ClientLayoutWrapper({
   children,
 }: {
@@ -19,8 +21,9 @@ export default function ClientLayoutWrapper({
 }) {
   const pathname = usePathname();
   const hideNav = pathname.startsWith("/dashboard/settings/kyc-setup");
-  const isSettings = pathname.startsWith("/dashboard/settings") && !hideNav;
-  const isDashboardRoot = pathname === "/dashboard";
+  const isCream =
+    pathname === "/dashboard" ||
+    CREAM_ROUTES.some((route) => pathname.startsWith(route));
 
   if (hideNav) {
     return (
@@ -32,7 +35,7 @@ export default function ClientLayoutWrapper({
     );
   }
 
-  if (isSettings || isDashboardRoot) {
+  if (isCream) {
     return <div className="min-h-full w-full bg-cream">{children}</div>;
   }
 

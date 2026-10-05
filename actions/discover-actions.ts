@@ -14,6 +14,12 @@ import { searchOrganizations } from "./organization-actions";
 import type { Cause } from "@/types/cause-types";
 import type { Petition } from "@/types/petition-types";
 import { unstable_cache } from "next/cache";
+import { prisma } from "@/lib/prisma";
+import {
+  filterChips,
+  withoutChip,
+  type FilterChip,
+} from "@/lib/discover-summary";
 import {
   DISCOVER_CACHE_SECONDS,
   DISCOVER_CACHE_TAG,
@@ -28,7 +34,7 @@ export type DiscoverSort =
   | "closing-soonest";
 
 export interface DiscoverFilters {
-  category?: string;
+  categories?: string[];
   location?: string;
   urgentOnly?: boolean;
   verifiedOnly?: boolean;
@@ -56,6 +62,8 @@ export interface DiscoverItem {
 
   paused: boolean;
   createdAt: string;
+  /** Completed donations; null for petitions. */
+  giftCount: number | null;
 }
 
 function compareItems(
@@ -109,6 +117,7 @@ function causeToItem(cause: Cause): DiscoverItem {
     location: cause.location || null,
     paused: !!cause.paused,
     createdAt: cause.created_at,
+    giftCount: null,
   };
 }
 
@@ -130,6 +139,7 @@ function petitionToItem(petition: Petition): DiscoverItem {
     location: null,
     paused: false,
     createdAt: petition.created_at,
+    giftCount: null,
   };
 }
 
@@ -137,7 +147,10 @@ function petitionToItem(petition: Petition): DiscoverItem {
 // near-goal filtering happen afterwards, so they must not split the cache.
 function queryFilters(filters: DiscoverFilters) {
   return {
-    category: filters.category,
+    // Sorted so the same set in a different order shares a cache entry.
+    categories: filters.categories?.length
+      ? [...filters.categories].sort()
+      : undefined,
     location: filters.location,
     urgentOnly: filters.urgentOnly,
     verifiedOnly: filters.verifiedOnly,
@@ -174,7 +187,7 @@ const getCappedItems = cachedByArgs(
     const [causes, petitions] = await Promise.all([
       includeCauses
         ? listCauses({
-            category: filters.category,
+            categories: filters.categories,
             search: filters.search,
             location: filters.location,
             urgentOnly: filters.urgentOnly,
@@ -186,7 +199,7 @@ const getCappedItems = cachedByArgs(
         : Promise.resolve([]),
       includePetitions
         ? listPetitions({
-            category: filters.category,
+            categories: filters.categories,
             search: filters.search,
             verifiedOnly: filters.verifiedOnly,
             limit: DISCOVER_RESULT_CAP,
@@ -216,8 +229,16 @@ export async function listDiscoverResults(
 
   const cappedTotal = Math.min(items.length, DISCOVER_RESULT_CAP);
   const page = items.slice(offset, offset + limit);
+  const giftCounts = await countGifts(
+    page.filter((i) => i.type === "campaign").map((i) => i.id),
+  );
 
-  return { items: page, hasMore: offset + page.length < cappedTotal };
+  return {
+    items: page.map((i) =>
+      i.type === "campaign" ? { ...i, giftCount: giftCounts[i.id] ?? 0 } : i,
+    ),
+    hasMore: offset + page.length < cappedTotal,
+  };
 }
 
 const getResultCount = cachedByArgs(
@@ -229,7 +250,7 @@ const getResultCount = cachedByArgs(
     const [causeCount, petitionCount] = await Promise.all([
       includeCauses
         ? countCauses({
-            category: filters.category,
+            categories: filters.categories,
             search: filters.search,
             location: filters.location,
             urgentOnly: filters.urgentOnly,
@@ -240,7 +261,7 @@ const getResultCount = cachedByArgs(
         : Promise.resolve(0),
       includePetitions
         ? countPetitions({
-            category: filters.category,
+            categories: filters.categories,
             search: filters.search,
             verifiedOnly: filters.verifiedOnly,
           })
@@ -254,31 +275,64 @@ const getResultCount = cachedByArgs(
 export async function countDiscoverResults(
   filters: DiscoverFilters,
 ): Promise<number> {
+  // "Near its goal" is applied after the query, so count it the same way.
+  if (filters.nearGoalOnly) {
+    const items = await getCappedItems(queryFilters(filters));
+    return items.filter((i) => i.percent >= 90 && i.percent < 100).length;
+  }
   return getResultCount(queryFilters(filters));
 }
 
-export async function suggestFilterToRemove(
-  filters: DiscoverFilters,
-  activeKeys: (keyof DiscoverFilters)[],
-) {
-  if (activeKeys.length === 0) return null;
+/**
+ * Why a filter set has no results: the one filter whose removal brings back
+ * the most results, and how many campaigns the chosen causes have on their
+ * own (for "There are 154 water campaigns, but none in Kano").
+ */
+export async function explainNoResults(filters: DiscoverFilters): Promise<{
+  suggestion: (FilterChip & { count: number }) | null;
+  causeOnlyCount: number | null;
+}> {
+  const chips = filterChips(filters);
+  const otherChips = chips.filter((c) => c.key !== "categories");
+  const hasCauses = !!filters.categories?.length;
 
-  const counts = await Promise.all(
-    activeKeys.map(async (key) => {
-      const relaxed = { ...filters, [key]: undefined };
-      const count = await countDiscoverResults(relaxed);
-      return { key, count };
-    }),
-  );
+  // Removing any single cause drops all of them from the explanation, so
+  // offer the causes as one suggestion rather than one per category.
+  const candidates: FilterChip[] = [
+    ...otherChips,
+    ...(hasCauses ? [{ key: "categories" as const, label: "" }] : []),
+  ];
 
-  return counts.reduce((best, current) =>
-    current.count > best.count ? current : best,
-  );
+  const [counts, causeOnlyCount] = await Promise.all([
+    Promise.all(
+      candidates.map((chip) =>
+        countDiscoverResults(withoutChip(filters, { key: chip.key })),
+      ),
+    ),
+    hasCauses && otherChips.length
+      ? countDiscoverResults({
+          categories: filters.categories,
+          search: filters.search,
+          includeType: filters.includeType,
+        })
+      : Promise.resolve(null),
+  ]);
+
+  let best: (FilterChip & { count: number }) | null = null;
+  candidates.forEach((chip, i) => {
+    if (counts[i] > 0 && (!best || counts[i] > best.count)) {
+      best = { ...chip, count: counts[i] };
+    }
+  });
+
+  return { suggestion: best, causeOnlyCount };
 }
 
 const computeFacets = cachedByArgs(
   "discover-facets",
-  async (args: Omit<QueryFilters, "category"> & { categoryIds: string[] }) => {
+  async (
+    args: Omit<QueryFilters, "categories"> & { categoryIds: string[] },
+  ) => {
     const includeCauses = args.includeType !== "petitions";
     const includePetitions = args.includeType !== "campaigns";
 
@@ -309,10 +363,10 @@ const computeFacets = cachedByArgs(
 );
 
 export async function getDiscoverFacets(
-  filters: Omit<DiscoverFilters, "category">,
+  filters: Omit<DiscoverFilters, "categories">,
   categoryIds: string[],
 ) {
-  const { category: _category, ...scoped } = queryFilters(filters);
+  const { categories: _categories, ...scoped } = queryFilters(filters);
   return computeFacets({ ...scoped, categoryIds });
 }
 
@@ -336,4 +390,57 @@ export async function searchDiscover(query: string) {
     organizations,
     totalCount: campaignCount + petitionCount + organizations.length,
   };
+}
+
+async function countGifts(causeIds: string[]): Promise<Record<string, number>> {
+  if (causeIds.length === 0) return {};
+  const grouped = await prisma.donation.groupBy({
+    by: ["causeId"],
+    _count: { causeId: true },
+    where: { causeId: { in: causeIds }, status: "completed" },
+  });
+  return Object.fromEntries(grouped.map((g) => [g.causeId, g._count.causeId]));
+}
+
+/** Rounds up to a clean slider step: whole millions, else hundred-thousands. */
+function niceCeiling(value: number) {
+  if (value <= 0) return 1_000_000;
+  const step = value >= 1_000_000 ? 1_000_000 : 100_000;
+  return Math.ceil(value / step) * step;
+}
+
+const computeRailData = unstable_cache(
+  async () => {
+    const open = await prisma.cause.findMany({
+      where: { status: "approved", paused: false, compliance_paused: false },
+      select: { location: true, goal: true, raised: true },
+    });
+
+    const cityCounts = new Map<string, number>();
+    let maxNeeded = 0;
+    for (const cause of open) {
+      const city = cause.location?.split(",")[0]?.trim();
+      if (city) cityCounts.set(city, (cityCounts.get(city) ?? 0) + 1);
+      const needed = Number(cause.goal || 0) - Number(cause.raised || 0);
+      if (needed > maxNeeded) maxNeeded = needed;
+    }
+
+    return {
+      topCities: [...cityCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([name]) => name),
+      amountCeiling: niceCeiling(maxNeeded),
+    };
+  },
+  ["discover-rail-data"],
+  { revalidate: DISCOVER_CACHE_SECONDS, tags: [DISCOVER_CACHE_TAG] },
+);
+
+/** Quick-pick cities and the amount slider's upper bound, from open campaigns. */
+export async function getDiscoverRailData(): Promise<{
+  topCities: string[];
+  amountCeiling: number;
+}> {
+  return computeRailData();
 }

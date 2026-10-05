@@ -27,6 +27,15 @@ function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+/** `?category=` is a comma-separated list; a single id (old links) still works. */
+function parseCategories(raw: string | undefined): string[] | undefined {
+  const ids = (raw ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  return ids.length ? [...new Set(ids)] : undefined;
+}
+
 export function parseDiscoverSearchParams(params: DiscoverSearchParams): {
   tab: DiscoverTab;
   filters: DiscoverFilters;
@@ -53,7 +62,7 @@ export function parseDiscoverSearchParams(params: DiscoverSearchParams): {
 
   const filters: DiscoverFilters = {
     search: first(params.q) || undefined,
-    category: first(params.category) || undefined,
+    categories: parseCategories(first(params.category)),
     location: first(params.location) || undefined,
     urgentOnly: first(params.urgent) === "1" || undefined,
     verifiedOnly: first(params.verified) === "1" || undefined,
@@ -79,7 +88,8 @@ export function buildDiscoverSearchParams(
 
   if (tab !== "all") params.set("tab", tab);
   if (filters.search) params.set("q", filters.search);
-  if (filters.category) params.set("category", filters.category);
+  if (filters.categories?.length)
+    params.set("category", filters.categories.join(","));
   if (filters.location) params.set("location", filters.location);
   if (filters.urgentOnly) params.set("urgent", "1");
   if (filters.verifiedOnly) params.set("verified", "1");

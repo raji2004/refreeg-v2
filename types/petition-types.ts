@@ -53,6 +53,7 @@ export interface PetitionFormData {
 }
 export interface PetitionFilterOptions {
   category?: string;
+  categories?: string[];
   status?: PetitionStatus;
   userId?: string;
   limit?: number;

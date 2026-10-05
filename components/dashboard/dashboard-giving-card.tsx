@@ -24,7 +24,7 @@ export function DashboardGivingCard({
   eizaBalance = 0,
 }: DashboardGivingCardProps) {
   return (
-    <div className="py-1">
+    <div className="p-5 bg-white rounded-xl border border-ink/10 sm:p-6">
       <Eyebrow className="text-[11px] font-bold uppercase tracking-wider text-ink/50">
         Your giving
       </Eyebrow>

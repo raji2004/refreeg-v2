@@ -2,6 +2,13 @@
  * @jest-environment node
  */
 
+jest.mock("@/lib/prisma", () => ({
+  prisma: {
+    donation: { groupBy: jest.fn().mockResolvedValue([]) },
+    cause: { findMany: jest.fn().mockResolvedValue([]) },
+  },
+}));
+
 jest.mock("@/actions/cause-actions", () => ({
   listCauses: jest.fn(),
   countCauses: jest.fn(),

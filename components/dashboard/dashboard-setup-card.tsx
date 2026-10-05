@@ -23,7 +23,7 @@ export function DashboardSetupCard({ items }: DashboardSetupCardProps) {
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <div className="border-t border-ink/10 pt-5">
+    <div className="py-5 bg-white rounded-xl border border-ink/10 px-5 sm:px-6">
       <div className="flex items-center justify-between">
         <Eyebrow className="text-[11px] font-bold uppercase tracking-wider text-ink/50">
           Finish setting up
