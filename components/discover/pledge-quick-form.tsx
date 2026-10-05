@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { HandHeart, ShieldAlert } from "lucide-react";
+import { X } from "lucide-react";
+import { DialogClose } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { createPledge } from "@/actions/pledge-actions";
 import { usePayment } from "@/hooks/use-payment";
 import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/pledge-constants";
@@ -199,215 +202,207 @@ export function PledgeQuickForm({
     }
   };
 
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
-          Pledge
-        </p>
-        <HandHeart className="h-4 w-4 text-[#2563EB]" />
-      </div>
-      <h3 className="text-lg font-semibold text-slate-900 leading-snug">
-        {causeTitle}
-      </h3>
+  const maxPledgeDate = (() => {
+    if (!daysActive) return undefined;
+    const end = new Date();
+    end.setHours(0, 0, 0, 0);
+    end.setDate(end.getDate() + daysActive);
+    return formatLocalYYYYMMDD(end);
+  })();
+  const chargeDay = pledgeDate
+    ? new Date(`${pledgeDate}T00:00:00`).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "long",
+      })
+    : "your chosen date";
+  // Signed-in donors already have both; only ask when something is missing.
+  const askContact = !defaultName.trim() || !defaultEmail.trim();
+  const busy = pledgeSubmitting || paymentLoading;
 
-      <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800 space-y-1.5">
-        <p className="font-semibold text-blue-900">How it works</p>
-        <div className="flex justify-between">
-          <span>Card verification (paid now)</span>
-          <span className="font-semibold">
+  const label =
+    "text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/55";
+  const field =
+    "h-11 w-full rounded-xl border border-hairline bg-bone px-4 text-sm text-ink outline-none focus:border-ink/40";
+  const fieldError = (message?: string) =>
+    message ? (
+      <p className="mt-1.5 text-xs font-medium text-rust">{message}</p>
+    ) : null;
+
+  return (
+    <div className="rounded-3xl bg-surface p-6 sm:p-7">
+      <div className="flex items-start gap-4 border-b border-hairline pb-5">
+        <div className="min-w-0 flex-1">
+          <p className={label}>Pledge</p>
+          <p className="mt-1.5 font-semibold leading-snug text-ink">
+            {causeTitle}
+          </p>
+        </div>
+        <DialogClose
+          className="rounded-full p-1 text-ink/60 transition-colors hover:bg-ink/5 hover:text-ink"
+          aria-label="Close"
+        >
+          <X className="h-5 w-5" />
+        </DialogClose>
+      </div>
+
+      <p className={cn(label, "mt-5")}>Amount</p>
+      <div className="mt-3 grid grid-cols-4 gap-2.5">
+        {pledgePresets.map((value) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => handlePresetClick(value)}
+            className={cn(
+              "h-12 rounded-xl border text-[15px] font-semibold transition-colors",
+              pledgeAmount === value
+                ? "border-ink bg-ink text-ink-foreground"
+                : "border-hairline bg-surface text-ink hover:border-ink/30",
+            )}
+          >
+            ₦{value / 1000}k
+          </button>
+        ))}
+      </div>
+      <label className="mt-2.5 flex h-12 items-center gap-2 rounded-xl border border-hairline bg-bone px-4 focus-within:border-ink/40">
+        <span className="text-sm font-semibold text-ink/50">₦</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          maxLength={12}
+          value={pledgeAmountInput}
+          onChange={handleAmountChange}
+          onBlur={handleAmountBlur}
+          onFocus={handleAmountFocus}
+          aria-label="Pledge amount in naira"
+          className="w-full bg-transparent text-[15px] text-ink outline-none"
+          placeholder="Other amount"
+        />
+      </label>
+      {fieldError(fieldErrors.amount)}
+
+      <p className={cn(label, "mt-5")}>Charge on</p>
+      <input
+        type="date"
+        value={pledgeDate}
+        min={getMinPledgeDate()}
+        max={maxPledgeDate}
+        onChange={(e) => {
+          setPledgeDate(e.target.value);
+          resetSubmissionState();
+          clearFieldError("date");
+        }}
+        aria-label="Date to charge your pledge"
+        className={cn(field, "mt-3")}
+      />
+      {fieldError(fieldErrors.date)}
+
+      {askContact && (
+        <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <div>
+            <input
+              type="text"
+              value={pledgeName}
+              onChange={(e) => {
+                setPledgeName(e.target.value);
+                resetSubmissionState();
+                clearFieldError("name");
+              }}
+              placeholder="Your name"
+              aria-label="Your name"
+              className={field}
+            />
+            {fieldError(fieldErrors.name)}
+          </div>
+          <div>
+            <input
+              type="email"
+              value={pledgeEmail}
+              onChange={(e) => {
+                setPledgeEmail(e.target.value);
+                resetSubmissionState();
+                clearFieldError("email");
+              }}
+              placeholder="Email for reminders"
+              aria-label="Email for reminders"
+              className={field}
+            />
+            {fieldError(fieldErrors.email)}
+          </div>
+        </div>
+      )}
+
+      <textarea
+        rows={2}
+        value={pledgeNote}
+        onChange={(e) => {
+          setPledgeNote(e.target.value);
+          resetSubmissionState();
+        }}
+        placeholder="Add a note to the organiser (optional)"
+        aria-label="Note to the organiser"
+        className="mt-5 w-full resize-none rounded-xl border border-hairline bg-bone px-4 py-3 text-sm text-ink outline-none focus:border-ink/40"
+      />
+
+      <div className="mt-5 space-y-2 rounded-2xl bg-bone px-4 py-3.5 text-sm">
+        <div className="flex justify-between gap-4">
+          <span className="text-ink/70">Card check today</span>
+          <span className="font-semibold text-ink">
             ₦{PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()}
           </span>
         </div>
-        <div className="flex justify-between">
-          <span>Charged on {pledgeDate || "your date"}</span>
-          <span className="font-semibold">
-            ₦{pledgeAmount > 0 ? Number(pledgeAmount).toLocaleString() : "—"}
+        <div className="flex justify-between gap-4">
+          <span className="text-ink/70">Charged on {chargeDay}</span>
+          <span className="font-semibold text-ink">
+            {pledgeAmount > 0
+              ? `₦${Number(pledgeAmount).toLocaleString()}`
+              : "—"}
           </span>
         </div>
-      </div>
-
-      <div className="grid gap-3">
-        <label className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-          <span className="text-xs uppercase tracking-[0.15em] text-slate-500">
-            Pledge amount
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {pledgePresets.map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => handlePresetClick(value)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                  pledgeAmount === value
-                    ? "border-[#2563EB] bg-[#2563EB] text-white"
-                    : "border-[#E5E7EB] bg-white text-[#64748B]"
-                }`}
-              >
-                ₦{value.toLocaleString()}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
-            <span className="text-sm font-semibold text-slate-500">₦</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={12}
-              value={pledgeAmountInput}
-              onChange={handleAmountChange}
-              onBlur={handleAmountBlur}
-              onFocus={handleAmountFocus}
-              className="w-full bg-transparent text-right text-sm text-slate-900 outline-none"
-              placeholder="0"
-            />
-          </div>
-          {fieldErrors.amount && (
-            <p className="text-xs font-semibold text-rose-600">
-              {fieldErrors.amount}
-            </p>
-          )}
-        </label>
-
-        <label className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-          <span className="text-xs uppercase tracking-[0.15em] text-slate-500">
-            Reminder date
-          </span>
-          <input
-            type="date"
-            value={pledgeDate}
-            min={getMinPledgeDate()}
-            max={(() => {
-              if (!daysActive) return undefined;
-              const end = new Date();
-              end.setHours(0, 0, 0, 0);
-              end.setDate(end.getDate() + daysActive);
-              return formatLocalYYYYMMDD(end);
-            })()}
-            onChange={(e) => {
-              setPledgeDate(e.target.value);
-              resetSubmissionState();
-              clearFieldError("date");
-            }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
-          />
-          {fieldErrors.date && (
-            <p className="text-xs font-semibold text-rose-600">
-              {fieldErrors.date}
-            </p>
-          )}
-        </label>
-
-        <label className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-          <span className="text-xs uppercase tracking-[0.15em] text-slate-500">
-            Email
-          </span>
-          <input
-            type="email"
-            value={pledgeEmail}
-            onChange={(e) => {
-              setPledgeEmail(e.target.value);
-              resetSubmissionState();
-              clearFieldError("email");
-            }}
-            placeholder="you@example.com"
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
-          />
-          {fieldErrors.email && (
-            <p className="text-xs font-semibold text-rose-600">
-              {fieldErrors.email}
-            </p>
-          )}
-        </label>
-
-        <label className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-          <span className="text-xs uppercase tracking-[0.15em] text-slate-500">
-            Name
-          </span>
-          <input
-            type="text"
-            value={pledgeName}
-            onChange={(e) => {
-              setPledgeName(e.target.value);
-              resetSubmissionState();
-              clearFieldError("name");
-            }}
-            placeholder="Your name"
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
-          />
-          {fieldErrors.name && (
-            <p className="text-xs font-semibold text-rose-600">
-              {fieldErrors.name}
-            </p>
-          )}
-        </label>
-
-        <label className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-          <span className="text-xs uppercase tracking-[0.15em] text-slate-500">
-            Message (optional)
-          </span>
-          <textarea
-            rows={2}
-            value={pledgeNote}
-            onChange={(e) => {
-              setPledgeNote(e.target.value);
-              resetSubmissionState();
-            }}
-            placeholder="Add a note to the organiser"
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
-          />
-        </label>
       </div>
 
       {pledgeError && (
-        <div
-          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+        <p
+          className="mt-4 rounded-xl bg-rust/10 px-4 py-3 text-sm text-rust"
           role="alert"
         >
           {pledgeError}
-        </div>
+        </p>
       )}
 
       {pledgeSubmitted && (
-        <div
-          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+        <p
+          className="mt-4 rounded-xl bg-forest/10 px-4 py-3 text-sm text-forest"
           aria-live="polite"
         >
-          Redirecting to Paystack… If nothing opens, use the button below.
-        </div>
+          Opening Paystack… If nothing opens, use the button below.
+        </p>
       )}
 
       {pledgeId && pledgeError?.includes("Paystack") && (
-        <button
-          type="button"
+        <Button
+          variant="outline"
           onClick={handleRetryPaystack}
           disabled={paymentLoading}
-          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 disabled:cursor-not-allowed disabled:opacity-70"
+          className="mt-3 h-12 w-full rounded-2xl border-hairline bg-surface font-semibold text-ink hover:bg-bone"
         >
           {paymentLoading ? "Opening Paystack…" : "Continue to Paystack"}
-        </button>
+        </Button>
       )}
 
-      <button
-        type="button"
+      <Button
+        variant="ink"
         onClick={handleSubmit}
-        disabled={pledgeSubmitting || paymentLoading}
-        className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+        disabled={busy}
+        className="mt-5 h-14 w-full rounded-2xl text-base font-semibold shadow-[0_10px_24px_-10px_hsl(var(--ink)/0.6)]"
       >
-        {pledgeSubmitting || paymentLoading
+        {busy
           ? "Working…"
-          : `Save pledge & verify card (₦${PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()} now)`}
-      </button>
-
-      <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-        <span>
-          Paystack checkout shows{" "}
-          <strong>₦{PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()}</strong> —
-          card verification only. Your pledge is charged on{" "}
-          <strong>{pledgeDate || "your chosen date"}</strong>.
-        </span>
-      </div>
+          : `Pledge ${pledgeAmount > 0 ? `₦${Number(pledgeAmount).toLocaleString()}` : ""}`.trim()}
+      </Button>
+      <p className="mt-3 text-center text-[13px] leading-5 text-ink/55">
+        Paystack will show ₦{PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()}{" "}
+        today to check your card. Your pledge is charged on {chargeDay}.
+      </p>
     </div>
   );
 }
