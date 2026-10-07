@@ -154,24 +154,49 @@ const Flutterwave = {
   },
 
   createSubaccount: async function (data: ICreateSubaccount) {
-    const response = await this.api.post("/subaccounts", {
-      account_bank: data.bank_code,
-      account_number: data.account_number,
-      business_name: data.business_name,
-      business_email: data.business_email || "no-reply@refreeg.com",
-      business_contact_mobile: data.business_mobile || "08000000000",
-      business_mobile: data.business_mobile || "08000000000",
-      split_type: "percentage",
-      split_value: 0, // RefreeG controls the fee via transaction_charge
-      country: "NG",
-    });
+    try {
+      const response = await this.api.post("/subaccounts", {
+        account_bank: data.bank_code,
+        account_number: data.account_number,
+        business_name: data.business_name,
+        business_email: data.business_email || "no-reply@refreeg.com",
+        business_contact_mobile: data.business_mobile || "08000000000",
+        // Flutterwave accepts split_type/split_value for its own cut, but
+        // RefreeG applies the fee per-transaction via transaction_charge
+        // (see initializeTransaction), so no split is set at creation time.
+        ...(data.business_mobile
+          ? { business_mobile: data.business_mobile }
+          : {}),
+        country: "NG",
+      });
 
-    return {
-      subaccount_id: String(
-        response.data.data.subaccount_id || response.data.data.id,
-      ),
-      account_number: data.account_number,
-    };
+      return {
+        subaccount_id: String(
+          response.data.data.subaccount_id || response.data.data.id,
+        ),
+        account_number: data.account_number,
+      };
+    } catch (error: any) {
+      console.error("Flutterwave createSubaccount error:", {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      const message = String(error.response?.data?.message || "").toLowerCase();
+      if (message.includes("already exist")) {
+        const existingId = await this.findSubaccountByAccountNumber(
+          data.account_number,
+        );
+        if (existingId) {
+          return {
+            subaccount_id: existingId,
+            account_number: data.account_number,
+          };
+        }
+      }
+
+      throw error;
+    }
   },
 
   listBanks: async function () {

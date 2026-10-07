@@ -28,13 +28,31 @@ export async function POST(request: NextRequest) {
 
     const result = await createDualSubaccounts(data);
 
+    if (!result.flutterwave) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            result.flutterwaveError ||
+            "Failed to create Flutterwave subaccount",
+          data: {
+            subaccount_code: result.paystack?.subaccount_code || null,
+            account_number:
+              result.paystack?.account_number || data.account_number,
+            flutterwave_sub_account_id: null,
+          },
+        },
+        { status: 502 },
+      );
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         subaccount_code: result.paystack?.subaccount_code || null,
         account_number: result.paystack?.account_number || data.account_number,
 
-        flutterwave_sub_account_id: result.flutterwave?.subaccount_id || null,
+        flutterwave_sub_account_id: result.flutterwave.subaccount_id,
       },
     });
   } catch (error: any) {

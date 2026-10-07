@@ -15,6 +15,13 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log("Didit webhook received:", body);
 
+    // Profile-update notifications (vendor_data + changed_fields) carry no
+    // session_id — they're not a verification session, so acknowledge and
+    // return early instead of falling into the session_id check below.
+    if (body.webhook_type === "user.data.updated") {
+      return NextResponse.json({ received: true });
+    }
+
     const sessionId =
       body.session_id ||
       body.id ||

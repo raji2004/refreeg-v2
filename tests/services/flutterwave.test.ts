@@ -86,7 +86,7 @@ describe("Flutterwave Service", () => {
   });
 
   describe("createSubaccount", () => {
-    it("should call subaccounts endpoint with correct data", async () => {
+    it("should call subaccounts endpoint with correct data, without a split", async () => {
       mockAxiosInstance.post.mockResolvedValueOnce({
         data: { data: { subaccount_id: "RS_456" } },
       });
@@ -104,12 +104,105 @@ describe("Flutterwave Service", () => {
         business_name: "Test Cause",
         business_email: "no-reply@refreeg.com",
         business_contact_mobile: "08000000000",
-        business_mobile: "08000000000",
-        split_type: "percentage",
-        split_value: 0,
         country: "NG",
       });
       expect(result.subaccount_id).toBe("RS_456");
+    });
+
+    it("sends business_mobile only when the user supplied one", async () => {
+      mockAxiosInstance.post.mockResolvedValueOnce({
+        data: { data: { subaccount_id: "RS_456" } },
+      });
+
+      await Flutterwave.createSubaccount({
+        account_number: "0690000031",
+        bank_code: "044",
+        business_name: "Test Cause",
+        business_mobile: "08011122233",
+      });
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        "/subaccounts",
+        expect.objectContaining({
+          business_contact_mobile: "08011122233",
+          business_mobile: "08011122233",
+        }),
+      );
+    });
+
+    it("logs error.response?.data and rethrows on a non-'already exists' failure", async () => {
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+      const error: any = new Error("Request failed with status code 400");
+      error.response = { status: 400, data: { message: "Invalid account" } };
+      mockAxiosInstance.post.mockRejectedValueOnce(error);
+
+      await expect(
+        Flutterwave.createSubaccount({
+          account_number: "0690000031",
+          bank_code: "044",
+          business_name: "Test Cause",
+        }),
+      ).rejects.toThrow("Request failed with status code 400");
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Flutterwave createSubaccount error:",
+        expect.objectContaining({
+          status: 400,
+          data: { message: "Invalid account" },
+        }),
+      );
+      consoleSpy.mockRestore();
+    });
+
+    it("looks up and returns the existing subaccount when Flutterwave reports it already exists", async () => {
+      const error: any = new Error("Request failed with status code 400");
+      error.response = {
+        status: 400,
+        data: { message: "Subaccount already exists" },
+      };
+      mockAxiosInstance.post.mockRejectedValueOnce(error);
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: {
+          data: [
+            { id: "RS_999", account_number: "0000000000" },
+            { id: "RS_456", account_number: "0690000031" },
+          ],
+        },
+      });
+
+      const result = await Flutterwave.createSubaccount({
+        account_number: "0690000031",
+        bank_code: "044",
+        business_name: "Test Cause",
+      });
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        "/subaccounts?limit=100&page=1",
+      );
+      expect(result).toEqual({
+        subaccount_id: "RS_456",
+        account_number: "0690000031",
+      });
+    });
+
+    it("rethrows the original error if no matching subaccount is found on lookup", async () => {
+      const error: any = new Error("Request failed with status code 400");
+      error.response = {
+        status: 400,
+        data: { message: "Subaccount already exists" },
+      };
+      mockAxiosInstance.post.mockRejectedValueOnce(error);
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: { data: [{ id: "RS_999", account_number: "0000000000" }] },
+      });
+
+      await expect(
+        Flutterwave.createSubaccount({
+          account_number: "0690000031",
+          bank_code: "044",
+          business_name: "Test Cause",
+        }),
+      ).rejects.toThrow("Request failed with status code 400");
     });
   });
 });

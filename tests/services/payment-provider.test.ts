@@ -1,4 +1,8 @@
-import { getProvider, initializeTransaction, createDualSubaccounts } from "@/services/payment-provider";
+import {
+  getProvider,
+  initializeTransaction,
+  createDualSubaccounts,
+} from "@/services/payment-provider";
 import Paystack from "@/services/paystack";
 import Flutterwave from "@/services/flutterwave";
 import { TransactionData } from "@/types";
@@ -87,7 +91,29 @@ describe("Payment Provider Dispatcher", () => {
       expect(result).toEqual({
         paystack: { subaccount_code: "SUB_123", account_number: "0000000000" },
         flutterwave: { subaccount_id: "RS_456", account_number: "0000000000" },
+        flutterwaveError: null,
       });
+    });
+
+    it("reports flutterwaveError and a null flutterwave result when Flutterwave fails", async () => {
+      (Paystack.createSubaccount as jest.Mock).mockResolvedValueOnce({
+        subaccount_code: "SUB_123",
+        account_number: "0000000000",
+      });
+      const error: any = new Error("Request failed with status code 400");
+      error.response = { data: { message: "Invalid account" } };
+      (Flutterwave.createSubaccount as jest.Mock).mockRejectedValueOnce(error);
+
+      const data = {
+        account_number: "0000000000",
+        bank_code: "044",
+        business_name: "Test",
+        percentage_charge: 0,
+      };
+
+      const result = await createDualSubaccounts(data);
+      expect(result.flutterwave).toBeNull();
+      expect(result.flutterwaveError).toBe("Invalid account");
     });
   });
 });
