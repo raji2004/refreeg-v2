@@ -18,7 +18,6 @@ import {
 function normalizeRedirectPath(target?: string | null): string | null {
   if (!target) return null;
   if (!target.startsWith("/")) return null;
-
   if (target.startsWith("//")) return null;
   return target;
 }
@@ -99,7 +98,6 @@ export function useAuth() {
     try {
       const normalizedEmail = email.trim().toLowerCase();
 
-      // Execute the server action to create the profile in Prisma
       const res = await signUpAction(
         normalizedEmail,
         password,
@@ -116,12 +114,20 @@ export function useAuth() {
         return;
       }
 
-      // Automatically sign the user in via NextAuth credentials provider
-      await nextAuthSignIn("credentials", {
+      const loginRes = await nextAuthSignIn("credentials", {
         redirect: false,
         email: normalizedEmail,
         password,
       });
+
+      if (loginRes?.error) {
+        toast({
+          title: "Account created",
+          description: "Please sign in to continue.",
+        });
+        router.push("/auth/signin");
+        return { success: true };
+      }
 
       toast({
         title: "Account created successfully",
@@ -148,10 +154,6 @@ export function useAuth() {
         ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(safeRedirect)}`
         : `${window.location.origin}/auth/callback`;
 
-      // Clears any stale csrf-token/callback-url cookie left over from this
-      // app's several cookie/domain configurations this week — a mismatched
-      // one can make Auth.js's CSRF check fail silently, bouncing straight
-      // back to the sign-in page with no error. See that route's comment.
       await fetch("/api/auth/pre-signin-cleanup", {
         method: "POST",
         credentials: "same-origin",
@@ -196,8 +198,6 @@ export function useAuth() {
   const signOut = async () => {
     try {
       await nextAuthSignOut({ redirect: false });
-      // Force a hard navigation to clear the Next.js Router Cache
-      // and ensure the JWT cookie removal is fully processed
       window.location.href = "/";
     } catch (error: any) {
       console.error("Error signing out:", error);
@@ -255,7 +255,6 @@ export function useAuth() {
 
       const email = options?.email || res.email;
 
-      // If this is the cause-profile flow, auto-authenticate and direct to profile flow (onboarding)
       if (options?.flow === "cause-profile" && email) {
         toast({
           title: "Password set successfully!",
