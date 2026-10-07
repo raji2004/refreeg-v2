@@ -126,11 +126,11 @@ describe("Cause User Login Flow", () => {
       expect(mockPrisma.passwordResetToken.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { email: "creator@example.com" },
-        })
+        }),
       );
     });
 
-    it("returns true if user has a cause but incomplete onboarding", async () => {
+    it("returns false if user has a password but incomplete onboarding", async () => {
       mockPrisma.user.findUnique.mockResolvedValue({
         id: "user-2",
         email: "incomplete@example.com",
@@ -144,9 +144,8 @@ describe("Cause User Login Flow", () => {
       mockPrisma.passwordResetToken.upsert.mockResolvedValue({ id: "token-2" });
 
       const result = await checkCauseUserLoginAction("incomplete@example.com");
-      expect(result.isCauseUserWithoutProfile).toBe(true);
-      expect(result.causeTitle).toBe("Community Library");
-      expect(result.token).toBeDefined();
+      expect(result.isCauseUserWithoutProfile).toBe(false);
+      expect(mockPrisma.passwordResetToken.upsert).not.toHaveBeenCalled();
     });
 
     it("handles recovered cause with recovered_owner_email and creates user if missing", async () => {
@@ -175,13 +174,13 @@ describe("Cause User Login Flow", () => {
             email: "recovered@example.com",
             onboarding_completed: false,
           },
-        })
+        }),
       );
       expect(mockPrisma.cause.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: "cause-3" },
           data: { userId: "new-user-id" },
-        })
+        }),
       );
     });
   });
@@ -203,19 +202,21 @@ describe("Cause User Login Flow", () => {
       mockPrisma.cause.update.mockResolvedValue({});
       mockPrisma.passwordResetToken.upsert.mockResolvedValue({});
 
-      const result = await requestPasswordResetAction("  Recovered@Example.com ");
+      const result = await requestPasswordResetAction(
+        "  Recovered@Example.com ",
+      );
 
       expect(result).toEqual({ success: true });
       expect(mockPrisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: { email: "recovered@example.com", onboarding_completed: false },
-        })
+        }),
       );
       expect(mockPrisma.cause.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: "cause-3" },
           data: { userId: "new-user-id" },
-        })
+        }),
       );
       const { resetUrl, email } = (sendPasswordResetEmail as jest.Mock).mock
         .calls[0][0];
@@ -288,7 +289,10 @@ describe("Cause User Login Flow", () => {
       });
       mockPrisma.$transaction.mockResolvedValue([{}, {}]);
 
-      const result = await resetPasswordAction("valid-token", "NewSecurePassword123!");
+      const result = await resetPasswordAction(
+        "valid-token",
+        "NewSecurePassword123!",
+      );
       expect(result.success).toBe(true);
       expect(result.email).toBe("user@example.com");
       expect(mockPrisma.$transaction).toHaveBeenCalled();
