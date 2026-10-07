@@ -9,6 +9,9 @@ try {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // Changes every CI build; an open tab from an older build reloads instead
+  // of calling server actions that no longer exist. Unset locally.
+  deploymentId: process.env.GITHUB_SHA,
   serverExternalPackages: ["sharp"],
   outputFileTracingIncludes: {
     "**": [

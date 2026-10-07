@@ -309,19 +309,14 @@ export async function checkCauseUserLoginAction(email: string) {
       return { isCauseUserWithoutProfile: false };
     }
 
-    // Profile is missing if:
-    // - No user record exists yet (e.g. only recovered_owner_email on a cause)
-    // - OR user has no password
-    // - OR onboarding_completed is false or null
-    // - OR firstName or lastName is missing
-    const hasNoProfile =
-      !user ||
-      !user.password ||
-      !user.onboarding_completed ||
-      !user.firstName ||
-      !user.lastName;
-
-    if (!hasNoProfile) {
+    // Incomplete profiles with a password are sent to /onboarding by middleware after sign-in.
+    if (user?.password) {
+      if (recoveredCause && recoveredCause.userId !== user.id) {
+        await prisma.cause.update({
+          where: { id: recoveredCause.id },
+          data: { userId: user.id },
+        });
+      }
       return { isCauseUserWithoutProfile: false };
     }
 
