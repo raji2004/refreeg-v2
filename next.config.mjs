@@ -97,6 +97,21 @@ const nextConfig = {
     return config;
   },
 
+  async rewrites() {
+    return {
+      // Existing public files are served before these fallback rewrites.
+      beforeFiles: [],
+      afterFiles: [
+        {
+          source:
+            "/:asset((?!api/|_next/).+\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico))",
+          destination: "/api/missing-asset",
+        },
+      ],
+      fallback: [],
+    };
+  },
+
   async headers() {
     return [
       {
