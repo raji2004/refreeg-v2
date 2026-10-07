@@ -9,6 +9,9 @@ try {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // Changes every CI build; an open tab from an older build reloads instead
+  // of calling server actions that no longer exist. Unset locally.
+  deploymentId: process.env.GITHUB_SHA,
   serverExternalPackages: ["sharp"],
   outputFileTracingIncludes: {
     "**": [
@@ -92,6 +95,21 @@ const nextConfig = {
     };
 
     return config;
+  },
+
+  async rewrites() {
+    return {
+      // Existing public files are served before these fallback rewrites.
+      beforeFiles: [],
+      afterFiles: [
+        {
+          source:
+            "/:asset((?!api/|_next/).+\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico))",
+          destination: "/api/missing-asset",
+        },
+      ],
+      fallback: [],
+    };
   },
 
   async headers() {

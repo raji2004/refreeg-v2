@@ -135,10 +135,22 @@ describe("petition-actions", () => {
   });
 
   describe("getPetition", () => {
+    it.each([
+      "abc",
+      "Support.png",
+      "",
+      "550e8400-e29b-41d4-a716-44665544000z",
+      "550e8400-e29b-41d4-a716-446655440000\n",
+    ])("rejects invalid ID %s before auth or Prisma", async (id) => {
+      await expect(getPetition(id)).resolves.toBeNull();
+      expect(mockGetCurrentUser).not.toHaveBeenCalled();
+      expect(mockPrisma.petitions.findUnique).not.toHaveBeenCalled();
+    });
+
     it("returns a mapped approved petition for the owner", async () => {
       mockPrisma.petitions.findUnique.mockResolvedValue(buildPetition());
 
-      const result = await getPetition("petition-1");
+      const result = await getPetition("550e8400-e29b-41d4-a716-446655440000");
 
       expect(result).toEqual(
         expect.objectContaining({
@@ -157,7 +169,9 @@ describe("petition-actions", () => {
     it("returns null when petition does not exist", async () => {
       mockPrisma.petitions.findUnique.mockResolvedValue(null);
 
-      expect(await getPetition("missing")).toBeNull();
+      expect(
+        await getPetition("550e8400-e29b-41d4-a716-446655440001"),
+      ).toBeNull();
     });
 
     it("redirects unauthorized viewers away from pending petitions", async () => {
@@ -166,7 +180,7 @@ describe("petition-actions", () => {
         buildPetition({ status: "pending" }),
       );
 
-      const result = await getPetition("petition-1");
+      const result = await getPetition("550e8400-e29b-41d4-a716-446655440000");
 
       expect(redirect).toHaveBeenCalledWith("/");
       expect(result).toBeNull();
