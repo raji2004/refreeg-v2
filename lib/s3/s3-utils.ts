@@ -10,7 +10,8 @@ export const getBucketName = () => {
   return bucketName;
 };
 
-export type S3EntityType = "profiles" | "causes" | "petitions" | "kyc";
+export type S3EntityType =
+  "profiles" | "causes" | "petitions" | "kyc" | "organizations";
 export type S3MediaType = "images" | "videos" | "documents";
 
 export function generateS3Key(params: {

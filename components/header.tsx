@@ -10,10 +10,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
 import { cn } from "@/lib/utils";
 import { DiscoverSearch } from "@/components/discover/discover-search";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import {
-  ArrowRight,
   BarChart3,
   ChevronDown,
+  ChevronRight,
+  Compass,
   CircleDollarSign,
   ClipboardCheckIcon,
   FileText,
@@ -43,6 +45,7 @@ type NavLink = {
   title: string;
   type: "link";
   href: string;
+  icon: React.ComponentType<{ className?: string }>;
 };
 
 type NavDropdownItem = {
@@ -67,6 +70,7 @@ const publicNavItems: NavItem[] = [
     title: "Discover",
     href: "/causes",
     type: "link",
+    icon: Compass,
   },
   {
     title: "What can I crowdfund?",
@@ -178,6 +182,38 @@ const isPathActive = (pathname: string, href: string) => {
   return pathname === href || pathname.startsWith(`${href}/`);
 };
 
+function MobileRow({
+  href,
+  icon: Icon,
+  active,
+  children,
+}: {
+  href: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "group flex h-12 items-center justify-between gap-3 rounded-xl px-3 text-[15px] text-ink transition-colors hover:bg-gray-50",
+        active && "bg-blue-accent/5 font-medium text-blue-accent",
+      )}
+    >
+      <span className="flex items-center gap-3">
+        {Icon ? (
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-accent/10 text-blue-accent">
+            <Icon className="h-4 w-4" />
+          </span>
+        ) : null}
+        {children}
+      </span>
+      <ChevronRight className="h-4 w-4 text-gray-300 transition-colors group-hover:text-blue-accent" />
+    </Link>
+  );
+}
+
 export function Header() {
   const pathname = usePathname();
   const { user, isLoading, signOut } = useAuth();
@@ -217,37 +253,24 @@ export function Header() {
   }, []);
 
   const activeTheme = useMemo(() => {
-    const themeMap: Record<
-      string,
-      { outline: string; solid: string; subtle: string }
-    > = {
+    const themeMap: Record<string, { solid: string }> = {
       "/non-profits": {
-        outline: "border-[#7D568A] text-[#7D568A] hover:bg-[#7D568A]",
         solid: "bg-[#7D568A] hover:bg-[#684973]",
-        subtle: "bg-[#F5EDFA] text-[#7D568A]",
       },
       "/businesses": {
-        outline: "border-[#008B73] text-[#008B73] hover:bg-[#008B73]",
         solid: "bg-[#008B73] hover:bg-[#00715d]",
-        subtle: "bg-[#E8F8F4] text-[#008B73]",
       },
       "/healthcare": {
-        outline: "border-[#C03744] text-[#C03744] hover:bg-[#C03744]",
         solid: "bg-[#C03744] hover:bg-[#a92f3b]",
-        subtle: "bg-[#FCECEF] text-[#C03744]",
       },
       "/disaster-relief": {
-        outline: "border-[#151314] text-[#151314] hover:bg-[#151314]",
         solid: "bg-[#151314] hover:bg-[#252224]",
-        subtle: "bg-[#F2F1F1] text-[#151314]",
       },
     };
 
     return (
       themeMap[pathname] ?? {
-        outline: "border-blue-accent text-blue-accent hover:bg-blue-accent",
         solid: "bg-blue-accent hover:bg-blue-accent/90",
-        subtle: "bg-blue-50 text-blue-700",
       }
     );
   }, [pathname]);
@@ -289,8 +312,8 @@ export function Header() {
         className={cn(
           "overflow-visible transition-[background-color,backdrop-filter,box-shadow,border-color] duration-200",
           isScrolled
-            ? "border-b border-slate-200/80 bg-white/70 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl"
-            : "border-b border-transparent bg-white shadow-none",
+            ? "border-b border-hairline bg-surface/80 shadow-subtle backdrop-blur-xl"
+            : "border-b border-transparent bg-surface shadow-none",
         )}
       >
         <div className="mx-auto max-w-[1440px]">
@@ -352,52 +375,60 @@ export function Header() {
                         <div
                           onMouseEnter={() => openMenu(item.title)}
                           onMouseLeave={scheduleCloseMenu}
-                          className="absolute left-0 top-full z-50 mt-3 w-[640px] max-w-[72vw] overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_30px_70px_-38px_rgba(15,23,42,0.45)]"
+                          className="absolute left-0 top-full z-50 pt-3"
                         >
-                          <div className="border-b border-slate-100 bg-slate-50/80 px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <span
-                                className={`flex h-11 w-11 items-center justify-center rounded-2xl ${activeTheme.subtle}`}
-                              >
-                                <item.icon className="h-5 w-5" />
-                              </span>
-                              <div>
-                                <p className="text-sm font-semibold text-slate-950">
-                                  {item.title}
-                                </p>
-                                <p className="mt-1 text-sm text-slate-600">
-                                  {item.header}
-                                </p>
-                              </div>
+                          <div
+                            className={cn(
+                              "max-w-[72vw] rounded-2xl border border-gray-200 bg-white p-2 shadow-lg",
+                              item.items.length > 2 ? "w-[600px]" : "w-[360px]",
+                            )}
+                          >
+                            <div className="px-3 pb-2 pt-2">
+                              <Eyebrow className="text-[11px] font-medium tracking-[0.16em] text-blue-accent">
+                                {item.title}
+                              </Eyebrow>
+                              <p className="mt-1 text-[13px] leading-5 text-gray-500">
+                                {item.header}
+                              </p>
                             </div>
-                          </div>
 
-                          <div className="grid gap-3 p-4 md:grid-cols-2">
-                            {item.items.map((dropdownItem) => {
-                              const Icon = dropdownItem.icon;
+                            <div
+                              className={cn(
+                                "grid gap-1",
+                                item.items.length > 2 && "grid-cols-2",
+                              )}
+                            >
+                              {item.items.map((dropdownItem) => {
+                                const Icon = dropdownItem.icon;
+                                const active = isPathActive(
+                                  pathname,
+                                  dropdownItem.href,
+                                );
 
-                              return (
-                                <Link
-                                  key={dropdownItem.href}
-                                  href={dropdownItem.href}
-                                  className="group rounded-[22px] border border-slate-200/70 bg-slate-50/55 p-4 transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60"
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm transition-colors group-hover:bg-blue-700 group-hover:text-white">
-                                      <Icon className="h-5 w-5" />
+                                return (
+                                  <Link
+                                    key={dropdownItem.href}
+                                    href={dropdownItem.href}
+                                    className={cn(
+                                      "group flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-gray-50",
+                                      active && "bg-blue-accent/5",
+                                    )}
+                                  >
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-accent/10 text-blue-accent transition-colors group-hover:bg-blue-accent group-hover:text-white">
+                                      <Icon className="h-[18px] w-[18px]" />
                                     </span>
-                                    <div className="min-w-0">
-                                      <p className="text-sm font-semibold text-slate-950 transition-colors group-hover:text-blue-700">
+                                    <span className="min-w-0">
+                                      <span className="block text-[15px] font-medium text-ink transition-colors group-hover:text-blue-accent">
                                         {dropdownItem.title}
-                                      </p>
-                                      <p className="mt-1 text-sm leading-6 text-slate-600">
+                                      </span>
+                                      <span className="mt-0.5 block text-[13px] leading-5 text-gray-500">
                                         {dropdownItem.description}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </Link>
-                              );
-                            })}
+                                      </span>
+                                    </span>
+                                  </Link>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -488,201 +519,165 @@ export function Header() {
           </nav>
 
           <div
-            className={`overflow-hidden border-t border-slate-100 bg-white/95 transition-all duration-300 xl:hidden ${
+            className={cn(
+              "overflow-hidden border-hairline bg-surface transition-all duration-300 xl:hidden",
               isMenuOpen
-                ? "max-h-[calc(100vh-5rem)] opacity-100"
-                : "max-h-0 opacity-0"
-            }`}
+                ? "max-h-[calc(100vh-5rem)] border-t opacity-100"
+                : "max-h-0 opacity-0",
+            )}
           >
             <div className="max-h-[calc(100vh-5rem)] overflow-y-auto px-4 py-4 sm:px-5">
-              <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(135deg,#f8fbff_0%,#ffffff_100%)] p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+              <div className="rounded-2xl bg-warm-neutral p-4">
+                <Eyebrow className="text-[11px] font-medium tracking-[0.16em] text-blue-accent">
                   Navigation
+                </Eyebrow>
+                <p className="mt-2 font-serif text-2xl text-ink">
+                  Explore RefreeG{" "}
+                  <em className="italic text-blue-accent">faster.</em>
                 </p>
-                <p className="mt-2 text-lg font-semibold text-slate-950">
-                  Explore RefreeG faster
-                </p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">
+                <p className="mt-1 text-sm leading-6 text-gray-600">
                   Jump into campaigns, petitions, platform guides, and your
                   workspace from one cleaner menu.
                 </p>
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                  <Link href="/dashboard/causes/create">
-                    <Button
-                      className={`h-11 w-full rounded-2xl text-white ${activeTheme.solid}`}
-                    >
-                      <Megaphone className="mr-2 h-4 w-4" />
-                      Start a Cause
-                    </Button>
+                  <Link
+                    href="/dashboard/causes/create"
+                    className={cn(
+                      "flex h-11 items-center justify-center gap-2 rounded-full text-sm font-medium text-white transition-colors",
+                      activeTheme.solid,
+                    )}
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
+                      <Megaphone className="h-3.5 w-3.5" />
+                    </span>
+                    Start a Cause
                   </Link>
-                  <Link href="/dashboard/petitions/create">
-                    <Button
-                      variant="outline"
-                      className="h-11 w-full rounded-2xl border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      Launch Petition
-                    </Button>
+                  <Link
+                    href="/dashboard/petitions/create"
+                    className="flex h-11 items-center justify-center gap-2 rounded-full border border-ink text-sm font-medium text-ink transition-colors hover:bg-black/5"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Launch Petition
                   </Link>
                 </div>
               </div>
 
               {user ? (
-                <div className="mt-4 rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm">
-                  <p className="px-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                <div className="mt-4">
+                  <Eyebrow className="px-3 text-[11px] font-medium tracking-[0.16em] text-blue-accent">
                     Workspace
-                  </p>
-                  <div className="mt-3 space-y-1">
-                    {userDashboardItems.map((item) => {
-                      const Icon = item.icon;
-                      const active = isPathActive(pathname, item.href);
-
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={`flex items-center justify-between rounded-2xl px-3 py-3 text-sm transition-colors ${
-                            active
-                              ? "bg-blue-50 text-blue-700"
-                              : "text-slate-700 hover:bg-slate-100"
-                          }`}
-                        >
-                          <span className="flex items-center gap-3">
-                            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100">
-                              <Icon className="h-4 w-4" />
-                            </span>
-                            {item.title}
-                          </span>
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      );
-                    })}
+                  </Eyebrow>
+                  <div className="mt-2 space-y-0.5">
+                    {userDashboardItems.map((item) => (
+                      <MobileRow
+                        key={item.href}
+                        href={item.href}
+                        icon={item.icon}
+                        active={isPathActive(pathname, item.href)}
+                      >
+                        {item.title}
+                      </MobileRow>
+                    ))}
                   </div>
 
                   {isAdminOrManager ? (
-                    <div className="mt-4 border-t border-slate-100 pt-4">
-                      <p className="px-2 text-xs font-semibold uppercase tracking-[0.22em] text-rose-600">
+                    <div className="mt-3 border-t border-gray-200 pt-3">
+                      <Eyebrow className="px-3 text-[11px] font-medium tracking-[0.16em] text-blue-accent">
                         Admin
-                      </p>
-                      <div className="mt-3 space-y-1">
-                        {adminDashboardItems.map((item) => {
-                          const Icon = item.icon;
-                          const active = isPathActive(pathname, item.href);
-
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              className={`flex items-center justify-between rounded-2xl px-3 py-3 text-sm transition-colors ${
-                                active
-                                  ? "bg-blue-50 text-blue-700"
-                                  : "text-slate-700 hover:bg-slate-100"
-                              }`}
-                            >
-                              <span className="flex items-center gap-3">
-                                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100">
-                                  <Icon className="h-4 w-4" />
-                                </span>
-                                {item.title}
-                              </span>
-                              <ArrowRight className="h-4 w-4" />
-                            </Link>
-                          );
-                        })}
+                      </Eyebrow>
+                      <div className="mt-2 space-y-0.5">
+                        {adminDashboardItems.map((item) => (
+                          <MobileRow
+                            key={item.href}
+                            href={item.href}
+                            icon={item.icon}
+                            active={isPathActive(pathname, item.href)}
+                          >
+                            {item.title}
+                          </MobileRow>
+                        ))}
                       </div>
                     </div>
                   ) : null}
                 </div>
               ) : null}
 
-              <div className="mt-4 rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm">
-                <p className="px-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+              <div className="mt-4 border-t border-gray-200 pt-4">
+                <Eyebrow className="px-3 text-[11px] font-medium tracking-[0.16em] text-blue-accent">
                   Explore
-                </p>
-                <div className="mt-3 space-y-2">
+                </Eyebrow>
+                <div className="mt-2 space-y-0.5">
                   {publicNavItems.map((item) => {
                     if (item.type === "link") {
-                      const active = isPathActive(pathname, item.href);
-
                       return (
-                        <Link
+                        <MobileRow
                           key={item.href}
                           href={item.href}
-                          className={`flex items-center justify-between rounded-2xl px-3 py-3 text-sm font-medium transition-colors ${
-                            active
-                              ? "bg-blue-50 text-blue-700"
-                              : "text-slate-700 hover:bg-slate-100"
-                          }`}
+                          icon={item.icon}
+                          active={isPathActive(pathname, item.href)}
                         >
-                          <span>{item.title}</span>
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
+                          {item.title}
+                        </MobileRow>
                       );
                     }
 
                     const isOpen = openDropdown === item.title;
 
                     return (
-                      <div
-                        key={item.title}
-                        className="overflow-hidden rounded-[22px] border border-slate-200"
-                      >
+                      <div key={item.title}>
                         <button
                           type="button"
                           onClick={() => toggleMobileDropdown(item.title)}
-                          className="flex w-full items-center justify-between px-3 py-3 text-left text-sm font-medium text-slate-800 transition-colors hover:bg-slate-50"
+                          aria-expanded={isOpen}
+                          className={cn(
+                            "flex h-12 w-full items-center justify-between rounded-xl px-3 text-left text-[15px] text-ink transition-colors hover:bg-gray-50",
+                            isOpen && "bg-gray-50",
+                          )}
                         >
                           <span className="flex items-center gap-3">
-                            <span
-                              className={`flex h-9 w-9 items-center justify-center rounded-xl ${activeTheme.subtle}`}
-                            >
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-accent/10 text-blue-accent">
                               <item.icon className="h-4 w-4" />
                             </span>
                             {item.title}
                           </span>
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${
-                              isOpen ? "rotate-180" : ""
-                            }`}
+                            className={cn(
+                              "h-4 w-4 text-gray-400 transition-transform",
+                              isOpen && "rotate-180",
+                            )}
                           />
                         </button>
 
                         <div
-                          className={`grid transition-all duration-300 ${
-                            isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-                          }`}
+                          className={cn(
+                            "grid transition-all duration-300",
+                            isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                          )}
                         >
                           <div className="overflow-hidden">
-                            <div className="border-t border-slate-200 bg-slate-50/70 p-3">
-                              <p className="mb-3 px-1 text-sm text-slate-600">
+                            <div className="ml-[22px] mt-1 space-y-0.5 border-l border-gray-200 pb-2 pl-3">
+                              <p className="px-3 pb-1 pt-1 text-[13px] leading-5 text-gray-500">
                                 {item.header}
                               </p>
-                              <div className="space-y-2">
-                                {item.items.map((subItem) => {
-                                  const Icon = subItem.icon;
-
-                                  return (
-                                    <Link
-                                      key={subItem.href}
-                                      href={subItem.href}
-                                      className="flex items-start gap-3 rounded-2xl bg-white px-3 py-3 transition-colors hover:bg-blue-50"
-                                    >
-                                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                                        <Icon className="h-4 w-4" />
-                                      </span>
-                                      <span className="min-w-0">
-                                        <span className="block text-sm font-semibold text-slate-900">
-                                          {subItem.title}
-                                        </span>
-                                        <span className="mt-1 block text-sm leading-6 text-slate-600">
-                                          {subItem.description}
-                                        </span>
-                                      </span>
-                                    </Link>
-                                  );
-                                })}
-                              </div>
+                              {item.items.map((subItem) => (
+                                <Link
+                                  key={subItem.href}
+                                  href={subItem.href}
+                                  className={cn(
+                                    "group block rounded-xl px-3 py-2.5 transition-colors hover:bg-gray-50",
+                                    isPathActive(pathname, subItem.href) &&
+                                      "bg-blue-accent/5",
+                                  )}
+                                >
+                                  <span className="block text-[15px] font-medium text-ink transition-colors group-hover:text-blue-accent">
+                                    {subItem.title}
+                                  </span>
+                                  <span className="mt-0.5 block text-[13px] leading-5 text-gray-500">
+                                    {subItem.description}
+                                  </span>
+                                </Link>
+                              ))}
                             </div>
                           </div>
                         </div>
@@ -692,49 +687,47 @@ export function Header() {
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <div className="mt-4 flex flex-col gap-2 border-t border-gray-200 pt-4 sm:flex-row">
                 {!isLoading && !user ? (
                   <>
-                    <Link href="/auth/signin" className="w-full sm:flex-1">
-                      <Button
-                        variant="outline"
-                        className={`h-11 w-full rounded-2xl border ${activeTheme.outline} bg-white transition-colors hover:text-white`}
-                      >
-                        Sign In
-                      </Button>
+                    <Link
+                      href="/auth/signin"
+                      className="flex h-11 w-full items-center justify-center rounded-full border border-ink text-sm font-medium text-ink transition-colors hover:bg-black/5 sm:flex-1"
+                    >
+                      Sign In
                     </Link>
-                    <Link href="/auth/signup" className="w-full sm:flex-1">
-                      <Button
-                        className={`h-11 w-full rounded-2xl text-white ${activeTheme.solid}`}
-                      >
-                        Sign Up
-                      </Button>
+                    <Link
+                      href="/auth/signup"
+                      className={cn(
+                        "flex h-11 w-full items-center justify-center rounded-full text-sm font-medium text-white transition-colors sm:flex-1",
+                        activeTheme.solid,
+                      )}
+                    >
+                      Sign Up
                     </Link>
                   </>
                 ) : null}
 
                 {user && !isDashboardRoute ? (
-                  <Link href="/dashboard" className="w-full sm:flex-1">
-                    <Button
-                      variant="outline"
-                      className="h-11 w-full rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                    >
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      Dashboard
-                    </Button>
+                  <Link
+                    href="/dashboard"
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-ink text-sm font-medium text-ink transition-colors hover:bg-black/5 sm:flex-1"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
                   </Link>
                 ) : null}
 
                 {user ? (
-                  <Button
-                    variant="ghost"
+                  <button
+                    type="button"
                     onClick={handleSignOut}
                     disabled={isSigningOut}
-                    className="h-11 rounded-2xl text-slate-700 hover:bg-rose-50 hover:text-rose-700"
+                    className="flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-medium text-rust transition-colors hover:bg-rust/10 disabled:opacity-50"
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <LogOut className="h-4 w-4" />
                     {isSigningOut ? "Signing out..." : "Sign Out"}
-                  </Button>
+                  </button>
                 ) : null}
               </div>
             </div>

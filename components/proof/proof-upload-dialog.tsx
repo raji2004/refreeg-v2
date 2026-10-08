@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { submitProofUpdate } from "@/actions/proof-update-actions";
+import { uploadFileWithPresign } from "@/lib/s3/upload-client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -92,10 +93,34 @@ export function ProofUploadDialog({
     fd.append("causeId", causeId);
     fd.append("description", description);
     fd.append("milestone", milestone);
-    files.forEach((f) => fd.append("media", f));
 
     setSubmitting(true);
     setError(null);
+
+    // Files go straight to S3; only their keys are sent with the update.
+    try {
+      for (const f of files) {
+        const { key } = await uploadFileWithPresign(f, {
+          entityType: "causes",
+          entityId: causeId,
+          mediaType: f.type.startsWith("video/")
+            ? "videos"
+            : f.type === "application/pdf"
+              ? "documents"
+              : "images",
+        });
+        fd.append("media", JSON.stringify({ key, name: f.name }));
+      }
+    } catch (uploadError) {
+      setSubmitting(false);
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "Upload failed. Please try again.",
+      );
+      return;
+    }
+
     const result = await submitProofUpdate(fd);
     setSubmitting(false);
 

@@ -6,6 +6,7 @@ const ALLOWED_ENTITY_TYPES: S3EntityType[] = [
   "petitions",
   "profiles",
   "kyc",
+  "organizations",
 ];
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];

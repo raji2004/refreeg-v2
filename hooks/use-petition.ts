@@ -2,22 +2,48 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createPetition, updatePetition } from "@/actions/petition-actions";
+import {
+  resolveMultimediaForSubmit,
+  uploadFileWithPresign,
+} from "@/lib/s3/upload-client";
 import type { PetitionFormData } from "@/types";
 import { toast } from "@/components/ui/use-toast";
 import { useRouter } from "nextjs-toploader/app";
+
+// Files go browser → S3 first so only keys travel through the server action.
+async function withUploadedMedia<T extends Partial<PetitionFormData>>(
+  data: T,
+): Promise<T> {
+  const next = { ...data };
+  if (next.coverImage instanceof File) {
+    const { key } = await uploadFileWithPresign(next.coverImage, {
+      entityType: "petitions",
+      mediaType: next.coverImage.type.startsWith("video/")
+        ? "videos"
+        : "images",
+    });
+    next.coverImage = key;
+  }
+  if (next.multimedia?.length) {
+    next.multimedia = await resolveMultimediaForSubmit(next.multimedia, {
+      entityType: "petitions",
+    });
+  }
+  return next;
+}
 
 export function usePetition() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       userId,
       petitionData,
     }: {
       userId: string;
       petitionData: PetitionFormData;
-    }) => createPetition(userId, petitionData),
+    }) => createPetition(userId, await withUploadedMedia(petitionData)),
     onSuccess: () => {
       toast({
         title: "Petition created successfully",
@@ -36,7 +62,7 @@ export function usePetition() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       petitionId,
       userId,
       petitionData,
@@ -44,7 +70,8 @@ export function usePetition() {
       petitionId: string;
       userId: string;
       petitionData: Partial<PetitionFormData>;
-    }) => updatePetition(petitionId, userId, petitionData),
+    }) =>
+      updatePetition(petitionId, userId, await withUploadedMedia(petitionData)),
     onSuccess: () => {
       toast({
         title: "Petition updated successfully",
