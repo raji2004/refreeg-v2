@@ -208,13 +208,6 @@ function SignInContent() {
             </p>
           </div>
 
-          {/* Notice banner if redirected */}
-          {redirectTo && (
-            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              You need to log in first to continue.
-            </div>
-          )}
-
           {/* Social Sign In */}
           <div className="space-y-3 mb-6">
             <button
