@@ -10,6 +10,7 @@ import {
   Flag,
   Trophy,
   Bookmark,
+  Share2,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const navItems: NavItem[] = [
   { title: "Wallet", href: "/wallet", icon: Wallet, requiresAuth: true },
   { title: "Petitions", href: "/petitions", icon: Flag, requiresAuth: false },
   { title: "Bounties", href: "/bounties", icon: Trophy, requiresAuth: true },
+  { title: "Referrals", href: "/referrals", icon: Share2, requiresAuth: true },
   { title: "Saved", href: "/saved", icon: Bookmark, requiresAuth: true },
   {
     title: "Settings",
