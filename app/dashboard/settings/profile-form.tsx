@@ -278,7 +278,7 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
               Settings
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-6 text-ink/60">
-              Editing one row at a time — switches apply on flip.
+              Editing one row at a time. Switches apply on flip.
             </p>
           </div>
           {publicProfileHref ? (

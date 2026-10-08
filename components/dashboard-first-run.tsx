@@ -38,7 +38,7 @@ export function DashboardFirstRun({
         variant="gold"
         icon={<Sparkles className="mt-0.5 h-5 w-5 shrink-0" />}
         title={`${formatNaira(weeklyDelivered)} delivered to causes this week`}
-        description="That's the whole community — donors like you keep it moving."
+        description="That's the whole community. Donors like you keep it moving."
       />
 
       <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
@@ -70,7 +70,7 @@ export function DashboardFirstRun({
             <div className="mt-4 flex flex-col items-start gap-3 rounded-xl border border-dashed border-ink/20 p-5">
               <HeartHandshake className="h-5 w-5 text-ink/50" />
               <p className="text-sm text-ink/70">
-                No live matches for your interests yet — browse Discover to find
+                No live matches for your interests yet. Browse Discover to find
                 a cause to support.
               </p>
               <Link href="/causes">

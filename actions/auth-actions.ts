@@ -476,7 +476,7 @@ export async function requestEmailChangeAction(
     return {
       success: false,
       error:
-        "Set a password in Security first — we need it to confirm email changes.",
+        "Set a password in Security first. We need it to confirm email changes.",
       code: "no_password",
     };
   }

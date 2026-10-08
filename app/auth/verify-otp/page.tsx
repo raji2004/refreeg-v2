@@ -145,7 +145,7 @@ function VerifyOtpContent() {
       {}
       <AuthBrandPanel
         headline="One code, three characters at a time."
-        subtitle="Letters and numbers, read in two beats. Paste it whole or type it — we strip spaces and the dash for you."
+        subtitle="Letters and numbers, read in two beats. Paste it whole or type it. We strip spaces and the dash for you."
         bottomCard={{
           eyebrow: "WHAT WE SENT",
           text: `RefreeG: your 6-digit verification code was sent to ${email || "your email"}. It expires in 10 minutes. We will never ask you for it.`,

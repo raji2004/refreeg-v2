@@ -314,7 +314,7 @@ export function GiveModal({
               variant="gold"
               icon={<Clock3 className="mt-0.5 h-5 w-5 shrink-0" />}
               title="This campaign is paused"
-              description="Its owner is updating the campaign details — donations are on hold until that's reviewed and approved."
+              description="Its owner is updating the campaign details. Donations are on hold until that's reviewed and approved."
             />
           </div>
         ) : (

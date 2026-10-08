@@ -54,7 +54,7 @@ export default function Hero() {
           transition={{ delay: 0.7 }}
           className="text-lg md:text-xl mb-6"
         >
-          On RefreeG, every creator gets a unique tag and URL — your digital
+          On RefreeG, every creator gets a unique tag and URL: your digital
           identity <br /> where people can discover, follow, and support your
           cause.
         </motion.p>

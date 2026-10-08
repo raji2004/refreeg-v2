@@ -38,7 +38,7 @@ export default function FAQHero() {
           {}
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-gray-100 text-gray-700 text-sm mb-6">
             Powered by vetted, audited smart contracts. Withdraw anytime. Your
-            funds remain yours — always.
+            funds remain yours, always.
           </div>
 
           {}

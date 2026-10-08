@@ -371,7 +371,7 @@ export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
             </h3>
             <p className="mt-2 text-sm text-slate-600">
               Set a date, enter your card on Paystack, and we charge your full
-              pledge on that day — automatically sent to the cause.
+              pledge on that day, automatically sent to the cause.
             </p>
 
             <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800 space-y-1.5">
@@ -390,14 +390,14 @@ export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
                   ₦
                   {pledgeAmount > 0
                     ? Number(pledgeAmount).toLocaleString()
-                    : "—"}
+                    : "0"}
                 </span>
               </div>
               <p className="text-xs text-blue-600 pt-0.5">
                 Paystack will show ₦
-                {PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()} on checkout —
+                {PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()} on checkout:
                 that is the card verification only. Your pledge of ₦
-                {pledgeAmount > 0 ? Number(pledgeAmount).toLocaleString() : "—"}{" "}
+                {pledgeAmount > 0 ? Number(pledgeAmount).toLocaleString() : "0"}{" "}
                 is charged on {pledgeDate || "the date you pick"}.
               </p>
             </div>
@@ -594,13 +594,13 @@ export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
                 Paystack checkout will show{" "}
                 <strong>
                   ₦{PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()}
-                </strong>{" "}
-                — this is only a card-save verification. Your actual pledge of{" "}
+                </strong>
+                . This is only a card-save verification. Your actual pledge of{" "}
                 <strong>
                   ₦
                   {pledgeAmount > 0
                     ? Number(pledgeAmount).toLocaleString()
-                    : "—"}
+                    : "0"}
                 </strong>{" "}
                 will be charged on{" "}
                 <strong>{pledgeDate || "your chosen date"}</strong>.

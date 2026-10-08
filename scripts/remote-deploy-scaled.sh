@@ -6,7 +6,7 @@ set -euo pipefail
 #   1. AWS SSM Run Command, targeting all running ASG instances on every push.
 #   2. A new ASG instance's own user-data script on boot (scripts/bootstrap-instance.sh),
 #      fetching whatever the latest deployed release currently is.
-# Either way this is the same code path — that's what makes scale-out
+# Either way this is the same code path  that's what makes scale-out
 # "automatic": a brand-new instance ends up running exactly what every other
 # instance is already running, no separate provisioning logic to maintain.
 APP_DIR="/opt/refreeg"
@@ -31,7 +31,7 @@ fi
 echo "Disk space OK (${FREE_KB} KB free)."
 
 # ── 2. Fetch secrets from SSM Parameter Store (SecureString, KMS-encrypted) ──
-# Read via the instance's own IAM role — nothing is ever transferred as a
+# Read via the instance's own IAM role  nothing is ever transferred as a
 # plaintext file. Rebuilt fresh on every deploy so rotated secrets take effect
 # on the next push without any separate "update secrets" step.
 echo "Fetching secrets from ${SSM_PARAM_PATH}..."
@@ -68,7 +68,7 @@ source "${SHARED_DIR}/secrets.env"
 echo "Secrets loaded ($(wc -l < "${SHARED_DIR}/secrets.env") keys)."
 
 # ── 2b. Keep rollback.sh current on disk ──────────────────────────────────────
-# The "Rollback on failure" SSM command just runs this path directly — refresh
+# The "Rollback on failure" SSM command just runs this path directly  refresh
 # it on every deploy so it's always present and up to date, same reasoning as
 # bootstrap-instance.sh always fetching the latest remote-deploy.sh.
 aws s3 cp "s3://${RELEASES_BUCKET}/scripts/rollback.sh" "${APP_DIR}/rollback.sh"
@@ -76,7 +76,7 @@ chmod +x "${APP_DIR}/rollback.sh"
 
 # ── 3. Fetch and extract the release tarball from S3 ─────────────────────────
 # The tarball root is the Next.js standalone output (server.js, its own pruned
-# node_modules, .next/, public/) plus ecosystem.config.js — self-contained.
+# node_modules, .next/, public/) plus ecosystem.config.js  self-contained.
 echo "Fetching release ${RELEASE_ID} from s3://${RELEASES_BUCKET}/releases/${RELEASE_ID}.tar.gz..."
 mkdir -p "$RELEASE_DIR"
 aws s3 cp "s3://${RELEASES_BUCKET}/releases/${RELEASE_ID}.tar.gz" "/tmp/${RELEASE_ID}.tar.gz"

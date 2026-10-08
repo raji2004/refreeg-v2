@@ -935,7 +935,7 @@ export async function sendKycReminderEmail(
   return sendMail({
     to: userEmail,
     subject:
-      "🔐 Your Refreeg account isn't verified yet — here's why it matters",
+      "🔐 Your Refreeg account isn't verified yet. Here's why it matters",
     templateName: "kyc-reminder",
     context: {
       userName,
@@ -1126,7 +1126,7 @@ export async function sendProofUpdateApprovedEmail(params: {
       causeTitle: params.causeTitle,
       causeUrl: params.causeUrl,
       pauseLine: params.pauseLifted
-        ? "Your campaign has been restored — it's live and visible again!"
+        ? "Your campaign has been restored. It's live and visible again!"
         : "Your donors can now see it on your campaign page.",
       currentYear,
     },

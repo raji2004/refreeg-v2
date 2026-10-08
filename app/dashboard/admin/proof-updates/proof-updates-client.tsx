@@ -46,7 +46,7 @@ export default function ProofUpdatesClient({
       const res = await approveProofUpdate(id);
       toast({
         title: res.pauseLifted
-          ? "Approved — campaign restored"
+          ? "Approved: campaign restored"
           : "Approved and published",
       });
       router.refresh();
@@ -65,7 +65,7 @@ export default function ProofUpdatesClient({
     setBusyId(id);
     try {
       await rejectProofUpdate(id, reason.trim());
-      toast({ title: "Rejected — creator notified" });
+      toast({ title: "Rejected: creator notified" });
       setRejectingId(null);
       setReason("");
       router.refresh();
@@ -116,7 +116,7 @@ export default function ProofUpdatesClient({
               )}
               {update.cause.compliance_paused && (
                 <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
-                  Campaign paused — approval restores it
+                  Campaign paused. Approval restores it
                 </span>
               )}
               <span className="ml-auto text-xs text-slate-400">
@@ -210,7 +210,7 @@ export default function ProofUpdatesClient({
                 <Textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="Reason (sent to the creator) — e.g. photos don't match the described spend."
+                  placeholder="Reason (sent to the creator), e.g. photos don't match the described spend."
                   rows={2}
                 />
                 <Button

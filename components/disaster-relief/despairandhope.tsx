@@ -48,7 +48,7 @@ export default function DespairAndHope() {
           className="text-xs p-2 border rounded-full bg-[#FAFAFA]"
         >
           Powered by vetted, audited smart contracts. Withdraw anytime. Your
-          funds remain yours — always.
+          funds remain yours, always.
         </motion.p>
 
         <motion.div
