@@ -1,5 +1,8 @@
-
-import type { PaymentProviderType, ICreateSubaccount, TransactionData } from "@/types";
+import type {
+  PaymentProviderType,
+  ICreateSubaccount,
+  TransactionData,
+} from "@/types";
 import Paystack from "@/services/paystack";
 import Flutterwave from "@/services/flutterwave";
 
@@ -46,10 +49,12 @@ export async function verifyAccountNumber(
   return getProvider(provider).verifyAccountNumber(accountNumber, bankCode);
 }
 
-export async function createSubaccount(data: ICreateSubaccount, provider?: PaymentProviderType) {
+export async function createSubaccount(
+  data: ICreateSubaccount,
+  provider?: PaymentProviderType,
+) {
   return getProvider(provider).createSubaccount(data);
 }
-
 
 export async function createDualSubaccounts(data: ICreateSubaccount) {
   const [paystackResult, flutterwaveResult] = await Promise.allSettled([
@@ -62,14 +67,21 @@ export async function createDualSubaccounts(data: ICreateSubaccount) {
       paystackResult.status === "fulfilled"
         ? paystackResult.value
         : (() => {
-            console.error("Paystack subaccount creation failed:", (paystackResult as PromiseRejectedResult).reason);
+            console.error(
+              "Paystack subaccount creation failed:",
+              (paystackResult as PromiseRejectedResult).reason,
+            );
             return null;
           })(),
     flutterwave:
       flutterwaveResult.status === "fulfilled"
         ? flutterwaveResult.value
         : (() => {
-            console.error("Flutterwave subaccount creation failed:", (flutterwaveResult as PromiseRejectedResult).reason);
+            const reason = (flutterwaveResult as PromiseRejectedResult).reason;
+            console.error(
+              "Flutterwave subaccount creation failed:",
+              reason?.response?.data ?? reason?.message ?? reason,
+            );
             return null;
           })(),
   };
