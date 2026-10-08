@@ -1,147 +1,184 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, BellPlus } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import {
-  suggestFilterToRemove,
+  explainNoResults,
   type DiscoverFilters,
 } from "@/actions/discover-actions";
 import { createSavedSearchAlert } from "@/actions/saved-search-actions";
+import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
+import {
+  countWord,
+  filterChips,
+  noneClause,
+  withoutChip,
+  type FilterChip,
+} from "@/lib/discover-summary";
 
-const FILTER_LABELS: Partial<Record<keyof DiscoverFilters, string>> = {
-  category: "category",
-  location: "location",
-  urgentOnly: "urgent only",
-  verifiedOnly: "verified NGOs only",
-  nearGoalOnly: "near its goal",
-  minAmountNeeded: "minimum amount",
-  maxAmountNeeded: "maximum amount",
-  search: "search",
-};
+type Explanation = Awaited<ReturnType<typeof explainNoResults>>;
 
-function activeFilterKeys(filters: DiscoverFilters): (keyof DiscoverFilters)[] {
-  const keys: (keyof DiscoverFilters)[] = [];
-  if (filters.category) keys.push("category");
-  if (filters.location) keys.push("location");
-  if (filters.urgentOnly) keys.push("urgentOnly");
-  if (filters.verifiedOnly) keys.push("verifiedOnly");
-  if (filters.nearGoalOnly) keys.push("nearGoalOnly");
-  if (filters.minAmountNeeded != null) keys.push("minAmountNeeded");
-  if (filters.maxAmountNeeded != null) keys.push("maxAmountNeeded");
-  return keys;
+const plural = (n: number, word: string) =>
+  `${n.toLocaleString()} ${word}${n === 1 ? "" : "s"}`;
+
+/** "Dropping the location", "Dropping Urgent only", … */
+function droppingPhrase(chip: FilterChip, filters: DiscoverFilters) {
+  if (chip.key === "location") return "Dropping the location";
+  if (chip.key === "amount") return "Dropping the amount limit";
+  if (chip.key === "categories")
+    return (filters.categories?.length ?? 0) > 1
+      ? "Dropping the causes"
+      : "Dropping the cause";
+  return `Dropping ${chip.label}`;
+}
+
+/** "Remove Kano", "Remove Water", "Remove Urgent only" */
+function removeLabel(chip: FilterChip, filters: DiscoverFilters) {
+  if (chip.key === "categories") {
+    const ids = filters.categories ?? [];
+    return ids.length === 1
+      ? `Remove ${getCampaignCategoryStyle(ids[0]).name}`
+      : "Remove causes";
+  }
+  return `Remove ${chip.label}`;
 }
 
 export function DiscoverEmptyState({
   filters,
-  onRemoveFilter,
+  onFiltersChange,
   onClearAll,
 }: {
   filters: DiscoverFilters;
-  onRemoveFilter: (key: keyof DiscoverFilters) => void;
+  onFiltersChange: (next: DiscoverFilters) => void;
   onClearAll: () => void;
 }) {
   const { toast } = useToast();
-  const [suggestion, setSuggestion] = useState<{
-    key: keyof DiscoverFilters;
-    count: number;
-  } | null>(null);
+  const [explanation, setExplanation] = useState<Explanation | null>(null);
   const [savingAlert, setSavingAlert] = useState(false);
   const [alertSaved, setAlertSaved] = useState(false);
 
+  const chips = filterChips(filters);
+  const filterKey = JSON.stringify(filters);
+
   useEffect(() => {
-    const keys = activeFilterKeys(filters);
-    if (keys.length === 0) {
-      setSuggestion(null);
-      return;
-    }
+    setExplanation(null);
+    setAlertSaved(false);
+    if (chips.length === 0) return;
     let cancelled = false;
-    suggestFilterToRemove(filters, keys).then((result) => {
-      if (!cancelled && result) {
-        setSuggestion({ key: result.key, count: result.count });
-      }
-    });
+    explainNoResults(filters)
+      .then((result) => !cancelled && setExplanation(result))
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [filters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey]);
 
   const handleSaveAlert = async () => {
     setSavingAlert(true);
-    const label =
-      activeFilterKeys(filters)
-        .map((k) => FILTER_LABELS[k])
-        .filter(Boolean)
-        .join(", ") || "All campaigns";
     const { error } = await createSavedSearchAlert({
-      label: `Alert: ${label}`,
+      label: `Alert: ${chips.map((c) => c.label).join(", ") || "All campaigns"}`,
       query: filters as Record<string, unknown>,
     });
     setSavingAlert(false);
     if (error) {
       toast({
-        title: "Could not save alert",
+        title: "Could not set the alert",
         description: error,
         variant: "destructive",
       });
       return;
     }
     setAlertSaved(true);
-    toast({
-      title: "Alert saved",
-      description: "We'll keep this filter set on your saved searches.",
-    });
   };
 
-  return (
-    <div className="space-y-4">
+  // No filters: only a search (or nothing at all) came back empty.
+  if (chips.length === 0) {
+    return (
       <EmptyState
-        icon={<Search className="h-8 w-8 text-ink/40" />}
-        title="No results match these filters"
-        description={
-          suggestion && suggestion.count > 0
-            ? `Removing "${FILTER_LABELS[suggestion.key]}" gives you ${suggestion.count} result${
-                suggestion.count === 1 ? "" : "s"
-              }.`
-            : "Try widening your filters, or clear them to see everything."
+        variant="page"
+        className="py-16"
+        icon={<Search className="h-5 w-5" strokeWidth={1.75} />}
+        title={
+          filters.search
+            ? `Nothing matches “${filters.search}”`
+            : "No campaigns here yet"
         }
+        description="Try a different search, or browse every open campaign."
+      />
+    );
+  }
+
+  const title =
+    chips.length === 1
+      ? "Nothing matches this filter"
+      : `Nothing matches all ${countWord(chips.length)} filters`;
+
+  const causeNames = (filters.categories ?? []).map((id) =>
+    getCampaignCategoryStyle(id).name.toLowerCase(),
+  );
+  const clause = noneClause(filters);
+  const firstSentence =
+    explanation?.causeOnlyCount && causeNames.length && clause
+      ? `There are ${plural(explanation.causeOnlyCount, `${causeNames.join(" or ")} campaign`)}, but none ${clause}. `
+      : "";
+  const suggestion = explanation?.suggestion ?? null;
+  const description = suggestion
+    ? `${firstSentence}${droppingPhrase(suggestion, filters)} gives you ${plural(suggestion.count, "result")}.`
+    : `${firstSentence}Try widening your filters, or clear them to see everything.`;
+
+  return (
+    <div className="py-16">
+      <EmptyState
+        variant="page"
+        icon={<Search className="h-5 w-5" strokeWidth={1.75} />}
+        title={title}
+        description={explanation ? description : " "}
         action={
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {suggestion && suggestion.count > 0 && (
+          <div className="flex flex-wrap justify-center gap-2.5">
+            {suggestion && (
               <Button
                 variant="ink"
-                size="sm"
-                onClick={() => onRemoveFilter(suggestion.key)}
+                className="h-12 rounded-2xl px-[22px] text-[15px] font-semibold shadow-[0_8px_20px_-8px_hsl(var(--ink)/0.55)]"
+                onClick={() =>
+                  onFiltersChange(withoutChip(filters, { key: suggestion.key }))
+                }
               >
-                Remove {FILTER_LABELS[suggestion.key]}
+                {removeLabel(suggestion, filters)}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={onClearAll}>
+            <Button
+              variant="outline"
+              onClick={onClearAll}
+              className="h-12 rounded-2xl border-hairline bg-surface px-[22px] text-[15px] font-semibold text-ink hover:bg-bone"
+            >
               Clear all filters
             </Button>
           </div>
         }
       />
 
-      {activeFilterKeys(filters).length > 0 && (
-        <div className="mx-auto flex max-w-md items-center justify-between gap-3 rounded-xl border border-ink/15 bg-ink/[0.03] p-4 text-sm">
-          <div className="flex items-center gap-2 text-ink/80">
-            <BellPlus className="h-4 w-4 shrink-0" />
-            <span>Get notified when new campaigns match this filter set.</span>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={savingAlert || alertSaved}
+      <div className="mx-auto mt-7 flex w-fit items-center gap-3 rounded-xl bg-blue-accent/10 px-4 py-3 text-sm">
+        <Bell className="h-4 w-4 shrink-0 text-blue-accent" />
+        <span className="text-ink/75">
+          {alertSaved
+            ? "Alert set. We'll tell you when a campaign matches this."
+            : "Alert me when a campaign matches this"}
+        </span>
+        {!alertSaved && (
+          <button
+            type="button"
             onClick={handleSaveAlert}
-            className="shrink-0"
+            disabled={savingAlert}
+            className="font-semibold text-blue-accent hover:underline disabled:opacity-60"
           >
-            {alertSaved ? "Saved" : savingAlert ? "Saving…" : "Set an alert"}
-          </Button>
-        </div>
-      )}
+            {savingAlert ? "Setting…" : "Set an alert"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

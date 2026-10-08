@@ -37,6 +37,16 @@ select:focus {
   /* optional: keep blue border, or set your brand */
 }
 
+/* Design-guide dialogs: forest focus, bone field, ink text. */
+[data-design-dialog] input:focus,
+[data-design-dialog] textarea:focus,
+[data-design-dialog] select:focus {
+  background-color: hsl(var(--surface)) !important;
+  color: hsl(var(--ink)) !important;
+  border-color: hsl(var(--forest)) !important;
+  box-shadow: 0 0 0 3px hsl(var(--forest) / 0.2) !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -431,16 +441,20 @@ select:focus {
 }
 
 .marquee-edge-fade {
-  -webkit-mask-image: linear-gradient(to right,
-      transparent 0,
-      black 4%,
-      black 96%,
-      transparent 100%);
-  mask-image: linear-gradient(to right,
-      transparent 0,
-      black 4%,
-      black 96%,
-      transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 4%,
+    black 96%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 4%,
+    black 96%,
+    transparent 100%
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {

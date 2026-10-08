@@ -92,6 +92,8 @@ export async function getQuickDonateProps(causeId: string) {
     goal: cause.goal,
     raised: cause.raised,
     subaccount: cause.user?.sub_account_code ?? undefined,
+    orgName: cause.user?.name || "RefreeG campaign",
+    orgVerified: !!cause.user?.is_verified,
     defaultName: profile?.display_name || profile?.full_name || "",
     defaultEmail: profile?.email ?? "",
     defaultAnonymous: profile?.donation_preference === "anonymous",
@@ -116,6 +118,7 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
               username: true,
               subAccountCode: true,
               profilePhoto: true,
+              isVerified: true,
             },
           },
           sections: {
@@ -138,6 +141,7 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
               username: true,
               subAccountCode: true,
               profilePhoto: true,
+              isVerified: true,
             },
           },
           sections: {
@@ -183,6 +187,7 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
       username: data.user?.username || null,
       sub_account_code: data.user?.subAccountCode || "",
       profile_photo: data.user?.profilePhoto || null,
+      is_verified: !!data.user?.isVerified,
     },
     sections: data.sections || [],
     multimedia: data.multimedia || [],
@@ -736,7 +741,9 @@ function buildCauseCountWhere(options: CauseFilterOptions) {
     }
   }
 
-  if (options.category && options.category !== "all") {
+  if (options.categories && options.categories.length > 0) {
+    whereClause.category = { in: options.categories };
+  } else if (options.category && options.category !== "all") {
     whereClause.category = options.category;
   }
 

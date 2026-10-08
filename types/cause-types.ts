@@ -65,6 +65,7 @@ export interface CauseWithUser extends Cause {
     username: string;
     profile_photo?: string | null;
     flutterwave_sub_account_id?: string | null;
+    is_verified?: boolean;
   };
   isFollowing?: boolean;
 }

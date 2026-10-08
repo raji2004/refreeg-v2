@@ -31,6 +31,7 @@ model User {
   donationPreference          String?                  @default("named") @map("donation_preference")
   email                       String?                  @unique
   onboarding_completed        Boolean?                 @default(false)
+  notifications_read_at       DateTime?                @db.Timestamptz(6)
   fullName                    String?                  @map("full_name")
   total_points                Int?                     @default(0)
   current_tier                String?                  @default("Tier 1")
