@@ -34,7 +34,7 @@ resource "aws_security_group" "alb" {
 
 resource "aws_security_group" "app" {
   name        = "${var.project_name}-app"
-  description = "App instances — only reachable from the ALB, no public SSH"
+  description = "App instances - only reachable from the ALB, no public SSH"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -68,7 +68,7 @@ resource "aws_security_group" "app" {
 
 resource "aws_security_group" "rds" {
   name        = "${var.project_name}-rds"
-  description = "Postgres — only reachable from app instances"
+  description = "Postgres - only reachable from app instances"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {

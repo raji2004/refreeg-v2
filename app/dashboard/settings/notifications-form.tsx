@@ -123,7 +123,7 @@ export function NotificationsForm() {
     {
       id: "receipts",
       title: "Receipts and confirmations",
-      description: "Always on for email — this is your record",
+      description: "Always on for email. This is your record",
       locked: { email: true },
     },
     {

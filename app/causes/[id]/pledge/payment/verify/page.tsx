@@ -66,7 +66,7 @@ export default function PledgePaymentVerification() {
                 Verifying your card
               </h2>
               <p className="text-muted-foreground mt-2">
-                Almost done — confirming with Paystack…
+                Almost done, confirming with Paystack…
               </p>
             </motion.div>
           )}

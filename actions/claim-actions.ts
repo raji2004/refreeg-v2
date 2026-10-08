@@ -43,7 +43,8 @@ export async function claimCause(causeId: string) {
   if (!cause.reconstructed) {
     return {
       data: null,
-      error: "This campaign isn't part of the recovery — nothing to claim.",
+      error:
+        "This campaign isn't part of the recovery, so there's nothing to claim.",
     };
   }
   if (cause.recovered_owner_email?.toLowerCase() !== email.toLowerCase()) {

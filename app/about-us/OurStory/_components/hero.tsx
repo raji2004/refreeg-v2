@@ -16,7 +16,7 @@ export default function Hero() {
               A Vision for Change, A Platform for Impact
             </span>
             <br />
-            RefreeG was born out of a simple yet powerful idea—to create a
+            RefreeG was born out of a simple yet powerful idea: to create a
             platform where giving is transparent, impactful, and accessible to
             all. In a world where millions struggle to access basic necessities,
             education, and opportunities, we saw a need for a crowdfunding
@@ -35,7 +35,7 @@ export default function Hero() {
                 What if a single act of kindness could spark a movement?
               </li>
             </Ul>
-            So, we built RefreeG—a platform that connects people who care with
+            So, we built RefreeG, a platform that connects people who care with
             causes that matter, powered by blockchain technology to ensure full
             transparency and accountability.
           </div>

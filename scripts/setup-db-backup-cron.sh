@@ -13,7 +13,7 @@
 set -euo pipefail
 
 if [ -z "${AWS_S3_BUCKET:-}" ]; then
-  echo "AWS_S3_BUCKET is not set in the environment — aborting." >&2
+  echo "AWS_S3_BUCKET is not set in the environment  aborting." >&2
   exit 1
 fi
 

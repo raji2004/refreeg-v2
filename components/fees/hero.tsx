@@ -109,7 +109,7 @@ export default function Hero() {
         >
           At RefreeG, we believe your impact shouldn’t be hidden behind
           confusing charges. That’s why we keep our fees clear, fair, and
-          simple—so you always know exactly where your money goes and how it
+          simple, so you always know exactly where your money goes and how it
           gets to you.
         </motion.p>
 

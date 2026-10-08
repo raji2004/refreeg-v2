@@ -227,7 +227,7 @@ export async function POST(req: NextRequest) {
           amount: data.amount,
           mode: "test",
           message:
-            "Test donation processed instantly — no real payment was made.",
+            "Test donation processed instantly. No real payment was made.",
           donation_id: testDonation.id,
         },
         201,
