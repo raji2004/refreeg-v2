@@ -9,7 +9,7 @@ export default function CreateBetterFuture() {
         Join Us in Creating a Better Future 🌱
       </div>
       <div className="mt-2 text-base">
-        RefreeG is more than just a crowdfunding platform—it’s a movement for
+        RefreeG is more than just a crowdfunding platform. It’s a movement for
         real change. Whether you’re looking to start a cause, donate, or spread
         awareness, your action can help change lives.
       </div>

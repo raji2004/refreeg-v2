@@ -11,6 +11,10 @@ const PUBLIC_FILES = new Set<string>(publicFileManifest);
 
 const IMAGE_EXT = /\.(?:png|jpe?g|gif|webp|svg|ico|avif)$/i;
 
+// Icons served from app/ (favicon.ico, icon.*, apple-icon.*), which aren't in public/.
+const APP_ICON_PATH =
+  /^\/(?:favicon\.ico|(?:apple-)?icon\d*\.(?:ico|png|jpe?g|svg))$/i;
+
 const PUBLIC_API_PREFIXES = [
   "/api/auth",
   "/api/health",
@@ -124,7 +128,7 @@ export default function middleware(req: NextRequest, event: NextFetchEvent) {
   const { pathname } = req.nextUrl;
 
   if (IMAGE_EXT.test(pathname)) {
-    if (!PUBLIC_FILES.has(pathname)) {
+    if (!PUBLIC_FILES.has(pathname) && !APP_ICON_PATH.test(pathname)) {
       return new NextResponse(null, {
         status: 404,
         headers: { "content-type": "text/plain; charset=utf-8" },

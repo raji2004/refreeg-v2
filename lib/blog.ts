@@ -10,17 +10,17 @@ export const blogs = [
       their contributions in real time.
       <br />
       <br />
-      This ensures complete visibility—donors always know where their money
+      This ensures complete visibility: donors always know where their money
       is going and how it’s being used. There’s no risk of funds being
-      mismanaged or hidden fees sneaking in. Smart contracts—automated
-      agreements on the blockchain—make sure that money is only released
+      mismanaged or hidden fees sneaking in. Smart contracts, automated
+      agreements on the blockchain, make sure that money is only released
       when certain conditions are met, adding an extra layer of security.
       <br />
       <br />
       This prevents fraud and ensures donations truly reach the right
       people. We use Polygon, a fast and cost-effective blockchain, to make
       transactions smooth and affordable. This way, everyone
-      involved—donors, beneficiaries, and organizations—can trust the
+      involved (donors, beneficiaries, and organizations) can trust the
       system, knowing that every step is open and verifiable.
       <br />
       <br />
@@ -49,7 +49,7 @@ export const blogs = [
         displaying specific milestones, current funding levels, and ongoing
         updates from cause creators. With this tracking, donors don’t just
         give; they’re continuously engaged and informed on how their support
-        directly affects causes they care about—whether it’s providing
+        directly affects causes they care about, whether it’s providing
         resources, education, vocational training, or support for victims of
         gender-based violence.
         <br />
@@ -83,7 +83,7 @@ export const blogs = [
       is recorded on the blockchain, providing a transparent and
       tamper-proof history of contributions. Donors can track their impact
       in real time and see how their contributions are being used. At
-      RefreeG, giving is not just easy—it’s secure, verifiable, and
+      RefreeG, giving is not just easy. It’s secure, verifiable, and
       impactful.
     `,
   },
@@ -145,7 +145,7 @@ export const blogs = [
     slug: "blockchain-powered-transparency",
     img: "/images/blockchain.png",
     content: `
-      At RefreeG, transparency isn’t just a promise—it’s a fundamental part of 
+      At RefreeG, transparency isn’t just a promise. It’s a fundamental part of 
       how we operate. By leveraging blockchain technology, we ensure that every 
       donation is securely recorded on an immutable ledger, providing a clear 
       and tamper-proof history of fund allocations. This decentralized approach 
@@ -214,7 +214,7 @@ export const blogs = [
     content: `
       At RefreeG, we recognize that those closest to the problem often have the 
       best solutions. That’s why we focus on empowering local 
-      changemakers—passionate individuals and organizations working tirelessly 
+      changemakers: passionate individuals and organizations working tirelessly 
       to uplift their communities. Instead of imposing external solutions, we 
       provide these changemakers with the tools, visibility, and resources they 
       need to scale their impact.
@@ -224,7 +224,7 @@ export const blogs = [
        and a supportive community that amplifies their efforts. By leveraging 
        blockchain transparency, we ensure that every contribution directly fuels 
        their initiatives, fostering trust and accountability. RefreeG is more 
-       than a donation platform—it’s a launchpad for those creating real, 
+       than a donation platform. It’s a launchpad for those creating real, 
        lasting change from within.
 
     `,
@@ -250,7 +250,7 @@ export const blogs = [
       <br />
       <br />
       By investing in education and literacy, we are not just funding 
-      schools—we are shaping brighter futures, one student at a time.
+      schools, we are shaping brighter futures, one student at a time.
     `,
   },
   {

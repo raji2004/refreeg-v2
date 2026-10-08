@@ -58,10 +58,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Logo />
         </Link>
         <div className="flex-1 overflow-y-auto">
-          <AppShellNav isAuthenticated={isAuthenticated} savedCount={savedCount} />
+          <AppShellNav
+            isAuthenticated={isAuthenticated}
+            savedCount={savedCount}
+          />
         </div>
         <div className="mt-4">
-          <SidebarCtaCard isAuthenticated={isAuthenticated} isVerified={isVerified} />
+          <SidebarCtaCard
+            isAuthenticated={isAuthenticated}
+            isVerified={isVerified}
+          />
         </div>
       </aside>
 
@@ -78,14 +84,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetContent side="left" className="w-72 bg-white p-4">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <Link href="/" className="mb-6 block px-2" onClick={() => setMobileNavOpen(false)}>
+          <Link
+            href="/"
+            className="mb-6 block px-2"
+            onClick={() => setMobileNavOpen(false)}
+          >
             <Logo />
           </Link>
           <div onClick={() => setMobileNavOpen(false)}>
-            <AppShellNav isAuthenticated={isAuthenticated} savedCount={savedCount} />
+            <AppShellNav
+              isAuthenticated={isAuthenticated}
+              savedCount={savedCount}
+            />
           </div>
           <div className="mt-4">
-            <SidebarCtaCard isAuthenticated={isAuthenticated} isVerified={isVerified} />
+            <SidebarCtaCard
+              isAuthenticated={isAuthenticated}
+              isVerified={isVerified}
+            />
           </div>
         </SheetContent>
       </Sheet>

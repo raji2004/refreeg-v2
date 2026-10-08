@@ -1,5 +1,5 @@
 /// A user's saved campaign or petition, surfaced under "Saved" and used to
-/// power the bookmark toggle on Discover cards. Polymorphic on purpose —
+/// power the bookmark toggle on Discover cards. Polymorphic on purpose 
 /// causes and petitions are separate tables, so target_id is not an FK.
 model bookmarks {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -15,7 +15,7 @@ model bookmarks {
 }
 
 /// A saved Discover filter set a user asked to be alerted about. Persists
-/// the filter snapshot only — matching new campaigns against it and
+/// the filter snapshot only  matching new campaigns against it and
 /// notifying the user is not built yet (no job/cron infra exists for it).
 model saved_searches {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

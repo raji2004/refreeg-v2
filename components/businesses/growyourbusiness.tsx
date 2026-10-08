@@ -19,7 +19,7 @@ export default function GrowYourBusiness() {
       >
         <p className="text-xs p-2 border rounded-full bg-[#FAFAFA]">
           Powered by vetted, audited smart contracts. Withdraw anytime. Your
-          funds remain yours — always.
+          funds remain yours, always.
         </p>
         <h1 className="text-4xl lg:text-5xl font-bold text-black leading-tight">
           Ready to Grow Your Business?

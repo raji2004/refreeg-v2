@@ -48,7 +48,7 @@ export async function POST(request: Request) {
         where: {
           user_id: vendorData,
           document_type: "didit",
-          status: "pending",
+          status: { in: ["pending", "in_progress", "resubmitted"] },
         },
         orderBy: { created_at: "desc" },
       });
@@ -100,6 +100,7 @@ export async function POST(request: Request) {
 
     if (
       kyc.status !== "pending" &&
+      kyc.status !== "in_progress" &&
       kyc.status !== "resubmitted" &&
       !isNewRecord
     ) {
@@ -111,8 +112,15 @@ export async function POST(request: Request) {
     const isRejected = lowerStatus === "declined" || lowerStatus === "rejected";
     const isResubmitted = lowerStatus === "resubmitted";
     const isExpired = lowerStatus === "expired" || lowerStatus === "abandoned";
+    const isInProgress =
+      lowerStatus === "not started" ||
+      lowerStatus === "in progress" ||
+      lowerStatus === "in_progress";
 
-    if (isExpired && kyc.status === "pending") {
+    if (
+      isExpired &&
+      (kyc.status === "pending" || kyc.status === "in_progress")
+    ) {
       console.log(
         `[Didit] Deleting expired/abandoned session for user ${kyc.user_id}`,
       );
@@ -132,8 +140,9 @@ export async function POST(request: Request) {
       body.message ||
       "Your document or selfie did not meet our verification requirements.";
 
-    // Default to pending if it's "in progress", "in review", etc.
+    // Default to in_progress if not started / in progress, or pending if awaiting manual review
     let newStatus = "pending";
+    if (isInProgress) newStatus = "in_progress";
     if (isApproved) newStatus = "approved";
     if (isRejected) newStatus = "rejected";
     if (isResubmitted) newStatus = "resubmitted";

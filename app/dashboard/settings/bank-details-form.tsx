@@ -128,7 +128,10 @@ export function BankDetailsForm({
         </p>
       </div>
 
-      <Card variant="surface" className="overflow-hidden rounded-2xl shadow-none">
+      <Card
+        variant="surface"
+        className="overflow-hidden rounded-2xl shadow-none"
+      >
         <CardContent className="space-y-3 p-4 sm:p-5">
           <div className="flex items-center justify-between px-1">
             <p className="text-sm font-semibold text-ink">Saved accounts</p>
@@ -149,7 +152,8 @@ export function BankDetailsForm({
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-ink">Bank transfer</p>
                 <p className="truncate text-sm text-ink/50">
-                  {account.bank_name} · {maskAccount(account.account_number || "")}
+                  {account.bank_name} ·{" "}
+                  {maskAccount(account.account_number || "")}
                 </p>
               </div>
               <span className="rounded-md bg-bone px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink/55">
@@ -182,7 +186,8 @@ export function BankDetailsForm({
             <div className="rounded-xl bg-cream-muted/70 px-4 py-4">
               <p className="text-sm font-semibold text-ink">Bank transfer</p>
               <p className="mt-0.5 text-sm text-ink/50">
-                No account yet. Donations to your causes are paid here once you add one.
+                No account yet. Donations to your causes are paid here once you
+                add one.
               </p>
             </div>
           )}
@@ -219,7 +224,8 @@ export function BankDetailsForm({
               <DialogDescription className="text-sm leading-6 text-ink/60">
                 Donations to causes you list will stop being paid to{" "}
                 <span className="font-medium text-ink">
-                  {account.bank_name} · {maskAccount(account.account_number || "")}
+                  {account.bank_name} ·{" "}
+                  {maskAccount(account.account_number || "")}
                 </span>{" "}
                 until you add another account.
               </DialogDescription>
@@ -355,7 +361,10 @@ function BankAccountFields({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="px-6 pb-6 pt-7 sm:px-7 sm:pb-7 sm:pt-8">
+    <form
+      onSubmit={handleSubmit}
+      className="px-6 pb-6 pt-7 sm:px-7 sm:pb-7 sm:pt-8"
+    >
       <DialogHeader className="space-y-2 text-left">
         <DialogTitle className="font-fraunces text-[28px] font-semibold leading-tight text-ink">
           {mode === "edit" ? "Edit bank account" : "Add bank account"}
@@ -408,13 +417,15 @@ function BankAccountFields({
                   <CommandEmpty>No bank found.</CommandEmpty>
                   <CommandGroup>
                     {banks.map((bank) => (
-                          <CommandItem
-                            key={`${bank.code}-${bank.name}`}
-                            value={bank.name}
-                            className="rounded-md text-ink data-[selected=true]:bg-bone data-[selected=true]:text-ink"
-                            onSelect={(currentValue) => {
+                      <CommandItem
+                        key={`${bank.code}-${bank.name}`}
+                        value={bank.name}
+                        className="rounded-md text-ink data-[selected=true]:bg-bone data-[selected=true]:text-ink"
+                        onSelect={(currentValue) => {
                           handleBankChange(
-                            currentValue === formData.bankName ? "" : currentValue,
+                            currentValue === formData.bankName
+                              ? ""
+                              : currentValue,
                             "bankName",
                           );
                           setBankOpen(false);
@@ -456,7 +467,10 @@ function BankAccountFields({
               readOnly={
                 isVerifying || (!!formData.accountName && !verificationFailed)
               }
-              className={cn(fieldClass, isVerifying && "bg-bone text-ink/50 italic")}
+              className={cn(
+                fieldClass,
+                isVerifying && "bg-bone text-ink/50 italic",
+              )}
               required
             />
             {isVerifying ? (

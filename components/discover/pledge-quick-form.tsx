@@ -355,7 +355,7 @@ export function PledgeQuickForm({
           <span className="font-semibold text-ink">
             {pledgeAmount > 0
               ? `₦${Number(pledgeAmount).toLocaleString()}`
-              : "—"}
+              : "₦0"}
           </span>
         </div>
       </div>

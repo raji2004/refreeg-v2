@@ -50,12 +50,12 @@ model User {
   lastLoginUserAgent          String?                  @map("last_login_user_agent")
   interests                   String[]                 @default([])
   interest_location           String?
-  /// Per-user session-invalidation cutoff — any session issued (see
+  /// Per-user session-invalidation cutoff  any session issued (see
   /// session.user.loginTime, lib/auth/auth.ts) before this instant is
   /// rejected on its next request to a Node-runtime auth-guarded route (see
   /// lib/auth/session-guard.ts). Used to force a fresh sign-in for accounts
   /// affected by the 2026-09-03 data-loss incident, without touching
-  /// everyone else's sessions — see scripts/invalidate-incident-sessions.ts.
+  /// everyone else's sessions  see scripts/invalidate-incident-sessions.ts.
   sessions_invalidated_after  DateTime?                @db.Timestamptz(6)
   accounts                    Account[]
   campaign_follows            campaign_follows[]
@@ -144,7 +144,7 @@ model PendingRegistration {
   organizationPhone    String?   @map("organization_phone")
   organizationAddress  String?   @map("organization_address")
   organizationIndustry String?   @map("organization_industry")
-  // UTM tracking fields — captured at signup, written to referrals_v1 on OTP verification
+  // UTM tracking fields  captured at signup, written to referrals_v1 on OTP verification
   utm_source           String?
   utm_medium           String?
   utm_campaign         String?

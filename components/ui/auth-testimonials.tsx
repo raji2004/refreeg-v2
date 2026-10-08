@@ -18,7 +18,7 @@ export function AuthTestimonials() {
     },
     {
       quote:
-        "There’s something refreshing about RefreeG — it feels genuine. The design is clean, the experience smooth, and the mission inspiring.",
+        "There’s something refreshing about RefreeG. It feels genuine. The design is clean, the experience smooth, and the mission inspiring.",
       name: "Fedjost Ayomide",
       designation: "VP Engineering, RefreeG",
       src: "/auth/tyrone.jpg",
@@ -26,14 +26,14 @@ export function AuthTestimonials() {
 
     {
       quote:
-        "Every detail of RefreeG feels intentional — from the onboarding to the dashboard. It’s the kind of platform you instantly trust.",
+        "Every detail of RefreeG feels intentional, from the onboarding to the dashboard. It’s the kind of platform you instantly trust.",
       name: "Quadri Hassan",
       designation: "Co-CPO",
       src: "/auth/hassan.jpg",
     },
     {
       quote:
-        "What sets RefreeG apart is the heart behind it. It’s more than a platform — it’s a movement built on trust, empathy, and innovation.",
+        "What sets RefreeG apart is the heart behind it. It’s more than a platform. It’s a movement built on trust, empathy, and innovation.",
       name: "Oghenetega (Victor) Gbiyede",
       designation: "Frontend Developer",
       src: "/auth/tega.jpg",

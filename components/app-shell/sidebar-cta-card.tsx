@@ -37,7 +37,11 @@ export function SidebarCtaCard({
         Complete KYC to start a campaign.
       </p>
       <Link href="/dashboard/settings/kyc-setup" className="mt-3 block">
-        <Button variant="lime" size="sm" className="w-full font-semibold text-ink">
+        <Button
+          variant="lime"
+          size="sm"
+          className="w-full font-semibold text-ink"
+        >
           Complete KYC
         </Button>
       </Link>

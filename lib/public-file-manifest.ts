@@ -1,6 +1,5 @@
 // Generated from public/ when Next loads this config. Do not edit.
 export const publicFileManifest = [
-  "/.DS_Store",
   "/404-illustration.svg",
   "/Cause-filter-1.png",
   "/Cause-filter-2.png",

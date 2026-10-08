@@ -1,4 +1,4 @@
-# Single-AZ Postgres — no Multi-AZ per cost decision (accepted trade-off: a
+# Single-AZ Postgres - no Multi-AZ per cost decision (accepted trade-off: a
 # hardware failure or maintenance event means a restore-from-backup instead
 # of an automatic ~60-120s failover). Sits in the same default-VPC subnets as
 # everything else, but is not publicly reachable: publicly_accessible = false
@@ -33,7 +33,7 @@ resource "aws_db_instance" "app" {
   vpc_security_group_ids = [aws_security_group.rds.id]
   publicly_accessible    = false
 
-  multi_az = false # explicit per cost decision — see comment above
+  multi_az = false # explicit per cost decision - see comment above
 
   backup_retention_period = 7
   backup_window           = "03:00-04:00"

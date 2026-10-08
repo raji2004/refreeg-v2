@@ -32,12 +32,11 @@ export function useBank({ initialData, userId, businessEmail }: UseBankProps) {
   const lastInitialDataRef = useRef<string>("");
   const isMountedRef = useRef(true);
 
-  
   useEffect(() => {
     if (!initialData) return;
 
     const currentKey = `${initialData.account_number}-${initialData.bank_name}-${initialData.account_name}`;
-    
+
     if (!hasUserInteracted && currentKey !== lastInitialDataRef.current) {
       setFormData({
         accountNumber: initialData.account_number || "",
@@ -94,7 +93,9 @@ export function useBank({ initialData, userId, businessEmail }: UseBankProps) {
     };
 
     fetchBanks();
-    return () => { isMountedRef.current = false; };
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   const verifyAccount = useCallback(
@@ -140,7 +141,7 @@ export function useBank({ initialData, userId, businessEmail }: UseBankProps) {
         }
       }
     },
-    []
+    [],
   );
 
   useEffect(() => {
@@ -148,7 +149,12 @@ export function useBank({ initialData, userId, businessEmail }: UseBankProps) {
 
     if (formData.accountNumber && formData.bankName && banks.length > 0) {
       const bank = banks.find((b) => b.name === formData.bankName);
-      if (bank && formData.accountNumber.length >= 10 && !isVerifying && !formData.accountName) {
+      if (
+        bank &&
+        formData.accountNumber.length >= 10 &&
+        !isVerifying &&
+        !formData.accountName
+      ) {
         setIsVerifying(true);
         verifyAccount(formData.accountNumber, bank.code);
       }
@@ -160,7 +166,7 @@ export function useBank({ initialData, userId, businessEmail }: UseBankProps) {
     verifyAccount,
     hasUserInteracted,
     formData.accountName,
-    isVerifying
+    isVerifying,
   ]);
 
   const handleBankChange = (value: string, field: string) => {
@@ -217,8 +223,10 @@ export function useBank({ initialData, userId, businessEmail }: UseBankProps) {
       const subAccountData = result.data;
       const updatedProfile = await updateBankDetails(userId, {
         ...formData,
-        sub_account_code: subAccountData.subaccount_code || formData.sub_account_code,
-        flutterwave_sub_account_id: subAccountData.flutterwave_sub_account_id || undefined,
+        sub_account_code:
+          subAccountData.subaccount_code || formData.sub_account_code,
+        flutterwave_sub_account_id:
+          subAccountData.flutterwave_sub_account_id || undefined,
       });
 
       queryClient.setQueryData(["profile", userId], updatedProfile);

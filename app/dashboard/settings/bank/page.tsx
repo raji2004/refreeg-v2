@@ -35,7 +35,10 @@ export default async function BankSettingsPage() {
           account_name: profile.account_name,
           sub_account_code: profile.sub_account_code,
         }}
-        user={{ id: session.user.id, email: profile.email ?? session.user.email ?? "" }}
+        user={{
+          id: session.user.id,
+          email: profile.email ?? session.user.email ?? "",
+        }}
       />
     </SettingsShell>
   );

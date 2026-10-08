@@ -441,16 +441,20 @@ select:focus {
 }
 
 .marquee-edge-fade {
-  -webkit-mask-image: linear-gradient(to right,
-      transparent 0,
-      black 4%,
-      black 96%,
-      transparent 100%);
-  mask-image: linear-gradient(to right,
-      transparent 0,
-      black 4%,
-      black 96%,
-      transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 4%,
+    black 96%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 4%,
+    black 96%,
+    transparent 100%
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {

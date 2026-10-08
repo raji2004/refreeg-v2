@@ -31,7 +31,7 @@ export default function CreatorTrust() {
     },
     {
       title: " Transparent Donations",
-      desc: "Every contribution is visible and traceable, so donors know exactly where their money is going — building trust from day one.",
+      desc: "Every contribution is visible and traceable, so donors know exactly where their money is going, building trust from day one.",
       image: "/images/holdcash.png",
     },
     {
@@ -41,7 +41,7 @@ export default function CreatorTrust() {
     },
     {
       title: "Direct Connection",
-      desc: "Let people comment, follow your updates, and engage directly with your journey — turning donors into long-term supporters.",
+      desc: "Let people comment, follow your updates, and engage directly with your journey, turning donors into long-term supporters.",
       image: "/images/chainlock.png",
     },
     {
@@ -70,7 +70,7 @@ export default function CreatorTrust() {
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
       >
-        RefreeG gives you more than just a fundraising page — it gives you a
+        RefreeG gives you more than just a fundraising page. It gives you a
         unique identity, transparent tools, and a direct line to <br /> your
         supporters. With your tag and URL, you’ll be easy to find, easier to
         trust, and unstoppable in growing your community.

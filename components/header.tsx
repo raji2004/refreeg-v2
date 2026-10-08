@@ -29,13 +29,13 @@ import {
   Shield,
   Share2,
   Sparkles,
-  Star,
+  // Star,
   Target,
   TargetIcon,
   Trophy,
   UserCog,
   Users,
-  Wallet,
+  // Wallet,
   X,
 } from "lucide-react";
 
@@ -110,20 +110,21 @@ const publicNavItems: NavItem[] = [
     icon: Lightbulb,
     type: "dropdown",
     items: [
-      {
-        title: "RefreeG Rewards",
-        description:
-          "Get rewarded in points, crypto and recognition for driving impact.",
-        href: "/rewards",
-        icon: Star,
-      },
-      {
-        title: "Crypto on RefreeG",
-        description:
-          "Support global causes seamlessly with fast, transparent crypto donations. Real-time tracking and low fees.",
-        href: "/crypto",
-        icon: Wallet,
-      },
+      // Hidden until /rewards and /crypto pages exist.
+      // {
+      //   title: "RefreeG Rewards",
+      //   description:
+      //     "Get rewarded in points, crypto and recognition for driving impact.",
+      //   href: "/rewards",
+      //   icon: Star,
+      // },
+      // {
+      //   title: "Crypto on RefreeG",
+      //   description:
+      //     "Support global causes seamlessly with fast, transparent crypto donations. Real-time tracking and low fees.",
+      //   href: "/crypto",
+      //   icon: Wallet,
+      // },
       {
         title: "FAQ",
         description:
@@ -155,7 +156,8 @@ const userDashboardItems = [
   { title: "My Causes", href: "/dashboard/causes", icon: FileText },
   { title: "My Petitions", href: "/dashboard/petitions", icon: FileText },
   { title: "My Donations", href: "/dashboard/donations", icon: Users },
-  { title: "Crypto Wallet", href: "/dashboard/crypto", icon: Wallet },
+  // Hidden until /dashboard/crypto exists.
+  // { title: "Crypto Wallet", href: "/dashboard/crypto", icon: Wallet },
   { title: "Referrals", href: "/referrals", icon: Share2 },
 ];
 
