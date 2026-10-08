@@ -1,6 +1,34 @@
+import fs from "fs";
 import path from "path";
-import MiniCssExtractPlugin from "mini-css-extract-plugin";
+import { fileURLToPath } from "url";
 import { withSentryConfig } from "@sentry/nextjs";
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+
+function listPublicFiles(dir, prefix = "") {
+  const files = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...listPublicFiles(full, rel));
+    else if (entry.isFile()) files.push(`/${rel.split(path.sep).join("/")}`);
+  }
+  return files;
+}
+
+const publicManifestPath = path.join(
+  projectRoot,
+  "lib/public-file-manifest.ts",
+);
+const publicManifest = `// Generated from public/ when Next loads this config. Do not edit.\nexport const publicFileManifest = ${JSON.stringify(
+  listPublicFiles(path.join(projectRoot, "public")).sort(),
+)} as const;\n`;
+if (
+  !fs.existsSync(publicManifestPath) ||
+  fs.readFileSync(publicManifestPath, "utf8") !== publicManifest
+) {
+  fs.writeFileSync(publicManifestPath, publicManifest);
+}
 
 let userConfig = undefined;
 try {
@@ -10,6 +38,9 @@ try {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // Changes every CI build; an open tab from an older build reloads instead
+  // of calling server actions that no longer exist. Unset locally.
+  deploymentId: process.env.GITHUB_SHA,
   serverExternalPackages: ["sharp"],
   outputFileTracingIncludes: {
     "**": [
@@ -45,7 +76,7 @@ const nextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 30,
-    deviceSizes: [320, 420, 640, 768, 1024, 1280, 1536, 1920],
+    deviceSizes: [640, 1080, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
@@ -86,33 +117,28 @@ const nextConfig = {
     ],
   },
 
-  webpack(config, { dev, isServer }) {
+  webpack(config) {
     config.resolve.alias = {
       ...config.resolve.alias,
       handlebars: "handlebars/dist/handlebars.js",
     };
 
-    if (!dev && !isServer) {
-      config.plugins.push(
-        new MiniCssExtractPlugin({
-          filename: "static/css/[name].[contenthash].css",
-          chunkFilename: "static/css/[id].[contenthash].css",
-        }),
-      );
-
-      const cssRule = config.module.rules.find(
-        (r) => r.test && r.test.toString().includes(".css"),
-      );
-      if (cssRule) {
-        cssRule.use = [
-          MiniCssExtractPlugin.loader,
-          "css-loader",
-          "postcss-loader",
-        ];
-      }
-    }
-
     return config;
+  },
+
+  async rewrites() {
+    return {
+      // Existing public files are served before these fallback rewrites.
+      beforeFiles: [],
+      afterFiles: [
+        {
+          source:
+            "/:asset((?!api/|_next/).+\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico))",
+          destination: "/api/missing-asset",
+        },
+      ],
+      fallback: [],
+    };
   },
 
   async headers() {

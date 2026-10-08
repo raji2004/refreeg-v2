@@ -184,9 +184,32 @@ export async function updateBankDetails(
     });
 
     revalidatePath("/dashboard/settings");
+    revalidatePath("/dashboard/settings/bank");
     return mapPrismaToProfile(data);
   } catch (error) {
     console.error("Error updating bank details:", error);
+    throw error;
+  }
+}
+
+export async function clearBankDetails(userId: string): Promise<Profile> {
+  try {
+    const data = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        accountNumber: null,
+        bankName: null,
+        accountName: null,
+        subAccountCode: null,
+        flutterwaveSubAccountId: null,
+      },
+    });
+
+    revalidatePath("/dashboard/settings");
+    revalidatePath("/dashboard/settings/bank");
+    return mapPrismaToProfile(data);
+  } catch (error) {
+    console.error("Error clearing bank details:", error);
     throw error;
   }
 }

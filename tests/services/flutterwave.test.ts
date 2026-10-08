@@ -103,10 +103,6 @@ describe("Flutterwave Service", () => {
         account_number: "0690000031",
         business_name: "Test Cause",
         business_email: "no-reply@refreeg.com",
-        business_contact_mobile: "08000000000",
-        business_mobile: "08000000000",
-        split_type: "percentage",
-        split_value: 0,
         country: "NG",
       });
       expect(result.subaccount_id).toBe("RS_456");

@@ -18,10 +18,13 @@ import {
 } from "@/services/mail";
 import { sendPetitionSubmissionAdminNotification } from "@/services/mail";
 import { cache } from "react";
+import { isUuid } from "@/lib/uuid";
 
 export async function getPetition(
   petitionId: string,
 ): Promise<PetitionWithUser | null> {
+  if (!isUuid(petitionId)) return null;
+
   const user = await getCurrentUser();
 
   const petition = await prisma.petitions.findUnique({
@@ -314,7 +317,9 @@ export const listPetitions = cache(
     // Build where clause dynamically
     const where: any = {};
 
-    if (options.category && options.category !== "all") {
+    if (options.categories && options.categories.length > 0) {
+      where.category = { in: options.categories };
+    } else if (options.category && options.category !== "all") {
       where.category = options.category;
     }
 
@@ -395,7 +400,9 @@ export const listPetitions = cache(
 function buildPetitionCountWhere(options: PetitionFilterOptions) {
   const where: any = {};
 
-  if (options.category && options.category !== "all") {
+  if (options.categories && options.categories.length > 0) {
+    where.category = { in: options.categories };
+  } else if (options.category && options.category !== "all") {
     where.category = options.category;
   }
 

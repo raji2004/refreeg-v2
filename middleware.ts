@@ -1,5 +1,15 @@
-import { NextResponse } from "next/server";
+import {
+  NextFetchEvent,
+  NextRequest,
+  NextResponse,
+  type NextMiddleware,
+} from "next/server";
 import { auth } from "@/lib/auth/auth";
+import { publicFileManifest } from "@/lib/public-file-manifest";
+
+const PUBLIC_FILES = new Set<string>(publicFileManifest);
+
+const IMAGE_EXT = /\.(?:png|jpe?g|gif|webp|svg|ico|avif)$/i;
 
 const PUBLIC_API_PREFIXES = [
   "/api/auth",
@@ -25,7 +35,31 @@ function absoluteUrl(path: string, req: Request): URL {
   return new URL(path, `${proto}://${host}`);
 }
 
-export default auth(async (req) => {
+function rememberReferral(req: NextRequest) {
+  const refV1 = req.nextUrl.searchParams.get("ref_v1");
+  if (!refV1) return NextResponse.next();
+
+  const response = NextResponse.next();
+  response.cookies.set("ref_v1", refV1, {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 60 * 30,
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+  });
+  return response;
+}
+
+function needsSession(pathname: string) {
+  return (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/api")
+  );
+}
+
+const handleAuth = auth(async (req) => {
   const { pathname } = req.nextUrl;
   const user = req.auth?.user;
 
@@ -83,22 +117,47 @@ export default auth(async (req) => {
     return NextResponse.redirect(absoluteUrl("/onboarding", req));
   }
 
-  const refV1 = req.nextUrl.searchParams.get("ref_v1");
-  if (refV1) {
-    const response = NextResponse.next();
-    response.cookies.set("ref_v1", refV1, {
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 60 * 30,
-      path: "/",
-      secure: process.env.NODE_ENV === "production",
-    });
-    return response;
-  }
+  return rememberReferral(req);
 });
+
+export default function middleware(req: NextRequest, event: NextFetchEvent) {
+  const { pathname } = req.nextUrl;
+
+  if (IMAGE_EXT.test(pathname)) {
+    if (!PUBLIC_FILES.has(pathname)) {
+      return new NextResponse(null, {
+        status: 404,
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      });
+    }
+    return NextResponse.next();
+  }
+
+  if (needsSession(pathname)) {
+    // auth()'s return type is a union with the route-handler signature;
+    // called with (req, event) it runs as middleware.
+    return (handleAuth as unknown as NextMiddleware)(req, event);
+  }
+
+  return rememberReferral(req);
+}
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/dashboard",
+    "/dashboard/:path*",
+    "/onboarding",
+    "/onboarding/:path*",
+    "/auth",
+    "/auth/:path*",
+    // Every API route except the public image proxy, whose cacheable
+    // responses must not pick up auth cookies.
+    "/api/((?!s3/image).*)",
+    "/:path*.:ext(png|jpg|jpeg|gif|webp|svg|ico|avif)",
+    {
+      source:
+        "/((?!_next/static|_next/image|favicon.ico|api/|dashboard|onboarding|auth|monitoring|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+      has: [{ type: "query", key: "ref_v1" }],
+    },
   ],
 };

@@ -15,20 +15,9 @@ export const metadata: Metadata = {
     "Join RefreeG to launch causes, start petitions, and drive social change with secure, transparent blockchain crowdfunding.",
 };
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams?: Promise<{ testGlobalSupportError?: string }>;
-}) {
-  const params = await searchParams;
-
-  if (
-    process.env.NODE_ENV === "development" &&
-    params?.testGlobalSupportError === "1"
-  ) {
-    throw new Error("Test support screen");
-  }
-
+// No request-time data here (LiveCampaigns loads in the browser), so this
+// renders statically and can be cached publicly.
+export default function Home() {
   return (
     <div className="flex flex-col min-h-screen mt-12 md:mt-16 ">
       <Hero />

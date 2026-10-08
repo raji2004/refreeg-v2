@@ -410,12 +410,12 @@ export default function ReferralPage() {
                   text="Share your referral link with friends and others"
                 />
                 <Step
-                  src="/images/referrals/user-add.png"
+                  src="/images/referrals/Users.png"
                   alt="Sign up"
                   text="They sign up or donate to a verified cause"
                 />
                 <Step
-                  src="/images/referrals/medal-star.png"
+                  src="/images/referrals/yellow-trophy.png"
                   alt="Reward"
                   text="Earn rewards & rise on the public leaderboard"
                 />
@@ -430,13 +430,13 @@ export default function ReferralPage() {
                   mobile
                 />
                 <Step
-                  src="/images/referrals/user-add.png"
+                  src="/images/referrals/Users.png"
                   alt="Sign up"
                   text="They sign up or donate to a verified cause"
                   mobile
                 />
                 <Step
-                  src="/images/referrals/medal-star.png"
+                  src="/images/referrals/yellow-trophy.png"
                   alt="Reward"
                   text="Earn rewards & rise on the public leaderboard"
                 />
@@ -501,17 +501,25 @@ export default function ReferralPage() {
               className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6"
             >
               {[
-                { label: "Total Points", value: points, img: "money-bag.png" },
+                {
+                  label: "Total Points",
+                  value: points,
+                  img: "gaming-prize.png",
+                },
                 {
                   label: "Friends Invited",
                   value: invites,
-                  img: "add-group.png",
+                  img: "Users.png",
                 },
-                { label: "Successful Signups", value: signUps, img: "id.png" },
+                {
+                  label: "Successful Signups",
+                  value: signUps,
+                  img: "faceless-man.png",
+                },
                 {
                   label: "Current Standing",
                   value: userRank.rank ? `#${userRank.rank}` : tier,
-                  img: "medal-cup.png",
+                  img: "yellow-trophy.png",
                 },
               ].map((item, index) => (
                 <motion.div

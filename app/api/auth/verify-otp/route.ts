@@ -19,6 +19,9 @@ function createOrganizationSlug(name: string) {
 
 export async function POST(req: Request) {
   try {
+    const secret = process.env.AUTH_SECRET;
+    if (!secret) throw new Error("AUTH_SECRET is not set");
+
     const body = await req.json();
     const { email, otpCode } = body;
 
@@ -167,8 +170,6 @@ export async function POST(req: Request) {
       return profile;
     });
 
-    // 5. Generate auto-login token
-    const secret = process.env.AUTH_SECRET || "fallback_secret";
     const timestamp = Date.now().toString();
     const b64Email = Buffer.from(normalizedEmail).toString("base64");
 

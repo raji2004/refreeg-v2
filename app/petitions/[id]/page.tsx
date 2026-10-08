@@ -16,6 +16,7 @@ import {
   checkUserSignature,
 } from "@/actions/signature-actions";
 import { notFound } from "next/navigation";
+import { isUuid } from "@/lib/uuid";
 import { ShareModal } from "@/components/share-modal";
 import { getBaseURL } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -96,6 +97,9 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
+
+  if (!isUuid(id)) notFound();
+
   const petition = await getPetition(id);
 
   if (!petition) {
@@ -121,6 +125,8 @@ export default async function PetitionDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  if (!isUuid(id)) notFound();
 
   const [petition, initialSigners, session] = await Promise.all([
     getPetition(id),

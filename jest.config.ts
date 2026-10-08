@@ -56,6 +56,7 @@ const config: Config = {
     "^next/navigation$": "<rootDir>/__mocks__/next-navigation.ts",
     "^nextjs-toploader/app$": "<rootDir>/__mocks__/next-navigation.ts",
     "^next/cache$": "<rootDir>/__mocks__/next-cache.ts",
+    "^server-only$": "<rootDir>/__mocks__/styleMock.js",
     "\\.(css|less|scss|sass)$": "<rootDir>/__mocks__/styleMock.js",
   },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],

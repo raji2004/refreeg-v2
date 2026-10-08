@@ -21,7 +21,7 @@ fi
 echo "Disk space OK (${FREE_KB} KB free)."
 
 # ── 2. Load environment variables from secrets.env (shared across releases) ──
-mkdir -p "$SHARED_DIR/logs"
+mkdir -p "$SHARED_DIR/logs" "$SHARED_DIR/image-cache" "$SHARED_DIR/next-image-cache"
 if [[ -f "${APP_DIR}/secrets.env" ]]; then
   mv "${APP_DIR}/secrets.env" "${SHARED_DIR}/secrets.env"
 fi
@@ -46,6 +46,13 @@ mkdir -p "$RELEASE_DIR"
 tar -xzf "${APP_DIR}/${TARBALL}" -C "$RELEASE_DIR"
 rm -f "${APP_DIR}/${TARBALL}"   # free space immediately
 echo "Extraction complete."
+
+# Next's image optimizer caches resized images in .next/cache/images, which
+# would otherwise start empty in every release. Only that folder is shared;
+# the rest of .next/cache stays per-release so build-specific data never leaks.
+mkdir -p "${RELEASE_DIR}/.next/cache"
+rm -rf "${RELEASE_DIR}/.next/cache/images"
+ln -sfn "${SHARED_DIR}/next-image-cache" "${RELEASE_DIR}/.next/cache/images"
 
 # ── 4. Record the currently-live release (for rollback) before cutover ───────
 if [[ -L "$CURRENT_LINK" ]]; then
@@ -100,6 +107,33 @@ fi
 pm2 save --force
 echo "Deployment complete. PM2 process list:"
 pm2 list
+
+# ── 7b. Warm image caches so the first visitors don't pay for them ───────────
+# Best-effort: nothing here can fail the deploy.
+APP_URL="http://127.0.0.1:3000"
+for _ in $(seq 1 30); do
+  curl -fsS -o /dev/null "${APP_URL}/api/health" && break
+  sleep 2
+done
+
+# Homepage images through Next's optimizer, at every width the page can ask
+# for and in both formats it negotiates (each is cached separately).
+for img in heropage.png routed-funds.jpg trust-with-proof.jpg; do
+  for w in 640 1080 1920; do
+    for fmt in image/avif image/webp; do
+      curl -fsS -o /dev/null -H "Accept: ${fmt}"         "${APP_URL}/_next/image?url=%2F${img}&w=${w}&q=75"         || echo "Warn: could not warm ${img} at ${w}px (${fmt})"
+    done
+  done
+done
+echo "Homepage images warmed."
+
+# Cause covers: renders any not already in shared/image-cache, one at a time.
+# Runs in the background so the deploy doesn't wait on it.
+if [[ -n "${AUTH_SECRET:-}" ]]; then
+  WARM_TOKEN=$(printf '%s' "refreeg-cache-warm:${AUTH_SECRET}" | sha256sum | cut -d' ' -f1)
+  nohup curl -sS -X POST -H "Authorization: Bearer ${WARM_TOKEN}"     "${APP_URL}/api/cron/warm-cause-images"     > "${SHARED_DIR}/logs/warm-cause-images.log" 2>&1 &
+  echo "Cause cover warm-up started (see shared/logs/warm-cause-images.log)."
+fi
 
 # ── 8. Prune old releases, keep the last N ────────────────────────────────────
 cd "$RELEASES_DIR"
