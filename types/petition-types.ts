@@ -43,9 +43,9 @@ export interface PetitionFormData {
   description: string;
   category: string;
   goal: string | number;
-  coverImage: File | null;
+  coverImage: File | string | null;
   image?: string;
-  multimedia?: File[];
+  multimedia?: (File | string)[];
   sections?: { heading: string; description: string }[];
   startDate?: Date | undefined;
   endDate?: Date | undefined;

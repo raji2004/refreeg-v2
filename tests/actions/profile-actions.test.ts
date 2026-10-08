@@ -15,6 +15,10 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
+jest.mock("@/lib/auth/auth", () => ({
+  auth: jest.fn(),
+}));
+
 jest.mock("@/lib/s3/s3-utils", () => ({
   uploadToS3: jest.fn(),
   generateS3Key: jest.fn(() => "profiles/user-1/photo.jpg"),

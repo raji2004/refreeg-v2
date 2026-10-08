@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth/auth";
+import { isOwnUploadKey } from "@/lib/s3/owned-key";
 import type {
   Profile,
   ProfileFormData,
@@ -133,36 +135,23 @@ export async function updateProfile(
   }
 }
 
-export async function updateProfilePhoto(
-  userId: string,
-  photoFile: File,
-): Promise<string> {
-  const ext = photoFile.name.split(".").pop() || "jpg";
-  const uniqueId = Math.random().toString(36).substring(2, 15);
-  try {
-    const { uploadToS3, generateS3Key } = await import("@/lib/s3/s3-utils");
-    const s3Key = generateS3Key({
-      entityType: "profiles",
-      userId,
-      entityId: userId,
-      mediaType: "images",
-      filename: `${uniqueId}.${ext}`,
-    });
-    const buffer = Buffer.from(await photoFile.arrayBuffer());
-    await uploadToS3(buffer, s3Key, photoFile.type);
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { profilePhoto: s3Key },
-    });
-
-    revalidatePath("/dashboard/settings");
-    revalidatePath("/");
-    return s3Key;
-  } catch (error: any) {
-    console.error("Error updating profile photo:", error);
-    throw error;
+// The file goes browser → S3 directly; only the key comes through here.
+export async function setProfilePhoto(s3Key: string): Promise<string> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("You need to be signed in.");
+  if (!isOwnUploadKey(s3Key, "profiles", userId)) {
+    throw new Error("Invalid photo upload.");
   }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { profilePhoto: s3Key },
+  });
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath("/");
+  return s3Key;
 }
 
 export async function updateBankDetails(

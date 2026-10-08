@@ -23,10 +23,8 @@ import { FaFacebookF, FaTiktok } from "react-icons/fa6";
 import { FaWhatsapp } from "react-icons/fa";
 import { Switch } from "@/components/ui/switch";
 import { getOrganizationOnboardingData } from "@/actions/profile-actions";
-import {
-  updateOrganization,
-  updateOrganizationLogo,
-} from "@/actions/organization-actions";
+import { updateOrganization } from "@/actions/organization-actions";
+import { uploadOrganizationLogo } from "@/lib/organization-logo-upload";
 import { toast } from "@/components/ui/use-toast";
 
 interface Step3BProps {
@@ -213,7 +211,7 @@ export default function Step3BOrgSetup({
       }
 
       if (logoFile) {
-        const logoResult = await updateOrganizationLogo(logoFile);
+        const logoResult = await uploadOrganizationLogo(logoFile);
         if (!logoResult.success) {
           toast({
             title: "Logo upload failed",
