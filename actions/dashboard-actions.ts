@@ -127,7 +127,7 @@ export async function getPlatformWeeklyDelivered(): Promise<number> {
 
   const agg = await prisma.donation.aggregate({
     _sum: { amount: true },
-    where: { createdAt: { gte: sevenDaysAgo } },
+    where: { status: "completed", createdAt: { gte: sevenDaysAgo } },
   });
 
   return Number(agg._sum.amount || 0);
@@ -144,10 +144,10 @@ export async function getPlatformWeeklyDeliveredStats(): Promise<{
     const [agg, distinctCauses] = await Promise.all([
       prisma.donation.aggregate({
         _sum: { amount: true },
-        where: { createdAt: { gte: sevenDaysAgo } },
+        where: { status: "completed", createdAt: { gte: sevenDaysAgo } },
       }),
       prisma.donation.findMany({
-        where: { createdAt: { gte: sevenDaysAgo } },
+        where: { status: "completed", createdAt: { gte: sevenDaysAgo } },
         select: { causeId: true },
         distinct: ["causeId"],
       }),

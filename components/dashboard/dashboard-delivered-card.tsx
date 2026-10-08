@@ -20,7 +20,7 @@ export function DashboardDeliveredCard({
   campaignsCount = 0,
 }: DashboardDeliveredCardProps) {
   return (
-    <div className="rounded-2xl bg-[#0b5d3b] p-5 text-white shadow-subtle">
+    <div className="rounded-2xl bg-forest p-5 text-white shadow-subtle">
       <Eyebrow className="text-[11px] font-bold uppercase tracking-wider text-lime/90">
         Delivered this week
       </Eyebrow>
