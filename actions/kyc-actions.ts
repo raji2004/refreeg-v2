@@ -24,7 +24,10 @@ export async function getVerificationStatus(
       orderBy: { created_at: "desc" },
     });
 
-    if (data?.status === "pending" && data?.document_type === "didit") {
+    if (
+      (data?.status === "pending" || data?.status === "in_progress") &&
+      data?.document_type === "didit"
+    ) {
       if (data.document_url?.includes(":::")) {
         try {
           const sessionId = data.document_url.split(":::")[0];
@@ -35,7 +38,7 @@ export async function getVerificationStatus(
               "";
 
             const diditRes = await fetch(
-              `https://verification.didit.me/v3/session/${sessionId}`,
+              `https://verification.didit.me/v3/session/${sessionId}/decision/`,
               {
                 headers: { "x-api-key": apiKey },
                 cache: "no-store",
@@ -94,6 +97,12 @@ export async function getVerificationStatus(
                 )
               ) {
                 // The user started the session but closed the window before finishing.
+                if (data.id && data.status !== "in_progress") {
+                  await prisma.kyc_verifications.update({
+                    where: { id: data.id },
+                    data: { status: "in_progress" },
+                  });
+                }
                 data.status = "in_progress" as any;
               }
             }

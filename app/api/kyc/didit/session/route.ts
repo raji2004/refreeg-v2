@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       where: {
         user_id: user.id,
         document_type: "didit",
-        status: "pending",
+        status: { in: ["pending", "in_progress"] },
       },
       orderBy: { created_at: "desc" },
     });
