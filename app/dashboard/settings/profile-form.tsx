@@ -222,14 +222,20 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const compressedFile = await compressImage(file, 800, 0.7);
-        await updateProfilePhoto(compressedFile);
-      } catch (error) {
-        console.error("Compression failed, uploading original:", error);
-        await updateProfilePhoto(file);
-      }
+    e.target.value = "";
+    if (!file) return;
+
+    let uploadFile = file;
+    try {
+      uploadFile = await compressImage(file, 800, 0.7);
+    } catch (error) {
+      console.error("Compression failed, uploading original:", error);
+    }
+
+    try {
+      await updateProfilePhoto(uploadFile);
+    } catch {
+      // The profile mutation already shows the error toast.
     }
   };
 
