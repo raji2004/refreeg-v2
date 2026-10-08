@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { UserNav } from "@/components/user-nav";
 import { useAuth } from "@/hooks/use-auth";
-import { Logo } from "@/components/logo";
 import { useAdmin } from "@/hooks/use-admin";
 import { cn } from "@/lib/utils";
 import { DiscoverSearch } from "@/components/discover/discover-search";
@@ -243,8 +243,8 @@ export function Header() {
 
     return (
       themeMap[pathname] ?? {
-        outline: "border-blue-700 text-blue-700 hover:bg-blue-700",
-        solid: "bg-blue-700 hover:bg-blue-800",
+        outline: "border-blue-accent text-blue-accent hover:bg-blue-accent",
+        solid: "bg-blue-accent hover:bg-blue-accent/90",
         subtle: "bg-blue-50 text-blue-700",
       }
     );
@@ -282,33 +282,40 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 px-0 pt-0 sm:px-0 sm:pt-0 border-b">
+    <header className="sticky top-0 z-50 border-b border-hairline">
       <div
         className={cn(
           "overflow-visible transition-[background-color,backdrop-filter,box-shadow,border-color] duration-200",
           isScrolled
             ? "border-b border-slate-200/80 bg-white/70 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl"
-            : "border-b border-transparent bg-white/95 shadow-none",
+            : "border-b border-transparent bg-white shadow-none",
         )}
       >
-        <div className="mx-auto max-w-7xl">
-          <nav className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 lg:px-6">
-            <div className="flex min-w-0 items-center gap-3 lg:gap-6">
-              <Link href="/" className="shrink-0">
-                <Logo />
+        <div className="mx-auto max-w-[1440px]">
+          <nav className="flex min-h-[88px] items-center justify-between gap-3 px-4 py-3 sm:px-5 lg:px-6">
+            <div className="flex min-w-0 items-center gap-3 lg:gap-10 2xl:gap-12">
+              <Link href="/" className="shrink-0" aria-label="RefreeG home">
+                <Image
+                  src="/logo.svg"
+                  alt="RefreeG"
+                  width={202}
+                  height={62}
+                  priority
+                  className="h-auto w-[150px] sm:w-[202px] xl:w-[170px] 2xl:w-[202px]"
+                />
               </Link>
 
-              <div className="hidden xl:flex xl:items-center xl:gap-1">
+              <div className="hidden xl:flex xl:items-center xl:gap-7 2xl:gap-[37px]">
                 {publicNavItems.map((item) => {
                   if (item.type === "link") {
                     return (
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                        className={`whitespace-nowrap text-sm transition-colors ${
                           isPathActive(pathname, item.href)
-                            ? "bg-blue-50 text-blue-700"
-                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                            ? "font-medium text-ink"
+                            : "text-ink/80 hover:text-ink"
                         }`}
                       >
                         {item.title}
@@ -327,10 +334,8 @@ export function Header() {
                     >
                       <button
                         type="button"
-                        className={`flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                          isOpen
-                            ? "bg-slate-100 text-slate-950"
-                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                        className={`flex items-center gap-1 whitespace-nowrap py-2 text-sm transition-colors ${
+                          isOpen ? "text-ink" : "text-ink/80 hover:text-ink"
                         }`}
                       >
                         <span>{item.title}</span>
@@ -400,33 +405,55 @@ export function Header() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 lg:gap-6">
               <div className="hidden md:block">
-                <DiscoverSearch />
+                <DiscoverSearch compact />
               </div>
 
-              <div className="hidden lg:flex lg:items-center lg:gap-2">
+              <div className="hidden lg:flex lg:items-center lg:gap-6">
                 {user && !isDashboardRoute ? (
-                  <Link href="/dashboard">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="rounded-full px-4 text-slate-700 hover:bg-slate-100 hover:text-slate-950"
-                    >
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      Dashboard
-                    </Button>
+                  <Link
+                    href="/dashboard"
+                    className="whitespace-nowrap text-sm text-ink transition-colors hover:text-ink/70"
+                  >
+                    Dashboard
                   </Link>
                 ) : null}
 
-                <Link href="/dashboard/causes/create">
-                  <Button
-                    size="sm"
-                    className={`rounded-full px-4 text-white ${activeTheme.solid}`}
+                {!isLoading && !user ? (
+                  <>
+                    <Link
+                      href="/auth/signin"
+                      className="whitespace-nowrap text-sm text-ink transition-colors hover:text-ink/70"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/auth/signup"
+                      className="whitespace-nowrap text-sm text-ink transition-colors hover:text-ink/70"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                ) : null}
+
+                <Link
+                  href="/dashboard/causes/create"
+                  className={`inline-flex h-[42px] items-center gap-5 whitespace-nowrap rounded-full pl-5 pr-[15px] text-sm font-medium text-white transition-colors ${activeTheme.solid}`}
+                >
+                  Start a Cause
+                  <svg
+                    viewBox="0 0 11 20"
+                    className="h-[19px] w-[10px]"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.25}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
                   >
-                    Start a Cause
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+                    <path d="M1 1l9 9-9 9" />
+                  </svg>
                 </Link>
               </div>
 
@@ -434,33 +461,11 @@ export function Header() {
                 <Link href="/auth/signup" className="lg:hidden">
                   <Button
                     size="sm"
-                    className={`h-10 rounded-full px-3 text-xs text-white ${activeTheme.solid} sm:px-4 sm:text-sm`}
+                    className={`h-[42px] rounded-full px-5 text-sm font-medium text-white ${activeTheme.solid}`}
                   >
                     Sign Up
                   </Button>
                 </Link>
-              ) : null}
-
-              {!isLoading && !user ? (
-                <div className="hidden items-center gap-2 lg:flex">
-                  <Link href="/auth/signin">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={`rounded-full border ${activeTheme.outline} bg-white transition-colors hover:text-white`}
-                    >
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link href="/auth/signup">
-                    <Button
-                      size="sm"
-                      className={`rounded-full text-white ${activeTheme.solid}`}
-                    >
-                      Sign Up
-                    </Button>
-                  </Link>
-                </div>
               ) : null}
 
               {!isLoading && user ? <UserNav /> : null}
@@ -468,7 +473,7 @@ export function Header() {
               <button
                 type="button"
                 onClick={() => setIsMenuOpen((open) => !open)}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition-colors hover:bg-slate-100 xl:hidden"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-ink transition-colors hover:bg-ink/5 xl:hidden"
                 aria-label={isMenuOpen ? "Close menu" : "Open menu"}
               >
                 {isMenuOpen ? (

@@ -71,7 +71,7 @@ export default async function SettingsPage() {
         )}
         <SettingsItem
           title="Payments"
-          description="Manage your bank account for receiving donations"
+          description="Bank account that receives donations to causes you list"
           href="/dashboard/settings/bank"
           icon={<CreditCard className="h-5 w-5" />}
         />

@@ -1,12 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LayoutGrid, List } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { DiscoverCard } from "./discover-card";
+import { DiscoverCard, DiscoverCardSkeleton } from "./discover-card";
 import { DiscoverEmptyState } from "./discover-empty-state";
 import { GiveModal } from "./give-modal";
 import { PledgeModal } from "./pledge-modal";
@@ -20,22 +18,27 @@ import { toggleBookmark } from "@/actions/bookmark-actions";
 import { DISCOVER_RESULT_CAP } from "@/lib/discover-constants";
 
 const PAGE_SIZE = 12;
-const VIEW_STORAGE_KEY = "discover:view";
 
 export function DiscoverGrid({
   filters,
+  view,
   initialItems,
   initialHasMore,
   initialBookmarks,
-  onRemoveFilter,
+  onFiltersChange,
   onClearFilters,
+  onLoaded,
+  onEmptyChange,
 }: {
   filters: DiscoverFilters;
+  view: "grid" | "list";
   initialItems: DiscoverItem[];
   initialHasMore: boolean;
   initialBookmarks: string[];
-  onRemoveFilter: (key: keyof DiscoverFilters) => void;
+  onFiltersChange: (next: DiscoverFilters) => void;
   onClearFilters: () => void;
+  onLoaded: () => void;
+  onEmptyChange: (empty: boolean) => void;
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -43,7 +46,6 @@ export function DiscoverGrid({
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingFresh, setLoadingFresh] = useState(false);
-  const [view, setView] = useState<"grid" | "list">("grid");
   const [bookmarked, setBookmarked] = useState<Set<string>>(
     () => new Set(initialBookmarks),
   );
@@ -61,28 +63,11 @@ export function DiscoverGrid({
     title: string;
   } | null>(null);
 
+  const isEmpty = !loadingFresh && items.length === 0;
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(
-        user?.id ? `${VIEW_STORAGE_KEY}:${user.id}` : VIEW_STORAGE_KEY,
-      );
-      if (stored === "grid" || stored === "list") setView(stored);
-    } catch {
-      // best-effort only
-    }
-  }, [user?.id]);
-
-  const setViewPersisted = (next: "grid" | "list") => {
-    setView(next);
-    try {
-      window.localStorage.setItem(
-        user?.id ? `${VIEW_STORAGE_KEY}:${user.id}` : VIEW_STORAGE_KEY,
-        next,
-      );
-    } catch {
-      // best-effort only
-    }
-  };
+    onEmptyChange(isEmpty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEmpty]);
 
   // Refetch from scratch whenever the active filter set changes.
   useEffect(() => {
@@ -98,6 +83,7 @@ export function DiscoverGrid({
         setItems(result.items);
         setHasMore(result.hasMore);
         setLoadingFresh(false);
+        onLoaded();
       })
       .catch(() => {
         if (cancelled) return;
@@ -188,60 +174,28 @@ export function DiscoverGrid({
   const gridClass = useMemo(
     () =>
       view === "grid"
-        ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5"
+        ? "grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3"
         : "flex flex-col gap-3",
     [view],
   );
 
+  const skeleton = (key: number) =>
+    view === "grid" ? (
+      <DiscoverCardSkeleton key={key} />
+    ) : (
+      <div key={key} className="h-[106px] rounded-2xl bg-surface" aria-hidden />
+    );
+
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-ink/60">
-          {items.length >= DISCOVER_RESULT_CAP
-            ? `Showing the first ${DISCOVER_RESULT_CAP} results — narrow your filters to see more.`
-            : `${items.length} result${items.length === 1 ? "" : "s"}`}
-        </p>
-        <div className="flex items-center gap-1 rounded-full border border-ink/15 bg-cream p-1">
-          <button
-            type="button"
-            aria-label="Grid view"
-            onClick={() => setViewPersisted("grid")}
-            className={`flex h-7 w-7 items-center justify-center rounded-full ${
-              view === "grid" ? "bg-ink text-ink-foreground" : "text-ink/50"
-            }`}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            aria-label="List view"
-            onClick={() => setViewPersisted("list")}
-            className={`flex h-7 w-7 items-center justify-center rounded-full ${
-              view === "list" ? "bg-ink text-ink-foreground" : "text-ink/50"
-            }`}
-          >
-            <List className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
       {loadingFresh ? (
-        <div className={gridClass}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton
-              key={i}
-              className={
-                view === "grid"
-                  ? "h-[360px] w-full rounded-xl"
-                  : "h-32 w-full rounded-xl"
-              }
-            />
-          ))}
+        <div className={gridClass} aria-busy="true">
+          {Array.from({ length: 6 }).map((_, i) => skeleton(i))}
         </div>
       ) : items.length === 0 ? (
         <DiscoverEmptyState
           filters={filters}
-          onRemoveFilter={onRemoveFilter}
+          onFiltersChange={onFiltersChange}
           onClearAll={onClearFilters}
         />
       ) : (
@@ -276,12 +230,14 @@ export function DiscoverGrid({
             <div ref={sentinelRef} className="mt-6 flex justify-center">
               {loadingMore ? (
                 <div className={`w-full ${gridClass}`}>
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-[360px] w-full rounded-xl" />
-                  ))}
+                  {Array.from({ length: 3 }).map((_, i) => skeleton(i))}
                 </div>
               ) : (
-                <Button variant="outline" size="sm" onClick={loadMore}>
+                <Button
+                  variant="outline"
+                  onClick={loadMore}
+                  className="rounded-xl border-hairline bg-surface text-ink hover:bg-bone"
+                >
                   Load more
                 </Button>
               )}

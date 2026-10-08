@@ -19,7 +19,7 @@ export default async function BankSettingsPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
-            We couldn&apos;t load your bank details. Please refresh the page.
+            We couldn&apos;t load your bank account. Please refresh the page.
           </AlertDescription>
         </Alert>
       </SettingsShell>
@@ -27,8 +27,19 @@ export default async function BankSettingsPage() {
   }
 
   return (
-    <SettingsShell>
-      <BankDetailsForm profile={profile} user={{ id: session.user.id }} />
+    <SettingsShell isOrganization={profile.account_type === "organization"}>
+      <BankDetailsForm
+        profile={{
+          account_number: profile.account_number,
+          bank_name: profile.bank_name,
+          account_name: profile.account_name,
+          sub_account_code: profile.sub_account_code,
+        }}
+        user={{
+          id: session.user.id,
+          email: profile.email ?? session.user.email ?? "",
+        }}
+      />
     </SettingsShell>
   );
 }
