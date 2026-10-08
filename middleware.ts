@@ -5,6 +5,11 @@ import {
   type NextMiddleware,
 } from "next/server";
 import { auth } from "@/lib/auth/auth";
+import { publicFileManifest } from "@/lib/public-file-manifest";
+
+const PUBLIC_FILES = new Set<string>(publicFileManifest);
+
+const IMAGE_EXT = /\.(?:png|jpe?g|gif|webp|svg|ico|avif)$/i;
 
 const PUBLIC_API_PREFIXES = [
   "/api/auth",
@@ -116,7 +121,19 @@ const handleAuth = auth(async (req) => {
 });
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
-  if (needsSession(req.nextUrl.pathname)) {
+  const { pathname } = req.nextUrl;
+
+  if (IMAGE_EXT.test(pathname)) {
+    if (!PUBLIC_FILES.has(pathname)) {
+      return new NextResponse(null, {
+        status: 404,
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      });
+    }
+    return NextResponse.next();
+  }
+
+  if (needsSession(pathname)) {
     // auth()'s return type is a union with the route-handler signature;
     // called with (req, event) it runs as middleware.
     return (handleAuth as unknown as NextMiddleware)(req, event);
@@ -136,6 +153,7 @@ export const config = {
     // Every API route except the public image proxy, whose cacheable
     // responses must not pick up auth cookies.
     "/api/((?!s3/image).*)",
+    "/:path*.:ext(png|jpg|jpeg|gif|webp|svg|ico|avif)",
     {
       source:
         "/((?!_next/static|_next/image|favicon.ico|api/|dashboard|onboarding|auth|monitoring|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",

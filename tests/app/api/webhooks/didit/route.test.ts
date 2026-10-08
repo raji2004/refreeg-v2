@@ -59,6 +59,19 @@ describe("Didit Webhook POST", () => {
     expect(res.status).toBe(400);
   });
 
+  it("acks user.data.updated without a session_id", async () => {
+    const req = createRequest({
+      webhook_type: "user.data.updated",
+      vendor_data: "673064ec-fc5b-427c-9f73-1e6949746b32",
+      changed_fields: ["full_name", "features", "approved_count"],
+      status: "ACTIVE",
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ received: true });
+    expect(mockPrisma.kyc_verifications.findFirst).not.toHaveBeenCalled();
+  });
+
   it("extracts session_id properly from Didit V3 payload (id)", async () => {
     mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
       id: "kyc-1",

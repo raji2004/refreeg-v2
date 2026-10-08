@@ -1,5 +1,34 @@
+import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { withSentryConfig } from "@sentry/nextjs";
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+
+function listPublicFiles(dir, prefix = "") {
+  const files = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...listPublicFiles(full, rel));
+    else if (entry.isFile()) files.push(`/${rel.split(path.sep).join("/")}`);
+  }
+  return files;
+}
+
+const publicManifestPath = path.join(
+  projectRoot,
+  "lib/public-file-manifest.ts",
+);
+const publicManifest = `// Generated from public/ when Next loads this config. Do not edit.\nexport const publicFileManifest = ${JSON.stringify(
+  listPublicFiles(path.join(projectRoot, "public")).sort(),
+)} as const;\n`;
+if (
+  !fs.existsSync(publicManifestPath) ||
+  fs.readFileSync(publicManifestPath, "utf8") !== publicManifest
+) {
+  fs.writeFileSync(publicManifestPath, publicManifest);
+}
 
 let userConfig = undefined;
 try {

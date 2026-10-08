@@ -154,24 +154,49 @@ const Flutterwave = {
   },
 
   createSubaccount: async function (data: ICreateSubaccount) {
-    const response = await this.api.post("/subaccounts", {
+    const mobile = data.business_mobile?.trim();
+    const payload: Record<string, string> = {
       account_bank: data.bank_code,
       account_number: data.account_number,
       business_name: data.business_name,
       business_email: data.business_email || "no-reply@refreeg.com",
-      business_contact_mobile: data.business_mobile || "08000000000",
-      business_mobile: data.business_mobile || "08000000000",
-      split_type: "percentage",
-      split_value: 0, // RefreeG controls the fee via transaction_charge
       country: "NG",
-    });
-
-    return {
-      subaccount_id: String(
-        response.data.data.subaccount_id || response.data.data.id,
-      ),
-      account_number: data.account_number,
     };
+    if (mobile) {
+      payload.business_mobile = mobile;
+      payload.business_contact_mobile = mobile;
+    }
+
+    try {
+      const response = await this.api.post("/subaccounts", payload);
+      return {
+        subaccount_id: String(
+          response.data.data.subaccount_id || response.data.data.id,
+        ),
+        account_number: data.account_number,
+      };
+    } catch (error: any) {
+      const body = error.response?.data;
+      console.error(
+        "Flutterwave createSubaccount failed:",
+        body ?? error.message,
+      );
+
+      const message = String(body?.message || error.message || "");
+      if (/already exists/i.test(message)) {
+        const existingId = await this.findSubaccountByAccountNumber(
+          data.account_number,
+        );
+        if (existingId) {
+          return {
+            subaccount_id: existingId,
+            account_number: data.account_number,
+          };
+        }
+      }
+
+      throw error;
+    }
   },
 
   listBanks: async function () {

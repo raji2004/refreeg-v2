@@ -410,7 +410,7 @@ export default function ReferralPage() {
                   text="Share your referral link with friends and others"
                 />
                 <Step
-                  src="/images/referrals/faceless-man.png"
+                  src="/images/referrals/Users.png"
                   alt="Sign up"
                   text="They sign up or donate to a verified cause"
                 />
@@ -430,7 +430,7 @@ export default function ReferralPage() {
                   mobile
                 />
                 <Step
-                  src="/images/referrals/faceless-man.png"
+                  src="/images/referrals/Users.png"
                   alt="Sign up"
                   text="They sign up or donate to a verified cause"
                   mobile
@@ -509,12 +509,12 @@ export default function ReferralPage() {
                 {
                   label: "Friends Invited",
                   value: invites,
-                  img: "cloud-network.png",
+                  img: "Users.png",
                 },
                 {
                   label: "Successful Signups",
                   value: signUps,
-                  img: "referral.png",
+                  img: "faceless-man.png",
                 },
                 {
                   label: "Current Standing",
