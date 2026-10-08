@@ -2,7 +2,7 @@ jest.mock("@/actions/profile-actions", () => ({
   getProfile: jest.fn(),
   updateProfile: jest.fn(),
   updateBankDetails: jest.fn(),
-  updateProfilePhoto: jest.fn(),
+  setProfilePhoto: jest.fn(),
 }));
 
 jest.mock("@/components/ui/use-toast", () => ({
@@ -12,10 +12,7 @@ jest.mock("@/components/ui/use-toast", () => ({
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, act, waitFor } from "@testing-library/react";
-import {
-  getProfile,
-  updateProfile,
-} from "@/actions/profile-actions";
+import { getProfile, updateProfile } from "@/actions/profile-actions";
 import { toast } from "@/components/ui/use-toast";
 import { useProfile } from "@/hooks/use-profile";
 
@@ -68,7 +65,10 @@ describe("useProfile", () => {
     mockUpdateProfile.mockResolvedValue(updatedProfile);
 
     const client = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const wrapper = ({ children }: { children: React.ReactNode }) =>
       React.createElement(QueryClientProvider, { client }, children);

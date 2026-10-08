@@ -17,8 +17,8 @@ import {
   removeOrganizationMember,
   revokeOrganizationInvitation,
   updateOrganization,
-  updateOrganizationLogo,
 } from "@/actions/organization-actions";
+import { uploadOrganizationLogo } from "@/lib/organization-logo-upload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -93,7 +93,7 @@ export function OrganizationSettingsForm({
     const file = event.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
-    const result = await updateOrganizationLogo(file);
+    const result = await uploadOrganizationLogo(file);
     setIsUploading(false);
 
     if (result.success) {

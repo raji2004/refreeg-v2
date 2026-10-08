@@ -187,7 +187,7 @@ const sentryWrapped = withSentryConfig(nextConfig, {
   authToken: process.env.SENTRY_AUTH_TOKEN,
   silent: true,
   widenClientFileUpload: true,
-  tunnelRoute: "/monitoring",
+  // No tunnelRoute: CloudFront's WAF blocks request bodies over 8 KB, which drops larger reports.
   webpack: {
     treeshake: { removeDebugLogging: true },
     automaticVercelMonitors: false,

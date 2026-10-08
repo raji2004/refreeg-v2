@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { isAdminOrManager } from "./role-actions";
+import { isOwnUploadKey } from "@/lib/s3/owned-key";
 
 const MAX_FILES = 10;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -74,12 +75,28 @@ export async function submitProofUpdate(formData: FormData) {
   const media: { type: string; url: string; name: string }[] = [];
   for (const item of formData.getAll("media")) {
     if (typeof item === "string" && item.trim()) {
-      // Pre-uploaded video key (future presign path)
-      media.push({
-        type: "video",
-        url: item.trim(),
-        name: item.trim().split("/").pop() ?? "video",
-      });
+      // Uploaded browser → S3 already: {"key","name"} with a key in this user's folder for this cause.
+      let uploaded: { key?: unknown; name?: unknown };
+      try {
+        uploaded = JSON.parse(item);
+      } catch {
+        return { success: false, error: "Invalid upload." };
+      }
+      if (!isOwnUploadKey(uploaded.key, "causes", userId, causeId)) {
+        return { success: false, error: "Invalid upload." };
+      }
+      const folder = uploaded.key.split("/")[4];
+      const kind =
+        folder === "videos"
+          ? "video"
+          : folder === "documents"
+            ? "document"
+            : "image";
+      const name =
+        typeof uploaded.name === "string" && uploaded.name
+          ? uploaded.name
+          : (uploaded.key.split("/").pop() ?? "file");
+      media.push({ type: kind, url: uploaded.key, name });
     } else if (item instanceof File && item.size > 0) {
       const kind = mediaKind(item.type);
       if (!kind)

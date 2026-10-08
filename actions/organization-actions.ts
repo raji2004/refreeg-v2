@@ -3,6 +3,7 @@
 import crypto from "crypto";
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { isOwnUploadKey } from "@/lib/s3/owned-key";
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import { sendOrganizationInvitationEmail } from "@/services/mail";
@@ -430,29 +431,22 @@ export async function updateOrganization(input: {
   }
 }
 
-export async function updateOrganizationLogo(file: File) {
+// The logo goes browser → S3 directly (see lib/organization-logo-upload.ts); only the key comes here.
+export async function updateOrganizationLogo(logoKey: string) {
   try {
     const { user, organization } = await requireOrganizationAccess(true);
-    const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
-    if (!allowedTypes.has(file.type)) {
-      throw new Error("Logo must be a JPG, PNG, or WebP image.");
-    }
-    if (file.size === 0 || file.size > 2 * 1024 * 1024) {
-      throw new Error("Logo must be smaller than 2 MB.");
+    if (!isOwnUploadKey(logoKey, "organizations", user.id)) {
+      throw new Error("Invalid logo upload.");
     }
 
-    const extension = file.name.split(".").pop()?.toLowerCase() || "png";
-    const key = `uploads/organizations/${user.id}/${organization.id}/images/logo-${Date.now()}.${extension}`;
-    const { uploadToS3 } = await import("@/lib/s3/s3-utils");
-    await uploadToS3(Buffer.from(await file.arrayBuffer()), key, file.type);
     await prisma.organization.update({
       where: { id: organization.id },
-      data: { logoUrl: key },
+      data: { logoUrl: logoKey },
     });
 
     revalidatePath("/dashboard/settings/organization");
     revalidatePath("/dashboard");
-    return { success: true as const, logoUrl: key };
+    return { success: true as const, logoUrl: logoKey };
   } catch (error) {
     return {
       success: false as const,
