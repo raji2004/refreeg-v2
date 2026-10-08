@@ -19,15 +19,15 @@ export default function GrowMoney() {
       >
         <p className="text-xs p-2 border rounded-full bg-[#FAFAFA]">
           Powered by vetted, audited smart contracts. Withdraw anytime. Your
-          funds remain yours — always.
+          funds remain yours, always.
         </p>
         <h1 className="text-4xl lg:text-5xl font-bold text-black leading-tight">
-          Don’t Just Raise Money —{" "}
+          Don’t Just Raise Money.{" "}
           <span className="text-gray-500"> Grow It!</span>
         </h1>
         <p className="text-lg text-gray-600">
           With RefreeG Boost, creators can stake part of their raised funds in
-          secure liquidity <br /> pools and earn yield — making every donation
+          secure liquidity <br /> pools and earn yield, making every donation
           work harder for them.
         </p>
 

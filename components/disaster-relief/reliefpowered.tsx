@@ -24,7 +24,7 @@ export default function ReliefPowered() {
     },
     {
       title: "Multi-Currency Support",
-      desc: "Accept donations in fiat, crypto, or stablecoins — no barriers, no delays.",
+      desc: "Accept donations in fiat, crypto, or stablecoins. No barriers, no delays.",
       image: "/images/cardwallet.png",
     },
     {

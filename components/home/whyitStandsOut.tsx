@@ -76,7 +76,7 @@ export default function WhyItStandsOut() {
       >
         <FaBoltLightning className="text-white" size={18} />
         <P className="text-white text-sm font-semibold">
-          Be a Catalyst for Change — Start Here
+          Be a Catalyst for Change: Start Here
         </P>
       </motion.div>
 

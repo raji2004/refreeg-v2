@@ -163,9 +163,7 @@ export function DiscoverGrid({
       });
       toast({
         title:
-          err instanceof Error
-            ? err.message
-            : "Couldn't save that — try again.",
+          err instanceof Error ? err.message : "Couldn't save that. Try again.",
         variant: "destructive",
       });
     }

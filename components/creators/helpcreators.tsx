@@ -10,7 +10,7 @@ export default function HelpCreators() {
       id: 1,
       img: "/star1.png",
       title: "Smart Discovery",
-      text: "Your unique tag and URL make you searchable and shareable across RefreeG and beyond — helping more supporters find you faster.",
+      text: "Your unique tag and URL make you searchable and shareable across RefreeG and beyond, helping more supporters find you faster.",
     },
     {
       id: 2,
@@ -28,7 +28,7 @@ export default function HelpCreators() {
       id: 4,
       img: "/star4.png",
       title: "Global Donations, Multiple Currencies",
-      text: "Accept contributions in local currency, dollars, or crypto — removing barriers and letting anyone in the world support you instantly.",
+      text: "Accept contributions in local currency, dollars, or crypto, removing barriers and letting anyone in the world support you instantly.",
     },
     {
       id: 5,
@@ -39,8 +39,8 @@ export default function HelpCreators() {
     {
       id: 6,
       img: "/star6.png",
-      title: "Don’t Just Raise Money — Grow It.",
-      text: "With RefreeG Boost, creators can stake part of their raised funds in secure liquidity pools and earn yield — making every donation work harder for them.",
+      title: "Don’t Just Raise Money. Grow It.",
+      text: "With RefreeG Boost, creators can stake part of their raised funds in secure liquidity pools and earn yield, making every donation work harder for them.",
     },
   ];
 

@@ -124,7 +124,7 @@ export function ProofUploadDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Post a fund-use update — {causeTitle}</DialogTitle>
+          <DialogTitle>Post a fund-use update: {causeTitle}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -180,8 +180,7 @@ export function ProofUploadDialog({
               className="mt-1 flex w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600"
             >
               <Upload className="h-5 w-5" />
-              Click to upload — images, video or PDF ({files.length}/{MAX_FILES}
-              )
+              Click to upload: images, video or PDF ({files.length}/{MAX_FILES})
             </button>
             <input
               ref={inputRef}

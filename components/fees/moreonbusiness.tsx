@@ -41,7 +41,7 @@ export default function MoreOnBusiness() {
       >
         We only succeed when you do. Our transparent fees fuel the
         platform&apos;s growth and maintain the integrity of your campaigns.
-        Every transaction, every payout — visible, verifiable, and fair.
+        Every transaction, every payout: visible, verifiable, and fair.
       </motion.div>
       <motion.div variants={itemVariants}>
         <Button className="bg-[#FAFAFA] border text-black px-10 py-4 flex items-center gap-2 rounded-full">

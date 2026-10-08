@@ -588,7 +588,7 @@ export default function ReferralPage() {
                     const registered = !!ref.registered;
                     const date = ref.created_at
                       ? new Date(ref.created_at).toLocaleDateString()
-                      : "—";
+                      : "N/A";
                     const reward =
                       ref.reward_status === "ISSUED" ? "+5 pts" : "Pending KYC";
 

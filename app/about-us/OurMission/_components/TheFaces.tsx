@@ -13,7 +13,7 @@ function TheFaces() {
 
         <p className="text-gray-600 text-sm md:text-base mb-6 max-w-2xl mx-auto">
           RefreeG is a cause-based platform that lets anyone start, support, or
-          amplify meaningful initiatives — all for free, with full transparency
+          amplify meaningful initiatives, all for free, with full transparency
           and real impact.
         </p>
 
