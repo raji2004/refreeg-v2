@@ -1,11 +1,8 @@
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
-import { hasBankDetails, isProfileComplete } from "@/actions/profile-actions";
-import CreateCauseForm from "./create-cause-form";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { CampaignFlowProvider } from "./_components/campaign-flow-provider";
+import { CampaignFlowShell } from "./_components/campaign-flow-shell";
 
 export default async function CreateCausePage() {
   const session = await auth();
@@ -14,54 +11,50 @@ export default async function CreateCausePage() {
     redirect("/auth/signin");
   }
 
-  const hasBankInfo = await hasBankDetails(session.user.id as string);
-  const { isComplete: profileComplete, missingFields } =
-    await isProfileComplete(session.user.id as string);
+  const userId = session.user.id as string;
 
-  const canCreate = hasBankInfo && profileComplete;
+  // Retrieve KYC status
+  const kycRecord = await prisma.kyc_verifications.findFirst({
+    where: { user_id: userId },
+    orderBy: { created_at: "desc" },
+  });
+
+  const isVerified = kycRecord?.status === "approved";
+  const kycDetails = isVerified
+    ? {
+        level: 2,
+        confirmedAt: kycRecord?.updated_at
+          ? new Date(kycRecord.updated_at).toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            })
+          : "Recently",
+      }
+    : null;
+
+  // Retrieve bank details if previously configured on user profile
+  const userRecord = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      bankName: true,
+      accountNumber: true,
+      accountName: true,
+    },
+  });
 
   return (
-    <div className="">
-      <div className="">
-        {!canCreate ? (
-          <div className="space-y-4">
-            {!hasBankInfo && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Bank Details Required</AlertTitle>
-                <AlertDescription className="flex flex-col gap-4">
-                  Please add your bank details in the settings to create a
-                  cause. This is required to receive donations.
-                  <Link href="/dashboard/settings/bank">
-                    <Button variant="destructive" className="w-fit">
-                      Add Bank Details
-                    </Button>
-                  </Link>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {!profileComplete && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Profile Incomplete</AlertTitle>
-                <AlertDescription className="flex flex-col gap-4">
-                  Your profile is missing the following:{" "}
-                  {missingFields.join(", ")}. Please complete your profile in
-                  settings to build trust with donors.
-                  <Link href="/dashboard/settings">
-                    <Button variant="destructive" className="w-fit">
-                      Complete Profile
-                    </Button>
-                  </Link>
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-        ) : (
-          <CreateCauseForm />
-        )}
-      </div>
-    </div>
+    <CampaignFlowProvider
+      initialUserKyc={{
+        isVerified,
+        details: kycDetails,
+      }}
+      initialBankInfo={{
+        bankName: userRecord?.bankName ?? undefined,
+        accountNumber: userRecord?.accountNumber ?? undefined,
+        accountName: userRecord?.accountName ?? undefined,
+      }}
+    >
+      <CampaignFlowShell />
+    </CampaignFlowProvider>
   );
 }

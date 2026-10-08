@@ -14,10 +14,7 @@ export default async function CreateCauseLayout({
     redirect("/auth/signin");
   }
 
-  const redirectPath = await requireKycAndProfile(user.id);
-  if (redirectPath) {
-    redirect(redirectPath);
-  }
-
+  // Allow creators to enter and draft their campaign freely.
+  // Identity (Didit KYC) & profile verification is seamlessly checked in Step 6 (Proof & Verification).
   return <>{children}</>;
 }
