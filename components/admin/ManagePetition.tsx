@@ -518,10 +518,29 @@ export default function ManagePetition() {
                   <div className="space-y-1 text-sm">
                     {detailDialog.petition.days_active !== null &&
                     detailDialog.petition.days_active !== undefined ? (
-                      <p>
-                        <span className="font-medium">Days left:</span>{" "}
-                        {detailDialog.petition.days_active} days
-                      </p>
+                      <>
+                        <p>
+                          <span className="font-medium">Duration:</span>{" "}
+                          {detailDialog.petition.days_active} days
+                        </p>
+                        <p>
+                          <span className="font-medium">Days left:</span>{" "}
+                          {detailDialog.petition.created_at
+                            ? Math.max(
+                                0,
+                                detailDialog.petition.days_active -
+                                  Math.floor(
+                                    (Date.now() -
+                                      new Date(
+                                        detailDialog.petition.created_at,
+                                      ).getTime()) /
+                                      (1000 * 60 * 60 * 24),
+                                  ),
+                              )
+                            : detailDialog.petition.days_active}{" "}
+                          days
+                        </p>
+                      </>
                     ) : (
                       <p className="text-muted-foreground">Duration not set</p>
                     )}

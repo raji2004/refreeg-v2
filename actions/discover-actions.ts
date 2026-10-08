@@ -90,16 +90,10 @@ function compareItems(
   }
 }
 
-function daysLeftFromEndDate(
-  endDate: string | null | undefined,
-): number | null {
-  if (!endDate) return null;
-  const diff = new Date(endDate).getTime() - Date.now();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
+import { calculateDaysLeft } from "@/utils/cause/cause-utils";
 
 function causeToItem(cause: Cause): DiscoverItem {
-  const daysLeft = daysLeftFromEndDate(cause.end_date);
+  const daysLeft = calculateDaysLeft(cause as any);
   const goal = Number(cause.goal || 0);
   const raised = Number(cause.raised || 0);
   return {
@@ -122,6 +116,19 @@ function causeToItem(cause: Cause): DiscoverItem {
 }
 
 function petitionToItem(petition: Petition): DiscoverItem {
+  const daysLeft =
+    petition.days_active != null
+      ? Math.max(
+          0,
+          petition.days_active -
+            (petition.created_at
+              ? Math.floor(
+                  (Date.now() - new Date(petition.created_at).getTime()) /
+                    (1000 * 60 * 60 * 24),
+                )
+              : 0),
+        )
+      : null;
   const goal = Number(petition.goal || 0);
   const raised = Number(petition.raised || 0);
   return {
@@ -134,8 +141,8 @@ function petitionToItem(petition: Petition): DiscoverItem {
     raised,
     goal,
     percent: goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0,
-    daysLeft: null,
-    urgent: false,
+    daysLeft,
+    urgent: daysLeft != null && daysLeft <= 7,
     location: null,
     paused: false,
     createdAt: petition.created_at,

@@ -47,6 +47,7 @@ export async function PetitionsList({
               image: petition.image,
               percentRaised: petition.percentRaised,
               days_active: petition.days_active,
+              created_at: petition.created_at,
               totalAmount: petition.totalAmount,
               goal: petition.goal,
               profiles: petition.profiles,

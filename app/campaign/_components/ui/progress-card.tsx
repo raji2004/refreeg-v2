@@ -13,6 +13,8 @@ const ShareModal = dynamic(
   },
 );
 
+import { calculateDaysLeft } from "@/utils/cause/cause-utils";
+
 export function ProgressCard({
   cause,
   percentRaised,
@@ -22,6 +24,8 @@ export function ProgressCard({
   percentRaised: number;
   shareUrl: string;
 }) {
+  const daysLeft = calculateDaysLeft(cause as any);
+
   return (
     <motion.div
       className="rounded-2xl border border-[#DDE3EA] bg-white p-4 sm:rounded-[20px] sm:p-7"
@@ -61,7 +65,7 @@ export function ProgressCard({
         </span>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ECF5FF] px-3 py-1.5 font-bold text-[#235DA7]">
           <CalendarClock className="h-3.5 w-3.5" />
-          {cause.days_active} days left
+          {daysLeft} days left
         </span>
       </div>
     </motion.div>

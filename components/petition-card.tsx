@@ -25,6 +25,7 @@ interface PetitionCardProps {
     image?: string | null;
     percentRaised: number;
     days_active?: number | null;
+    created_at?: string | Date | null;
     totalAmount: number;
     goal?: number | null;
     profiles?: {
@@ -42,6 +43,19 @@ export function PetitionCard({
   onToggleBookmark,
   onSignClick,
 }: PetitionCardProps) {
+  const daysLeft =
+    petition.days_active != null
+      ? Math.max(
+          0,
+          petition.days_active -
+            (petition.created_at
+              ? Math.floor(
+                  (Date.now() - new Date(petition.created_at).getTime()) /
+                    (1000 * 60 * 60 * 24),
+                )
+              : 0),
+        )
+      : null;
   return (
     <Link href={`/petitions/${petition.id}`} className="group block h-full">
       <AnimatedCard>
@@ -93,7 +107,7 @@ export function PetitionCard({
             <div className="flex justify-between items-center pt-2 text-xs">
               <P className="text-xs">Sign Now</P>
               <P className="text-xs">
-                {petition.percentRaised}% • {Number(petition.days_active || 0)}{" "}
+                {petition.percentRaised}% • {daysLeft != null ? daysLeft : 0}{" "}
                 Days left
               </P>
             </div>

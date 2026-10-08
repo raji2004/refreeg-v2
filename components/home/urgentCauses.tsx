@@ -3,11 +3,13 @@ import { listCauses } from "@/actions";
 import AnimatedHeader from "@/components/home/components/AnimatedHeader";
 import UrgentCausesCarousel from "./UrgentCausesCarousel";
 
+import { calculateDaysLeft } from "@/utils/cause/cause-utils";
+
 function normalizeCause(cause: any) {
   return {
     ...cause,
     image: cause.image ?? undefined,
-    days_active: cause.days_active ?? 0,
+    days_active: calculateDaysLeft(cause),
     goal: cause.goal ?? 0,
     raised: cause.raised ?? 0,
   };

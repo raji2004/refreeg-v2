@@ -28,6 +28,8 @@ function StatItem({
   );
 }
 
+import { calculateDaysLeft } from "@/utils/cause/cause-utils";
+
 export function StatsRow({
   cause,
   donorsCount,
@@ -35,6 +37,8 @@ export function StatsRow({
   cause: CauseDetail;
   donorsCount: number;
 }) {
+  const daysLeft = calculateDaysLeft(cause as any);
+
   return (
     <motion.div className="grid gap-3 sm:grid-cols-3" variants={fadeUp}>
       <StatItem
@@ -50,7 +54,7 @@ export function StatsRow({
       <StatItem
         icon={<CalendarClock className="h-4 w-4" />}
         label="Days left"
-        value={`${cause.days_active}`}
+        value={`${daysLeft}`}
       />
     </motion.div>
   );

@@ -10,6 +10,7 @@ import { usePayment } from "@/hooks/use-payment";
 import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/pledge-constants";
 import { getMediaUrl } from "@/lib/s3/media";
 import Image from "next/image";
+import { calculateDaysLeft } from "@/utils/cause/cause-utils";
 
 function formatLocalYYYYMMDD(date: Date) {
   const y = date.getFullYear();
@@ -457,10 +458,14 @@ export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
                   value={pledgeDate}
                   min={getMinPledgeDate()}
                   max={(() => {
-                    if (!cause.days_active) return undefined;
+                    if (cause.end_date) {
+                      return formatLocalYYYYMMDD(new Date(cause.end_date));
+                    }
+                    const daysLeft = calculateDaysLeft(cause as any);
+                    if (daysLeft <= 0) return undefined;
                     const end = new Date();
                     end.setHours(0, 0, 0, 0);
-                    end.setDate(end.getDate() + cause.days_active);
+                    end.setDate(end.getDate() + daysLeft);
                     return formatLocalYYYYMMDD(end);
                   })()}
                   onChange={(event) => {

@@ -34,6 +34,7 @@ import { useQueryState } from "nuqs";
 import { format } from "date-fns";
 import { categories } from "@/lib/categories";
 import { useNotifications } from "@/hooks/use-notification";
+import { calculateDaysLeft } from "@/utils/cause/cause-utils";
 import {
   Table,
   TableHeader,
@@ -765,10 +766,16 @@ export default function ManageCauses() {
                   <div className="space-y-1 text-sm">
                     {detailDialog.cause.days_active !== null &&
                     detailDialog.cause.days_active !== undefined ? (
-                      <p>
-                        <span className="font-medium">Days left:</span>{" "}
-                        {detailDialog.cause.days_active} days
-                      </p>
+                      <>
+                        <p>
+                          <span className="font-medium">Duration:</span>{" "}
+                          {detailDialog.cause.days_active} days
+                        </p>
+                        <p>
+                          <span className="font-medium">Days left:</span>{" "}
+                          {calculateDaysLeft(detailDialog.cause as any)} days
+                        </p>
+                      </>
                     ) : (
                       <p className="text-muted-foreground">Duration not set</p>
                     )}

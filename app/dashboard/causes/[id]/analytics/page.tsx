@@ -100,7 +100,7 @@ export default async function AnalyticsPage({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Days left</CardTitle>
+            <CardTitle className="text-sm font-medium">Days Active</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

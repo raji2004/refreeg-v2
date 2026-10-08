@@ -27,6 +27,7 @@ import { DonateButton } from "@/components/donate-button";
 import { H4, P } from "../typography";
 import AnimatedCard from "./components/AnimatedCard";
 import { causePublicPath } from "@/lib/causes/slug";
+import { calculateDaysLeft } from "@/utils/cause/cause-utils";
 
 type Cause = {
   id: string;
@@ -36,6 +37,11 @@ type Cause = {
   goal: number;
   raised: number;
   days_active?: number;
+  end_date?: string | Date | null;
+  created_at?: string | Date | null;
+  start_date?: string | Date | null;
+  updated_at?: string | Date | null;
+  status?: string | null;
   paused?: boolean;
   profiles?: {
     full_name?: string;
@@ -102,7 +108,7 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
               <div className="flex justify-between items-center pt-2 text-xs">
                 <P>Raised</P>
                 <P>
-                  {percentRaised}% • {cause.days_active} Days left
+                  {percentRaised}% • {calculateDaysLeft(cause as any)} Days left
                 </P>
               </div>
             </CardHeader>

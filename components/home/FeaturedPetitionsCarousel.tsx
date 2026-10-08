@@ -20,6 +20,7 @@ type Petition = {
   image?: string;
   percentRaised: number;
   days_active?: number;
+  created_at?: string | Date | null;
   totalAmount: number;
   goal?: number;
   profiles?: {
