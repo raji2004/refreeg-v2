@@ -94,7 +94,7 @@ export default function ProofSection() {
             >
               <p className="text-xs sm:text-sm text-gray-600 font-medium text-center sm:text-left">
                 Powered by vetted, audited smart contracts. Withdraw anytime.
-                Your funds remain yours — always.
+                Your funds remain yours, always.
               </p>
             </motion.div>
           </motion.div>

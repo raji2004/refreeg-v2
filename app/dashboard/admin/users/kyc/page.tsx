@@ -138,14 +138,14 @@ export default async function KycListPage() {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {sub.full_name || user?.fullName || "—"}
+                              {sub.full_name || user?.fullName || "N/A"}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {user?.email || "—"}
+                              {user?.email || "N/A"}
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>{sub.document_type || "—"}</TableCell>
+                        <TableCell>{sub.document_type || "N/A"}</TableCell>
                         <TableCell>
                           {sub.status === "approved" ? (
                             <Badge className="bg-green-500 hover:bg-green-600">
@@ -167,12 +167,12 @@ export default async function KycListPage() {
                         <TableCell>
                           {sub.created_at
                             ? format(new Date(sub.created_at), "MMM d, yyyy")
-                            : "—"}
+                            : "N/A"}
                         </TableCell>
                         <TableCell>
                           {sub.updated_at
                             ? format(new Date(sub.updated_at), "MMM d, yyyy")
-                            : "—"}
+                            : "N/A"}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button asChild variant="outline" size="sm">

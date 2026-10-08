@@ -264,7 +264,7 @@ export async function MyCausesList({ status, userId }: MyCausesListProps) {
                   className="flex h-11 w-full justify-center rounded-xl border-amber-200 bg-amber-50 text-sm font-medium text-amber-700"
                 >
                   <PauseCircle className="mr-2 h-4 w-4" />
-                  Campaign Suspended — Check banner above
+                  Campaign Suspended: Check banner above
                 </Badge>
               ) : cause.status === "approved" ? (
                 <Link

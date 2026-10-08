@@ -52,7 +52,7 @@ export default function LifeMatters() {
           variants={item}
         >
           Powered by vetted, audited smart contracts. Withdraw anytime. Your
-          funds remain yours — always.
+          funds remain yours, always.
         </motion.p>
 
         <motion.div
@@ -66,8 +66,8 @@ export default function LifeMatters() {
         </motion.div>
 
         <motion.p className="text-lg text-gray-600" variants={item}>
-          Join RefreeG and fund the future of healthcare — one donation, one
-          life at a time.
+          Join RefreeG and fund the future of healthcare, one donation, one life
+          at a time.
         </motion.p>
 
         <motion.div variants={item}>

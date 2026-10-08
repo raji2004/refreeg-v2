@@ -1,5 +1,5 @@
 ================================================================================
-  REFREEG v2 — FULL MIGRATION PLAN
+  REFREEG v2 - FULL MIGRATION PLAN
   Supabase + Vercel  →  Prisma + Self-Hosted Stack (Dockerized PostgreSQL)
 ================================================================================
   Document Version : 1.1
@@ -9,7 +9,7 @@
 
 
 ────────────────────────────────────────────────────────────────────────────────
-SECTION 1 — EXECUTIVE SUMMARY
+SECTION 1 - EXECUTIVE SUMMARY
 ────────────────────────────────────────────────────────────────────────────────
 
 This document describes the complete strategy and step-by-step execution plan
@@ -35,7 +35,7 @@ DB decision update                 : Dockerized PostgreSQL only (no RDS/native h
 
 
 ────────────────────────────────────────────────────────────────────────────────
-SECTION 2 — CURRENT CODEBASE INVENTORY
+SECTION 2 - CURRENT CODEBASE INVENTORY
 ────────────────────────────────────────────────────────────────────────────────
 
 2.1  FILES USING SUPABASE (56 total files)
@@ -93,17 +93,17 @@ SECTION 2 — CURRENT CODEBASE INVENTORY
 
 2.2  SUPABASE AUTH METHODS IN USE
   ─────────────────────────────────
-  supabase.auth.getUser()              — 34 call sites
-  supabase.auth.getSession()           — 3 call sites
-  supabase.auth.onAuthStateChange()    — 3 call sites
-  supabase.auth.signOut()              — 2 call sites
-  supabase.auth.updateUser()           — 1 call site
-  supabase.auth.signUp()               — 1 call site
-  supabase.auth.signInWithPassword()   — 1 call site
-  supabase.auth.signInWithOAuth()      — 1 call site (Google OAuth)
-  supabase.auth.resetPasswordForEmail()— 1 call site
-  supabase.auth.exchangeCodeForSession()— 1 call site
-  supabase.auth.admin.*                — 1 call site (admin panel)
+  supabase.auth.getUser()              - 34 call sites
+  supabase.auth.getSession()           - 3 call sites
+  supabase.auth.onAuthStateChange()    - 3 call sites
+  supabase.auth.signOut()              - 2 call sites
+  supabase.auth.updateUser()           - 1 call site
+  supabase.auth.signUp()               - 1 call site
+  supabase.auth.signInWithPassword()   - 1 call site
+  supabase.auth.signInWithOAuth()      - 1 call site (Google OAuth)
+  supabase.auth.resetPasswordForEmail()- 1 call site
+  supabase.auth.exchangeCodeForSession()- 1 call site
+  supabase.auth.admin.*                - 1 call site (admin panel)
 
 2.3  SUPABASE STORAGE IN USE
   ────────────────────────────
@@ -114,8 +114,8 @@ SECTION 2 — CURRENT CODEBASE INVENTORY
 
 2.4  RPC / STORED FUNCTIONS
   ───────────────────────────
-  increment_cause_raised(cause_id, amount)  — called from crypto-donations API
-  increment_cause_raised                    — called from SolanaDonationButton
+  increment_cause_raised(cause_id, amount)  - called from crypto-donations API
+  increment_cause_raised                    - called from SolanaDonationButton
 
 2.5  DATABASE MIGRATIONS (34 files)
   ─────────────────────────────────
@@ -124,7 +124,7 @@ SECTION 2 — CURRENT CODEBASE INVENTORY
 
 
 ────────────────────────────────────────────────────────────────────────────────
-SECTION 3 — INFRASTRUCTURE DECISION: APP HOSTING + DOCKERIZED DATABASE
+SECTION 3 - INFRASTRUCTURE DECISION: APP HOSTING + DOCKERIZED DATABASE
 ────────────────────────────────────────────────────────────────────────────────
 
 3.1  COST COMPARISON (monthly, USD)
@@ -136,7 +136,7 @@ SECTION 3 — INFRASTRUCTURE DECISION: APP HOSTING + DOCKERIZED DATABASE
     ─────────────────────────────────
     Total                       ~$45/mo
 
-  OPTION A — AWS (EC2 + Dockerized PostgreSQL)
+  OPTION A - AWS (EC2 + Dockerized PostgreSQL)
     EC2 t3.small (app server + db container)  $15/mo
     S3 (storage, ~50 GB)                        $1.15/mo
     Data transfer                               ~$5/mo
@@ -144,7 +144,7 @@ SECTION 3 — INFRASTRUCTURE DECISION: APP HOSTING + DOCKERIZED DATABASE
     ─────────────────────────────────────────────────
     Total                                      ~$22/mo
 
-  OPTION B — Hetzner VPS (all-in-one)
+  OPTION B - Hetzner VPS (all-in-one)
     CX21 VPS (2 vCPU, 4 GB RAM)  $5.83/mo
     OR CX31 (2 vCPU, 8 GB RAM)   $12.49/mo
     PostgreSQL Docker container    $0 (self-managed)
@@ -152,7 +152,7 @@ SECTION 3 — INFRASTRUCTURE DECISION: APP HOSTING + DOCKERIZED DATABASE
     ─────────────────────────────────
     Total                       ~$18/mo (CX31 + storage)
 
-  OPTION C — DigitalOcean Droplet
+  OPTION C - DigitalOcean Droplet
     4 GB RAM / 2 vCPU Droplet    $24/mo
     PostgreSQL Docker container    $0 (self-managed)
     Spaces Object Storage        $5/mo
@@ -183,26 +183,26 @@ SECTION 3 — INFRASTRUCTURE DECISION: APP HOSTING + DOCKERIZED DATABASE
 
 
 ────────────────────────────────────────────────────────────────────────────────
-SECTION 4 — MIGRATION PHASES OVERVIEW
+SECTION 4 - MIGRATION PHASES OVERVIEW
 ────────────────────────────────────────────────────────────────────────────────
 
-  Phase 0 — Preparation & Environment Setup          (Week 1)
-  Phase 1 — Prisma Schema & Database Migration       (Week 1–2)
-  Phase 2 — Auth Migration (Supabase Auth → NextAuth)(Week 2–3)
-  Phase 3 — Replace Supabase Client with Prisma      (Week 3–4)
-  Phase 4 — Storage Migration (Supabase → S3/MinIO)  (Week 4)
-  Phase 5 — Edge Functions → API Routes / Cron       (Week 4–5)
-  Phase 6 — Server Setup & Deployment                (Week 5–6)
-  Phase 7 — Data Migration (Live Supabase → New DB)  (Week 6)
-  Phase 8 — Testing, Cutover & Go-Live               (Week 7–8)
+  Phase 0 - Preparation & Environment Setup          (Week 1)
+  Phase 1 - Prisma Schema & Database Migration       (Week 1–2)
+  Phase 2 - Auth Migration (Supabase Auth → NextAuth)(Week 2–3)
+  Phase 3 - Replace Supabase Client with Prisma      (Week 3–4)
+  Phase 4 - Storage Migration (Supabase → S3/MinIO)  (Week 4)
+  Phase 5 - Edge Functions → API Routes / Cron       (Week 4–5)
+  Phase 6 - Server Setup & Deployment                (Week 5–6)
+  Phase 7 - Data Migration (Live Supabase → New DB)  (Week 6)
+  Phase 8 - Testing, Cutover & Go-Live               (Week 7–8)
 
 
 ────────────────────────────────────────────────────────────────────────────────
-SECTION 5 — DETAILED PHASE BREAKDOWN
+SECTION 5 - DETAILED PHASE BREAKDOWN
 ────────────────────────────────────────────────────────────────────────────────
 
 ══════════════════════════════════════════════════════════════════════════════
-PHASE 0 — PREPARATION & ENVIRONMENT SETUP  [Week 1, Days 1–3]
+PHASE 0 - PREPARATION & ENVIRONMENT SETUP  [Week 1, Days 1–3]
 ══════════════════════════════════════════════════════════════════════════════
 
   Goals:
@@ -283,7 +283,7 @@ PHASE 0 — PREPARATION & ENVIRONMENT SETUP  [Week 1, Days 1–3]
 
 
 ══════════════════════════════════════════════════════════════════════════════
-PHASE 1 — PRISMA SCHEMA & DATABASE MIGRATION  [Week 1–2, Days 3–7]
+PHASE 1 - PRISMA SCHEMA & DATABASE MIGRATION  [Week 1–2, Days 3–7]
 ══════════════════════════════════════════════════════════════════════════════
 
   Goals:
@@ -417,7 +417,7 @@ PHASE 1 — PRISMA SCHEMA & DATABASE MIGRATION  [Week 1–2, Days 3–7]
 
 
 ══════════════════════════════════════════════════════════════════════════════
-PHASE 2 — AUTH MIGRATION: Supabase Auth → NextAuth.js v5  [Week 2–3]
+PHASE 2 - AUTH MIGRATION: Supabase Auth → NextAuth.js v5  [Week 2–3]
 ══════════════════════════════════════════════════════════════════════════════
 
   Goals:
@@ -622,7 +622,7 @@ PHASE 2 — AUTH MIGRATION: Supabase Auth → NextAuth.js v5  [Week 2–3]
 
 
 ══════════════════════════════════════════════════════════════════════════════
-PHASE 3 — REPLACE SUPABASE CLIENT WITH PRISMA  [Week 3–4]
+PHASE 3 - REPLACE SUPABASE CLIENT WITH PRISMA  [Week 3–4]
 ══════════════════════════════════════════════════════════════════════════════
 
   Goals:
@@ -708,7 +708,7 @@ PHASE 3 — REPLACE SUPABASE CLIENT WITH PRISMA  [Week 3–4]
 
 
 ══════════════════════════════════════════════════════════════════════════════
-PHASE 4 — STORAGE MIGRATION  [Week 4]
+PHASE 4 - STORAGE MIGRATION  [Week 4]
 ══════════════════════════════════════════════════════════════════════════════
 
   Goals:
@@ -783,7 +783,7 @@ PHASE 4 — STORAGE MIGRATION  [Week 4]
 
 
 ══════════════════════════════════════════════════════════════════════════════
-PHASE 5 — EDGE FUNCTIONS → API ROUTES / CRON  [Week 4–5]
+PHASE 5 - EDGE FUNCTIONS → API ROUTES / CRON  [Week 4–5]
 ══════════════════════════════════════════════════════════════════════════════
 
   Goals:
@@ -819,7 +819,7 @@ PHASE 5 — EDGE FUNCTIONS → API ROUTES / CRON  [Week 4–5]
 
 
 ══════════════════════════════════════════════════════════════════════════════
-PHASE 6 — SERVER SETUP & DEPLOYMENT PIPELINE  [Week 5–6]
+PHASE 6 - SERVER SETUP & DEPLOYMENT PIPELINE  [Week 5–6]
 ══════════════════════════════════════════════════════════════════════════════
 
   [ ] 6.1  Create production-ready Next.js start command
@@ -888,14 +888,14 @@ PHASE 6 — SERVER SETUP & DEPLOYMENT PIPELINE  [Week 5–6]
 
 
 ══════════════════════════════════════════════════════════════════════════════
-PHASE 7 — DATA MIGRATION (Live Supabase → New DB)  [Week 6]
+PHASE 7 - DATA MIGRATION (Live Supabase → New DB)  [Week 6]
 ══════════════════════════════════════════════════════════════════════════════
 
   Goals:
     - Export all live data from Supabase
     - Import into new PostgreSQL database with zero data loss
     - Migrate all user passwords (Supabase uses GoTrue; passwords are not
-      exportable — see NOTE below)
+      exportable - see NOTE below)
 
   NOTE ON PASSWORDS:
     Supabase Auth (GoTrue) stores passwords using bcrypt, but does NOT expose
@@ -949,7 +949,7 @@ PHASE 7 — DATA MIGRATION (Live Supabase → New DB)  [Week 6]
 
 
 ══════════════════════════════════════════════════════════════════════════════
-PHASE 8 — TESTING, CUTOVER & GO-LIVE  [Week 7–8]
+PHASE 8 - TESTING, CUTOVER & GO-LIVE  [Week 7–8]
 ══════════════════════════════════════════════════════════════════════════════
 
   [ ] 8.1  End-to-end testing on staging
@@ -1002,7 +1002,7 @@ PHASE 8 — TESTING, CUTOVER & GO-LIVE  [Week 7–8]
 
 
 ────────────────────────────────────────────────────────────────────────────────
-SECTION 6 — PACKAGES TO ADD / REMOVE
+SECTION 6 - PACKAGES TO ADD / REMOVE
 ────────────────────────────────────────────────────────────────────────────────
 
   ADD:
@@ -1018,14 +1018,14 @@ SECTION 6 — PACKAGES TO ADD / REMOVE
 
 
 ────────────────────────────────────────────────────────────────────────────────
-SECTION 7 — NEW ENV VARIABLES REQUIRED
+SECTION 7 - NEW ENV VARIABLES REQUIRED
 ────────────────────────────────────────────────────────────────────────────────
 
   # Database
   DATABASE_URL="postgresql://refreeg_user:PASSWORD@127.0.0.1:5432/refreeg_db"
 
   # NextAuth
-  NEXTAUTH_SECRET="<32 char random string — openssl rand -base64 32>"
+  NEXTAUTH_SECRET="<32 char random string - openssl rand -base64 32>"
   NEXTAUTH_URL="https://refreeg.com"
 
   # Google OAuth (from Google Cloud Console)
@@ -1048,7 +1048,7 @@ SECTION 7 — NEW ENV VARIABLES REQUIRED
 
 
 ────────────────────────────────────────────────────────────────────────────────
-SECTION 8 — RISKS & MITIGATIONS
+SECTION 8 - RISKS & MITIGATIONS
 ────────────────────────────────────────────────────────────────────────────────
 
   RISK 1: Password migration (HIGH IMPACT)
@@ -1064,7 +1064,7 @@ SECTION 8 — RISKS & MITIGATIONS
 
   RISK 3: Row Level Security (RLS) gaps (MEDIUM IMPACT)
     Problem: Supabase RLS policies are enforced at the DB level. Prisma
-    has no built-in equivalent — security must be enforced at the
+    has no built-in equivalent - security must be enforced at the
     application layer (action/API route level).
     Mitigation: Audit every action file to ensure user ID checks are
     explicit. Create a requireAuth() helper that verifies the session
@@ -1091,7 +1091,7 @@ SECTION 8 — RISKS & MITIGATIONS
 
 
 ────────────────────────────────────────────────────────────────────────────────
-SECTION 9 — COST SUMMARY
+SECTION 9 - COST SUMMARY
 ────────────────────────────────────────────────────────────────────────────────
 
   CURRENT MONTHLY COST
@@ -1121,7 +1121,7 @@ SECTION 9 — COST SUMMARY
 
 
 ────────────────────────────────────────────────────────────────────────────────
-SECTION 10 — TIMELINE SUMMARY
+SECTION 10 - TIMELINE SUMMARY
 ────────────────────────────────────────────────────────────────────────────────
 
   Week 1 (Days 1–7):
@@ -1172,7 +1172,7 @@ SECTION 10 — TIMELINE SUMMARY
 
 
 ────────────────────────────────────────────────────────────────────────────────
-SECTION 11 — QUICK REFERENCE CHEAT SHEET
+SECTION 11 - QUICK REFERENCE CHEAT SHEET
 ────────────────────────────────────────────────────────────────────────────────
 
   Supabase SDK → Prisma equivalents:
