@@ -20,7 +20,7 @@ export function RecurringGivingCard({
   if (recurring.length === 0) return null;
 
   return (
-    <section className="rounded-2xl bg-surface p-5">
+    <section className="rounded-2xl border border-ink/10 shadow-subtle bg-surface p-5">
       <h2 className="font-semibold text-ink">Monthly giving</h2>
       <ul className="mt-4 space-y-4">
         {recurring.map((plan) => (
@@ -58,7 +58,7 @@ export function GivenByCauseCard({
   const total = causes.reduce((t, c) => t + c.amount, 0) || 1;
 
   return (
-    <section className="rounded-2xl bg-surface p-5">
+    <section className="rounded-2xl border border-ink/10 shadow-subtle bg-surface p-5">
       <h2 className="font-semibold text-ink">Given by cause</h2>
       <ul className="mt-4 space-y-4">
         {causes.map((cause) => (

@@ -20,7 +20,7 @@ export function GiftRow({ gift }: { gift: Gift }) {
   return (
     <li
       className={cn(
-        "flex items-center gap-4 rounded-2xl bg-surface p-3.5 sm:p-4",
+        "flex items-center gap-4 rounded-2xl border border-ink/10 shadow-subtle bg-surface p-3.5 sm:p-4",
         isPledge ? "border border-ink/25" : "border border-transparent",
       )}
     >
