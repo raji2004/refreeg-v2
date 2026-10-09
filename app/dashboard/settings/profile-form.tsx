@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { Check, Eye, Upload } from "lucide-react";
+// import Link from "next/link";
+import { Check, /* Eye, */ Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -263,11 +263,11 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
     shortDisplayName(formData.full_name || "You");
   const givingSince = formatGivingSince(profile.created_at);
   const campaignsCount = profile.causes_count ?? 0;
-  const publicProfileHref = formData.username
-    ? profile.account_type === "organization"
-      ? `/${formData.username}?view=personal`
-      : `/${formData.username}`
-    : "";
+  // const publicProfileHref = formData.username
+  //   ? profile.account_type === "organization"
+  //     ? `/${formData.username}?view=personal`
+  //     : `/${formData.username}`
+  //   : "";
 
   const namedPreview = formData.location
     ? `${previewName}, ${formData.location}`
@@ -287,6 +287,7 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
               Editing one row at a time. Switches apply on flip.
             </p>
           </div>
+          {/* Hidden until the public profile page gets its styling update.
           {publicProfileHref ? (
             <Button
               asChild
@@ -302,7 +303,7 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
                 View public profile
               </Link>
             </Button>
-          ) : null}
+          ) : null} */}
         </div>
 
         <Card className="overflow-hidden rounded-2xl border border-hairline bg-white shadow-none">
