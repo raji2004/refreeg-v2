@@ -18,8 +18,8 @@ function StatCard({
     <div
       className={
         tone === "sand"
-          ? "rounded-2xl bg-sand p-5"
-          : "rounded-2xl bg-surface p-5"
+          ? "rounded-2xl border border-ink/10 shadow-subtle bg-sand p-5"
+          : "rounded-2xl border border-ink/10 shadow-subtle bg-surface p-5"
       }
     >
       <p

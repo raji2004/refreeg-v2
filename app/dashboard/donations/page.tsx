@@ -193,7 +193,7 @@ export default async function MyGivingPage({
               ))}
             </ul>
           ) : (
-            <p className="mt-4 rounded-2xl bg-surface px-5 py-8 text-center text-sm text-ink/60">
+            <p className="mt-4 rounded-2xl border border-ink/10 shadow-subtle bg-surface px-5 py-8 text-center text-sm text-ink/60">
               {q
                 ? `No gifts match “${q}”.`
                 : "No gifts here for this period yet."}
