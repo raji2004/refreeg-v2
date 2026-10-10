@@ -19,6 +19,8 @@ import { legalLinks, socialLinks } from "@/lib/links";
 
 gsap.registerPlugin(ScrollTrigger);
 
+const COMMUNITY_LINK = "https://t.me/+ibsgFy6SL0AwYmE8";
+
 const footerColumns = [
   {
     title: "GIVE",
@@ -54,6 +56,18 @@ const footerColumns = [
       { label: "Press", href: "/#faq" },
       { label: "Careers", href: "/how-it-works" },
       { label: "Contact", href: "/#faq" },
+    ],
+  },
+  {
+    title: "COMMUNITY",
+    links: [
+      {
+        label: "Join Telegram",
+        href: COMMUNITY_LINK,
+        external: true,
+      },
+      { label: "Our Mission", href: "/about-us/OurMission" },
+      { label: "Success Stories", href: "/about-us/OurImpact" },
     ],
   },
 ];
@@ -167,7 +181,7 @@ export function Footer() {
           </div>
 
           {}
-          <div className="grid grid-cols-2 gap-10 md:grid-cols-4 footer-columns">
+          <div className="grid grid-cols-2 gap-10 md:grid-cols-5 footer-columns">
             {footerColumns.map((column) => (
               <div key={column.title}>
                 <h3 className="text-xs font-semibold uppercase tracking-[0.18em]">
@@ -179,6 +193,8 @@ export function Footer() {
                     <li key={link.label}>
                       <Link
                         href={link.href}
+                        target={link.external ? "_blank" : undefined}
+                        rel={link.external ? "noopener noreferrer" : undefined}
                         className="text-sm transition-colors hover:text-[#0A3CB5]"
                       >
                         {link.label}
