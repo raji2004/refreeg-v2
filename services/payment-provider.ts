@@ -56,10 +56,20 @@ export async function createSubaccount(
   return getProvider(provider).createSubaccount(data);
 }
 
-export async function createDualSubaccounts(data: ICreateSubaccount) {
+export async function createDualSubaccounts(
+  data: ICreateSubaccount,
+  existingFlutterwaveSubaccountId?: string | null,
+) {
+  const flutterwaveAttempt = existingFlutterwaveSubaccountId
+    ? Promise.resolve({
+        subaccount_id: existingFlutterwaveSubaccountId,
+        account_number: data.account_number,
+      })
+    : Flutterwave.createSubaccount(data);
+
   const [paystackResult, flutterwaveResult] = await Promise.allSettled([
     Paystack.createSubaccount(data),
-    Flutterwave.createSubaccount(data),
+    flutterwaveAttempt,
   ]);
 
   return {

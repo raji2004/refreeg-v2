@@ -2,6 +2,13 @@ import { ICreateSubaccount, TransactionData } from "@/types";
 import axios from "axios";
 import { getBaseURL } from "@/lib/utils";
 
+/** Spaces and leading zeros must not hide an existing Flutterwave subaccount. */
+export function normalizeAccountNumber(value: unknown): string {
+  return String(value ?? "")
+    .replace(/\s+/g, "")
+    .replace(/^0+/, "");
+}
+
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
 
 if (!FLUTTERWAVE_SECRET_KEY) {
@@ -177,12 +184,8 @@ const Flutterwave = {
       };
     } catch (error: any) {
       const body = error.response?.data;
-      console.error(
-        "Flutterwave createSubaccount failed:",
-        body ?? error.message,
-      );
-
       const message = String(body?.message || error.message || "");
+
       if (/already exists/i.test(message)) {
         const existingId = await this.findSubaccountByAccountNumber(
           data.account_number,
@@ -193,6 +196,16 @@ const Flutterwave = {
             account_number: data.account_number,
           };
         }
+
+        console.warn(
+          "Flutterwave subaccount already exists but could not be recovered:",
+          body ?? message,
+        );
+      } else {
+        console.error(
+          "Flutterwave createSubaccount failed:",
+          body ?? error.message,
+        );
       }
 
       throw error;
@@ -429,9 +442,13 @@ const Flutterwave = {
 
         if (subaccounts.length === 0) break; // No more pages
 
-        const match = subaccounts.find(
-          (s: any) => s.account_number === accountNumber,
-        );
+        const wanted = normalizeAccountNumber(accountNumber);
+        const match = wanted
+          ? subaccounts.find((s: any) => {
+              const stored = normalizeAccountNumber(s.account_number);
+              return stored.length > 0 && stored === wanted;
+            })
+          : undefined;
 
         if (match) {
           return String(match.subaccount_id || match.id);

@@ -1,4 +1,8 @@
-import { getProvider, initializeTransaction, createDualSubaccounts } from "@/services/payment-provider";
+import {
+  getProvider,
+  initializeTransaction,
+  createDualSubaccounts,
+} from "@/services/payment-provider";
 import Paystack from "@/services/paystack";
 import Flutterwave from "@/services/flutterwave";
 import { TransactionData } from "@/types";
@@ -87,6 +91,28 @@ describe("Payment Provider Dispatcher", () => {
       expect(result).toEqual({
         paystack: { subaccount_code: "SUB_123", account_number: "0000000000" },
         flutterwave: { subaccount_id: "RS_456", account_number: "0000000000" },
+      });
+    });
+
+    it("reuses a stored Flutterwave subaccount id instead of creating one", async () => {
+      (Paystack.createSubaccount as jest.Mock).mockResolvedValueOnce({
+        subaccount_code: "SUB_123",
+        account_number: "123456789",
+      });
+
+      const data = {
+        account_number: "123456789",
+        bank_code: "044",
+        business_name: "Test",
+        percentage_charge: 0,
+      };
+
+      const result = await createDualSubaccounts(data, "RS_existing");
+
+      expect(Flutterwave.createSubaccount).not.toHaveBeenCalled();
+      expect(result.flutterwave).toEqual({
+        subaccount_id: "RS_existing",
+        account_number: "123456789",
       });
     });
   });

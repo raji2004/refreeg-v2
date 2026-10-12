@@ -18,6 +18,7 @@ export async function GET() {
         bankName: true,
         fullName: true,
         username: true,
+        flutterwaveSubAccountId: true,
       },
     });
 
@@ -31,6 +32,8 @@ export async function GET() {
     const results = [];
 
     for (const user of users) {
+      if (user.flutterwaveSubAccountId) continue;
+
       try {
         const bankCode = await Flutterwave.getBankCode(user.bankName!);
 
