@@ -22,6 +22,7 @@ async function main() {
       bankName: true,
       accountName: true,
       email: true,
+      flutterwaveSubAccountId: true,
     },
   });
 
@@ -39,6 +40,8 @@ async function main() {
   let failCount = 0;
 
   for (const user of usersToBackfill) {
+    if (user.flutterwaveSubAccountId) continue;
+
     try {
       console.log(`Processing user ${user.id} (${user.email})...`);
 
@@ -46,17 +49,19 @@ async function main() {
       // Note: bank names might differ slightly between Paystack and Flutterwave,
       // so we use a loose string inclusion match as a fallback.
       let bankCode = flutterwaveBanks.find(
-        (b) => b.name.toLowerCase() === user.bankName?.toLowerCase()
+        (b) => b.name.toLowerCase() === user.bankName?.toLowerCase(),
       )?.code;
 
       if (!bankCode) {
         bankCode = flutterwaveBanks.find((b) =>
-          b.name.toLowerCase().includes(user.bankName?.toLowerCase() || "")
+          b.name.toLowerCase().includes(user.bankName?.toLowerCase() || ""),
         )?.code;
       }
 
       if (!bankCode) {
-        throw new Error(`Could not resolve Flutterwave bank code for name: ${user.bankName}`);
+        throw new Error(
+          `Could not resolve Flutterwave bank code for name: ${user.bankName}`,
+        );
       }
 
       const result = await Flutterwave.createSubaccount({
@@ -77,10 +82,15 @@ async function main() {
         },
       });
 
-      console.log(`✅ Successfully backfilled user ${user.id} with Flutterwave ID: ${result.subaccount_id}`);
+      console.log(
+        `✅ Successfully backfilled user ${user.id} with Flutterwave ID: ${result.subaccount_id}`,
+      );
       successCount++;
     } catch (error: any) {
-      console.error(`❌ Failed to backfill user ${user.id}:`, error.message || error);
+      console.error(
+        `❌ Failed to backfill user ${user.id}:`,
+        error.message || error,
+      );
       failCount++;
     }
 
@@ -88,7 +98,9 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  console.log(`\nBackfill complete! Success: ${successCount}, Failed: ${failCount}`);
+  console.log(
+    `\nBackfill complete! Success: ${successCount}, Failed: ${failCount}`,
+  );
 }
 
 main()

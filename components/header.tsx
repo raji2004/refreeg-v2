@@ -73,6 +73,12 @@ const publicNavItems: NavItem[] = [
     icon: Compass,
   },
   {
+    title: "Community",
+    href: "/community",
+    type: "link",
+    icon: Users,
+  },
+  {
     title: "What can I crowdfund?",
     header: "Curious about what you crowdfund for? Here are some ideas:",
     icon: HandHeart,
