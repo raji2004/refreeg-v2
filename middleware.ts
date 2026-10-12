@@ -11,6 +11,8 @@ const PUBLIC_FILES = new Set<string>(publicFileManifest);
 
 const IMAGE_EXT = /\.(?:png|jpe?g|gif|webp|svg|ico|avif)$/i;
 
+const SOURCE_FILE_EXT = /\.(?:js|ts|map)$/i;
+
 // Icons served from app/ (favicon.ico, icon.*, apple-icon.*), which aren't in public/.
 const APP_ICON_PATH =
   /^\/(?:favicon\.ico|(?:apple-)?icon\d*\.(?:ico|png|jpe?g|svg))$/i;
@@ -126,6 +128,11 @@ const handleAuth = auth(async (req) => {
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
   const { pathname } = req.nextUrl;
+
+  // Scanners probe for source files (e.g. /api/auth/pre-signin-cleanup.js); without this they reach Auth.js and log UnknownAction.
+  if (pathname.startsWith("/api/") && SOURCE_FILE_EXT.test(pathname)) {
+    return new NextResponse(null, { status: 404 });
+  }
 
   if (IMAGE_EXT.test(pathname)) {
     if (!PUBLIC_FILES.has(pathname) && !APP_ICON_PATH.test(pathname)) {
