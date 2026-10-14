@@ -15,6 +15,7 @@ import {
 import Image from "next/image";
 import { createCause } from "@/actions/cause-actions";
 import { useAuth } from "@/hooks/use-auth";
+import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
 
 export function Step7Review() {
   const { draft, updateDraft, totalGoal, goToStep, prevStep } =
@@ -113,7 +114,7 @@ export function Step7Review() {
                 </div>
               )}
               <span className="absolute left-3 top-3 rounded-full bg-[#0E1B14]/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-xs">
-                {draft.category}
+                {getCampaignCategoryStyle(draft.category).name}
               </span>
             </div>
 
@@ -166,7 +167,8 @@ export function Step7Review() {
               </button>
             </div>
             <p className="mt-2 text-sm font-semibold text-[#0E1B14]">
-              {draft.category} · {draft.fullLocation || "Lagos"}
+              {getCampaignCategoryStyle(draft.category).name} ·{" "}
+              {draft.fullLocation || "Lagos"}
             </p>
           </div>
 

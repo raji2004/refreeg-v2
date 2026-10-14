@@ -2,48 +2,18 @@
 
 import React, { useState } from "react";
 import { useCampaignFlow } from "../campaign-flow-provider";
-import {
-  Sparkles,
-  ArrowRight,
-  CornerDownLeft,
-  Check,
-  Compass,
-  Users,
-  Building,
-  ShieldCheck,
-} from "lucide-react";
+import { Sparkles, ArrowRight, CornerDownLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const CATEGORIES = [
-  "Small business",
-  "Education",
-  "Disaster relief",
-  "Health",
-  "Water",
-  "Shelter",
-  "Children",
-  "Elderly",
-];
-
-const ENTITY_OPTIONS = [
-  {
-    id: "myself" as const,
-    title: "Myself, for others",
-    description: "Needs level 2 ID before it goes live",
-    icon: Users,
-  },
-  {
-    id: "organization" as const,
-    title: "A registered organisation",
-    description: "CAC number and level 3 verification",
-    icon: Building,
-  },
-  {
-    id: "community" as const,
-    title: "A community group",
-    description: "Two members must confirm",
-    icon: ShieldCheck,
-  },
+export const CAUSE_CATEGORIES = [
+  { id: "business", label: "Small business" },
+  { id: "education", label: "Education" },
+  { id: "disaster", label: "Disaster relief" },
+  { id: "health", label: "Healthcare" },
+  { id: "environment", label: "Environment" },
+  { id: "community", label: "Community" },
+  { id: "animals", label: "Animal welfare" },
+  { id: "creative", label: "Creative" },
 ];
 
 export function Step1Cause() {
@@ -98,21 +68,21 @@ export function Step1Cause() {
         currentAiQuestionIndex: 4,
       };
       nextQuestionText = "What category best describes this?";
-      nextOptions = ["Small business", "Disaster relief", "Community"];
-    } else if (currentQ === 4) {
-      fieldUpdate = {
-        category: textToSend,
-        currentAiQuestionIndex: 5,
-      };
-      nextQuestionText = "Great! Who is raising these funds?";
       nextOptions = [
-        "Myself, for others",
-        "A registered organisation",
-        "A community group",
+        "Small business",
+        "Education",
+        "Disaster relief",
+        "Community",
       ];
     } else {
-      // 5 of 5 completed -> automatically generate title & transition to manual review or next step
+      // 4 of 4 completed: category picked -> transition to manual form
+      const matched = CAUSE_CATEGORIES.find(
+        (c) =>
+          c.id.toLowerCase() === textToSend.toLowerCase() ||
+          c.label.toLowerCase() === textToSend.toLowerCase(),
+      );
       fieldUpdate = {
+        category: matched ? matched.id : textToSend.toLowerCase(),
         title: draft.title || "Restock 42 stalls after the Ladipo fire",
         intakeMode: "manual",
       };
@@ -148,14 +118,14 @@ export function Step1Cause() {
                   AI Campaign Assistant
                 </span>
                 <span className="text-xs font-medium text-[#6B7280]">
-                  Question {draft.currentAiQuestionIndex} of 5
+                  Question {draft.currentAiQuestionIndex} of 4
                 </span>
               </div>
               <h2 className="font-serif text-2xl font-bold tracking-tight text-[#0E1B14] sm:text-3xl">
                 Tell me what you are raising for
               </h2>
               <p className="text-sm text-[#6B7280] sm:text-base">
-                Five questions, then I fill the form and you edit anything you
+                Four questions, then I fill the form and you edit anything you
                 like.
               </p>
             </div>
@@ -281,13 +251,16 @@ export function Step1Cause() {
                   Cause Category
                 </label>
                 <div className="flex flex-wrap gap-2.5">
-                  {CATEGORIES.map((cat) => {
-                    const isSelected = draft.category === cat;
+                  {CAUSE_CATEGORIES.map((cat) => {
+                    const isSelected =
+                      draft.category === cat.id ||
+                      draft.category?.toLowerCase() === cat.id.toLowerCase() ||
+                      draft.category?.toLowerCase() === cat.label.toLowerCase();
                     return (
                       <button
-                        key={cat}
+                        key={cat.id}
                         type="button"
-                        onClick={() => updateDraft({ category: cat })}
+                        onClick={() => updateDraft({ category: cat.id })}
                         className={cn(
                           "rounded-full px-4 py-2 text-xs font-semibold transition-all sm:text-sm",
                           isSelected
@@ -295,51 +268,8 @@ export function Step1Cause() {
                             : "border border-[#EFEBE1] bg-[#FAF9F6] text-[#0E1B14] hover:bg-[#F2F2EE]",
                         )}
                       >
-                        {cat}
+                        {cat.label}
                       </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Entity: Who is raising */}
-              <div className="space-y-3">
-                <label className="text-xs font-bold uppercase tracking-wider text-[#6B7280]">
-                  Who is raising
-                </label>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {ENTITY_OPTIONS.map((entity) => {
-                    const isSelected = draft.entityType === entity.id;
-                    const Icon = entity.icon;
-                    return (
-                      <div
-                        key={entity.id}
-                        onClick={() => updateDraft({ entityType: entity.id })}
-                        className={cn(
-                          "cursor-pointer rounded-2xl border p-4 transition-all",
-                          isSelected
-                            ? "border-[#0E1B14] bg-[#F8F7F3] shadow-sm ring-1 ring-[#0E1B14]"
-                            : "border-[#EFEBE1] bg-white hover:border-gray-300",
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <Icon
-                            className={cn(
-                              "h-5 w-5",
-                              isSelected ? "text-[#0E1B14]" : "text-[#6B7280]",
-                            )}
-                          />
-                          {isSelected && (
-                            <Check className="h-4 w-4 text-[#0E1B14] stroke-[3]" />
-                          )}
-                        </div>
-                        <p className="mt-3 text-sm font-semibold text-[#0E1B14]">
-                          {entity.title}
-                        </p>
-                        <p className="mt-1 text-xs text-[#6B7280]">
-                          {entity.description}
-                        </p>
-                      </div>
                     );
                   })}
                 </div>

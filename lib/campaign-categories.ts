@@ -98,6 +98,41 @@ const fallbackCategoryStyle: CampaignCategoryStyle = {
 
 export function getCampaignCategoryStyle(value?: string | null) {
   const normalizedValue = value?.trim().toLowerCase();
+  if (!normalizedValue) return fallbackCategoryStyle;
+
+  if (
+    normalizedValue === "small business" ||
+    normalizedValue === "small-business"
+  ) {
+    return (
+      campaignCategoryStyles.find((c) => c.id === "business") ??
+      fallbackCategoryStyle
+    );
+  }
+  if (
+    normalizedValue === "disaster relief" ||
+    normalizedValue === "disaster-relief"
+  ) {
+    return (
+      campaignCategoryStyles.find((c) => c.id === "disaster") ??
+      fallbackCategoryStyle
+    );
+  }
+  if (
+    normalizedValue === "animal welfare" ||
+    normalizedValue === "animal-welfare"
+  ) {
+    return (
+      campaignCategoryStyles.find((c) => c.id === "animals") ??
+      fallbackCategoryStyle
+    );
+  }
+  if (normalizedValue === "healthcare") {
+    return (
+      campaignCategoryStyles.find((c) => c.id === "health") ??
+      fallbackCategoryStyle
+    );
+  }
 
   return (
     campaignCategoryStyles.find(

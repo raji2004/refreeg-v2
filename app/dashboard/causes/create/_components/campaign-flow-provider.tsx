@@ -23,7 +23,7 @@ const DEFAULT_LINE_ITEMS: CampaignLineItem[] = [
 
 const INITIAL_DRAFT_STATE: CampaignDraftData = {
   intakeMode: "ai_chat",
-  category: "Small business",
+  category: "business",
   entityType: "myself",
   locationCity: "Lagos",
   locationArea: "Ladipo",
@@ -132,6 +132,7 @@ export function CampaignFlowProvider({
   children,
   initialUserKyc,
   initialBankInfo,
+  initialAccountType,
 }: {
   children: React.ReactNode;
   initialUserKyc?: { isVerified: boolean; details?: any };
@@ -140,8 +141,15 @@ export function CampaignFlowProvider({
     accountNumber?: string;
     accountName?: string;
   };
+  initialAccountType?: string | null;
 }) {
-  const [draft, setDraft] = useState<CampaignDraftData>(INITIAL_DRAFT_STATE);
+  const defaultEntityType =
+    initialAccountType === "organization" ? "organization" : "myself";
+
+  const [draft, setDraft] = useState<CampaignDraftData>({
+    ...INITIAL_DRAFT_STATE,
+    entityType: defaultEntityType,
+  });
   const [errors, setErrors] = useState<CampaignFlowErrors>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -151,9 +159,15 @@ export function CampaignFlowProvider({
       const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        // Normalize category if legacy label was stored
+        let cat = parsed.category || "business";
+        if (cat === "Small business" || cat === "Business") cat = "business";
+
         setDraft((prev) => ({
           ...prev,
           ...parsed,
+          category: cat,
+          entityType: defaultEntityType,
           // Retain server-verified status if available
           isIdentityVerified:
             initialUserKyc?.isVerified ?? parsed.isIdentityVerified ?? false,
@@ -170,6 +184,7 @@ export function CampaignFlowProvider({
         if (initialUserKyc?.isVerified) {
           setDraft((prev) => ({
             ...prev,
+            entityType: defaultEntityType,
             isIdentityVerified: true,
             identityVerificationDetails: initialUserKyc.details,
           }));
@@ -177,6 +192,7 @@ export function CampaignFlowProvider({
         if (initialBankInfo) {
           setDraft((prev) => ({
             ...prev,
+            entityType: defaultEntityType,
             bankName: initialBankInfo.bankName || "",
             accountNumber: initialBankInfo.accountNumber || "",
             accountName: initialBankInfo.accountName || "",
@@ -188,7 +204,7 @@ export function CampaignFlowProvider({
     } finally {
       setIsLoaded(true);
     }
-  }, [initialUserKyc, initialBankInfo]);
+  }, [initialUserKyc, initialBankInfo, defaultEntityType]);
 
   // Autosave to localStorage
   useEffect(() => {

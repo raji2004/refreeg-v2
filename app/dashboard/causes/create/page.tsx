@@ -32,13 +32,14 @@ export default async function CreateCausePage() {
       }
     : null;
 
-  // Retrieve bank details if previously configured on user profile
+  // Retrieve bank details and account type if previously configured on user profile
   const userRecord = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       bankName: true,
       accountNumber: true,
       accountName: true,
+      accountType: true,
     },
   });
 
@@ -53,6 +54,7 @@ export default async function CreateCausePage() {
         accountNumber: userRecord?.accountNumber ?? undefined,
         accountName: userRecord?.accountName ?? undefined,
       }}
+      initialAccountType={userRecord?.accountType}
     >
       <CampaignFlowShell />
     </CampaignFlowProvider>
