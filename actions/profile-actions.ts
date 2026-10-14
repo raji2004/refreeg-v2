@@ -56,7 +56,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
         where: { id: userId },
         omit: { password: true },
       }),
-      prisma.donation.count({ where: { userId } }),
+      prisma.donation.count({ where: { userId } }).catch(() => 0),
     ]);
 
     if (!profile) return null;

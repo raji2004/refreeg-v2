@@ -11,7 +11,7 @@ import { getVerificationStatus } from "@/actions/kyc-actions";
 import type { Profile } from "@/types";
 
 interface KycSettingsContentProps {
-  profile: Profile | null;
+  profile?: Profile | null;
   user: { id: string; email: string };
 }
 
@@ -83,16 +83,6 @@ export function KycSettingsContent({ profile, user }: KycSettingsContentProps) {
 
     checkKycStatus();
   }, [user.id, searchParams, router]);
-
-  if (!profile) {
-    return (
-      <SettingsShell>
-        <div className="text-sm text-muted-foreground">
-          An error occurred. Please refresh the page.
-        </div>
-      </SettingsShell>
-    );
-  }
 
   return (
     <SettingsShell>

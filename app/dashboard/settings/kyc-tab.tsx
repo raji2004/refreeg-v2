@@ -31,7 +31,7 @@ import NavigationLoader from "@/components/NavigationLoader";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 interface KycTabProps {
-  profile: Profile;
+  profile?: Profile | null;
   user: any;
 }
 
