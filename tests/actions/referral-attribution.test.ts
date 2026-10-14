@@ -1,17 +1,3 @@
-/**
- * tests/actions/referral-attribution.test.ts
- *
- * Unit tests for recordDonorReferralAttribution action.
- * Tests:
- * 1. Idempotency: same donation_id does not duplicate records
- * 2. Self-referral detection: donor_user_id === referrer.id -> status='self_referral'
- * 3. Own-campaign detection: donor_user_id === cause.userId -> status='own_campaign'
- * 4. Valid attribution: all conditions pass -> status='confirmed'
- * 5. Anonymous donor attribution: donor_user_id=null -> status='confirmed'
- * 6. Unknown referral code -> returns { recorded: false, reason: 'referrer_not_found' }
- * 7. Missing required parameters -> returns { recorded: false, reason: 'missing_required_params' }
- */
-
 const mockDRAFindUnique = jest.fn();
 const mockDRACreate = jest.fn();
 const mockUserFindUnique = jest.fn();
@@ -45,6 +31,7 @@ import { revalidatePath } from "next/cache";
 
 describe("recordDonorReferralAttribution", () => {
   const REFERRER_ID = "referrer-uuid-123";
+  const REFERRER_UUID = "3f2b8c1e-9a4d-4e7b-8c55-1d2e3f4a5b6c";
   const CAUSE_ID = "cause-uuid-456";
   const DONATION_ID = "donation-uuid-789";
   const CAUSE_OWNER_ID = "cause-owner-uuid";
@@ -117,7 +104,7 @@ describe("recordDonorReferralAttribution", () => {
       causeId: CAUSE_ID,
       referralCode: "REF123",
       donorEmail: "referrer@example.com",
-      donorUserId: REFERRER_ID, // same as referrer
+      donorUserId: REFERRER_ID,
     });
 
     expect(result.recorded).toBe(true);
@@ -127,7 +114,6 @@ describe("recordDonorReferralAttribution", () => {
         status: "self_referral",
       }),
     });
-    // Should NOT revalidate leaderboard for self referrals
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
@@ -137,7 +123,7 @@ describe("recordDonorReferralAttribution", () => {
       causeId: CAUSE_ID,
       referralCode: "REF123",
       donorEmail: "owner@example.com",
-      donorUserId: CAUSE_OWNER_ID, // same as cause.userId
+      donorUserId: CAUSE_OWNER_ID,
     });
 
     expect(result.recorded).toBe(true);
@@ -191,7 +177,7 @@ describe("recordDonorReferralAttribution", () => {
       causeId: CAUSE_ID,
       referralCode: "REF123",
       donorEmail: "anon@example.com",
-      donorUserId: REFERRER_ID, // donor checked 'isAnonymous' on UI, but is logged into the referrer's account
+      donorUserId: REFERRER_ID,
     });
 
     expect(result.recorded).toBe(true);
@@ -219,28 +205,114 @@ describe("recordDonorReferralAttribution", () => {
     });
   });
 
-  it("resolves referrer when code matches referrer UUID directly as fallback", async () => {
-    // First lookup by referralCode column returns null
-    mockUserFindUnique
-      .mockResolvedValueOnce(null)
-      // Second lookup by id (UUID) returns referrer
-      .mockResolvedValueOnce({ id: REFERRER_ID });
-
+  it("resolves referrer by referralCode column without any fallback lookup", async () => {
     const result = await recordDonorReferralAttribution({
       donationId: DONATION_ID,
       causeId: CAUSE_ID,
-      referralCode: REFERRER_ID,
+      referralCode: "REF123",
       donorEmail: "donor@example.com",
     });
 
     expect(result.recorded).toBe(true);
     expect(result.referrerId).toBe(REFERRER_ID);
+    expect(mockUserFindUnique).toHaveBeenCalledTimes(1);
+    expect(mockUserFindUnique).toHaveBeenCalledWith({
+      where: { referralCode: "REF123" },
+      select: { id: true },
+    });
+  });
+
+  it("resolves referrer by username when referralCode misses and code is not a UUID", async () => {
+    mockUserFindUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: REFERRER_ID });
+
+    const result = await recordDonorReferralAttribution({
+      donationId: DONATION_ID,
+      causeId: CAUSE_ID,
+      referralCode: "lumina_nn",
+      donorEmail: "donor@example.com",
+    });
+
+    expect(result.recorded).toBe(true);
+    expect(result.referrerId).toBe(REFERRER_ID);
+    expect(mockUserFindUnique).toHaveBeenCalledTimes(2);
+    expect(mockUserFindUnique).toHaveBeenNthCalledWith(2, {
+      where: { username: "lumina_nn" },
+      select: { id: true },
+    });
     expect(mockDRACreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         referrer_id: REFERRER_ID,
-        referral_code: REFERRER_ID,
+        referral_code: "lumina_nn",
       }),
     });
+  });
+
+  it("resolves referrer by UUID id when referralCode misses, without a username lookup", async () => {
+    mockUserFindUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: REFERRER_UUID });
+
+    const result = await recordDonorReferralAttribution({
+      donationId: DONATION_ID,
+      causeId: CAUSE_ID,
+      referralCode: REFERRER_UUID,
+      donorEmail: "donor@example.com",
+    });
+
+    expect(result.recorded).toBe(true);
+    expect(result.referrerId).toBe(REFERRER_UUID);
+    expect(mockUserFindUnique).toHaveBeenCalledTimes(2);
+    expect(mockUserFindUnique).toHaveBeenNthCalledWith(2, {
+      where: { id: REFERRER_UUID },
+      select: { id: true },
+    });
+    expect(
+      mockUserFindUnique.mock.calls.find((c: any) => c[0]?.where?.username),
+    ).toBeUndefined();
+    expect(mockDRACreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        referrer_id: REFERRER_UUID,
+        referral_code: REFERRER_UUID,
+      }),
+    });
+  });
+
+  it("returns referrer_not_found for a non-UUID code that matches nothing, without an id lookup", async () => {
+    mockUserFindUnique.mockResolvedValue(null);
+
+    const result = await recordDonorReferralAttribution({
+      donationId: DONATION_ID,
+      causeId: CAUSE_ID,
+      referralCode: "lumina_nn",
+      donorEmail: "donor@example.com",
+    });
+
+    expect(result).toEqual({ recorded: false, reason: "referrer_not_found" });
+    expect(mockUserFindUnique).toHaveBeenCalledTimes(2);
+    expect(
+      mockUserFindUnique.mock.calls.find((c: any) => c[0]?.where?.id),
+    ).toBeUndefined();
+    expect(mockDRACreate).not.toHaveBeenCalled();
+  });
+
+  it("returns referrer_not_found for a UUID code that matches nothing, without a username lookup", async () => {
+    mockUserFindUnique.mockResolvedValue(null);
+
+    const result = await recordDonorReferralAttribution({
+      donationId: DONATION_ID,
+      causeId: CAUSE_ID,
+      referralCode: REFERRER_UUID,
+      donorEmail: "donor@example.com",
+    });
+
+    expect(result).toEqual({ recorded: false, reason: "referrer_not_found" });
+    expect(mockUserFindUnique).toHaveBeenCalledTimes(2);
+    expect(
+      mockUserFindUnique.mock.calls.find((c: any) => c[0]?.where?.username),
+    ).toBeUndefined();
+    expect(mockDRACreate).not.toHaveBeenCalled();
   });
 
   it("returns { recorded: false } and does not throw if database insert fails", async () => {
@@ -255,5 +327,20 @@ describe("recordDonorReferralAttribution", () => {
 
     expect(result.recorded).toBe(false);
     expect(result.reason).toBe("DB timeout");
+  });
+
+  it("returns { recorded: false } when required params are missing", async () => {
+    const result = await recordDonorReferralAttribution({
+      donationId: DONATION_ID,
+      causeId: CAUSE_ID,
+      referralCode: "",
+      donorEmail: "donor@example.com",
+    });
+
+    expect(result).toEqual({
+      recorded: false,
+      reason: "missing_required_params",
+    });
+    expect(mockUserFindUnique).not.toHaveBeenCalled();
   });
 });
