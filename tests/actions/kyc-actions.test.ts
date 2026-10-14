@@ -51,10 +51,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/actions/auth-actions";
 import { isAdminOrManager } from "@/actions/role-actions";
 import { logAdminActivity } from "@/actions/database-actions";
-import {
-  sendKycApprovedEmail,
-  sendKycReminderEmail,
-} from "@/services/mail";
+import { sendKycApprovedEmail, sendKycReminderEmail } from "@/services/mail";
 import {
   getVerificationStatus,
   updateVerificationStatus,
@@ -134,7 +131,9 @@ describe("kyc-actions", () => {
 
       expect(result.error).toBeNull();
       expect(result.status?.status).toBe("in_progress");
-      expect(result.status?.document_url).toBe("https://verify.didit.me/session/shortURL");
+      expect(result.status?.document_url).toBe(
+        "https://verify.didit.me/session/shortURL",
+      );
     });
 
     it("fetches Didit API and webhook for valid Didit sessions with UUID", async () => {
@@ -152,7 +151,8 @@ describe("kyc-actions", () => {
         if (url.includes("verification.didit.me")) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({ session_id: "uuid-123", status: "Approved" }),
+            json: () =>
+              Promise.resolve({ session_id: "uuid-123", status: "Approved" }),
           });
         }
         if (url.includes("/api/webhooks/didit")) {
@@ -171,9 +171,75 @@ describe("kyc-actions", () => {
 
       expect(global.fetch).toHaveBeenCalledTimes(2);
       expect(result.status?.status).toBe("approved");
-      expect(result.status?.document_url).toBe("https://verify.didit.me/session/shortURL");
+      expect(result.status?.document_url).toBe(
+        "https://verify.didit.me/session/shortURL",
+      );
 
       // Restore fetch
+      global.fetch = originalFetch;
+    });
+
+    it("re-syncs a rejected Didit record that was later approved on Didit", async () => {
+      mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+        id: "kyc-1",
+        user_id: "user-1",
+        status: "rejected",
+        document_type: "didit",
+        document_url: "uuid-123:::https://verify.didit.me/session/shortURL",
+      });
+
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url.includes("verification.didit.me")) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({ session_id: "uuid-123", status: "Approved" }),
+          });
+        }
+        if (url.includes("/api/webhooks/didit")) {
+          return Promise.resolve({ ok: true });
+        }
+        return Promise.reject(new Error("Unknown URL"));
+      }) as jest.Mock;
+
+      mockPrisma.kyc_verifications.findUnique.mockResolvedValue({
+        id: "kyc-1",
+        status: "approved",
+        document_type: "didit",
+        document_url: "uuid-123:::https://verify.didit.me/session/shortURL",
+      });
+
+      const result = await getVerificationStatus("user-1");
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(result.status?.status).toBe("approved");
+
+      global.fetch = originalFetch;
+    });
+
+    it("leaves a rejected Didit record alone when Didit still says declined", async () => {
+      mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+        id: "kyc-1",
+        user_id: "user-1",
+        status: "rejected",
+        document_type: "didit",
+        document_url: "uuid-123:::https://verify.didit.me/session/shortURL",
+      });
+
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({ session_id: "uuid-123", status: "Declined" }),
+      }) as jest.Mock;
+
+      const result = await getVerificationStatus("user-1");
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.kyc_verifications.findUnique).not.toHaveBeenCalled();
+      expect(result.status?.status).toBe("rejected");
+
       global.fetch = originalFetch;
     });
   });
@@ -257,10 +323,7 @@ describe("kyc-actions", () => {
         error: null,
       });
       expect(sendKycReminderEmail).toHaveBeenCalledTimes(1);
-      expect(sendKycReminderEmail).toHaveBeenCalledWith(
-        "a@test.com",
-        "Alice",
-      );
+      expect(sendKycReminderEmail).toHaveBeenCalledWith("a@test.com", "Alice");
     });
   });
 });
