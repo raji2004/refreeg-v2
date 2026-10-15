@@ -174,9 +174,12 @@ export default function Step4({
               ) : profile?.profile_photo || user?.user_metadata?.avatar_url ? (
                 <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-blue-200">
                   <Image
-                    src={getMediaUrl(
-                      profile?.profile_photo || user?.user_metadata?.avatar_url,
-                    )}
+                    src={
+                      getMediaUrl(
+                        profile?.profile_photo ||
+                          user?.user_metadata?.avatar_url,
+                      ) || "/placeholder-user.jpg"
+                    }
                     alt="Your profile"
                     width={96}
                     height={96}

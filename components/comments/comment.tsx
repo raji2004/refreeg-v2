@@ -128,7 +128,10 @@ export function CommentComponent({
           >
             {comment.user.profile_photo ? (
               <Image
-                src={getMediaUrl(comment.user.profile_photo)}
+                src={
+                  getMediaUrl(comment.user.profile_photo) ||
+                  "/placeholder-user.jpg"
+                }
                 alt={comment.user.full_name || "User"}
                 width={40}
                 height={40}

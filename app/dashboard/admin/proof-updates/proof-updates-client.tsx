@@ -141,7 +141,7 @@ export default function ProofUpdatesClient({
                       className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 hover:border-emerald-500 transition-colors"
                     >
                       <Image
-                        src={url ?? ""}
+                        src={url || "/placeholder.svg"}
                         alt={m.name}
                         fill
                         sizes="20vw"

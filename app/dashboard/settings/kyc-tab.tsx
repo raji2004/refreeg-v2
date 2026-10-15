@@ -395,7 +395,10 @@ export function KycTab({ profile, user }: KycTabProps) {
                       onClick={() => setPreviewOpen(true)}
                     >
                       <Image
-                        src={getMediaUrl(kycData.document_url)}
+                        src={
+                          getMediaUrl(kycData.document_url) ||
+                          "/placeholder.svg"
+                        }
                         alt="KYC Document"
                         width={400}
                         height={300}
@@ -426,7 +429,9 @@ export function KycTab({ profile, user }: KycTabProps) {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Image
-                      src={getMediaUrl(kycData.document_url)}
+                      src={
+                        getMediaUrl(kycData.document_url) || "/placeholder.svg"
+                      }
                       alt="Full size document"
                       fill
                       className="object-contain rounded-lg bg-slate-950"

@@ -619,7 +619,7 @@ export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
               <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-slate-100">
                 {cause.image ? (
                   <Image
-                    src={getMediaUrl(cause.image)}
+                    src={getMediaUrl(cause.image) || "/placeholder.svg"}
                     alt={cause.title}
                     fill
                     className="object-cover"

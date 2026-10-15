@@ -191,7 +191,10 @@ export default function CampaignQualityLab({
                   >
                     {cause.user.profile_photo ? (
                       <Image
-                        src={getMediaUrl(cause.user.profile_photo)}
+                        src={
+                          getMediaUrl(cause.user.profile_photo) ||
+                          "/placeholder-user.jpg"
+                        }
                         alt={cause.user.name}
                         width={24}
                         height={24}
