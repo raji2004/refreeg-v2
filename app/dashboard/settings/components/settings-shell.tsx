@@ -9,7 +9,7 @@ import { SettingsNav } from "./settings-nav";
 interface SettingsShellProps {
   children: ReactNode;
   isOrganization?: boolean;
-
+  isVerified?: boolean;
   hideNav?: boolean;
   className?: string;
 }
@@ -17,6 +17,7 @@ interface SettingsShellProps {
 export function SettingsShell({
   children,
   isOrganization,
+  isVerified,
   hideNav = false,
   className,
 }: SettingsShellProps) {
@@ -44,7 +45,10 @@ export function SettingsShell({
         {!hideNav && (
           <aside className="hidden lg:block">
             <div className="sticky top-24">
-              <SettingsNav isOrganization={isOrganization} />
+              <SettingsNav
+                isOrganization={isOrganization}
+                isVerified={isVerified}
+              />
             </div>
           </aside>
         )}
