@@ -13,16 +13,9 @@ describe("getMediaUrl", () => {
     );
   });
 
-  it("falls back to placeholder for unknown local paths", () => {
-    expect(getMediaUrl("/Support.png")).toBe("/placeholder.svg");
-    expect(getMediaUrl("/Growth.png")).toBe("/placeholder.svg");
-    expect(getMediaUrl("Support.png")).toBe("/placeholder.svg");
-    expect(getMediaUrl("nonexistent-image.png")).toBe("/placeholder.svg");
-  });
-
-  it("retains known public files from the manifest", () => {
-    expect(getMediaUrl("/placeholder.svg")).toBe("/placeholder.svg");
-    expect(getMediaUrl("/logo.png")).toBe("/logo.png");
+  it("returns public files as-is and drops root paths not in public/", () => {
+    expect(getMediaUrl("/placeholder.jpg")).toBe("/placeholder.jpg");
+    expect(getMediaUrl("/Support.png")).toBe("");
   });
 });
 

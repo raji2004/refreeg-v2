@@ -305,7 +305,7 @@ export default async function KycReviewPage({
                     className="block"
                   >
                     <Image
-                      src={getMediaUrl(kyc.document_url)}
+                      src={getMediaUrl(kyc.document_url) || "/placeholder.svg"}
                       alt="KYC Document"
                       width={500}
                       height={300}

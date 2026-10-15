@@ -52,7 +52,7 @@ export function ClaimBanner() {
             <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">
               {cause.image && (
                 <Image
-                  src={getMediaUrl(cause.image)}
+                  src={getMediaUrl(cause.image) || "/placeholder.svg"}
                   alt=""
                   fill
                   className="object-cover"

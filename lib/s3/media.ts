@@ -1,6 +1,6 @@
 import { publicFileManifest } from "@/lib/public-file-manifest";
 
-const publicFilesSet = new Set<string>(publicFileManifest);
+const PUBLIC_FILES = new Set<string>(publicFileManifest);
 
 export function getMediaUrl(key: string | null | undefined): string {
   if (!key) return "";
@@ -15,21 +15,9 @@ export function getMediaUrl(key: string | null | undefined): string {
     return key;
   }
 
-  // If it's a local root path (e.g., /Support.png, /placeholder.svg)
+  // Root paths are files in public/; anything else (e.g. stale /Support.png) has no S3 object.
   if (key.startsWith("/")) {
-    if (publicFilesSet.has(key)) {
-      return key;
-    }
-    return "/placeholder.svg";
-  }
-
-  // If it's a bare filename without uploads/ prefix (e.g., Support.png, placeholder.png)
-  if (!key.startsWith("uploads/")) {
-    const rootPath = `/${key}`;
-    if (publicFilesSet.has(rootPath)) {
-      return rootPath;
-    }
-    return "/placeholder.svg";
+    return PUBLIC_FILES.has(key) ? key : "";
   }
 
   const isCauseImage =

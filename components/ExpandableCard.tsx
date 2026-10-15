@@ -106,7 +106,7 @@ export function ExpandableCard({ items, type }: ExpandableCardProps) {
             >
               <div className="relative w-full h-80">
                 <Image
-                  src={getMediaUrl(active.image) || "/placeholder-cause.jpg"}
+                  src={getMediaUrl(active.image) || "/placeholder.svg"}
                   alt={active.title}
                   fill
                   sizes="500px"
@@ -186,7 +186,7 @@ export function ExpandableCard({ items, type }: ExpandableCardProps) {
             {/* Mobile */}
             <div className="flex sm:hidden p-4 gap-4">
               <Image
-                src={getMediaUrl(item.image) || "/placeholder-cause.jpg"}
+                src={getMediaUrl(item.image) || "/placeholder.svg"}
                 alt={item.title || ""}
                 width={80}
                 height={80}
@@ -221,7 +221,7 @@ export function ExpandableCard({ items, type }: ExpandableCardProps) {
             <div className="hidden sm:flex flex-col p-4 gap-4">
               <div className="relative h-48 w-full">
                 <Image
-                  src={getMediaUrl(item.image) || "/placeholder-cause.jpg"}
+                  src={getMediaUrl(item.image) || "/placeholder.svg"}
                   alt={item.title || ""}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"

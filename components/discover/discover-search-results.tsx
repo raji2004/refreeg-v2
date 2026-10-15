@@ -109,7 +109,7 @@ export function DiscoverSearchResults({
                     <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-md bg-slate-100">
                       {item.image && (
                         <Image
-                          src={getMediaUrl(item.image)}
+                          src={getMediaUrl(item.image) || "/placeholder.svg"}
                           alt=""
                           fill
                           className="object-cover"
