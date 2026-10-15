@@ -19,16 +19,21 @@ const NAV_ITEMS = [
   {
     title: "Verification",
     href: "/dashboard/settings/kyc",
-    todo: true,
+    isVerification: true,
   },
 ] as const;
 
 interface SettingsNavProps {
   isOrganization?: boolean;
+  isVerified?: boolean;
   className?: string;
 }
 
-export function SettingsNav({ isOrganization, className }: SettingsNavProps) {
+export function SettingsNav({
+  isOrganization,
+  isVerified,
+  className,
+}: SettingsNavProps) {
   const pathname = usePathname();
 
   const items = NAV_ITEMS.filter(
@@ -42,6 +47,10 @@ export function SettingsNav({ isOrganization, className }: SettingsNavProps) {
         {items.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const showTodo =
+            "isVerification" in item &&
+            item.isVerification &&
+            isVerified === false;
           return (
             <li key={item.href}>
               <Link
@@ -54,7 +63,7 @@ export function SettingsNav({ isOrganization, className }: SettingsNavProps) {
                 )}
               >
                 <span>{item.title}</span>
-                {"todo" in item && item.todo ? (
+                {showTodo ? (
                   <Badge
                     variant="pending"
                     className="rounded-md px-1.5 py-0 text-[10px] tracking-wide"

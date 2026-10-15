@@ -2,9 +2,7 @@ import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 describe("getMediaUrl", () => {
   it("requests the clean presentation for existing cause images", () => {
-    expect(
-      getMediaUrl("uploads/causes/user/cause/images/portrait.jpg"),
-    ).toBe(
+    expect(getMediaUrl("uploads/causes/user/cause/images/portrait.jpg")).toBe(
       "/api/s3/image?key=uploads%2Fcauses%2Fuser%2Fcause%2Fimages%2Fportrait.jpg&presentation=clean-v3",
     );
   });
@@ -13,6 +11,18 @@ describe("getMediaUrl", () => {
     expect(getMediaUrl("uploads/profiles/user/images/avatar.jpg")).toBe(
       "/api/s3/image?key=uploads%2Fprofiles%2Fuser%2Fimages%2Favatar.jpg",
     );
+  });
+
+  it("falls back to placeholder for unknown local paths", () => {
+    expect(getMediaUrl("/Support.png")).toBe("/placeholder.svg");
+    expect(getMediaUrl("/Growth.png")).toBe("/placeholder.svg");
+    expect(getMediaUrl("Support.png")).toBe("/placeholder.svg");
+    expect(getMediaUrl("nonexistent-image.png")).toBe("/placeholder.svg");
+  });
+
+  it("retains known public files from the manifest", () => {
+    expect(getMediaUrl("/placeholder.svg")).toBe("/placeholder.svg");
+    expect(getMediaUrl("/logo.png")).toBe("/logo.png");
   });
 });
 
