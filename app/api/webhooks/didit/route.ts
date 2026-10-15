@@ -42,8 +42,19 @@ export async function POST(request: Request) {
       );
     }
 
-    let kyc = null;
-    if (vendorData) {
+    // Session routes store document_url as "<sessionId>:::<url>"; webhook-created rows store the bare id.
+    let kyc = await prisma.kyc_verifications.findFirst({
+      where: {
+        document_type: "didit",
+        OR: [
+          { document_url: sessionId },
+          { document_url: { startsWith: `${sessionId}:::` } },
+        ],
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    if (!kyc && vendorData) {
       kyc = await prisma.kyc_verifications.findFirst({
         where: {
           user_id: vendorData,
@@ -51,12 +62,6 @@ export async function POST(request: Request) {
           status: { in: ["pending", "in_progress", "resubmitted"] },
         },
         orderBy: { created_at: "desc" },
-      });
-    }
-
-    if (!kyc) {
-      kyc = await prisma.kyc_verifications.findFirst({
-        where: { document_url: sessionId, document_type: "didit" },
       });
     }
 
@@ -98,17 +103,21 @@ export async function POST(request: Request) {
       }
     }
 
+    const lowerStatus = status?.toLowerCase() || "";
+    const isApproved = lowerStatus === "approved" || lowerStatus === "verified";
+
+    // A reviewer approving a declined session on Didit must override our rejection.
+    const isManualOverride = kyc.status === "rejected" && isApproved;
     if (
       kyc.status !== "pending" &&
       kyc.status !== "in_progress" &&
       kyc.status !== "resubmitted" &&
+      !isManualOverride &&
       !isNewRecord
     ) {
       return NextResponse.json({ message: "Already processed" });
     }
 
-    const lowerStatus = status?.toLowerCase() || "";
-    const isApproved = lowerStatus === "approved" || lowerStatus === "verified";
     const isRejected = lowerStatus === "declined" || lowerStatus === "rejected";
     const isResubmitted = lowerStatus === "resubmitted";
     const isExpired = lowerStatus === "expired" || lowerStatus === "abandoned";
