@@ -34,6 +34,7 @@ export default function PaymentVerification({
   const [txRef] = useQueryState("tx_ref");
   const [transactionId] = useQueryState("transaction_id");
   const [providerQuery] = useQueryState("provider");
+  const [paymentStatus] = useQueryState("status");
   const { verifyPayment } = usePayment();
   const [status, setStatus] = useState<"loading" | "success" | "failed">(
     "loading",
@@ -48,11 +49,6 @@ export default function PaymentVerification({
   useEffect(() => {
     const finalReference = reference || txRef;
     if (hasVerified) return;
-    if (!finalReference) {
-      setStatus("failed");
-      return;
-    }
-    setHasVerified(true);
 
     const readPending = () => {
       try {
@@ -67,6 +63,19 @@ export default function PaymentVerification({
         });
       } catch {}
     };
+
+    if (paymentStatus === "cancelled") {
+      setHasVerified(true);
+      readPending();
+      setStatus("failed");
+      return;
+    }
+
+    if (!finalReference) {
+      setStatus("failed");
+      return;
+    }
+    setHasVerified(true);
 
     (async () => {
       try {
@@ -93,6 +102,7 @@ export default function PaymentVerification({
   }, [
     reference,
     txRef,
+    paymentStatus,
     providerQuery,
     transactionId,
     verifyPayment,
