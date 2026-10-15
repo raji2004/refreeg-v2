@@ -27,7 +27,10 @@ export default async function BankSettingsPage() {
   }
 
   return (
-    <SettingsShell isOrganization={profile.account_type === "organization"}>
+    <SettingsShell
+      isOrganization={profile.account_type === "organization"}
+      isVerified={profile.is_verified}
+    >
       <BankDetailsForm
         profile={{
           account_number: profile.account_number,

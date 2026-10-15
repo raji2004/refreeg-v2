@@ -11,7 +11,10 @@ export default async function NotificationsSettingsPage() {
   const profile = await getCachedProfile(session.user.id).catch(() => null);
 
   return (
-    <SettingsShell isOrganization={profile?.account_type === "organization"}>
+    <SettingsShell
+      isOrganization={profile?.account_type === "organization"}
+      isVerified={profile?.is_verified}
+    >
       <NotificationsForm />
     </SettingsShell>
   );

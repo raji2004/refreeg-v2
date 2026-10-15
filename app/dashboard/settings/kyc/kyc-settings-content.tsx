@@ -95,7 +95,7 @@ export function KycSettingsContent({ profile, user }: KycSettingsContentProps) {
   }
 
   return (
-    <SettingsShell>
+    <SettingsShell isVerified={profile.is_verified}>
       <KycTab profile={profile} user={user} />
     </SettingsShell>
   );
