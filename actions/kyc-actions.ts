@@ -15,6 +15,46 @@ import {
   sendKycReminderEmail,
 } from "@/services/mail";
 
+async function syncManualDiditApproval(kyc: {
+  user_id: string;
+  document_url: string | null;
+}): Promise<boolean> {
+  try {
+    const sessionId = kyc.document_url?.split(":::")[0];
+    if (!sessionId) return false;
+
+    const apiKey =
+      process.env.DIDIT_API_KEY || process.env.DIDIT_CLIENT_SECRET || "";
+    const diditRes = await fetch(
+      `https://verification.didit.me/v3/session/${sessionId}/decision/`,
+      { headers: { "x-api-key": apiKey }, cache: "no-store" },
+    );
+    if (!diditRes.ok) return false;
+
+    const sessionData = await diditRes.json();
+    if (sessionData.status?.toLowerCase() !== "approved") return false;
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const webhookRes = await fetch(`${appUrl}/api/webhooks/didit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...sessionData,
+        session_id: sessionData.session_id || sessionData.id || sessionId,
+        vendor_data:
+          sessionData.vendor_data || sessionData.vendorData || kyc.user_id,
+      }),
+    });
+    return webhookRes.ok;
+  } catch (syncError) {
+    console.error(
+      "[KYC Sync] Error syncing rejected Didit session:",
+      syncError,
+    );
+    return false;
+  }
+}
+
 export async function getVerificationStatus(
   userId: string,
 ): Promise<{ status: KycVerification | null; error: string | null }> {
@@ -24,7 +64,18 @@ export async function getVerificationStatus(
       orderBy: { created_at: "desc" },
     });
 
-    if (
+    const isRejectedDidit =
+      data?.status === "rejected" && data?.document_type === "didit";
+
+    if (isRejectedDidit && data?.document_url?.includes(":::")) {
+      // Reviewers can approve a declined session on Didit after the fact.
+      if (await syncManualDiditApproval(data)) {
+        const updated = await prisma.kyc_verifications.findUnique({
+          where: { id: data.id },
+        });
+        if (updated) data = updated;
+      }
+    } else if (
       (data?.status === "pending" || data?.status === "in_progress") &&
       data?.document_type === "didit"
     ) {

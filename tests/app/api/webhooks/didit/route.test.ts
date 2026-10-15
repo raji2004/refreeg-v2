@@ -231,4 +231,81 @@ describe("Didit Webhook POST", () => {
       { isRejected: true, rejectionReason: "Document unreadable" },
     );
   });
+
+  it("looks up the KYC record by session id stored with the ':::' url suffix", async () => {
+    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+      id: "kyc-1",
+      user_id: "user-1",
+      status: "pending",
+    });
+    mockPrisma.user.findUnique.mockResolvedValue({ email: "test@test.com" });
+
+    await POST(createRequest({ session_id: "uuid-123", status: "Approved" }));
+
+    expect(mockPrisma.kyc_verifications.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: [
+            { document_url: "uuid-123" },
+            { document_url: { startsWith: "uuid-123:::" } },
+          ],
+        }),
+      }),
+    );
+  });
+
+  it("approves a previously rejected record when a reviewer approves it on Didit", async () => {
+    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+      id: "kyc-1",
+      user_id: "user-1",
+      status: "rejected",
+      full_name: "Judith Daniel",
+    });
+    mockPrisma.user.findUnique.mockResolvedValue({
+      email: "judith@example.com",
+    });
+
+    const res = await POST(
+      createRequest({
+        session_id: "uuid-123",
+        status: "Approved",
+        vendor_data: "user-1",
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockPrisma.kyc_verifications.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "kyc-1" },
+        data: expect.objectContaining({ status: "approved" }),
+      }),
+    );
+    expect(mockPrisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { isVerified: true },
+    });
+    expect(sendKycApprovedEmail).toHaveBeenCalledWith(
+      "judith@example.com",
+      "Judith Daniel",
+    );
+  });
+
+  it("ignores a repeat decline for an already rejected record", async () => {
+    mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+      id: "kyc-1",
+      user_id: "user-1",
+      status: "rejected",
+    });
+
+    const res = await POST(
+      createRequest({
+        session_id: "uuid-123",
+        status: "Declined",
+        vendor_data: "user-1",
+      }),
+    );
+
+    expect(await res.json()).toEqual({ message: "Already processed" });
+    expect(mockPrisma.kyc_verifications.update).not.toHaveBeenCalled();
+  });
 });
