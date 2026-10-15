@@ -136,10 +136,10 @@ export default function middleware(req: NextRequest, event: NextFetchEvent) {
 
   if (IMAGE_EXT.test(pathname)) {
     if (!PUBLIC_FILES.has(pathname) && !APP_ICON_PATH.test(pathname)) {
-      return new NextResponse(null, {
-        status: 404,
-        headers: { "content-type": "text/plain; charset=utf-8" },
-      });
+      // A raster placeholder, so /_next/image (which rejects SVG and text) still gets an image.
+      const url = req.nextUrl.clone();
+      url.pathname = "/placeholder.jpg";
+      return NextResponse.rewrite(url);
     }
     return NextResponse.next();
   }

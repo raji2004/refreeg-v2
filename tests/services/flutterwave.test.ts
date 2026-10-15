@@ -85,6 +85,56 @@ describe("Flutterwave Service", () => {
     });
   });
 
+  describe("verifyByReferenceFull", () => {
+    it("encodes the reference and returns the transaction", async () => {
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: { data: { status: "successful", id: 9 } },
+      });
+
+      const result = await Flutterwave.verifyByReferenceFull("flw 1&2");
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        "/transactions/verify_by_reference?tx_ref=flw%201%262",
+      );
+      expect(result).toEqual({ status: "successful", id: 9 });
+    });
+
+    it.each([400, 404])(
+      "returns null when Flutterwave answers %s",
+      async (status) => {
+        mockAxiosInstance.get.mockRejectedValueOnce({
+          response: { status, data: { message: "No transaction" } },
+          message: `Request failed with status code ${status}`,
+        });
+
+        await expect(
+          Flutterwave.verifyByReferenceFull("flw_cancelled"),
+        ).resolves.toBeNull();
+      },
+    );
+
+    it("rethrows a 401", async () => {
+      const error = {
+        response: { status: 401 },
+        message: "Request failed with status code 401",
+      };
+      mockAxiosInstance.get.mockRejectedValueOnce(error);
+
+      await expect(
+        Flutterwave.verifyByReferenceFull("flw_cancelled"),
+      ).rejects.toBe(error);
+    });
+
+    it("rethrows a network failure", async () => {
+      const error = new Error("Network Error");
+      mockAxiosInstance.get.mockRejectedValueOnce(error);
+
+      await expect(
+        Flutterwave.verifyByReferenceFull("flw_cancelled"),
+      ).rejects.toBe(error);
+    });
+  });
+
   describe("createSubaccount", () => {
     it("should call subaccounts endpoint with correct data", async () => {
       mockAxiosInstance.post.mockResolvedValueOnce({

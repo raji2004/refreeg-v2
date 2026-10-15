@@ -280,7 +280,8 @@ export default function Step3BOrgSetup({
                       src={
                         logoPreviewUrl.startsWith("blob:")
                           ? logoPreviewUrl
-                          : getMediaUrl(logoPreviewUrl)
+                          : getMediaUrl(logoPreviewUrl) ||
+                            "/placeholder-logo.png"
                       }
                       alt="Org logo preview"
                       width={80}

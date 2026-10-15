@@ -154,10 +154,17 @@ const Flutterwave = {
   },
 
   verifyByReferenceFull: async function (txRef: string) {
-    const response = await this.api.get(
-      `/transactions/verify_by_reference?tx_ref=${txRef}`,
-    );
-    return response.data.data;
+    try {
+      const response = await this.api.get(
+        `/transactions/verify_by_reference?tx_ref=${encodeURIComponent(txRef)}`,
+      );
+      return response.data.data;
+    } catch (error: any) {
+      if (error.response?.status === 400 || error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   createSubaccount: async function (data: ICreateSubaccount) {

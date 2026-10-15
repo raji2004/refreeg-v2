@@ -101,7 +101,7 @@ export default function ProfileDropdown({
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 via-blue-500 to-blue-400 p-0.5">
                   <div className="w-full h-full rounded-full overflow-hidden bg-white">
                     <Image
-                      src={getMediaUrl(data.avatar)}
+                      src={getMediaUrl(data.avatar) || "/placeholder-user.jpg"}
                       alt={data.name}
                       width={28}
                       height={28}

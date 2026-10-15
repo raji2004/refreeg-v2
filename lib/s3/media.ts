@@ -1,3 +1,7 @@
+import { publicFileManifest } from "@/lib/public-file-manifest";
+
+const PUBLIC_FILES = new Set<string>(publicFileManifest);
+
 export function getMediaUrl(key: string | null | undefined): string {
   if (!key) return "";
 
@@ -9,6 +13,11 @@ export function getMediaUrl(key: string | null | undefined): string {
     key.startsWith("/api/s3/image")
   ) {
     return key;
+  }
+
+  // Root paths are files in public/; anything else (e.g. stale /Support.png) has no S3 object.
+  if (key.startsWith("/")) {
+    return PUBLIC_FILES.has(key) ? key : "";
   }
 
   const isCauseImage =
