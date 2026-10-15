@@ -296,9 +296,11 @@ export default function ManageCauses() {
                         <div className="flex items-center gap-3">
                           {(item as any).profiles?.profile_photo ? (
                             <Image
-                              src={getMediaUrl(
-                                (item as any).profiles.profile_photo,
-                              )}
+                              src={
+                                getMediaUrl(
+                                  (item as any).profiles.profile_photo,
+                                ) || "/placeholder-user.jpg"
+                              }
                               alt={(item as any).profiles?.full_name || "User"}
                               width={32}
                               height={32}
@@ -655,7 +657,10 @@ export default function ManageCauses() {
                   <h3 className="font-medium">Cover Image</h3>
                   <div className="relative w-full h-64 rounded-lg overflow-hidden">
                     <Image
-                      src={getMediaUrl(detailDialog.cause.image)}
+                      src={
+                        getMediaUrl(detailDialog.cause.image) ||
+                        "/placeholder.svg"
+                      }
                       alt={detailDialog.cause.title}
                       className="object-cover w-full h-full"
                       width={800}

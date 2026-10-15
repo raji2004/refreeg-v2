@@ -55,7 +55,7 @@ export function CauseCard({ cause }: { cause: any }) {
       <Link href={causePublicPath(cause)}>
         <div className="aspect-video relative bg-gray-100">
           <Image
-            src={getMediaUrl(cause.image) || "/placeholder-cause.jpg"}
+            src={getMediaUrl(cause.image) || "/placeholder.svg"}
             alt={cause.title}
             fill
             className="object-cover"
@@ -134,7 +134,7 @@ export function PetitionCard({ petition }: { petition: any }) {
       <Link href={`/petitions/${petition.id}`}>
         <div className="aspect-video relative bg-gray-100">
           <Image
-            src={getMediaUrl(petition.image) || "/placeholder-petition.jpg"}
+            src={getMediaUrl(petition.image) || "/placeholder.svg"}
             alt={petition.title}
             fill
             className="object-cover"

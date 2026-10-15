@@ -141,7 +141,10 @@ export function CauseCard({
               <div className="flex items-center gap-2">
                 {cause.profiles?.profile_photo ? (
                   <Image
-                    src={getMediaUrl(cause.profiles.profile_photo)}
+                    src={
+                      getMediaUrl(cause.profiles.profile_photo) ||
+                      "/placeholder-user.jpg"
+                    }
                     alt={cause.profiles.full_name || "Creator"}
                     width={20}
                     height={20}

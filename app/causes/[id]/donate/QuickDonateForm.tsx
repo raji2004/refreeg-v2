@@ -133,7 +133,7 @@ export default function QuickDonateForm({
                 <CarouselItem key={index}>
                   <div className="relative aspect-video w-full bg-slate-100">
                     <Image
-                      src={getMediaUrl(img)}
+                      src={getMediaUrl(img) || "/placeholder.svg"}
                       alt={`${causeTitle} image ${index + 1}`}
                       fill
                       className="object-cover"
