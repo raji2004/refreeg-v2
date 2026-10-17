@@ -1,7 +1,10 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { saveStep1Progress, saveStep2Progress } from "@/actions/profile-actions";
+import {
+  saveStep1Progress,
+  saveStep2Progress,
+} from "@/actions/profile-actions";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -18,7 +21,7 @@ export async function POST(request: NextRequest) {
     if (!step || !data) {
       return apiError("Missing required fields (step, data)", 400);
     }
-    
+
     if (step === 1 && data.accountType) {
       await saveStep1Progress(user!.id, data.accountType);
     } else if (step === 2 && data.gender) {
@@ -26,12 +29,12 @@ export async function POST(request: NextRequest) {
     } else {
       return apiError("Invalid step or missing data for that step", 400);
     }
-    
+
     return apiSuccess({
-      message: `Step ${step} saved successfully`
+      message: `Step ${step} saved successfully`,
     });
   } catch (error: any) {
     console.error("Mobile API Save Onboarding Step Error:", error);
-    return apiError("Internal server error", 500);
+    return apiError(error?.message || "Failed to save step", 400);
   }
 }

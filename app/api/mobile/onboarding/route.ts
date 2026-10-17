@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { getOnboardingData, getCurrentOnboardingStep, createOnboardingProfile } from "@/actions/profile-actions";
+import {
+  getOnboardingData,
+  getCurrentOnboardingStep,
+  createOnboardingProfile,
+  checkUsernameAvailability,
+} from "@/actions/profile-actions";
+import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -12,14 +18,33 @@ export async function GET(request: NextRequest) {
   if (errorResponse) return errorResponse;
 
   try {
-    const [onboardingData, currentStep] = await Promise.all([
+    const [onboardingData, currentStep, userRecord] = await Promise.all([
       getOnboardingData(user!.id),
-      getCurrentOnboardingStep(user!.id)
+      getCurrentOnboardingStep(user!.id),
+      prisma.user.findUnique({
+        where: { id: user!.id },
+        select: {
+          accountType: true,
+          gender: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+          location: true,
+          phone: true,
+          email: true,
+          profilePhoto: true,
+          interests: true,
+          onboarding_completed: true,
+        },
+      }),
     ]);
-    
+
     return apiSuccess({
       data: onboardingData,
-      currentStep
+      currentStep,
+      onboardingCompleted: userRecord?.onboarding_completed ?? false,
+      accountType: userRecord?.accountType ?? "individual",
+      interests: userRecord?.interests ?? [],
     });
   } catch (error: any) {
     console.error("Mobile API Get Onboarding Data Error:", error);
@@ -38,23 +63,38 @@ export async function POST(request: NextRequest) {
     if (!profileData) {
       return apiError("Missing required field (profileData)", 400);
     }
-    
-    // Note: The mobile app will send an S3 key instead of a File object for profilePhoto
-    // The server action 'createOnboardingProfile' expects a File object if profilePhoto exists
-    // We will bypass the server action and update the user record directly if an s3Key is provided, 
-    // or map the rest of the fields to the action.
-    
-    let profilePhotoUrl = oauthAvatarUrl || null;
-    if (profileData.profilePhoto && typeof profileData.profilePhoto === 'string') {
-        profilePhotoUrl = profileData.profilePhoto;
-        delete profileData.profilePhoto; // Remove it so the action doesn't try to process it as a File
+
+    if (profileData.username) {
+      const isAvailable = await checkUsernameAvailability(
+        profileData.username,
+        user!.id,
+      );
+      if (!isAvailable) {
+        return apiError(
+          "This username is already taken. Please choose another.",
+          409,
+        );
+      }
     }
 
-    const updatedUser = await createOnboardingProfile(user!.id, profileData, profilePhotoUrl);
-    
+    let profilePhotoUrl = oauthAvatarUrl || null;
+    if (
+      profileData.profilePhoto &&
+      typeof profileData.profilePhoto === "string"
+    ) {
+      profilePhotoUrl = profileData.profilePhoto;
+      delete profileData.profilePhoto;
+    }
+
+    const updatedUser = await createOnboardingProfile(
+      user!.id,
+      profileData,
+      profilePhotoUrl,
+    );
+
     return apiSuccess(updatedUser);
   } catch (error: any) {
-    console.error("Mobile API Complete Onboarding Error:", error);
-    return apiError("Internal server error", 500);
+    console.error("Mobile API Save Onboarding Profile Error:", error);
+    return apiError(error?.message || "Internal server error", 500);
   }
 }
