@@ -116,13 +116,14 @@ const nextConfig = {
   },
 
   async headers() {
+    const isDev = process.env.NODE_ENV !== "production";
     return [
       {
-        source: "/:path*",
+        source: "/api/mobile/:path*",
         headers: [
           {
             key: "Access-Control-Allow-Origin",
-            value: "https://apps.refreeg.com",
+            value: "*",
           },
           {
             key: "Access-Control-Allow-Methods",
@@ -132,7 +133,26 @@ const nextConfig = {
             key: "Access-Control-Allow-Headers",
             value: "X-Requested-With, Content-Type, Accept, Authorization",
           },
-          { key: "Access-Control-Allow-Credentials", value: "true" },
+        ],
+      },
+      {
+        source: "/((?!api/mobile).*)",
+        headers: [
+          {
+            key: "Access-Control-Allow-Origin",
+            value: isDev ? "*" : "https://apps.refreeg.com",
+          },
+          {
+            key: "Access-Control-Allow-Methods",
+            value: "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+          },
+          {
+            key: "Access-Control-Allow-Headers",
+            value: "X-Requested-With, Content-Type, Accept, Authorization",
+          },
+          ...(isDev
+            ? []
+            : [{ key: "Access-Control-Allow-Credentials", value: "true" }]),
         ],
       },
     ];
