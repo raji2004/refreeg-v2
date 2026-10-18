@@ -23,14 +23,26 @@ export async function GET(
       return apiError("Cause not found", 404);
     }
 
-    const [donors, comments, proofUpdates] = await Promise.all([
+    const [donors, comments, proofUpdates, pledgesData] = await Promise.all([
       listDonationsForCause(cause.id).catch(() => []),
       listCommentsForCause(cause.id).catch(() => []),
       getApprovedProofUpdates(cause.id).catch(() => []),
+      prisma.pledges
+        .aggregate({
+          where: {
+            cause_id: cause.id,
+            status: { in: ["pending", "active", "fulfilled"] },
+          },
+          _sum: { amount: true },
+        })
+        .catch(() => null),
     ]);
+
+    const pledged = Number(pledgesData?._sum?.amount ?? 0);
 
     return apiSuccess({
       ...cause,
+      pledged,
       donors: donors || [],
       comments: comments || [],
       proof_updates: proofUpdates || [],
