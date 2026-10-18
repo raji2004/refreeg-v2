@@ -58,6 +58,17 @@ async function presentCauseImage(key: string) {
   });
 }
 
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -97,8 +108,32 @@ export async function GET(req: Request) {
       }
     }
 
-    const url = await generatePresignedGetUrl(key);
+    try {
+      const object = await s3Client.send(
+        new GetObjectCommand({ Bucket: getBucketName(), Key: key }),
+      );
 
+      if (object.Body) {
+        const bytes = Buffer.from(await object.Body.transformToByteArray());
+        return new Response(bytes, {
+          status: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, OPTIONS",
+            "Cache-Control":
+              "public, max-age=2592000, s-maxage=31536000, stale-while-revalidate=86400",
+            "Content-Type": object.ContentType || "image/jpeg",
+          },
+        });
+      }
+    } catch (s3Err) {
+      console.warn(
+        "Direct S3 fetch failed, falling back to presigned URL:",
+        s3Err,
+      );
+    }
+
+    const url = await generatePresignedGetUrl(key);
     return NextResponse.redirect(url);
   } catch (error: any) {
     console.error("S3 Image Proxy Error:", error);
