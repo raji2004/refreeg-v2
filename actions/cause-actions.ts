@@ -114,6 +114,8 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
               username: true,
               subAccountCode: true,
               profilePhoto: true,
+              isVerified: true,
+              accountType: true,
             },
           },
           sections: {
@@ -136,6 +138,8 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
               username: true,
               subAccountCode: true,
               profilePhoto: true,
+              isVerified: true,
+              accountType: true,
             },
           },
           sections: {
@@ -181,6 +185,8 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
       username: data.user?.username || null,
       sub_account_code: data.user?.subAccountCode || "",
       profile_photo: data.user?.profilePhoto || null,
+      is_verified: !!data.user?.isVerified,
+      account_type: data.user?.accountType || "individual",
     },
     sections: data.sections || [],
     multimedia: data.multimedia || [],
@@ -627,6 +633,7 @@ export const listCauses = cache(
               email: true,
               profilePhoto: true,
               isVerified: true,
+              accountType: true,
             },
           },
         },
@@ -643,6 +650,7 @@ export const listCauses = cache(
               email: d.user.email,
               profile_photo: d.user.profilePhoto,
               is_verified: !!d.user.isVerified,
+              account_type: d.user.accountType || "individual",
             }
           : undefined,
       }));

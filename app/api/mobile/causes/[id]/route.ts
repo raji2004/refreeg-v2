@@ -2,6 +2,9 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { getCause, deleteCause } from "@/actions/cause-actions";
+import { listDonationsForCause } from "@/actions/donation-actions";
+import { listCommentsForCause } from "@/actions/comment-actions";
+import { getApprovedProofUpdates } from "@/actions/proof-update-actions";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {
@@ -10,17 +13,28 @@ export async function OPTIONS() {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
     const cause = await getCause(id);
-    
+
     if (!cause) {
       return apiError("Cause not found", 404);
     }
-    
-    return apiSuccess(cause);
+
+    const [donors, comments, proofUpdates] = await Promise.all([
+      listDonationsForCause(cause.id).catch(() => []),
+      listCommentsForCause(cause.id).catch(() => []),
+      getApprovedProofUpdates(cause.id).catch(() => []),
+    ]);
+
+    return apiSuccess({
+      ...cause,
+      donors: donors || [],
+      comments: comments || [],
+      proof_updates: proofUpdates || [],
+    });
   } catch (error: any) {
     console.error("Mobile API Get Cause Error:", error);
     return apiError("Internal server error", 500);
@@ -29,7 +43,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { user, errorResponse } = await authenticateMobileRequest(request);
   if (errorResponse) return errorResponse;
@@ -37,9 +51,9 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    
+
     const existingCause = await prisma.cause.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!existingCause) {
@@ -65,7 +79,9 @@ export async function PUT(
       const startDate = new Date(body.startDate);
       const endDate = new Date(body.endDate);
       if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-        daysActive = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        daysActive = Math.ceil(
+          (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
       }
     }
 
@@ -76,11 +92,18 @@ export async function PUT(
           user_id: user!.id,
           title: body.title || existingCause.title,
           category: body.category || existingCause.category,
-          goal: typeof body.goal === "string" ? Number.parseFloat(body.goal) : (body.goal || existingCause.goal),
+          goal:
+            typeof body.goal === "string"
+              ? Number.parseFloat(body.goal)
+              : body.goal || existingCause.goal,
           image: body.coverImageS3Key || existingCause.image,
           days_active: daysActive || existingCause.daysActive,
-          start_date: body.startDate ? new Date(body.startDate) : existingCause.start_date,
-          end_date: body.endDate ? new Date(body.endDate) : existingCause.end_date,
+          start_date: body.startDate
+            ? new Date(body.startDate)
+            : existingCause.start_date,
+          end_date: body.endDate
+            ? new Date(body.endDate)
+            : existingCause.end_date,
           multimedia: body.multimediaS3Keys || existingCause.multimedia,
           video_links: body.video_links || existingCause.videoLinks,
           summary: body.summary || existingCause.summary,
@@ -111,16 +134,16 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { user, errorResponse } = await authenticateMobileRequest(request);
   if (errorResponse) return errorResponse;
 
   try {
     const { id } = await params;
-    
+
     const existingCause = await prisma.cause.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!existingCause) {
@@ -132,7 +155,7 @@ export async function DELETE(
     }
 
     await deleteCause(id);
-    
+
     return apiSuccess({ message: "Cause deleted successfully" });
   } catch (error: any) {
     console.error("Mobile API Delete Cause Error:", error);

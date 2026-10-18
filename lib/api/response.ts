@@ -1,5 +1,19 @@
 import { NextResponse } from "next/server";
 
+function serializeSafe<T>(data: T): any {
+  if (data === null || data === undefined) return data;
+  if (typeof data === "bigint") return Number(data);
+  if (Array.isArray(data)) return data.map(serializeSafe);
+  if (typeof data === "object") {
+    const res: Record<string, any> = {};
+    for (const [key, val] of Object.entries(data)) {
+      res[key] = serializeSafe(val);
+    }
+    return res;
+  }
+  return data;
+}
+
 /**
  * Standardized API success response
  */
@@ -7,7 +21,7 @@ export function apiSuccess<T>(data: T, status = 200, headers?: HeadersInit) {
   return NextResponse.json(
     {
       success: true,
-      data,
+      data: serializeSafe(data),
     },
     {
       status,
@@ -17,7 +31,7 @@ export function apiSuccess<T>(data: T, status = 200, headers?: HeadersInit) {
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
         ...headers,
       },
-    }
+    },
   );
 }
 
@@ -38,7 +52,7 @@ export function apiError(message: string, status = 400, headers?: HeadersInit) {
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
         ...headers,
       },
-    }
+    },
   );
 }
 
@@ -50,7 +64,7 @@ export function apiPaginated<T>(
   total: number,
   limit: number,
   offset: number,
-  status = 200
+  status = 200,
 ) {
   return NextResponse.json(
     {
@@ -69,7 +83,7 @@ export function apiPaginated<T>(
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
       },
-    }
+    },
   );
 }
 
