@@ -3,8 +3,16 @@ import { NextResponse } from "next/server";
 function serializeSafe<T>(data: T): any {
   if (data === null || data === undefined) return data;
   if (typeof data === "bigint") return Number(data);
+  if (data instanceof Date) return data.toISOString();
   if (Array.isArray(data)) return data.map(serializeSafe);
   if (typeof data === "object") {
+    // Check for Prisma Decimal or Decimal.js instances
+    if (
+      typeof (data as any)?.toNumber === "function" ||
+      ("d" in (data as any) && "s" in (data as any) && "e" in (data as any))
+    ) {
+      return Number((data as any).toString());
+    }
     const res: Record<string, any> = {};
     for (const [key, val] of Object.entries(data)) {
       res[key] = serializeSafe(val);
