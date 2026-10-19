@@ -636,6 +636,11 @@ export const listCauses = cache(
               accountType: true,
             },
           },
+          _count: {
+            select: {
+              donations: true,
+            },
+          },
         },
         orderBy: orderByClause,
         skip: hasAmountRange ? undefined : options.offset,
@@ -644,6 +649,7 @@ export const listCauses = cache(
 
       let causes = data.map((d: any) => ({
         ...mapPrismaToCause(d),
+        donors_count: d._count?.donations ?? 0,
         profiles: d.user
           ? {
               full_name: d.user.fullName,
