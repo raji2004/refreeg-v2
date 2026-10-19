@@ -75,6 +75,7 @@ model User {
   ownedOrganization           Organization?            @relation("OrganizationOwner")
   organizationMemberships     OrganizationMember[]
   sentOrganizationInvitations OrganizationInvitation[] @relation("OrganizationInviter")
+  notifications               Notification[]
 
   @@index([isBlocked], map: "idx_profiles_is_blocked")
   @@map("profiles")

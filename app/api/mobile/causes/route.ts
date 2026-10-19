@@ -1,5 +1,10 @@
 import { NextRequest } from "next/server";
-import { apiSuccess, apiError, apiPaginated, handleCorsPreflight } from "@/lib/api/response";
+import {
+  apiSuccess,
+  apiError,
+  apiPaginated,
+  handleCorsPreflight,
+} from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { listCauses, countCauses } from "@/actions/cause-actions";
 import { prisma } from "@/lib/prisma";
@@ -29,9 +34,9 @@ export async function GET(request: NextRequest) {
 
     const [causes, total] = await Promise.all([
       listCauses(options),
-      countCauses(options)
+      countCauses(options),
     ]);
-    
+
     return apiPaginated(causes, total, limit, offset);
   } catch (error: any) {
     console.error("Mobile API Get Causes Error:", error);
@@ -45,23 +50,25 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    
+
     // We need to bypass the 'createCause' server action because it expects a 'File' object
     // for coverImage and multimedia. The mobile app will send S3 keys instead.
-    
+
     if (!body.title || !body.category || !body.goal) {
       return apiError("Missing required fields (title, category, goal)", 400);
     }
 
     const causeId = crypto.randomUUID();
     let daysActive = null;
-    
+
     if (body.startDate && body.endDate) {
       const startDate = new Date(body.startDate);
       const endDate = new Date(body.endDate);
 
       if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-        daysActive = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        daysActive = Math.ceil(
+          (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
       }
     }
 
@@ -72,7 +79,10 @@ export async function POST(request: NextRequest) {
           userId: user!.id,
           title: body.title,
           category: body.category,
-          goal: typeof body.goal === "string" ? Number.parseFloat(body.goal) : body.goal,
+          goal:
+            typeof body.goal === "string"
+              ? Number.parseFloat(body.goal)
+              : body.goal,
           status: "pending",
           image: body.coverImageS3Key || null,
           daysActive: daysActive,
@@ -97,7 +107,21 @@ export async function POST(request: NextRequest) {
 
       return newCause;
     });
-    
+
+    try {
+      const { createNotification } =
+        await import("@/lib/notifications/notification-service");
+      await createNotification({
+        userId: user!.id,
+        title: "Campaign submitted for review 🚀",
+        message: `Your campaign "${body.title}" has been submitted and is currently with the review team.`,
+        type: "cause_created",
+        data: { causeId: cause.id },
+      });
+    } catch (notifErr) {
+      console.warn("Failed to create campaign notification:", notifErr);
+    }
+
     return apiSuccess(cause, 201);
   } catch (error: any) {
     console.error("Mobile API Create Cause Error:", error);

@@ -51,18 +51,21 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     // A Prisma `_count` include makes Postgres GROUP BY the whole causes and
     // donations tables on every profile read; a filtered count uses the
     // user_id index instead.
-    const [profile, donationCount] = await Promise.all([
+    const [profile, distinctCauses] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         omit: { password: true },
       }),
-      prisma.donation.count({ where: { userId } }),
+      prisma.donation.groupBy({
+        by: ["causeId"],
+        where: { userId, status: "successful" },
+      }),
     ]);
 
     if (!profile) return null;
 
     const mapped = mapPrismaToProfile(profile);
-    mapped.causes_count = donationCount;
+    mapped.causes_count = distinctCauses.length;
     return mapped;
   } catch (error) {
     console.error("Error fetching profile:", error);

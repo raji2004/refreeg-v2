@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
       eventBus.on("donation", handleEvent);
       eventBus.on("weekly_streak", handleEvent);
       eventBus.on("monthly_active", handleEvent);
+      eventBus.on("notification", handleEvent);
 
       // Keep the connection alive with pings every 30 seconds
       const pingInterval = setInterval(() => {
@@ -50,6 +51,7 @@ export async function GET(req: NextRequest) {
         eventBus.off("donation", handleEvent);
         eventBus.off("weekly_streak", handleEvent);
         eventBus.off("monthly_active", handleEvent);
+        eventBus.off("notification", handleEvent);
         try {
           controller.close();
         } catch (e) {

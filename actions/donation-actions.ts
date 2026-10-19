@@ -80,6 +80,33 @@ export async function createDonation(
     } catch (e) {
       console.error("Error syncing proof milestones:", e);
     }
+
+    try {
+      const cause = await prisma.cause.findUnique({
+        where: { id: causeId },
+        select: { userId: true, title: true },
+      });
+      if (cause?.userId) {
+        const { createNotification } =
+          await import("@/lib/notifications/notification-service");
+        const donorName = donationData.isAnonymous
+          ? "An anonymous supporter"
+          : donationData.name || "A supporter";
+        await createNotification({
+          userId: cause.userId,
+          title: "New donation received! 💰",
+          message: `${donorName} donated ₦${donationAmount.toLocaleString()} to "${cause.title}".`,
+          type: "donation_received",
+          data: {
+            causeId,
+            donationId: data.id,
+            amount: donationAmount,
+          },
+        });
+      }
+    } catch (notifErr) {
+      console.warn("Failed to create donation notification:", notifErr);
+    }
   } catch (error) {
     console.error("Error creating donation:", error);
     throw error;

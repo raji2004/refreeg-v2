@@ -1,5 +1,10 @@
 import { NextRequest } from "next/server";
-import { apiSuccess, apiError, apiPaginated, handleCorsPreflight } from "@/lib/api/response";
+import {
+  apiSuccess,
+  apiError,
+  apiPaginated,
+  handleCorsPreflight,
+} from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { listPetitions, countPetitions } from "@/actions/petition-actions";
 import { prisma } from "@/lib/prisma";
@@ -27,9 +32,9 @@ export async function GET(request: NextRequest) {
 
     const [petitions, total] = await Promise.all([
       listPetitions(options),
-      countPetitions(options)
+      countPetitions(options),
     ]);
-    
+
     return apiPaginated(petitions, total, limit, offset);
   } catch (error: any) {
     console.error("Mobile API Get Petitions Error:", error);
@@ -43,19 +48,24 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    
+
     if (!body.title || !body.category || !body.targetSignatures) {
-      return apiError("Missing required fields (title, category, targetSignatures)", 400);
+      return apiError(
+        "Missing required fields (title, category, targetSignatures)",
+        400,
+      );
     }
 
     const petitionId = crypto.randomUUID();
-    
+
     let daysActive = null;
     if (body.startDate && body.endDate) {
       const startDate = new Date(body.startDate);
       const endDate = new Date(body.endDate);
       if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-        daysActive = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        daysActive = Math.ceil(
+          (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
       }
     }
 
@@ -91,7 +101,21 @@ export async function POST(request: NextRequest) {
 
       return newPetition;
     });
-    
+
+    try {
+      const { createNotification } =
+        await import("@/lib/notifications/notification-service");
+      await createNotification({
+        userId: user!.id,
+        title: "Petition submitted for review 📝",
+        message: `Your petition "${body.title}" has been registered and is under moderation.`,
+        type: "petition_signed",
+        data: { petitionId: petition.id },
+      });
+    } catch (notifErr) {
+      console.warn("Failed to create petition notification:", notifErr);
+    }
+
     return apiSuccess(petition, 201);
   } catch (error: any) {
     console.error("Mobile API Create Petition Error:", error);
