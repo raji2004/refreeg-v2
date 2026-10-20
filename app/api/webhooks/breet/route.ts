@@ -22,16 +22,29 @@ export async function GET(req: Request) {
 
     if (checkStatus && causeId) {
       const dynamicWindow = new Date(Date.now() - 3 * 60 * 1000);
-      const recentRecord = await prisma.crypto_donations.findFirst({
+      const recentCrypto = await prisma.crypto_donations.findFirst({
         where: {
-          OR: [{ cause_id: causeId }, { status: "completed" }],
+          cause_id: causeId,
+          status: "completed",
           created_at: { gte: dynamicWindow },
         },
         orderBy: { created_at: "desc" },
       });
 
+      const recentDonation = !recentCrypto
+        ? await prisma.donation.findFirst({
+            where: {
+              causeId: causeId,
+              payment_provider: "breet",
+              status: "completed",
+              createdAt: { gte: dynamicWindow },
+            },
+            orderBy: { createdAt: "desc" },
+          })
+        : null;
+
       return NextResponse.json(
-        { hasNewDonation: !!recentRecord },
+        { hasNewDonation: !!recentCrypto || !!recentDonation },
         {
           headers: { "Cache-Control": "no-store, max-age=0, must-revalidate" },
         },
@@ -138,6 +151,50 @@ export async function POST(req: Request) {
       network: verifiedNetwork,
       currency: "USDT",
     });
+
+    // 1b. Save or complete donor details in main donations table (preserves donor info in DB)
+    try {
+      const pendingDonation = await prisma.donation.findFirst({
+        where: {
+          causeId: causeId,
+          payment_provider: "breet",
+          status: "pending",
+          ...(donorId ? { userId: donorId } : {}),
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (pendingDonation) {
+        await prisma.donation.update({
+          where: { id: pendingDonation.id },
+          data: {
+            status: "completed",
+            amount: finalAmountNaira,
+          },
+        });
+      } else {
+        await prisma.donation.create({
+          data: {
+            causeId: causeId,
+            ...(donorId ? { userId: donorId } : {}),
+            amount: finalAmountNaira,
+            name: "Anonymous Crypto Supporter",
+            email: donorId
+              ? `${donorId}@user.refreeg.com`
+              : "crypto-donor@refreeg.com",
+            status: "completed",
+            payment_provider: "breet",
+            paystack_reference:
+              uniqueBreetEventId || payload.txHash || `breet_${Date.now()}`,
+          },
+        });
+      }
+    } catch (syncErr) {
+      console.warn(
+        "Could not sync crypto donation into donations table:",
+        syncErr,
+      );
+    }
 
     // 2. FIRE-AND-FORGET: Move heavy lifting to background
     Promise.resolve().then(async () => {

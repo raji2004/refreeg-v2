@@ -60,6 +60,11 @@ export async function syncMilestoneRequirements(
 export async function assertCauseAcceptingDonations(
   causeId: string,
 ): Promise<void> {
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(causeId)) {
+    return;
+  }
   const cause = await prisma.cause.findUnique({
     where: { id: causeId },
     select: { compliance_paused: true },

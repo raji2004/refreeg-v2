@@ -26,7 +26,7 @@ const SERVICE_FEE_CAP_NAIRA = 10000;
 
 export const calculateServiceFee = (amount: number): number => {
   const serviceFeePercentage = Number(
-    process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE || "0",
+    process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE || "2",
   );
   const fee = Math.round(amount * (serviceFeePercentage / 100) || 0);
   return Math.min(fee, SERVICE_FEE_CAP_NAIRA);

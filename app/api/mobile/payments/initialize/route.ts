@@ -45,14 +45,18 @@ export async function POST(request: NextRequest) {
     const tipAmount = Number(data.tipAmount || data.tip_amount || 0);
 
     // Get cause creator's subaccount if exists
-    const cause = await prisma.cause.findUnique({
-      where: { id: data.causeId },
-      include: {
-        user: {
-          select: { subAccountCode: true },
-        },
-      },
-    });
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const cause = uuidRegex.test(data.causeId)
+      ? await prisma.cause.findUnique({
+          where: { id: data.causeId },
+          include: {
+            user: {
+              select: { subAccountCode: true },
+            },
+          },
+        })
+      : null;
 
     const subaccounts = cause?.user?.subAccountCode
       ? [{ subaccount: cause.user.subAccountCode, share: numAmount * 100 }]

@@ -11,17 +11,37 @@ const TARGET_ASSET_ID = "USDT_SOL";
 const LIVE_PRODUCTION_ADDRESS = "D7njeUQfu2FAxKBWHFNYcPdBAc8EggJyyxr4NrDBpEwv";
 const LIVE_PRODUCTION_QR = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${LIVE_PRODUCTION_ADDRESS}`;
 
+function isValidUUID(val?: string | null): boolean {
+  if (!val) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    val,
+  );
+}
+
 /**
  * POST /api/mobile/crypto/address
- * Returns deposit address and QR code for USDT on Solana donations.
+ * Returns deposit address and QR code for USDT on Solana donations via Breet,
+ * and saves donor information into the database.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { causeId, donorId } = body;
+    const {
+      causeId,
+      donorId,
+      donorName,
+      donorEmail,
+      message,
+      isAnonymous,
+      amountCrypto,
+    } = body;
 
     if (!causeId) {
       return apiError("Missing causeId parameter", 400);
+    }
+
+    if (!isValidUUID(causeId)) {
+      return apiError("Invalid causeId format", 400);
     }
 
     const cause = await prisma.cause.findUnique({
@@ -36,6 +56,36 @@ export async function POST(request: NextRequest) {
     const bankAccountNumber = cause.user?.accountNumber;
     const trackingDonorId = donorId || "mobile_guest";
     const compoundLabel = `${trackingDonorId}_${causeId}`;
+
+    // Record donor details into the donations table so donor info is safely stored in our DB
+    let pendingDonation = null;
+    const emailToUse =
+      donorEmail?.trim() ||
+      (donorId ? `${donorId}@user.refreeg.com` : "crypto-donor@refreeg.com");
+    const nameToUse = isAnonymous
+      ? "Anonymous"
+      : donorName?.trim() || "Anonymous Supporter";
+    const cryptoRef = `breet_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const approxNaira = amountCrypto ? Number(amountCrypto) * 1500 : 0;
+
+    try {
+      pendingDonation = await prisma.donation.create({
+        data: {
+          causeId,
+          ...(donorId && isValidUUID(donorId) ? { userId: donorId } : {}),
+          amount: approxNaira,
+          name: nameToUse,
+          email: emailToUse,
+          message: message?.trim() || null,
+          is_anonymous: Boolean(isAnonymous),
+          status: "pending",
+          payment_provider: "breet",
+          paystack_reference: cryptoRef,
+        },
+      });
+    } catch (dbErr) {
+      console.warn("Could not pre-record crypto donation record:", dbErr);
+    }
 
     if (
       process.env.BREET_APP_ID &&
@@ -78,6 +128,8 @@ export async function POST(request: NextRequest) {
       address: LIVE_PRODUCTION_ADDRESS,
       qrCodeUrl: LIVE_PRODUCTION_QR,
       campaignTitle: cause.title,
+      reference: pendingDonation?.paystack_reference || cryptoRef,
+      donationId: pendingDonation?.id,
     });
   } catch (error: any) {
     console.error("Mobile Crypto Address Error:", error);

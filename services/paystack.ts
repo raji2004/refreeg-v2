@@ -7,23 +7,27 @@ import {
   recordSuccess,
 } from "@/lib/circuit-breaker";
 
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+const getPaystackSecretKey = (): string =>
+  (process.env.PAYSTACK_SECRET_KEY || "").replace(/["']/g, "").trim();
 
-if (!PAYSTACK_SECRET_KEY) {
-  console.warn(
-    "WARNING: No Paystack Secret Key found in environment variables. API calls will fail.",
-  );
-}
+const paystackApi = axios.create({
+  baseURL: "https://api.paystack.co",
+  timeout: 10000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+paystackApi.interceptors.request.use((config) => {
+  const key = getPaystackSecretKey();
+  if (key) {
+    config.headers.Authorization = `Bearer ${key}`;
+  }
+  return config;
+});
 
 const Paystack = {
-  api: axios.create({
-    baseURL: "https://api.paystack.co",
-    timeout: 5000, 
-    headers: {
-      Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-      "Content-Type": "application/json",
-    },
-  }),
+  api: paystackApi,
 
   initializeTransaction: async function (data: TransactionData) {
     checkCircuit("paystack"); // 👈 Throws if circuit is open
