@@ -63,6 +63,9 @@ const Paystack = {
             }
           : {}),
         ...(data.plan ? { plan: data.plan } : {}),
+        ...(data.channels && data.channels.length > 0
+          ? { channels: data.channels }
+          : {}),
         metadata: {
           amount: data.amount,
           tip_amount: data.tipAmount || 0,

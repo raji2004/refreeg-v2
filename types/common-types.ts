@@ -90,6 +90,7 @@ export interface TransactionData extends Partial<
   reminderDate?: string;
   _flutterwaveSubAccountId?: string;
   referrer_code?: string;
+  channels?: string[];
 }
 
 export interface ICreateSubaccount {

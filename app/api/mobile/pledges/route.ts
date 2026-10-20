@@ -16,11 +16,11 @@ export async function POST(request: NextRequest) {
       !body.causeId ||
       !body.amount ||
       !body.reminderDate ||
-      !body.name ||
+      (!body.isAnonymous && !body.name) ||
       !body.email
     ) {
       return apiError(
-        "Missing required fields (causeId, amount, reminderDate, name, email)",
+        "Missing required fields (causeId, amount, reminderDate, email, and name unless anonymous)",
         400,
       );
     }
@@ -34,7 +34,9 @@ export async function POST(request: NextRequest) {
       causeId: body.causeId,
       amount: numAmount,
       reminderDate: body.reminderDate,
-      name: body.name,
+      name: body.isAnonymous
+        ? "Anonymous Donor"
+        : body.name?.trim() || "Anonymous Donor",
       email: body.email,
       note: body.note,
       causeTitle: body.causeTitle,

@@ -62,6 +62,17 @@ export async function POST(request: NextRequest) {
       ? [{ subaccount: cause.user.subAccountCode, share: numAmount * 100 }]
       : undefined;
 
+    let channels: string[] | undefined = undefined;
+    if (data.channel === "card") {
+      channels = ["card"];
+    } else if (data.channel === "bank_transfer") {
+      channels = ["bank_transfer"];
+    } else if (data.channel === "ussd") {
+      channels = ["ussd"];
+    } else if (data.channel === "opay") {
+      channels = ["mobile_money", "opay"];
+    }
+
     const response = await Paystack.initializeTransaction({
       amount: numAmount,
       email: data.email,
@@ -78,6 +89,7 @@ export async function POST(request: NextRequest) {
       isAnonymous: Boolean(data.isAnonymous),
       id: data.userId || data.user_id,
       referrer_code: data.referrer_code,
+      channels,
     });
 
     return apiSuccess({
