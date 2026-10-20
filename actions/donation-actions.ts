@@ -291,10 +291,20 @@ export async function listDonationsForCause(
   try {
     const data = await prisma.donation.findMany({
       where: { causeId: causeId },
+      include: {
+        user: {
+          select: {
+            fullName: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
 
-    return data.map(mapPrismaToDonation);
+    return data.map((d: any) => ({
+      ...mapPrismaToDonation(d),
+      name: d.name || d.user?.fullName || null,
+    }));
   } catch (error) {
     console.error("Error listing donations:", error);
     throw error;

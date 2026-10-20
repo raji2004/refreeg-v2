@@ -74,6 +74,32 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     let key = searchParams.get("key");
 
+    const urlParam = searchParams.get("url");
+    if (
+      urlParam &&
+      (urlParam.startsWith("http://") || urlParam.startsWith("https://"))
+    ) {
+      try {
+        const fetched = await fetch(urlParam);
+        if (fetched.ok) {
+          const buffer = Buffer.from(await fetched.arrayBuffer());
+          return new Response(buffer, {
+            status: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "GET, OPTIONS",
+              "Cache-Control":
+                "public, max-age=86400, stale-while-revalidate=86400",
+              "Content-Type":
+                fetched.headers.get("content-type") || "image/jpeg",
+            },
+          });
+        }
+      } catch (proxyErr) {
+        console.error("External image proxy error:", proxyErr);
+      }
+    }
+
     if (!key) {
       return NextResponse.json(
         { error: "Missing key parameter" },
@@ -92,6 +118,28 @@ export async function GET(req: Request) {
         key = decoded;
       }
     } catch (e) {}
+
+    if (key.startsWith("http://") || key.startsWith("https://")) {
+      try {
+        const fetched = await fetch(key);
+        if (fetched.ok) {
+          const buffer = Buffer.from(await fetched.arrayBuffer());
+          return new Response(buffer, {
+            status: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "GET, OPTIONS",
+              "Cache-Control":
+                "public, max-age=86400, stale-while-revalidate=86400",
+              "Content-Type":
+                fetched.headers.get("content-type") || "image/jpeg",
+            },
+          });
+        }
+      } catch (proxyErr) {
+        console.error("Direct external key proxy error:", proxyErr);
+      }
+    }
 
     if (
       searchParams.get("presentation") === CLEAN_PRESENTATION &&

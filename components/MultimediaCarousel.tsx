@@ -81,13 +81,28 @@ export default function MultimediaCarousel({
     }
   };
 
+  const extractVimeoId = (rawUrl: string): string | null => {
+    try {
+      const match = rawUrl.match(
+        /vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/[^/]*\/videos\/|album\/(?:\d+\/)?video\/|video\/|)(\d+)/,
+      );
+      return match ? match[1] : null;
+    } catch {
+      return null;
+    }
+  };
+
   const buildDrivePreviewUrl = (rawUrl: string): string | null => {
-    const dMatch = rawUrl.match(/\/d\/([^/]+)\//);
-    if (dMatch) return `https://drive.google.com/file/d/${dMatch[1]}/preview`;
-    const idParamMatch = rawUrl.match(/[?&]id=([^&#]+)/);
-    if (idParamMatch)
-      return `https://drive.google.com/file/d/${idParamMatch[1]}/preview`;
-    return null;
+    try {
+      const dMatch = rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (dMatch) return `https://drive.google.com/file/d/${dMatch[1]}/preview`;
+      const idParamMatch = rawUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (idParamMatch)
+        return `https://drive.google.com/file/d/${idParamMatch[1]}/preview`;
+      return null;
+    } catch {
+      return null;
+    }
   };
 
   const slides = useMemo(() => {
@@ -99,7 +114,9 @@ export default function MultimediaCarousel({
       type:
         url.match(/\.(mp4|mov|webm)(?:[?#].*)?$/i) ||
         url.includes("/videos/") ||
-        url.match(/(youtube\.com|youtu\.be|tiktok\.com|drive\.google\.com)/i)
+        url.match(
+          /(youtube\.com|youtu\.be|tiktok\.com|drive\.google\.com|vimeo\.com)/i,
+        )
           ? "video"
           : "image",
       url: getMediaUrl(url),
@@ -263,6 +280,21 @@ export default function MultimediaCarousel({
           );
         }
         return renderExternalVideoFallback(url, "TikTok");
+      } else if (url.includes("vimeo.com")) {
+        const videoId = extractVimeoId(url);
+        if (videoId) {
+          return (
+            <iframe
+              src={`https://player.vimeo.com/video/${videoId}`}
+              title={`${title} - Vimeo Video ${idx + 1}`}
+              className="w-full h-full"
+              frameBorder="0"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+            />
+          );
+        }
+        return renderExternalVideoFallback(url, "Vimeo");
       } else if (url.includes("drive.google.com")) {
         const previewUrl = buildDrivePreviewUrl(url);
         if (previewUrl) {
