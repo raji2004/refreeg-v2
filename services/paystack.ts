@@ -248,6 +248,87 @@ const Paystack = {
       );
     }
   },
+
+  charge: async function (data: any) {
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.post("/charge", data);
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error: any) {
+      recordFailure("paystack");
+      console.error(
+        "Paystack charge error:",
+        error.response?.data || error.message,
+      );
+      throw new Error(
+        error.response?.data?.message || "Failed to initiate direct charge",
+      );
+    }
+  },
+
+  submitPin: async function (pin: string, reference: string) {
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.post("/charge/submit_pin", {
+        pin,
+        reference,
+      });
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error: any) {
+      recordFailure("paystack");
+      throw new Error(
+        error.response?.data?.message || "Failed to submit card PIN",
+      );
+    }
+  },
+
+  submitOtp: async function (otp: string, reference: string) {
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.post("/charge/submit_otp", {
+        otp,
+        reference,
+      });
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error: any) {
+      recordFailure("paystack");
+      throw new Error(error.response?.data?.message || "Failed to submit OTP");
+    }
+  },
+
+  submitPhone: async function (phone: string, reference: string) {
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.post("/charge/submit_phone", {
+        phone,
+        reference,
+      });
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error: any) {
+      recordFailure("paystack");
+      throw new Error(
+        error.response?.data?.message || "Failed to submit phone",
+      );
+    }
+  },
+
+  checkPendingCharge: async function (reference: string) {
+    checkCircuit("paystack");
+    try {
+      const response = await this.api.get(`/charge/${reference}`);
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error: any) {
+      recordFailure("paystack");
+      throw new Error(
+        error.response?.data?.message || "Failed to check charge status",
+      );
+    }
+  },
 };
 
 export default Paystack;
