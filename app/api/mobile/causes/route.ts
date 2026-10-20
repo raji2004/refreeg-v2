@@ -122,6 +122,40 @@ export async function POST(request: NextRequest) {
       console.warn("Failed to create campaign notification:", notifErr);
     }
 
+    try {
+      const profile = await prisma.user.findUnique({
+        where: { id: user!.id },
+        select: { fullName: true, email: true },
+      });
+
+      if (profile?.email) {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+        const reviewUrl = `${baseUrl}/dashboard/admin/causes?tab=pending`;
+
+        const {
+          sendCauseSubmissionAdminNotification,
+          sendCauseUnderReviewEmail,
+        } = await import("@/services/mail");
+
+        sendCauseSubmissionAdminNotification(
+          profile.fullName || "User",
+          profile.email,
+          body.title,
+          reviewUrl,
+        ).catch((err) => console.error("Admin notification error:", err));
+
+        sendCauseUnderReviewEmail({
+          causeName: body.title,
+          dashboardUrl: `${baseUrl}/dashboard/causes`,
+          userEmail: profile.email,
+          userName: profile.fullName || "User",
+        }).catch((err) => console.error("User email notification error:", err));
+      }
+    } catch (mailErr) {
+      console.warn("Failed to dispatch campaign emails:", mailErr);
+    }
+
     return apiSuccess(cause, 201);
   } catch (error: any) {
     console.error("Mobile API Create Cause Error:", error);

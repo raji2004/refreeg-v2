@@ -116,6 +116,39 @@ export async function POST(request: NextRequest) {
       console.warn("Failed to create petition notification:", notifErr);
     }
 
+    try {
+      const profile = await prisma.user.findUnique({
+        where: { id: user!.id },
+        select: { fullName: true, email: true },
+      });
+
+      if (profile?.email) {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+        const reviewUrl = `${baseUrl}/dashboard/admin/petitions?tab=pending`;
+
+        const {
+          sendPetitionSubmissionAdminNotification,
+          sendPetitionUnderReviewEmail,
+        } = await import("@/services/mail");
+
+        sendPetitionSubmissionAdminNotification(
+          profile.fullName || "User",
+          profile.email,
+          body.title,
+          reviewUrl,
+        ).catch((err) => console.error("Admin notification error:", err));
+
+        sendPetitionUnderReviewEmail({
+          petitionName: body.title,
+          userEmail: profile.email,
+          userName: profile.fullName || "User",
+        }).catch((err) => console.error("User email notification error:", err));
+      }
+    } catch (mailErr) {
+      console.warn("Failed to dispatch petition emails:", mailErr);
+    }
+
     return apiSuccess(petition, 201);
   } catch (error: any) {
     console.error("Mobile API Create Petition Error:", error);

@@ -17,9 +17,13 @@ export async function ensureNotificationsTable(): Promise<void> {
         "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updated_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT "notifications_pkey" PRIMARY KEY ("id")
-      );
-      CREATE INDEX IF NOT EXISTS "idx_notifications_user_read" ON "notifications"("user_id", "is_read");
-      CREATE INDEX IF NOT EXISTS "idx_notifications_user_created" ON "notifications"("user_id", "created_at" DESC);
+      )
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "idx_notifications_user_read" ON "notifications"("user_id", "is_read")
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "idx_notifications_user_created" ON "notifications"("user_id", "created_at" DESC)
     `);
     tableEnsured = true;
   } catch (error) {
