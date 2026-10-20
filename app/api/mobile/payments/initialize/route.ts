@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import Paystack from "@/services/paystack";
+import { prisma } from "@/lib/prisma";
+import { calculateServiceFee, calculateProviderFee } from "@/lib/utils";
+import { assertCauseAcceptingDonations } from "@/lib/proof-milestones";
 
 const MIN_DONATION_AMOUNT = 100;
 
@@ -16,18 +19,73 @@ export async function POST(request: NextRequest) {
       return apiError("Missing required fields (amount, email, causeId)", 400);
     }
 
-    if (Number(data.amount) < MIN_DONATION_AMOUNT) {
-      return apiError(`Minimum donation amount is ₦${MIN_DONATION_AMOUNT}`, 400);
+    const numAmount = Number(data.amount);
+    if (isNaN(numAmount) || numAmount < MIN_DONATION_AMOUNT) {
+      return apiError(
+        `Minimum donation amount is ₦${MIN_DONATION_AMOUNT}`,
+        400,
+      );
     }
 
-    // Set callback URL for mobile deep link if provided, or default
-    if (!data.callback_url) {
-      data.callback_url = "refreeg://payment/verify";
+    try {
+      await assertCauseAcceptingDonations(data.causeId);
+    } catch (e: any) {
+      return apiError(
+        e.message || "This cause is not accepting donations currently",
+        403,
+      );
     }
 
-    const response = await Paystack.initializeTransaction(data);
+    // Set callback URL for mobile deep link if not provided
+    const callbackUrl = data.callback_url || "refreeg://payment/verify";
 
-    return apiSuccess(response);
+    // Recalculate fees on the server to prevent spoofing
+    const serviceFee = calculateServiceFee(numAmount);
+    const providerFee = calculateProviderFee(numAmount, "paystack");
+    const tipAmount = Number(data.tipAmount || data.tip_amount || 0);
+
+    // Get cause creator's subaccount if exists
+    const cause = await prisma.cause.findUnique({
+      where: { id: data.causeId },
+      include: {
+        user: {
+          select: { subAccountCode: true },
+        },
+      },
+    });
+
+    const subaccounts = cause?.user?.subAccountCode
+      ? [{ subaccount: cause.user.subAccountCode, share: numAmount * 100 }]
+      : undefined;
+
+    const response = await Paystack.initializeTransaction({
+      amount: numAmount,
+      email: data.email,
+      causeId: data.causeId,
+      full_name: data.isAnonymous
+        ? "Anonymous"
+        : data.donorName || data.name || data.full_name || "Supporter",
+      serviceFee,
+      providerFee,
+      tipAmount,
+      callbackUrl,
+      subaccounts,
+      message: data.message || "",
+      isAnonymous: Boolean(data.isAnonymous),
+      id: data.userId || data.user_id,
+      referrer_code: data.referrer_code,
+    });
+
+    return apiSuccess({
+      ...response,
+      breakdown: {
+        amount: numAmount,
+        serviceFee,
+        providerFee,
+        tipAmount,
+        total: numAmount + serviceFee + providerFee + tipAmount,
+      },
+    });
   } catch (error: any) {
     console.error("Mobile API Payment Initialization Error:", error);
     return apiError(error.message || "Failed to initialize payment", 500);
