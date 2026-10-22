@@ -35,8 +35,10 @@ export function apiSuccess<T>(data: T, status = 200, headers?: HeadersInit) {
       status,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Methods":
+          "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+        "Access-Control-Allow-Headers":
+          "Content-Type, Authorization, X-Requested-With, Accept",
         ...headers,
       },
     },
@@ -56,8 +58,10 @@ export function apiError(message: string, status = 400, headers?: HeadersInit) {
       status,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Methods":
+          "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+        "Access-Control-Allow-Headers":
+          "Content-Type, Authorization, X-Requested-With, Accept",
         ...headers,
       },
     },
@@ -88,8 +92,10 @@ export function apiPaginated<T>(
       status,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Methods":
+          "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+        "Access-Control-Allow-Headers":
+          "Content-Type, Authorization, X-Requested-With, Accept",
       },
     },
   );
@@ -103,8 +109,9 @@ export function handleCorsPreflight() {
     status: 204,
     headers: {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+      "Access-Control-Allow-Headers":
+        "Content-Type, Authorization, X-Requested-With, Accept",
       "Access-Control-Max-Age": "86400", // 24 hours
     },
   });

@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { handleCorsPreflight } from "@/lib/api/response";
 
 const PUBLIC_API_PREFIXES = [
   "/api/auth", // NextAuth routes
@@ -19,6 +20,14 @@ const PUBLIC_API_PREFIXES = [
   "/api/leaderboard", // Public leaderboard rankings
 ];
 
+const AUTH_PAGES_WITH_OWN_SESSION_HANDLING = [
+  "/auth/callback",
+  "/auth/signin",
+  "/auth/signup",
+  "/auth/confirm-email-change",
+  "/auth/update-password",
+];
+
 function absoluteUrl(path: string, req: Request): URL {
   const host =
     req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
@@ -26,9 +35,22 @@ function absoluteUrl(path: string, req: Request): URL {
   return new URL(path, `${proto}://${host}`);
 }
 
-export default auth(async (req) => {
+export default async function middleware(req: NextRequest) {
+  if (req.method === "OPTIONS") {
+    return handleCorsPreflight();
+  }
+
   const { pathname } = req.nextUrl;
-  const user = req.auth?.user;
+
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  const token = await getToken({ req, secret });
+  const user = token
+    ? {
+        id: (token.id || token.sub) as string,
+        role: token.role as string | undefined,
+        onboardingCompleted: token.onboardingCompleted as boolean | undefined,
+      }
+    : null;
 
   if (pathname.startsWith("/api")) {
     const isPublicApi = PUBLIC_API_PREFIXES.some((prefix) =>
@@ -53,19 +75,12 @@ export default auth(async (req) => {
   }
 
   if (pathname.startsWith("/dashboard/admin") && user) {
-    const role = (user as { role?: string }).role;
+    const role = user.role;
     if (role === "user") {
       return NextResponse.redirect(absoluteUrl("/dashboard", req));
     }
   }
 
-  const AUTH_PAGES_WITH_OWN_SESSION_HANDLING = [
-    "/auth/callback",
-    "/auth/signin",
-    "/auth/signup",
-    "/auth/confirm-email-change",
-    "/auth/update-password",
-  ];
   if (
     user &&
     pathname.startsWith("/auth") &&
@@ -74,7 +89,7 @@ export default auth(async (req) => {
     return NextResponse.redirect(absoluteUrl("/dashboard", req));
   }
 
-  const isOnboardingCompleted = (req.auth?.user as any)?.onboardingCompleted;
+  const isOnboardingCompleted = user?.onboardingCompleted;
 
   if (
     user &&
@@ -96,7 +111,9 @@ export default auth(async (req) => {
     });
     return response;
   }
-});
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [

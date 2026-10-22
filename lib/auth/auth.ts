@@ -182,18 +182,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         try {
-          const normalizedEmail = (credentials.email as string).trim().toLowerCase();
+          const normalizedEmail = (credentials.email as string)
+            .trim()
+            .toLowerCase();
           const user = await prisma.user.findUnique({
             where: { email: normalizedEmail },
             include: { roles: { select: { role: true } } },
           });
 
           if (!user) {
-            console.error(`[NextAuth] user not found for email: ${normalizedEmail}`);
+            console.error(
+              `[NextAuth] user not found for email: ${normalizedEmail}`,
+            );
             throw new UserNotFoundError();
           }
           if (!user.password) {
-            console.error(`[NextAuth] user has no password for email: ${normalizedEmail}`);
+            console.error(
+              `[NextAuth] user has no password for email: ${normalizedEmail}`,
+            );
             throw new MissingPasswordError();
           }
 
@@ -203,11 +209,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           );
 
           if (!valid) {
-            console.error(`[NextAuth] password mismatch for email: ${credentials.email}`);
+            console.error(
+              `[NextAuth] password mismatch for email: ${credentials.email}`,
+            );
             throw new IncorrectPasswordError();
           }
 
-          console.error(`[NextAuth] user authenticated successfully: ${credentials.email}`);
+          console.error(
+            `[NextAuth] user authenticated successfully: ${credentials.email}`,
+          );
           return {
             id: user.id,
             email: user.email,
@@ -316,7 +326,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               where: { id: userId },
               select: { roles: { select: { role: true } }, current_tier: true },
             });
-            token.role = dbUser?.roles?.[0]?.role || "user";
+            token.role = (dbUser?.roles?.[0]?.role as UserRole) || "user";
             token.tier = dbUser?.current_tier || "Explorer";
           } catch (error) {
             console.error(
