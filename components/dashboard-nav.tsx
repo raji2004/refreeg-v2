@@ -23,6 +23,7 @@ import {
   Building2,
   CircleUserRound,
   ShieldCheck,
+  Bell,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useAuth } from "@/hooks/use-auth";
@@ -124,6 +125,11 @@ const adminNavItems = [
     title: "Manage Proof Updates",
     href: "/dashboard/admin/proof-updates",
     icon: ShieldCheck,
+  },
+  {
+    title: "Push Notifications",
+    href: "/dashboard/admin/notifications",
+    icon: Bell,
   },
   {
     title: "Analytics",

@@ -81,6 +81,31 @@ export async function createNotification(params: CreateNotificationParams) {
       } catch (busErr) {
         console.warn("Failed to emit notification to eventBus:", busErr);
       }
+
+      // Dispatch real-time push notification via FCM (excluding petition notifications per requirements)
+      if (type !== "petition_signed") {
+        try {
+          const { sendPushToUser } =
+            await import("@/lib/notifications/fcm-service");
+          sendPushToUser({
+            userId,
+            title,
+            body: message,
+            data: {
+              id: String(notif.id || ""),
+              type: String(type),
+              ...(data || {}),
+            },
+          }).catch((pushErr) => {
+            console.error("Failed to send push notification:", pushErr);
+          });
+        } catch (pushImportErr) {
+          console.warn(
+            "FCM push notification dispatch skipped:",
+            pushImportErr,
+          );
+        }
+      }
     }
     return notif;
   } catch (error) {
