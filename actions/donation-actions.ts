@@ -12,13 +12,18 @@ import { recordEvent } from "@/actions/event-reward-actions";
 import { sendDonationReceivedEmail } from "@/services/mail";
 import { syncMilestoneRequirements } from "@/lib/proof-milestones";
 
-const mapPrismaToDonation = (d: any): Donation => ({
-  ...d,
-  amount: Number(d.amount),
-  tip_amount: d.tip_amount ? Number(d.tip_amount) : 0,
-  created_at:
-    d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt,
-});
+const mapPrismaToDonation = (d: any): Donation => {
+  const isAnon =
+    d.is_anonymous === true || String(d.is_anonymous).toLowerCase() === "true";
+  return {
+    ...d,
+    name: isAnon ? "Anonymous" : d.name || "Anonymous",
+    amount: Number(d.amount),
+    tip_amount: d.tip_amount ? Number(d.tip_amount) : 0,
+    created_at:
+      d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt,
+  };
+};
 
 export async function createDonation(
   causeId: string,
@@ -301,10 +306,15 @@ export async function listDonationsForCause(
       orderBy: { createdAt: "desc" },
     });
 
-    return data.map((d: any) => ({
-      ...mapPrismaToDonation(d),
-      name: d.name || d.user?.fullName || null,
-    }));
+    return data.map((d: any) => {
+      const isAnon =
+        d.is_anonymous === true ||
+        String(d.is_anonymous).toLowerCase() === "true";
+      return {
+        ...mapPrismaToDonation(d),
+        name: isAnon ? "Anonymous" : d.name || d.user?.fullName || "Anonymous",
+      };
+    });
   } catch (error) {
     console.error("Error listing donations:", error);
     throw error;

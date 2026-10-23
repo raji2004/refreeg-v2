@@ -25,6 +25,7 @@ import { calculateServiceFee, calculateProviderFee, cn } from "@/lib/utils";
 import { sendUnfinishedDonationEmail } from "@/services/mail";
 
 const MIN_DONATION_AMOUNT = 100;
+const MAX_DONATION_AMOUNT = 10_000_000;
 
 interface DonationFormProps {
   causeId: string;
@@ -222,6 +223,13 @@ export function DonationForm({
 
     if (Number(formData.amount) < MIN_DONATION_AMOUNT) {
       setAmountError(`Minimum donation is ₦${MIN_DONATION_AMOUNT}.`);
+      return;
+    }
+
+    if (Number(formData.amount) > MAX_DONATION_AMOUNT) {
+      setAmountError(
+        `Maximum donation is ₦${MAX_DONATION_AMOUNT.toLocaleString()}.`,
+      );
       return;
     }
 
@@ -470,7 +478,8 @@ export function DonationForm({
             disabled={
               isRedirecting ||
               isDisabled ||
-              donationAmount < MIN_DONATION_AMOUNT
+              donationAmount < MIN_DONATION_AMOUNT ||
+              donationAmount > MAX_DONATION_AMOUNT
             }
             className={cn("w-full", submitClassName)}
           >

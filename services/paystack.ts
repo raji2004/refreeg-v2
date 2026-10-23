@@ -43,7 +43,8 @@ const Paystack = {
         data.serviceFee +
         (data.providerFee || 0) +
         (data.tipAmount || 0);
-      const feePlusTip = data.serviceFee + (data.tipAmount || 0);
+      // Total charges retained by RefreeG (platform fee + gateway processing fee + optional tip)
+      const platformRetainedFees = Math.max(0, totalCharge - data.amount);
       const primarySubaccount = data.subaccounts?.find(
         (entry) => entry?.subaccount?.trim().length,
       )?.subaccount;
@@ -55,7 +56,7 @@ const Paystack = {
         callback_url:
           data.callbackUrl ||
           `${baseUrl}/causes/${data.causeId}/payment/verify`,
-        transaction_charge: Math.round(feePlusTip * 100),
+        transaction_charge: Math.round(platformRetainedFees * 100),
         ...(primarySubaccount
           ? {
               subaccount: primarySubaccount,

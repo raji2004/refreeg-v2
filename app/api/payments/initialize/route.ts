@@ -5,6 +5,7 @@ import { assertCauseAcceptingDonations } from "@/lib/proof-milestones";
 import { calculateProviderFee, calculateServiceFee } from "@/lib/utils";
 
 const MIN_DONATION_AMOUNT = 100;
+const MAX_DONATION_AMOUNT = 10_000_000;
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,9 +18,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (Number(data.amount) < MIN_DONATION_AMOUNT) {
+    const numAmount = Number(data.amount);
+    if (numAmount < MIN_DONATION_AMOUNT) {
       return NextResponse.json(
         { error: `Minimum donation amount is ₦${MIN_DONATION_AMOUNT}` },
+        { status: 400 },
+      );
+    }
+
+    if (numAmount > MAX_DONATION_AMOUNT) {
+      return NextResponse.json(
+        {
+          error: `Maximum donation amount is ₦${MAX_DONATION_AMOUNT.toLocaleString()}`,
+        },
         { status: 400 },
       );
     }

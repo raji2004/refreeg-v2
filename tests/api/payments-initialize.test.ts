@@ -1,4 +1,3 @@
-
 import { POST } from "@/app/api/payments/initialize/route";
 import { prisma } from "@/lib/prisma";
 import Flutterwave from "@/services/flutterwave";
@@ -34,12 +33,16 @@ jest.mock("@/services/flutterwave", () => ({
     getBankCode: jest.fn(),
     createSubaccount: jest.fn(),
     findSubaccountByAccountNumber: jest.fn(),
-    initializeTransaction: jest.fn().mockResolvedValue({ status: "success", data: "test" }),
+    initializeTransaction: jest
+      .fn()
+      .mockResolvedValue({ status: "success", data: "test" }),
   },
 }));
 
 jest.mock("@/services/payment-provider", () => ({
-  initializeTransaction: jest.fn().mockResolvedValue({ status: "success", data: "provider-test" }),
+  initializeTransaction: jest
+    .fn()
+    .mockResolvedValue({ status: "success", data: "provider-test" }),
 }));
 
 describe("POST /api/payments/initialize", () => {
@@ -89,10 +92,10 @@ describe("POST /api/payments/initialize", () => {
 
     // Verify JIT steps were executed
     expect(prisma.cause.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "cause-123" } })
+      expect.objectContaining({ where: { id: "cause-123" } }),
     );
     expect(prisma.user.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "user-123" } })
+      expect.objectContaining({ where: { id: "user-123" } }),
     );
     expect(Flutterwave.getBankCode).toHaveBeenCalledWith("Access Bank");
     expect(Flutterwave.createSubaccount).toHaveBeenCalledWith(
@@ -100,13 +103,13 @@ describe("POST /api/payments/initialize", () => {
         account_number: "1234567890",
         bank_code: "044", // Resolved successfully
         business_name: "Test User",
-      })
+      }),
     );
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "user-123" },
         data: { flutterwaveSubAccountId: "RS_flutterwave123" },
-      })
+      }),
     );
 
     expect(json.success).toBe(true);
@@ -114,7 +117,7 @@ describe("POST /api/payments/initialize", () => {
 
   it("should NOT perform JIT creation if subaccount already provided", async () => {
     // The compliance gate (assertCauseAcceptingDonations) still looks up the
-    // cause on every request, regardless of the JIT path.
+    // cause on every request with a UUID causeId, regardless of the JIT path.
     (prisma.cause.findUnique as jest.Mock).mockResolvedValue({
       compliance_paused: false,
     });
@@ -122,7 +125,7 @@ describe("POST /api/payments/initialize", () => {
     const payload = {
       amount: 5000,
       email: "test@example.com",
-      causeId: "cause-123",
+      causeId: "12345678-1234-1234-1234-1234567890ab",
       paymentProvider: "flutterwave",
       subaccounts: [{ subaccount: "RS_existing123", share: 500000 }],
     };
@@ -138,5 +141,22 @@ describe("POST /api/payments/initialize", () => {
     expect(prisma.cause.findUnique).toHaveBeenCalledTimes(1);
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
     expect(Flutterwave.createSubaccount).not.toHaveBeenCalled();
+  });
+
+  it("should reject donations greater than 10,000,000 NGN", async () => {
+    const payload = {
+      amount: 15000000,
+      email: "test@example.com",
+      causeId: "12345678-1234-1234-1234-1234567890ab",
+    };
+
+    const req = {
+      json: jest.fn().mockResolvedValue(payload),
+    } as any;
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("Maximum donation amount is ₦10,000,000");
   });
 });

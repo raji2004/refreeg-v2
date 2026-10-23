@@ -6,6 +6,7 @@ import { calculateServiceFee, calculateProviderFee } from "@/lib/utils";
 import { assertCauseAcceptingDonations } from "@/lib/proof-milestones";
 
 const MIN_DONATION_AMOUNT = 100;
+const MAX_DONATION_AMOUNT = 10_000_000;
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -23,6 +24,13 @@ export async function POST(request: NextRequest) {
     if (isNaN(numAmount) || numAmount < MIN_DONATION_AMOUNT) {
       return apiError(
         `Minimum donation amount is ₦${MIN_DONATION_AMOUNT}`,
+        400,
+      );
+    }
+
+    if (numAmount > MAX_DONATION_AMOUNT) {
+      return apiError(
+        `Maximum donation amount is ₦${MAX_DONATION_AMOUNT.toLocaleString()}`,
         400,
       );
     }

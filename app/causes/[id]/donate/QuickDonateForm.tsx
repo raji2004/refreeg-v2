@@ -22,6 +22,7 @@ import {
 import Image from "next/image";
 
 const MIN_DONATION_AMOUNT = 100;
+const MAX_DONATION_AMOUNT = 10_000_000;
 const PRESETS = [500, 1000, 5000, 10000];
 
 interface QuickDonateFormProps {
@@ -78,6 +79,12 @@ export default function QuickDonateForm({
     e.preventDefault();
     if (donationAmount < MIN_DONATION_AMOUNT) {
       setAmountError(`Minimum donation is ₦${MIN_DONATION_AMOUNT}.`);
+      return;
+    }
+    if (donationAmount > MAX_DONATION_AMOUNT) {
+      setAmountError(
+        `Maximum donation is ₦${MAX_DONATION_AMOUNT.toLocaleString()}.`,
+      );
       return;
     }
 
@@ -283,7 +290,11 @@ export default function QuickDonateForm({
         <Button
           type="submit"
           variant="lime"
-          disabled={isLoading || donationAmount < MIN_DONATION_AMOUNT}
+          disabled={
+            isLoading ||
+            donationAmount < MIN_DONATION_AMOUNT ||
+            donationAmount > MAX_DONATION_AMOUNT
+          }
           className="w-full rounded-full"
         >
           {isLoading ? (
