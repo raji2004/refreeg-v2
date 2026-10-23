@@ -48,6 +48,9 @@ skills-lock.json
 .DS_Store
 .pnpm-store
 playwright/.auth/
+*-firebase-adminsdk-*.json
+*service-account*.json
+
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
