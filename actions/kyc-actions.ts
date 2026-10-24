@@ -230,7 +230,7 @@ export async function updateVerificationStatus(
     // Fetch the verification record to get user_id and full_name
     const verification = await prisma.kyc_verifications.findUnique({
       where: { id: verificationId },
-      select: { user_id: true, full_name: true },
+      select: { id: true, user_id: true, full_name: true },
     });
 
     if (verification) {
@@ -266,7 +266,7 @@ export async function updateVerificationStatus(
               type: "general",
               data: {
                 kyc_status: "approved",
-                verification_id: verification.id,
+                verification_id: verificationId,
               },
             });
           } else if (status === "rejected") {
@@ -279,7 +279,7 @@ export async function updateVerificationStatus(
               type: "general",
               data: {
                 kyc_status: "rejected",
-                verification_id: verification.id,
+                verification_id: verificationId,
               },
             });
           }
