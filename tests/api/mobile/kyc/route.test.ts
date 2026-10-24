@@ -14,6 +14,8 @@ jest.mock("@/lib/prisma", () => ({
   prisma: {
     kyc_verifications: {
       findFirst: jest.fn(),
+      create: jest.fn(),
+      deleteMany: jest.fn(),
     },
   },
 }));
@@ -40,8 +42,11 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
     it("returns 401 if request is unauthenticated", async () => {
       (authenticateMobileRequest as jest.Mock).mockResolvedValue({
         errorResponse: new Response(
-          JSON.stringify({ success: false, error: "Missing or invalid authorization header" }),
-          { status: 401 }
+          JSON.stringify({
+            success: false,
+            error: "Missing or invalid authorization header",
+          }),
+          { status: 401 },
         ),
       });
 
@@ -86,7 +91,7 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
       (authenticateMobileRequest as jest.Mock).mockResolvedValue({
         errorResponse: new Response(
           JSON.stringify({ success: false, error: "Invalid token" }),
-          { status: 401 }
+          { status: 401 },
         ),
       });
 
@@ -149,6 +154,7 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
         ok: true,
         json: async () => ({
           session_id: "didit-session-999",
+          session_token: "mock-token-xyz-123",
           url: "https://verification.didit.me/v3/session/didit-session-999",
         }),
       });
@@ -164,8 +170,9 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
       const data = await response.json();
       expect(data.success).toBe(true);
       expect(data.data.session_id).toBe("didit-session-999");
+      expect(data.data.session_token).toBe("mock-token-xyz-123");
       expect(data.data.verification_url).toBe(
-        "https://verification.didit.me/v3/session/didit-session-999"
+        "https://verification.didit.me/v3/session/didit-session-999",
       );
 
       // Verify fetch was called with correct payload
@@ -178,7 +185,7 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
             callback: "custom://callback",
             vendor_data: "user-123",
           }),
-        })
+        }),
       );
     });
 

@@ -9,6 +9,7 @@ import {
   sendKycResubmittedEmail,
   sendKycSubmissionAdminNotification,
 } from "@/services/mail";
+import { createNotification } from "@/lib/notifications/notification-service";
 import crypto from "crypto";
 
 /**
@@ -18,14 +19,14 @@ import crypto from "crypto";
  */
 function verifyDiditWebhookSignature(
   rawBody: string,
-  signatureHeader: string | null
+  signatureHeader: string | null,
 ): boolean {
   const webhookSecret = process.env.DIDIT_WEBHOOK_SECRET;
 
   // If no secret is configured, skip verification (dev/test environments)
   if (!webhookSecret) {
     console.warn(
-      "[Didit Webhook] DIDIT_WEBHOOK_SECRET not set — skipping signature verification"
+      "[Didit Webhook] DIDIT_WEBHOOK_SECRET not set — skipping signature verification",
     );
     return true;
   }
@@ -44,7 +45,7 @@ function verifyDiditWebhookSignature(
   try {
     return crypto.timingSafeEqual(
       Buffer.from(signatureHeader, "hex"),
-      Buffer.from(expectedSignature, "hex")
+      Buffer.from(expectedSignature, "hex"),
     );
   } catch {
     // If the signature header is not valid hex, comparison fails
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
       console.error("[Didit Webhook] Invalid signature — rejecting request");
       return NextResponse.json(
         { error: "Invalid webhook signature" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -252,12 +253,49 @@ export async function POST(request: Request) {
           } catch (err) {
             console.error("Referral reward error:", err);
           }
+          try {
+            await createNotification({
+              userId: kyc.user_id,
+              title: "Identity Verified",
+              message:
+                "Your RefreeG identity verification has been approved. You now have full Tier 2 access.",
+              type: "general",
+              data: {
+                kyc_status: "approved",
+                session_id: sessionId,
+              },
+            });
+          } catch (notifErr) {
+            console.error(
+              "Failed to create KYC approval notification:",
+              notifErr,
+            );
+          }
         } else if (isRejected) {
           await sendKycRejectedEmail(
             userProfile.email,
             userName,
             rejectionReason,
           );
+          try {
+            await createNotification({
+              userId: kyc.user_id,
+              title: "Verification Needs Attention",
+              message:
+                rejectionReason ||
+                "Your identity verification could not be approved. Please review requirements and try again.",
+              type: "general",
+              data: {
+                kyc_status: "rejected",
+                session_id: sessionId,
+              },
+            });
+          } catch (notifErr) {
+            console.error(
+              "Failed to create KYC rejection notification:",
+              notifErr,
+            );
+          }
         } else if (isResubmitted) {
           await sendKycResubmittedEmail(
             userProfile.email,

@@ -33,6 +33,10 @@ jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
 }));
 
+jest.mock("@/lib/notifications/notification-service", () => ({
+  createNotification: jest.fn(),
+}));
+
 import { POST } from "@/app/api/webhooks/didit/route";
 import { prisma } from "@/lib/prisma";
 import { issueReferralRewardOnKycApproval } from "@/actions/kyc-actions";
@@ -83,7 +87,8 @@ describe("Didit Webhook Route (/api/webhooks/didit)", () => {
     const request = new Request("http://localhost/api/webhooks/didit", {
       method: "POST",
       headers: {
-        "x-signature-v2": "invalid-hex-signature-1234567890123456789012345678901234567890123456789012345678901234",
+        "x-signature-v2":
+          "invalid-hex-signature-1234567890123456789012345678901234567890123456789012345678901234",
       },
       body: JSON.stringify({ session_id: "sess-1" }),
     });
@@ -135,7 +140,10 @@ describe("Didit Webhook Route (/api/webhooks/didit)", () => {
     });
 
     // Verify email & rewards triggered
-    expect(sendKycApprovedEmail).toHaveBeenCalledWith("approved@example.com", "John Approved");
+    expect(sendKycApprovedEmail).toHaveBeenCalledWith(
+      "approved@example.com",
+      "John Approved",
+    );
     expect(issueReferralRewardOnKycApproval).toHaveBeenCalledWith("user-456");
   });
 
@@ -184,7 +192,7 @@ describe("Didit Webhook Route (/api/webhooks/didit)", () => {
     expect(sendKycRejectedEmail).toHaveBeenCalledWith(
       "declined@example.com",
       "Jane Declined",
-      "Blurry document"
+      "Blurry document",
     );
   });
 });
