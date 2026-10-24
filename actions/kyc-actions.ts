@@ -14,6 +14,7 @@ import {
   sendKycSubmissionAdminNotification,
   sendKycReminderEmail,
 } from "@/services/mail";
+import { createNotification } from "@/lib/notifications/notification-service";
 
 export async function getVerificationStatus(
   userId: string,
@@ -253,6 +254,40 @@ export async function updateVerificationStatus(
                 "Your KYC verification was rejected. Please review and resubmit.",
             );
           }
+        }
+
+        try {
+          if (status === "approved") {
+            await createNotification({
+              userId: verification.user_id,
+              title: "Identity Verified",
+              message:
+                "Your RefreeG identity verification has been approved. You now have full Tier 2 access.",
+              type: "general",
+              data: {
+                kyc_status: "approved",
+                verification_id: verification.id,
+              },
+            });
+          } else if (status === "rejected") {
+            await createNotification({
+              userId: verification.user_id,
+              title: "Verification Needs Attention",
+              message:
+                notes ||
+                "Your identity verification could not be approved. Please review requirements and try again.",
+              type: "general",
+              data: {
+                kyc_status: "rejected",
+                verification_id: verification.id,
+              },
+            });
+          }
+        } catch (notifErr) {
+          console.error(
+            "Failed to create admin KYC update notification:",
+            notifErr,
+          );
         }
       } catch (emailError) {
         console.error("Error sending KYC status email:", emailError);

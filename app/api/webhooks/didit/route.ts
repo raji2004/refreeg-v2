@@ -302,6 +302,25 @@ export async function POST(request: Request) {
             userName,
             rejectionReason,
           );
+          try {
+            await createNotification({
+              userId: kyc.user_id,
+              title: "Action Required: Verification Update",
+              message:
+                rejectionReason ||
+                "Your verification requires a few corrections. Please review the requirements in RefreeG.",
+              type: "general",
+              data: {
+                kyc_status: "resubmitted",
+                session_id: sessionId,
+              },
+            });
+          } catch (notifErr) {
+            console.error(
+              "Failed to create KYC resubmitted notification:",
+              notifErr,
+            );
+          }
         } else if (newStatus === "pending" && requiresManualReview) {
           await sendKycSubmittedEmail(userProfile.email, userName);
           await sendKycSubmissionAdminNotification(
@@ -310,6 +329,24 @@ export async function POST(request: Request) {
             kyc.user_id,
             "https://verification.didit.me/admin",
           );
+          try {
+            await createNotification({
+              userId: kyc.user_id,
+              title: "Verification Under Review",
+              message:
+                "We have received your verification documents and are reviewing them. We'll notify you once processed.",
+              type: "general",
+              data: {
+                kyc_status: "pending",
+                session_id: sessionId,
+              },
+            });
+          } catch (notifErr) {
+            console.error(
+              "Failed to create KYC pending review notification:",
+              notifErr,
+            );
+          }
         }
       } catch (emailError) {
         console.error(

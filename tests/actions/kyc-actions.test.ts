@@ -46,15 +46,16 @@ jest.mock("@/lib/s3/s3-utils", () => ({
   generateS3Key: jest.fn(() => "kyc/user-1/doc.pdf"),
 }));
 
+jest.mock("@/lib/notifications/notification-service", () => ({
+  createNotification: jest.fn(),
+}));
+
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/actions/auth-actions";
 import { isAdminOrManager } from "@/actions/role-actions";
 import { logAdminActivity } from "@/actions/database-actions";
-import {
-  sendKycApprovedEmail,
-  sendKycReminderEmail,
-} from "@/services/mail";
+import { sendKycApprovedEmail, sendKycReminderEmail } from "@/services/mail";
 import {
   getVerificationStatus,
   updateVerificationStatus,
@@ -134,7 +135,9 @@ describe("kyc-actions", () => {
 
       expect(result.error).toBeNull();
       expect(result.status?.status).toBe("in_progress");
-      expect(result.status?.document_url).toBe("https://verify.didit.me/session/shortURL");
+      expect(result.status?.document_url).toBe(
+        "https://verify.didit.me/session/shortURL",
+      );
     });
 
     it("fetches Didit API and webhook for valid Didit sessions with UUID", async () => {
@@ -152,7 +155,8 @@ describe("kyc-actions", () => {
         if (url.includes("verification.didit.me")) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({ session_id: "uuid-123", status: "Approved" }),
+            json: () =>
+              Promise.resolve({ session_id: "uuid-123", status: "Approved" }),
           });
         }
         if (url.includes("/api/webhooks/didit")) {
@@ -171,7 +175,9 @@ describe("kyc-actions", () => {
 
       expect(global.fetch).toHaveBeenCalledTimes(2);
       expect(result.status?.status).toBe("approved");
-      expect(result.status?.document_url).toBe("https://verify.didit.me/session/shortURL");
+      expect(result.status?.document_url).toBe(
+        "https://verify.didit.me/session/shortURL",
+      );
 
       // Restore fetch
       global.fetch = originalFetch;
@@ -257,10 +263,7 @@ describe("kyc-actions", () => {
         error: null,
       });
       expect(sendKycReminderEmail).toHaveBeenCalledTimes(1);
-      expect(sendKycReminderEmail).toHaveBeenCalledWith(
-        "a@test.com",
-        "Alice",
-      );
+      expect(sendKycReminderEmail).toHaveBeenCalledWith("a@test.com", "Alice");
     });
   });
 });
