@@ -69,12 +69,13 @@ export async function POST(request: NextRequest) {
       const existingUrl =
         parts[1] ||
         `https://verification.didit.me/v3/session/${existingSessionId}`;
+      const existingToken = parts[2] || "";
 
       if (existingSessionId) {
         return apiSuccess(
           {
             session_id: existingSessionId,
-            session_token: "",
+            session_token: existingToken,
             verification_url: existingUrl,
             resumed: true,
           },
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
       data: {
         user_id: user!.id,
         document_type: "didit",
-        document_url: `${sessionId}:::${verificationUrl}`,
+        document_url: `${sessionId}:::${verificationUrl}:::${sessionToken}`,
         status: "pending",
         verification_notes: "Session initialized via RefreeG mobile app",
         full_name: user!.fullName || "RefreeG User",

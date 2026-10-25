@@ -136,7 +136,7 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
         id: "kyc-pending",
         status: "pending",
         document_url:
-          "didit-existing-session:::https://verification.didit.me/v3/session/didit-existing-session",
+          "didit-existing-session:::https://verification.didit.me/v3/session/didit-existing-session:::resumed-token-abc-456",
         created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
       });
 
@@ -149,6 +149,7 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
       const data = await response.json();
       expect(data.success).toBe(true);
       expect(data.data.session_id).toBe("didit-existing-session");
+      expect(data.data.session_token).toBe("resumed-token-abc-456");
       expect(data.data.resumed).toBe(true);
       // Ensure Didit API was NOT called again to create a new session
       expect(global.fetch).not.toHaveBeenCalled();

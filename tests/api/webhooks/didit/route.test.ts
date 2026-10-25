@@ -10,6 +10,7 @@ jest.mock("@/lib/prisma", () => ({
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     user: {
       findUnique: jest.fn(),
@@ -18,7 +19,7 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/actions/kyc-actions", () => ({
+jest.mock("@/lib/referral-utils", () => ({
   issueReferralRewardOnKycApproval: jest.fn(),
 }));
 
@@ -39,7 +40,7 @@ jest.mock("@/lib/notifications/notification-service", () => ({
 
 import { POST } from "@/app/api/webhooks/didit/route";
 import { prisma } from "@/lib/prisma";
-import { issueReferralRewardOnKycApproval } from "@/actions/kyc-actions";
+import { issueReferralRewardOnKycApproval } from "@/lib/referral-utils";
 import { sendKycApprovedEmail, sendKycRejectedEmail } from "@/services/mail";
 
 describe("Didit Webhook Route (/api/webhooks/didit)", () => {
@@ -48,6 +49,9 @@ describe("Didit Webhook Route (/api/webhooks/didit)", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env = { ...oldEnv, DIDIT_WEBHOOK_SECRET: "test-secret" };
+    (prisma.kyc_verifications.updateMany as jest.Mock).mockResolvedValue({
+      count: 1,
+    });
   });
 
   afterAll(() => {
@@ -126,8 +130,8 @@ describe("Didit Webhook Route (/api/webhooks/didit)", () => {
     expect(data.success).toBe(true);
 
     // Verify KYC status updated to approved
-    expect(prisma.kyc_verifications.update).toHaveBeenCalledWith({
-      where: { id: "kyc-123" },
+    expect(prisma.kyc_verifications.updateMany).toHaveBeenCalledWith({
+      where: { id: "kyc-123", status: { in: ["pending", "resubmitted"] } },
       data: expect.objectContaining({
         status: "approved",
       }),
@@ -175,8 +179,8 @@ describe("Didit Webhook Route (/api/webhooks/didit)", () => {
     expect(response.status).toBe(200);
 
     // Verify KYC status updated to rejected
-    expect(prisma.kyc_verifications.update).toHaveBeenCalledWith({
-      where: { id: "kyc-789" },
+    expect(prisma.kyc_verifications.updateMany).toHaveBeenCalledWith({
+      where: { id: "kyc-789", status: { in: ["pending", "resubmitted"] } },
       data: expect.objectContaining({
         status: "rejected",
       }),
