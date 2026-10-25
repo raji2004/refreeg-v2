@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     } else if (data.channel === "ussd") {
       channels = ["ussd"];
     } else if (data.channel === "opay") {
-      channels = ["mobile_money", "opay"];
+      channels = ["bank"];
     }
 
     const response = await Paystack.initializeTransaction({
