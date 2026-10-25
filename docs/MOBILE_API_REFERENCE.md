@@ -677,8 +677,8 @@ Tokens are generated upon login/verification and contain `{ userId, email }`. Wh
 #### Mobile Flutter Integration Pattern
 
 ```dart
-// 1. Request session token from backend
-final session = await KycGateway().createVerificationSession(forceNew: true);
+// 1. Request or resume session token from backend (forceNew: false to save costs)
+final session = await KycGateway().createVerificationSession(forceNew: false);
 final token = session['session_token'];
 
 // 2. Pass token to Native Didit SDK
