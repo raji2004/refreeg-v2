@@ -81,7 +81,7 @@ export async function processDiditVerificationResult(
       where: {
         user_id: vendorData,
         document_type: "didit",
-        status: { in: ["pending", "resubmitted"] },
+        status: { in: ["pending", "resubmitted", "in_progress"] },
       },
       orderBy: { created_at: "desc" },
     });
@@ -123,6 +123,7 @@ export async function processDiditVerificationResult(
   if (
     kyc.status !== "pending" &&
     kyc.status !== "resubmitted" &&
+    kyc.status !== "in_progress" &&
     !isNewRecord
   ) {
     return {
@@ -140,7 +141,7 @@ export async function processDiditVerificationResult(
   const isExpired = lowerStatus === "expired" || lowerStatus === "abandoned";
 
   // Mark expired/abandoned sessions as 'abandoned' to maintain audit trail
-  if (isExpired && kyc.status === "pending") {
+  if (isExpired && (kyc.status === "pending" || kyc.status === "in_progress")) {
     console.log(
       `[Didit] Marking session as abandoned for user ${kyc.user_id} (session: ${sessionId})`,
     );
@@ -201,7 +202,7 @@ export async function processDiditVerificationResult(
   const updateResult = await prisma.kyc_verifications.updateMany({
     where: {
       id: kyc.id,
-      status: { in: ["pending", "resubmitted"] },
+      status: { in: ["pending", "resubmitted", "in_progress"] },
     },
     data: {
       status: newStatus,

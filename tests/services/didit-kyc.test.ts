@@ -113,7 +113,7 @@ describe("Didit KYC Service & Verification Status Sync (Phase 1 Fixes)", () => {
         expect.objectContaining({
           where: {
             id: "kyc-session-target",
-            status: { in: ["pending", "resubmitted"] },
+            status: { in: ["pending", "resubmitted", "in_progress"] },
           },
         }),
       );
@@ -202,7 +202,7 @@ describe("Didit KYC Service & Verification Status Sync (Phase 1 Fixes)", () => {
 
       // Verify that Didit API was fetched, and NO loopback fetch to /api/webhooks/didit occurred:
       expect(global.fetch).toHaveBeenCalledWith(
-        "https://verification.didit.me/v3/session/session-sync-999",
+        "https://verification.didit.me/v3/session/session-sync-999/decision/",
         expect.anything(),
       );
       expect(global.fetch).not.toHaveBeenCalledWith(
@@ -216,6 +216,40 @@ describe("Didit KYC Service & Verification Status Sync (Phase 1 Fixes)", () => {
           data: expect.objectContaining({ status: "approved" }),
         }),
       );
+
+      global.fetch = originalFetch;
+    });
+
+    it("self-heals uncompleted session (Not Started) to in_progress and updates DB", async () => {
+      mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+        id: "kyc-uncompleted-1",
+        user_id: "user-uncompleted",
+        document_type: "didit",
+        document_url: "session-uncompleted:::https://didit/uncompleted",
+        status: "pending",
+      });
+      mockPrisma.kyc_verifications.update.mockResolvedValue({
+        id: "kyc-uncompleted-1",
+        status: "in_progress",
+      });
+
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          status: "Not Started",
+          session_id: "session-uncompleted",
+        }),
+      });
+
+      const { status, error } = await getVerificationStatus("user-uncompleted");
+
+      expect(error).toBeNull();
+      expect(status?.status).toBe("in_progress");
+      expect(mockPrisma.kyc_verifications.update).toHaveBeenCalledWith({
+        where: { id: "kyc-uncompleted-1" },
+        data: { status: "in_progress" },
+      });
 
       global.fetch = originalFetch;
     });

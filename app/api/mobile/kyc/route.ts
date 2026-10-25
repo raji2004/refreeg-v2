@@ -57,10 +57,12 @@ export async function POST(request: NextRequest) {
       return apiError("KYC already approved", 409);
     }
 
-    // Cost saving: If a pending session exists, reuse it unless force_new is requested.
+    // Cost saving: If an in_progress or pending session exists, reuse it unless force_new is requested.
     // Didit manages expiration natively via webhooks (Expired/Abandoned status).
     if (
-      existingKyc?.status === "pending" &&
+      existingKyc &&
+      (existingKyc.status === "in_progress" ||
+        existingKyc.status === "pending") &&
       !body.force_new &&
       existingKyc.document_url
     ) {
@@ -84,11 +86,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Mark old pending sessions as abandoned before creating a new one (preserves audit trail)
+    // Mark old in-progress/pending sessions as abandoned before creating a new one (preserves audit trail)
     await prisma.kyc_verifications.updateMany({
       where: {
         user_id: user!.id,
-        status: "pending",
+        status: { in: ["in_progress", "pending"] },
       },
       data: {
         status: "abandoned",
@@ -140,7 +142,7 @@ export async function POST(request: NextRequest) {
         user_id: user!.id,
         document_type: "didit",
         document_url: `${sessionId}:::${verificationUrl}:::${sessionToken}`,
-        status: "pending",
+        status: "in_progress",
         verification_notes: "Session initialized via RefreeG mobile app",
         full_name: user!.fullName || "RefreeG User",
       },
