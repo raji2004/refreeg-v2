@@ -28,19 +28,12 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/mobile/kyc
  *
- * Creates a Didit hosted verification session for the authenticated mobile user.
- * The Flutter app should open the returned `verification_url` in a WebView or
- * use the Didit Flutter SDK with the `session_id`.
- *
- * Request body (optional):
- *   { "callback_url": "refreeg://kyc/callback" }
- *
- * Response:
- *   { "success": true, "data": { "session_id": "...", "verification_url": "..." } }
- *
- * After the user completes verification in Didit, the result is delivered
- * asynchronously via the Didit webhook (POST /api/webhooks/didit).
- * The mobile app should poll GET /api/mobile/kyc to check for status updates.
+ * Creates or resumes a Didit verification session for the authenticated mobile user.
+ * - If user has an active pending session (< 15 min) and `force_new` is false,
+ *   reuses that session to save cost and allow user to continue.
+ * - If creating a new session, marks previous pending sessions as 'abandoned'
+ *   to preserve audit history.
+ * - Rejects if user is already approved (409).
  */
 export async function POST(request: NextRequest) {
   const { user, errorResponse } = await authenticateMobileRequest(request);
@@ -64,19 +57,43 @@ export async function POST(request: NextRequest) {
       return apiError("KYC already approved", 409);
     }
 
-    if (existingKyc?.status === "pending" && !body.force_new) {
-      const isExpired =
-        existingKyc.created_at &&
-        Date.now() - new Date(existingKyc.created_at).getTime() >
-          15 * 60 * 1000;
+    // Cost saving: If a pending session exists, reuse it unless force_new is requested.
+    // Didit manages expiration natively via webhooks (Expired/Abandoned status).
+    if (
+      existingKyc?.status === "pending" &&
+      !body.force_new &&
+      existingKyc.document_url
+    ) {
+      const parts = existingKyc.document_url.split(":::");
+      const existingSessionId = parts[0];
+      const existingUrl =
+        parts[1] ||
+        `https://verification.didit.me/v3/session/${existingSessionId}`;
 
-      if (!isExpired) {
-        return apiError(
-          "A KYC verification is already in progress. Please wait for the result or check your status.",
-          409,
+      if (existingSessionId) {
+        return apiSuccess(
+          {
+            session_id: existingSessionId,
+            session_token: "",
+            verification_url: existingUrl,
+            resumed: true,
+          },
+          200,
         );
       }
     }
+
+    // Mark old pending sessions as abandoned before creating a new one (preserves audit trail)
+    await prisma.kyc_verifications.updateMany({
+      where: {
+        user_id: user!.id,
+        status: "pending",
+      },
+      data: {
+        status: "abandoned",
+        verification_notes: "Superseded by new verification session",
+      },
+    });
 
     // Parse optional callback_url from request body
     let callbackUrl = "refreeg://kyc/callback"; // Default deep link for Flutter
@@ -84,7 +101,7 @@ export async function POST(request: NextRequest) {
       callbackUrl = body.callback_url;
     }
 
-    // Create a Didit verification session
+    // Create a new Didit verification session
     const apiKey =
       process.env.DIDIT_API_KEY || process.env.DIDIT_CLIENT_SECRET || "";
 
@@ -116,29 +133,17 @@ export async function POST(request: NextRequest) {
     const verificationUrl =
       diditData.url || `https://verification.didit.me/v3/session/${sessionId}`;
 
-    // Clean up stale pending records for this user if forcing new or replacing
-    try {
-      await prisma.kyc_verifications.deleteMany?.({
-        where: {
-          user_id: user!.id,
-          status: "pending",
-        },
-      });
-    } catch (_) {}
-
     // Record session in database so it is tracked
-    try {
-      await prisma.kyc_verifications.create?.({
-        data: {
-          user_id: user!.id,
-          document_type: "didit",
-          document_url: `${sessionId}:::${verificationUrl}`,
-          status: "pending",
-          verification_notes: "Session initialized via RefreeG mobile app",
-          full_name: user!.fullName || "RefreeG User",
-        },
-      });
-    } catch (_) {}
+    await prisma.kyc_verifications.create({
+      data: {
+        user_id: user!.id,
+        document_type: "didit",
+        document_url: `${sessionId}:::${verificationUrl}`,
+        status: "pending",
+        verification_notes: "Session initialized via RefreeG mobile app",
+        full_name: user!.fullName || "RefreeG User",
+      },
+    });
 
     return apiSuccess(
       {

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export interface CreateReferralRecordParams {
   referralCode: string;
@@ -85,4 +86,58 @@ export async function createReferralRecord(
     );
     return { created: false };
   }
+}
+
+type PendingReferralRow = {
+  id_v1: string;
+  referrer_id_v1: string;
+};
+
+export async function issueReferralRewardOnKycApproval(refereeUserId: string) {
+  const referrals = await prisma.$queryRaw<PendingReferralRow[]>(Prisma.sql`
+    SELECT id_v1, referrer_id_v1
+    FROM referrals_v1
+    WHERE referee_id_v1 = CAST(${refereeUserId} AS uuid)
+      AND reward_status_v1 = 'PENDING'
+    ORDER BY created_at_v1 DESC
+    LIMIT 1
+  `);
+
+  const referral = referrals[0];
+  if (!referral?.referrer_id_v1) {
+    return;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const lockedReferralCount = await tx.$executeRaw(Prisma.sql`
+      UPDATE referrals_v1
+      SET
+        reward_status_v1 = 'ISSUED',
+        kyc_verified_v1 = true,
+        rewarded_at_v1 = NOW(),
+        reward_v1 = '+5 pts'
+      WHERE id_v1 = CAST(${referral.id_v1} AS uuid)
+        AND reward_status_v1 = 'PENDING'
+    `);
+
+    if (lockedReferralCount === 0) {
+      return;
+    }
+
+    await tx.user.update({
+      where: { id: referral.referrer_id_v1 },
+      data: {
+        total_points: { increment: 5 },
+      },
+    });
+
+    await tx.rewardTransaction.create({
+      data: {
+        userId: referral.referrer_id_v1,
+        amount: 5,
+        transactionType: "referral_bonus",
+        status: "completed",
+      },
+    });
+  });
 }

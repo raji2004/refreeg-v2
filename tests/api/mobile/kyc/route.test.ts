@@ -16,6 +16,7 @@ jest.mock("@/lib/prisma", () => ({
       findFirst: jest.fn(),
       create: jest.fn(),
       deleteMany: jest.fn(),
+      updateMany: jest.fn(),
     },
   },
 }));
@@ -36,6 +37,9 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     global.fetch = jest.fn();
+    (prisma.kyc_verifications.updateMany as jest.Mock).mockResolvedValue({
+      count: 1,
+    });
   });
 
   describe("GET /api/mobile/kyc", () => {
@@ -123,7 +127,7 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
       expect(data.error).toBe("KYC already approved");
     });
 
-    it("returns 409 if user already has a pending KYC", async () => {
+    it("resumes existing active pending session to save costs", async () => {
       (authenticateMobileRequest as jest.Mock).mockResolvedValue({
         user: mockUser,
       });
@@ -131,6 +135,9 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
       (prisma.kyc_verifications.findFirst as jest.Mock).mockResolvedValue({
         id: "kyc-pending",
         status: "pending",
+        document_url:
+          "didit-existing-session:::https://verification.didit.me/v3/session/didit-existing-session",
+        created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
       });
 
       const request = new NextRequest("http://localhost/api/mobile/kyc", {
@@ -138,9 +145,13 @@ describe("Mobile KYC Route (/api/mobile/kyc)", () => {
       });
       const response = await POST(request);
 
-      expect(response.status).toBe(409);
+      expect(response.status).toBe(200);
       const data = await response.json();
-      expect(data.error).toContain("already in progress");
+      expect(data.success).toBe(true);
+      expect(data.data.session_id).toBe("didit-existing-session");
+      expect(data.data.resumed).toBe(true);
+      // Ensure Didit API was NOT called again to create a new session
+      expect(global.fetch).not.toHaveBeenCalled();
     });
 
     it("creates Didit session successfully and returns session_id and verification_url", async () => {

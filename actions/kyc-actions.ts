@@ -15,6 +15,9 @@ import {
   sendKycReminderEmail,
 } from "@/services/mail";
 import { createNotification } from "@/lib/notifications/notification-service";
+import { processDiditVerificationResult } from "@/services/didit-kyc";
+import { issueReferralRewardOnKycApproval } from "@/lib/referral-utils";
+export { issueReferralRewardOnKycApproval };
 
 export async function getVerificationStatus(
   userId: string,
@@ -55,12 +58,10 @@ export async function getVerificationStatus(
                 )
               ) {
                 console.log(
-                  `[KYC Sync] Found updated Didit session ${sessionId} with status ${sessionStatus}, forwarding to webhook...`,
+                  `[KYC Sync] Found updated Didit session ${sessionId} with status ${sessionStatus}, processing result...`,
                 );
-                const appUrl =
-                  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-                // Normalize the GET session API response to match the webhook payload shape
+                // Normalize the GET session API response to match the payload shape
                 const webhookPayload = {
                   ...sessionData,
                   session_id:
@@ -71,16 +72,10 @@ export async function getVerificationStatus(
                     data.user_id,
                 };
 
-                // Simulate the webhook
-                const webhookRes = await fetch(`${appUrl}/api/webhooks/didit`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(webhookPayload),
-                });
+                const syncResult =
+                  await processDiditVerificationResult(webhookPayload);
 
-                if (webhookRes.ok) {
-                  // Give it a moment to commit, then re-fetch the updated KYC record
-                  await new Promise((r) => setTimeout(r, 500));
+                if (syncResult.success) {
                   const updated = await prisma.kyc_verifications.findUnique({
                     where: { id: data.id },
                   });
@@ -139,60 +134,6 @@ export async function getVerificationStatus(
             : JSON.stringify(error) || "Failed to get status",
     };
   }
-}
-
-type PendingReferralRow = {
-  id_v1: string;
-  referrer_id_v1: string;
-};
-
-export async function issueReferralRewardOnKycApproval(refereeUserId: string) {
-  const referrals = await prisma.$queryRaw<PendingReferralRow[]>(Prisma.sql`
-    SELECT id_v1, referrer_id_v1
-    FROM referrals_v1
-    WHERE referee_id_v1 = CAST(${refereeUserId} AS uuid)
-      AND reward_status_v1 = 'PENDING'
-    ORDER BY created_at_v1 DESC
-    LIMIT 1
-  `);
-
-  const referral = referrals[0];
-  if (!referral?.referrer_id_v1) {
-    return;
-  }
-
-  await prisma.$transaction(async (tx) => {
-    const lockedReferralCount = await tx.$executeRaw(Prisma.sql`
-      UPDATE referrals_v1
-      SET
-        reward_status_v1 = 'ISSUED',
-        kyc_verified_v1 = true,
-        rewarded_at_v1 = NOW(),
-        reward_v1 = '+5 pts'
-      WHERE id_v1 = CAST(${referral.id_v1} AS uuid)
-        AND reward_status_v1 = 'PENDING'
-    `);
-
-    if (lockedReferralCount === 0) {
-      return;
-    }
-
-    await tx.user.update({
-      where: { id: referral.referrer_id_v1 },
-      data: {
-        total_points: { increment: 5 },
-      },
-    });
-
-    await tx.rewardTransaction.create({
-      data: {
-        userId: referral.referrer_id_v1,
-        amount: 5,
-        transactionType: "referral_bonus",
-        status: "completed",
-      },
-    });
-  });
 }
 
 export async function updateVerificationStatus(

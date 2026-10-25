@@ -649,18 +649,18 @@ Tokens are generated upon login/verification and contain `{ userId, email }`. Wh
 
 - **Method & Route:** `POST /api/mobile/kyc`
 - **Auth:** Bearer Token
-- **Description:** Calls Didit API to generate a short-lived `session_token` for the native Flutter Didit SDK. Automatically manages pending session cleanup.
+- **Description:** Initializes or resumes a verification session. If the user already has a pending session and `force_new` is not `true`, the active session is returned (`200 OK`, `resumed: true`) to save provider API costs. Didit manages expiration natively via webhooks (`status: "Expired"` or `"Abandoned"`). When a new session is created (`201 Created`), any existing pending sessions are marked as `abandoned` to preserve audit history.
 
 #### Request Body
 
 ```json
 {
-  "force_new": true,
+  "force_new": false,
   "callback_url": "refreeg://kyc/callback"
 }
 ```
 
-#### Response (`201 Created`)
+#### Response (`201 Created` or `200 OK` if resumed)
 
 ```json
 {
@@ -668,7 +668,8 @@ Tokens are generated upon login/verification and contain `{ userId, email }`. Wh
   "data": {
     "session_id": "8fa3c012-70b1-4f91-a182-120984920192",
     "session_token": "eyJhbGciOi...",
-    "verification_url": "https://verification.didit.me/v3/session/8fa3c012..."
+    "verification_url": "https://verification.didit.me/v3/session/8fa3c012...",
+    "resumed": true
   }
 }
 ```
