@@ -127,6 +127,11 @@ const adminNavItems = [
     icon: ShieldCheck,
   },
   {
+    title: "Content Reports",
+    href: "/dashboard/admin/reports",
+    icon: Flag,
+  },
+  {
     title: "Push Notifications",
     href: "/dashboard/admin/notifications",
     icon: Bell,
