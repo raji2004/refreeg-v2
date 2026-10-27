@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Shield,
@@ -9,8 +10,10 @@ import {
   UserCheck,
   Mail,
   Scale,
+  Trash2,
 } from "lucide-react";
 import { useAnimateInView } from "@/hooks/use-animate-In-view";
+import { DATA_RETENTION_POLICY } from "@/lib/config/retention";
 
 const sections = [
   {
@@ -18,20 +21,20 @@ const sections = [
     title: "1. Information We Collect",
     content: [
       {
-        subtitle: "Personal Information",
-        text: "When you create an account on RefreeG, we collect information such as your name, email address, phone number, and payment details. This information is necessary to provide you with our crowdfunding services and ensure secure transactions.",
+        subtitle: "Personal & Profile Information",
+        text: "When you create an account on RefreeG, we collect your name, email address, phone number, profile photo, and payout bank details (when you register as a cause creator). This information is required to provide crowdfunding services and route funds securely.",
       },
       {
-        subtitle: "Cause Information",
-        text: "When you create a cause or petition, we collect details including the cause title, description, goals, images, and supporting documentation. This information is made public to help you raise funds and awareness.",
+        subtitle: "Identity Verification (KYC) Data",
+        text: "If you apply to verify your identity as a campaign creator, we and our identity verification partner (Didit) collect your government-issued ID details, residential address, date of birth, and a live selfie/biometric liveness check solely for identity verification and fraud prevention.",
       },
       {
-        subtitle: "Transaction Data",
-        text: "We collect information about your donations and withdrawals, including transaction amounts, payment methods, and blockchain transaction records for transparency purposes.",
+        subtitle: "Cause, Petition & Community Content",
+        text: "When you create a cause, petition, or comment, we collect the title, story, funding goals, uploaded images/videos, and supporting verification documents.",
       },
       {
-        subtitle: "Usage Data",
-        text: "We automatically collect information about how you interact with our platform, including your IP address, browser type, device information, and pages visited to improve our services.",
+        subtitle: "Transaction & Device Data",
+        text: "We collect records of donations, pledges, and settlements (amount, currency, payment reference, and optional donor note), as well as device push notification tokens (Firebase Cloud Messaging) and basic technical diagnostics needed to keep the service secure.",
       },
     ],
   },
@@ -40,20 +43,16 @@ const sections = [
     title: "2. How We Use Your Information",
     content: [
       {
-        subtitle: "Service Delivery",
-        text: "We use your information to create and manage your account, process donations, verify causes, and facilitate secure fund transfers between donors and cause creators.",
+        subtitle: "Service Delivery & Direct Settlement",
+        text: "We use your information to manage your account, process fiat and cryptocurrency donations, verify campaign creators, and settle raised funds directly to verified creators.",
       },
       {
-        subtitle: "Communication",
-        text: "We may send you important updates about your account, causes you support, platform changes, and promotional materials (which you can opt out of at any time).",
+        subtitle: "Safety, Moderation & Fraud Prevention",
+        text: `We use identity and activity data to prevent fraud, enforce our Terms of Service, and review user-reported content within ${DATA_RETENTION_POLICY.MODERATION_SLA_HOURS} hours.`,
       },
       {
-        subtitle: "Security and Fraud Prevention",
-        text: "We use your information to verify identities, prevent fraudulent activities, and ensure compliance with our policies and applicable laws.",
-      },
-      {
-        subtitle: "Platform Improvement",
-        text: "We analyze usage data to understand user behavior, improve our features, and enhance the overall user experience on RefreeG.",
+        subtitle: "Notifications & Updates",
+        text: "We send transactional updates about your donations, pledges, KYC verification status, and campaigns. You can manage push and email notification preferences in your account settings at any time.",
       },
     ],
   },
@@ -62,82 +61,88 @@ const sections = [
     title: "3. How We Protect Your Information",
     content: [
       {
-        subtitle: "Encryption",
-        text: "All sensitive data, including payment information and personal details, is encrypted using industry-standard SSL/TLS protocols during transmission and storage.",
+        subtitle: "Encryption in Transit & at Rest",
+        text: "All personal data, KYC documents, and payment communications are transmitted over HTTPS/TLS and stored in encrypted databases and access-controlled Amazon Web Services (AWS S3) storage using short-lived presigned URLs.",
       },
       {
-        subtitle: "Blockchain Security",
-        text: "Transaction records are stored on the blockchain, providing an immutable and transparent ledger that enhances security and accountability.",
+        subtitle: "No Raw Card Storage",
+        text: "RefreeG does not store full credit/debit card numbers or CVV codes. Card and bank payments are processed directly by PCI-DSS compliant payment partners.",
       },
       {
-        subtitle: "Access Controls",
-        text: "We implement strict access controls to ensure that only authorized personnel can access your personal information, and only when necessary for legitimate business purposes.",
-      },
-      {
-        subtitle: "Regular Security Audits",
-        text: "Our systems undergo regular security assessments and audits to identify and address potential vulnerabilities.",
+        subtitle: "Strict Access Controls",
+        text: "Only authorized compliance and support personnel can review KYC submissions or moderation reports, and only when necessary for verification or safety enforcement.",
       },
     ],
   },
   {
     icon: UserCheck,
-    title: "4. Sharing Your Information",
+    title: "4. Third-Party Service Providers",
     content: [
       {
-        subtitle: "Public Information",
-        text: "Information about causes, petitions, and public donations (excluding personal donor information if anonymous) is displayed publicly on our platform to promote transparency.",
+        subtitle: "Payment & Crypto Settlement Partners (Paystack & Breet)",
+        text: "Fiat NGN donations and recurring pledges are processed via Paystack. One-way cryptocurrency donations (such as USDT) are processed and settled via Breet. RefreeG is not a cryptocurrency exchange or custodial wallet.",
       },
       {
-        subtitle: "Payment Processors",
-        text: "We share necessary payment information with our payment partners (like Paystack) to process transactions securely. These partners are bound by strict confidentiality agreements.",
+        subtitle: "Identity Verification (Didit)",
+        text: "Creator identity verification and facial liveness checks are processed securely through Didit.",
       },
       {
-        subtitle: "Legal Requirements",
-        text: "We may disclose your information if required by law, court order, or governmental regulations, or to protect the rights and safety of RefreeG and our users.",
+        subtitle: "Authentication, Push Notifications & Cloud Storage",
+        text: "We use Google Sign-In and Firebase Cloud Messaging (FCM) for authentication and push notifications, and AWS S3 for secure media storage.",
       },
       {
-        subtitle: "Business Transfers",
-        text: "In the event of a merger, acquisition, or sale of assets, your information may be transferred to the new entity, subject to the same privacy protections.",
+        subtitle: "Legal Compliance",
+        text: "We may disclose information when required by applicable law, court order, or financial regulatory authorities.",
+      },
+    ],
+  },
+  {
+    icon: Trash2,
+    title: "5. Account Deletion & Data Retention",
+    content: [
+      {
+        subtitle: "Self-Service Account Deletion (Mobile & Web)",
+        text: "You can permanently delete your account at any time directly inside the RefreeG mobile app (open the You tab -> tap Delete account) or on the web (Dashboard -> Settings -> Delete Account). You can also view full instructions at refreeg.com/delete-account.",
+      },
+      {
+        subtitle: "What Is Deleted Immediately",
+        text: "When you delete your account, we immediately and permanently delete your personal profile information (name, email, phone number, bio, social links, saved bank details), KYC verification records and uploaded ID/selfie images, Didit verification sessions, push notification device tokens, saved cards, comments, petitions, and any unfunded campaigns.",
+      },
+      {
+        subtitle: "Financial Record Anonymization & Retention Period",
+        text: `To comply with financial audit, anti-money-laundering (AML), and tax regulations, completed donation, pledge, and settlement records are not deleted; instead, they are permanently anonymized (unlinked from your user ID, with your name replaced by "${DATA_RETENTION_POLICY.DELETED_ACCOUNT_DISPLAY_NAME}" and your email replaced with a non-identifiable placeholder) and retained for ${DATA_RETENTION_POLICY.FINANCIAL_RECORDS_RETENTION_YEARS} years. Security and moderation audit logs are retained for up to ${DATA_RETENTION_POLICY.SECURITY_LOGS_RETENTION_DAYS} days.`,
+      },
+      {
+        subtitle: "Active Funded Campaigns",
+        text: "If you have an active, unpaused campaign that has raised funds from donors, you must pause or close the campaign before deleting your account so donor transparency is preserved.",
       },
     ],
   },
   {
     icon: Scale,
-    title: "5. Your Rights and Choices",
+    title: "6. Your Rights and Choices",
     content: [
       {
-        subtitle: "Access and Update",
-        text: "You have the right to access, review, and update your personal information at any time through your account settings.",
+        subtitle: "Access, Correction & Portability",
+        text: "You can access and update your personal details at any time in your profile settings, or contact us to request a copy of your personal data.",
       },
       {
-        subtitle: "Data Deletion",
-        text: "You can request deletion of your account and associated data by contacting our support team. Note that some information may be retained for legal or legitimate business purposes.",
-      },
-      {
-        subtitle: "Communication Preferences",
-        text: "You can opt out of promotional emails at any time by clicking the unsubscribe link in our emails or adjusting your notification settings.",
-      },
-      {
-        subtitle: "Cookie Management",
-        text: "You can control cookie preferences through your browser settings, though this may affect some platform functionalities.",
+        subtitle: "Content Reporting & User Blocking",
+        text: `You can report inappropriate campaigns, petitions, or comments and block abusive users directly in the app. Our moderation team reviews all reports within ${DATA_RETENTION_POLICY.MODERATION_SLA_HOURS} hours.`,
       },
     ],
   },
   {
     icon: Mail,
-    title: "6. Cookies and Tracking",
+    title: "7. Cookies and Session Storage",
     content: [
       {
-        subtitle: "Essential Cookies",
-        text: "We use cookies that are necessary for the platform to function properly, including session management and security features.",
+        subtitle: "Essential Authentication Cookies & Tokens",
+        text: "We use secure session cookies on the web and encrypted token storage on mobile devices strictly to keep you signed in and protect your account.",
       },
       {
-        subtitle: "Analytics Cookies",
-        text: "We use analytics tools to understand how users interact with our platform, helping us improve user experience and identify issues.",
-      },
-      {
-        subtitle: "Marketing Cookies",
-        text: "With your consent, we may use cookies to deliver personalized content and advertisements based on your interests and browsing behavior.",
+        subtitle: "Analytics & Performance",
+        text: "We use aggregate performance metrics to diagnose crashes and improve platform reliability.",
       },
     ],
   },
@@ -172,11 +177,11 @@ export default function PrivacyPolicy() {
               Privacy Policy
             </h1>
             <p className="text-lg md:text-xl text-blue-100">
-              Your privacy matters to us. Learn how we collect, use, and protect
-              your personal information.
+              Your privacy matters to us. Learn how we collect, use, protect,
+              and delete your personal information.
             </p>
             <p className="text-sm text-blue-200 mt-4">
-              Last Updated: January 9, 2026
+              Last Updated: October 2026
             </p>
           </div>
         </div>
@@ -197,18 +202,23 @@ export default function PrivacyPolicy() {
             <p className="text-gray-700 leading-relaxed mb-4">
               At RefreeG, we are committed to protecting your privacy and
               ensuring the security of your personal information. This Privacy
-              Policy explains how we collect, use, share, and safeguard your
-              data when you use our blockchain-powered crowdfunding platform.
+              Policy explains how we collect, use, share, retain, and delete
+              your data when you use the RefreeG web and mobile applications.
             </p>
             <p className="text-gray-700 leading-relaxed">
-              By using RefreeG, you agree to the terms outlined in this Support
-              Policy. If you have any questions or concerns, please contact us
-              at{" "}
-              <a
-                href="mailto:support@refreeg.com"
+              Need to delete your account and personal data? Visit our{" "}
+              <Link
+                href="/delete-account"
                 className="text-blue-600 hover:underline font-medium"
               >
-                support@refreeg.com
+                Account & Data Deletion page
+              </Link>{" "}
+              or contact us at{" "}
+              <a
+                href={`mailto:${DATA_RETENTION_POLICY.SUPPORT_EMAIL}`}
+                className="text-blue-600 hover:underline font-medium"
+              >
+                {DATA_RETENTION_POLICY.SUPPORT_EMAIL}
               </a>
               .
             </p>

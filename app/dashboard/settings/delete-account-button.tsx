@@ -23,6 +23,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Trash2, AlertTriangle } from "lucide-react";
 import { deleteUserAccount } from "@/actions/user-actions";
+import { DATA_RETENTION_POLICY } from "@/lib/config/retention";
 import { useRouter } from "nextjs-toploader/app";
 import { toast } from "@/components/ui/use-toast";
 
@@ -45,14 +46,14 @@ export function DeleteAccountButton({ userId }: DeleteAccountButtonProps) {
       if (deleteError) {
         setError(deleteError);
         toast({
-          title: "Error",
+          title: "Cannot Delete Account",
           description: deleteError,
           variant: "destructive",
         });
       } else {
         toast({
           title: "Account Deleted",
-          description: "Your account has been successfully deleted.",
+          description: "Your account and personal data have been permanently deleted.",
         });
 
         router.push("/");
@@ -79,23 +80,31 @@ export function DeleteAccountButton({ userId }: DeleteAccountButtonProps) {
           Delete Account
         </CardTitle>
         <CardDescription>
-          Permanently delete your account and all associated data. This action
-          cannot be undone.
+          Permanently delete your account and personal data. This action cannot
+          be undone.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Alert variant="destructive" className="mb-4">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            This action will permanently delete your account, profile, and all
-            associated data including:
+            This action will permanently delete your account and personal data,
+            including:
             <ul className="list-disc list-inside mt-2 space-y-1">
-              <li>Your profile information</li>
-              <li>KYC verification data</li>
-              <li>Bank and crypto details</li>
-              <li>All causes you&apos;ve created</li>
-              <li>Donation history</li>
+              <li>Your profile information, photos, and social links</li>
+              <li>KYC verification documents and Didit liveness session</li>
+              <li>Saved bank details, device tokens, and unfunded campaigns</li>
             </ul>
+            <p className="mt-2 text-xs">
+              Completed financial transaction records (donations, pledges, and
+              crypto settlements) are anonymized (&ldquo;
+              {DATA_RETENTION_POLICY.DELETED_ACCOUNT_DISPLAY_NAME}&rdquo;) and
+              retained without personal identifiers for{" "}
+              {DATA_RETENTION_POLICY.FINANCIAL_RECORDS_RETENTION_YEARS} years to
+              comply with financial and tax audit regulations. Active campaigns
+              that have raised funds must be paused or closed before account
+              deletion.
+            </p>
           </AlertDescription>
         </Alert>
 
@@ -116,8 +125,9 @@ export function DeleteAccountButton({ userId }: DeleteAccountButtonProps) {
             <AlertDialogHeader>
               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete your
-                account and remove all your data from our servers.
+                This action cannot be undone. Your personal data, KYC
+                documents, and credentials will be permanently deleted, and
+                historical financial records will be anonymized.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getUserRole } from "@/actions/role-actions";
 import { logAdminActivity } from "@/actions/database-actions";
+import { executeUserAccountDeletion } from "@/lib/auth/account-deletion";
 
 export async function blockUser(userId: string): Promise<boolean> {
   const session = await auth();
@@ -97,13 +98,10 @@ export async function deleteUserAccount(
       return { error: "You can only delete your own account" };
     }
 
-    await prisma.kyc_verifications.deleteMany({
-      where: { user_id: userId },
-    });
-
-    await prisma.user.delete({
-      where: { id: userId },
-    });
+    const result = await executeUserAccountDeletion(userId);
+    if (!result.success) {
+      return { error: result.error ?? "Failed to delete account" };
+    }
 
     revalidatePath("/dashboard/settings");
     return { error: null };
@@ -133,13 +131,10 @@ export async function deleteUserAsAdmin(
       };
     }
 
-    await prisma.kyc_verifications.deleteMany({
-      where: { user_id: userId },
-    });
-
-    await prisma.user.delete({
-      where: { id: userId },
-    });
+    const result = await executeUserAccountDeletion(userId);
+    if (!result.success) {
+      return { error: result.error ?? "Failed to delete user" };
+    }
 
     await logAdminActivity("delete-user", session.user.id as string);
 
