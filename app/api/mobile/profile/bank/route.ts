@@ -55,6 +55,32 @@ export async function PUT(request: NextRequest) {
 
     const updatedProfile = await updateBankDetails(user!.id, bankData);
 
+    // Send bank-account-added email & in-app notification (parity with web)
+    try {
+      const { sendMail } = await import("@/services/mail");
+      sendMail({
+        to: user!.email,
+        subject: "Did You Just Add a Bank Account to RefreeG? 🏦",
+        templateName: "bank-account-added",
+        context: {
+          bankName: body.bankName,
+          accountNumber: body.accountNumber,
+          accountName: body.accountName,
+          userName: user!.fullName || "Refreegerian",
+          currentYear: new Date().getFullYear(),
+        },
+      }).catch((err) => console.error("Mobile bank email error:", err));
+
+      const { createNotification } =
+        await import("@/lib/notifications/notification-service");
+      createNotification({
+        userId: user!.id,
+        title: "Payout Bank Account Updated 🏦",
+        message: `Your payout bank account (${body.bankName} • ${body.accountNumber}) was saved to your RefreeG profile.`,
+        type: "general",
+      }).catch((err) => console.error("Mobile bank notification error:", err));
+    } catch (_) {}
+
     return apiSuccess(updatedProfile);
   } catch (error: any) {
     console.error("Mobile API Update Bank Details Error:", error);

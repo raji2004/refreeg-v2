@@ -33,21 +33,30 @@ export async function POST(request: NextRequest) {
 
     // 2. Check failed attempts
     if (pending.failedAttempts >= 5) {
-      await prisma.pendingRegistration.delete({ where: { email: normalizedEmail } }).catch(() => {});
+      await prisma.pendingRegistration
+        .delete({ where: { email: normalizedEmail } })
+        .catch(() => {});
       return apiError("Too many failed attempts. Please sign up again.", 429);
     }
 
     // 3. Check expiration
     if (new Date() > pending.expiresAt) {
-      await prisma.pendingRegistration.delete({ where: { email: normalizedEmail } }).catch(() => {});
-      return apiError("Verification code has expired. Please request a new one.", 400);
+      await prisma.pendingRegistration
+        .delete({ where: { email: normalizedEmail } })
+        .catch(() => {});
+      return apiError(
+        "Verification code has expired. Please request a new one.",
+        400,
+      );
     }
 
     // 4. Validate OTP
     if (pending.otpCode !== trimmedOtp) {
       const newAttempts = pending.failedAttempts + 1;
       if (newAttempts >= 5) {
-        await prisma.pendingRegistration.delete({ where: { email: normalizedEmail } }).catch(() => {});
+        await prisma.pendingRegistration
+          .delete({ where: { email: normalizedEmail } })
+          .catch(() => {});
         return apiError("Too many failed attempts. Please sign up again.", 429);
       }
       await prisma.pendingRegistration.update({
@@ -56,7 +65,7 @@ export async function POST(request: NextRequest) {
       });
       return apiError(
         `Invalid verification code. ${5 - newAttempts} attempt(s) remaining.`,
-        400
+        400,
       );
     }
 
@@ -99,6 +108,30 @@ export async function POST(request: NextRequest) {
     // 6. Generate mobile auth token
     const token = await signMobileToken(newProfile.id, newProfile.email!);
 
+    // 7. Send welcome email and in-app notification (fire-and-forget, parity with web)
+    try {
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+      const { sendWelcomeEmailToUser } = await import("@/services/mail");
+      sendWelcomeEmailToUser(
+        newProfile.email!,
+        newProfile.fullName || "Refreegerian",
+        `${appUrl}/dashboard/settings`,
+      ).catch((err) => console.error("Mobile welcome email error:", err));
+
+      const { createNotification } =
+        await import("@/lib/notifications/notification-service");
+      createNotification({
+        userId: newProfile.id,
+        title: "Welcome to RefreeG! 🌍",
+        message:
+          "Your account is verified. Explore verified causes, sign petitions, or start a campaign.",
+        type: "general",
+      }).catch((err) =>
+        console.error("Mobile welcome notification error:", err),
+      );
+    } catch (_) {}
+
     return apiSuccess(
       {
         token,
@@ -112,7 +145,7 @@ export async function POST(request: NextRequest) {
           onboardingCompleted: newProfile.onboarding_completed,
         },
       },
-      200
+      200,
     );
   } catch (error: any) {
     console.error("Mobile Verify OTP error:", error);

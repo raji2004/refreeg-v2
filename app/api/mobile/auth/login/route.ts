@@ -48,6 +48,18 @@ export async function POST(request: NextRequest) {
     // Track login for rewards/streaks (fire and forget)
     trackLogin(user.id).catch(console.error);
 
+    // Send login security email notification (parity with web login)
+    import("@/services/mail")
+      .then(({ sendLoginNotificationEmail }) =>
+        sendLoginNotificationEmail({
+          email: user.email!,
+          userName: user.fullName || "User",
+          device: request.headers.get("user-agent") || "RefreeG Mobile App",
+          loginTime: new Date().toLocaleString(),
+        }),
+      )
+      .catch((err) => console.error("Mobile login email error:", err));
+
     // Generate token
     const token = await signMobileToken(user.id, user.email!);
 
@@ -60,8 +72,8 @@ export async function POST(request: NextRequest) {
         accountType: user.accountType,
         profilePhoto: user.profilePhoto,
         isVerified: user.isVerified,
-        onboardingCompleted: user.onboarding_completed
-      }
+        onboardingCompleted: user.onboarding_completed,
+      },
     });
   } catch (error: any) {
     console.error("Mobile API Login Error:", error);
