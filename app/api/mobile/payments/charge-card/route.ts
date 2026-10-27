@@ -1,6 +1,11 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
+import {
+  encodeStoreReviewDemoReference,
+  isStoreReviewDemoAccount,
+  STORE_REVIEW_DEMO_SAVED_CARD,
+} from "@/lib/auth/store-review-demo";
 import { prisma } from "@/lib/prisma";
 import Paystack from "@/services/paystack";
 import { calculateServiceFee, calculateProviderFee } from "@/lib/utils";
@@ -53,6 +58,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Calculate exact fees
+    const serviceFee = calculateServiceFee(numAmount);
+    const providerFee = calculateProviderFee(numAmount, "paystack");
+    const tip = Number(tipAmount) || 0;
+    const totalFees = serviceFee + providerFee + tip;
+
+    const effectiveName = isAnonymous
+      ? "Anonymous"
+      : donorName?.trim() || user.fullName || "Supporter";
+
+    // Fetch cause details
+    const cause = await prisma.cause.findUnique({
+      where: { id: causeId },
+      include: {
+        user: {
+          select: {
+            subAccountCode: true,
+          },
+        },
+      },
+    });
+
+    // Strictly scoped Store Reviewer Demo Mode (Decision #7 / B10):
+    // Simulates 1-click saved-card charge only for playreview@refreeg.com when enabled.
+    if (
+      isStoreReviewDemoAccount(user.email) &&
+      (cardId === STORE_REVIEW_DEMO_SAVED_CARD.id || cardId)
+    ) {
+      const demoReference = encodeStoreReviewDemoReference({
+        causeId,
+        amount: numAmount,
+        tipAmount: tip,
+        donorName: effectiveName,
+        email: user.email,
+        message: message || "",
+        isAnonymous: Boolean(isAnonymous),
+      });
+
+      return apiSuccess({
+        status: "success",
+        reference: demoReference,
+        amount: numAmount,
+        serviceFee,
+        providerFee,
+        tipAmount: tip,
+        totalCharged: numAmount + totalFees,
+        isStoreReviewDemo: true,
+        donation: {
+          id: demoReference,
+          amount: numAmount,
+          donorName: effectiveName,
+          causeTitle: cause?.title || "RefreeG Campaign",
+          reference: demoReference,
+          createdAt: new Date().toISOString(),
+        },
+      });
+    }
+
     // Fetch the saved card
     const card = await prisma.user_saved_cards.findFirst({
       where: {
@@ -65,32 +128,10 @@ export async function POST(request: NextRequest) {
       return apiError("Saved card not found", 404);
     }
 
-    // Fetch cause creator's subaccount if configured
-    const cause = await prisma.cause.findUnique({
-      where: { id: causeId },
-      include: {
-        user: {
-          select: {
-            subAccountCode: true,
-          },
-        },
-      },
-    });
-
     const subaccount = cause?.user?.subAccountCode || undefined;
-
-    // Calculate exact fees
-    const serviceFee = calculateServiceFee(numAmount);
-    const providerFee = calculateProviderFee(numAmount, "paystack");
-    const tip = Number(tipAmount) || 0;
-    const totalFees = serviceFee + providerFee + tip;
 
     // Generate unique reference
     const reference = `mc_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-
-    const effectiveName = isAnonymous
-      ? "Anonymous"
-      : donorName?.trim() || user.fullName || "Supporter";
 
     // Call Paystack chargeAuthorization
     const chargeResult = await Paystack.chargeAuthorization({

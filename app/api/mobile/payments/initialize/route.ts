@@ -1,5 +1,10 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
+import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
+import {
+  encodeStoreReviewDemoReference,
+  isStoreReviewDemoAccount,
+} from "@/lib/auth/store-review-demo";
 import Paystack from "@/services/paystack";
 import { prisma } from "@/lib/prisma";
 import { calculateServiceFee, calculateProviderFee } from "@/lib/utils";
@@ -52,6 +57,39 @@ export async function POST(request: NextRequest) {
     const providerFee = calculateProviderFee(numAmount, "paystack");
     const tipAmount = Number(data.tipAmount || data.tip_amount || 0);
 
+    const effectiveDonorName = data.isAnonymous
+      ? "Anonymous"
+      : data.donorName || data.name || data.full_name || "Supporter";
+
+    // Strictly scoped Store Reviewer Demo Mode (Decision #7 / B10)
+    const authResult = await authenticateMobileRequest(request);
+    const authUser = authResult.user;
+    if (isStoreReviewDemoAccount(authUser?.email)) {
+      const demoReference = encodeStoreReviewDemoReference({
+        causeId: String(data.causeId),
+        amount: numAmount,
+        tipAmount,
+        donorName: effectiveDonorName,
+        email: authUser!.email,
+        message: data.message || "",
+        isAnonymous: Boolean(data.isAnonymous),
+      });
+
+      return apiSuccess({
+        authorization_url: `${callbackUrl}?reference=${encodeURIComponent(demoReference)}`,
+        access_code: "store_review_demo_code",
+        reference: demoReference,
+        isStoreReviewDemo: true,
+        breakdown: {
+          amount: numAmount,
+          serviceFee,
+          providerFee,
+          tipAmount,
+          total: numAmount + serviceFee + providerFee + tipAmount,
+        },
+      });
+    }
+
     // Get cause creator's subaccount if exists
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -85,9 +123,7 @@ export async function POST(request: NextRequest) {
       amount: numAmount,
       email: data.email,
       causeId: data.causeId,
-      full_name: data.isAnonymous
-        ? "Anonymous"
-        : data.donorName || data.name || data.full_name || "Supporter",
+      full_name: effectiveDonorName,
       serviceFee,
       providerFee,
       tipAmount,

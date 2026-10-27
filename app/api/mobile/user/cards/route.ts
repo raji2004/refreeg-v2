@@ -1,6 +1,10 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
+import {
+  isStoreReviewDemoAccount,
+  STORE_REVIEW_DEMO_SAVED_CARD,
+} from "@/lib/auth/store-review-demo";
 import { prisma } from "@/lib/prisma";
 import Paystack from "@/services/paystack";
 
@@ -35,6 +39,10 @@ export async function GET(request: NextRequest) {
         created_at: true,
       },
     });
+
+    if (cards.length === 0 && isStoreReviewDemoAccount(user.email)) {
+      return apiSuccess({ cards: [STORE_REVIEW_DEMO_SAVED_CARD] });
+    }
 
     return apiSuccess({ cards });
   } catch (error: any) {
