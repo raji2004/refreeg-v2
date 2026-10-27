@@ -330,6 +330,33 @@ const Paystack = {
       );
     }
   },
+
+  refundTransaction: async function (
+    transactionReference: string,
+    amountKobo?: number,
+  ) {
+    checkCircuit("paystack");
+    try {
+      const payload: Record<string, unknown> = {
+        transaction: transactionReference,
+      };
+      if (typeof amountKobo === "number" && amountKobo > 0) {
+        payload.amount = Math.round(amountKobo);
+      }
+      const response = await this.api.post("/refund", payload);
+      recordSuccess("paystack");
+      return response.data.data;
+    } catch (error: any) {
+      recordFailure("paystack");
+      console.error(
+        "Paystack refund error:",
+        error.response?.data || error.message,
+      );
+      throw new Error(
+        error.response?.data?.message || "Failed to initiate transaction refund",
+      );
+    }
+  },
 };
 
 export default Paystack;

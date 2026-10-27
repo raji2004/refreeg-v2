@@ -91,28 +91,37 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 2. Initiate fresh direct charge (Bank Transfer, USSD, Card, OPay)
+    // 2. Initiate fresh direct charge (Bank Transfer, USSD, Card, OPay, or ₦50 Card Setup)
     if (!data.amount || !data.email || !data.causeId) {
       return apiError("Missing required fields (amount, email, causeId)", 400);
     }
 
+    const isCardSetup = data.causeId === "card_setup";
     const numAmount = Number(data.amount);
-    if (isNaN(numAmount) || numAmount < 100) {
-      return apiError("Minimum donation amount is ₦100", 400);
-    }
-
-    try {
-      await assertCauseAcceptingDonations(data.causeId);
-    } catch (e: any) {
+    const minAllowedAmount = isCardSetup ? 50 : 100;
+    if (isNaN(numAmount) || numAmount < minAllowedAmount) {
       return apiError(
-        e.message || "This cause is not accepting donations currently",
-        403,
+        `Minimum amount is ₦${minAllowedAmount}`,
+        400,
       );
     }
 
-    const serviceFee = calculateServiceFee(numAmount);
-    const providerFee = calculateProviderFee(numAmount, "paystack");
-    const tipAmount = Number(data.tipAmount || 0);
+    if (!isCardSetup) {
+      try {
+        await assertCauseAcceptingDonations(data.causeId);
+      } catch (e: any) {
+        return apiError(
+          e.message || "This cause is not accepting donations currently",
+          403,
+        );
+      }
+    }
+
+    const serviceFee = isCardSetup ? 0 : calculateServiceFee(numAmount);
+    const providerFee = isCardSetup
+      ? 0
+      : calculateProviderFee(numAmount, "paystack");
+    const tipAmount = isCardSetup ? 0 : Number(data.tipAmount || 0);
     const totalAmount = numAmount + serviceFee + providerFee + tipAmount;
     const totalKobo = Math.round(totalAmount * 100);
     const channel = data.channel || "bank_transfer";

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import {
+  decodeStoreReviewDemoReference,
   isStoreReviewDemoAccount,
   STORE_REVIEW_DEMO_SAVED_CARD,
 } from "@/lib/auth/store-review-demo";
@@ -53,8 +54,9 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/mobile/user/cards
- * Verify a Paystack transaction reference from card setup (₦50 authorization charge),
- * extract card authorization details, and save the card token for future 1-click charges.
+ * Verify a Paystack transaction reference from in-app card setup (₦50 authorization charge)
+ * or an in-app donation, extract card authorization details, save the card token for future
+ * 1-click charges, and automatically refund the ₦50 verification charge when applicable.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -65,14 +67,35 @@ export async function POST(request: NextRequest) {
     const user = authResult.user!;
 
     const body = await request.json();
-    const { reference } = body;
+    const { reference, refundSetupCharge = false } = body;
 
     if (!reference) {
       return apiError("Missing transaction reference", 400);
     }
 
+    if (
+      isStoreReviewDemoAccount(user.email) &&
+      decodeStoreReviewDemoReference(reference)
+    ) {
+      return apiSuccess(
+        {
+          card: STORE_REVIEW_DEMO_SAVED_CARD,
+          refundInitiated: Boolean(refundSetupCharge),
+          message: refundSetupCharge
+            ? "Card saved and ₦50 verification charge refunded"
+            : "Card saved successfully",
+        },
+        201,
+      );
+    }
+
     const tx = (await Paystack.verifyTransactionFull(reference)) as {
       status?: string;
+      amount?: number;
+      metadata?: {
+        cause_id?: string;
+        purpose?: string;
+      };
       authorization?: {
         authorization_code?: string;
         card_type?: string;
@@ -102,6 +125,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const isSetupTx =
+      Boolean(refundSetupCharge) ||
+      tx.metadata?.cause_id === "card_setup" ||
+      tx.metadata?.purpose === "card_setup";
+
+    let refundInitiated = false;
+    if (isSetupTx) {
+      try {
+        await Paystack.refundTransaction(reference, tx.amount || 5000);
+        refundInitiated = true;
+      } catch (refundErr) {
+        console.warn(
+          "Non-fatal: Could not auto-refund ₦50 card setup charge immediately:",
+          refundErr,
+        );
+      }
+    }
+
     // Check if user already has any cards saved
     const existingCardsCount = await prisma.user_saved_cards.count({
       where: { user_id: user.id },
@@ -129,6 +170,7 @@ export async function POST(request: NextRequest) {
           brand: duplicate.brand,
           is_default: duplicate.is_default,
         },
+        refundInitiated,
         message: "Card already saved",
       });
     }
@@ -162,7 +204,10 @@ export async function POST(request: NextRequest) {
           brand: savedCard.brand,
           is_default: savedCard.is_default,
         },
-        message: "Card saved successfully",
+        refundInitiated,
+        message: refundInitiated
+          ? "Card saved and ₦50 verification charge refunded"
+          : "Card saved successfully",
       },
       201,
     );
