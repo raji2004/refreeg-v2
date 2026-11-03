@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
+import { enforceRateLimit } from "@/lib/api/rate-limit";
 import { trackLogin } from "@/actions/auth-actions";
 import { signMobileToken } from "@/lib/auth/jwt";
 import { prisma } from "@/lib/prisma";
@@ -11,6 +12,13 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimited = enforceRateLimit(request, {
+      namespace: "mobile_auth_login",
+      limit: 15,
+      windowMs: 60_000,
+    });
+    if (rateLimited) return rateLimited;
+
     const body = await request.json();
     const { email, password } = body;
 

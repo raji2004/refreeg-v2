@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
+import { enforceRateLimit } from "@/lib/api/rate-limit";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import {
   encodeStoreReviewDemoReference,
@@ -17,6 +18,13 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimited = enforceRateLimit(request, {
+      namespace: "mobile_payments_charge",
+      limit: 30,
+      windowMs: 60_000,
+    });
+    if (rateLimited) return rateLimited;
+
     const data = await request.json();
 
     // Verify authenticated user when Bearer token is present (required for Store Review Demo Mode)

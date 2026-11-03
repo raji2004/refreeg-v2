@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
+import { enforceRateLimit } from "@/lib/api/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { sendOtpEmail } from "@/services/mail";
 import bcrypt from "bcryptjs";
@@ -10,6 +11,13 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimited = enforceRateLimit(request, {
+      namespace: "mobile_auth_register",
+      limit: 10,
+      windowMs: 60_000,
+    });
+    if (rateLimited) return rateLimited;
+
     const body = await request.json();
     const { email, password, fullName, accountType, referralCode } = body;
 
@@ -31,7 +39,7 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return apiError(
         "An account with this email already exists. Please sign in instead.",
-        409
+        409,
       );
     }
 
@@ -68,18 +76,27 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const emailResult = await sendOtpEmail({
-      email: normalizedEmail,
-      userName: effectiveFullName,
-      otpCode,
-    });
+    // In isolated load-test sandbox mode (non-production), skip external SMTP dispatch
+    // so 1,000-user registration bursts test bcrypt + DB capacity without spamming SMTP.
+    const isLoadTestSandbox =
+      (process.env.NODE_ENV !== "production" ||
+        process.env.STORE_REVIEW_DEMO_ENABLED === "true") &&
+      request.headers.get("x-load-test-sandbox") === "true";
 
-    if (!emailResult.success) {
-      console.error("Mobile OTP email dispatch error:", emailResult.error);
-      return apiError(
-        "Failed to send verification email. Please check your email or try again.",
-        500
-      );
+    if (!isLoadTestSandbox) {
+      const emailResult = await sendOtpEmail({
+        email: normalizedEmail,
+        userName: effectiveFullName,
+        otpCode,
+      });
+
+      if (!emailResult.success) {
+        console.error("Mobile OTP email dispatch error:", emailResult.error);
+        return apiError(
+          "Failed to send verification email. Please check your email or try again.",
+          500,
+        );
+      }
     }
 
     return apiSuccess(
@@ -87,7 +104,7 @@ export async function POST(request: NextRequest) {
         message: "Verification code sent to your email.",
         email: normalizedEmail,
       },
-      200
+      200,
     );
   } catch (error: any) {
     console.error("Mobile API Register Error:", error);

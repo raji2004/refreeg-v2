@@ -7,6 +7,10 @@ import {
 } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { listPetitions, countPetitions } from "@/actions/petition-actions";
+import {
+  withMobileCache,
+  invalidateMobileCachePrefix,
+} from "@/lib/api/mobile-cache";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {
@@ -32,10 +36,10 @@ export async function GET(request: NextRequest) {
       offset,
     };
 
-    const [petitions, total] = await Promise.all([
-      listPetitions(options),
-      countPetitions(options),
-    ]);
+    const cacheKey = `petitions:${category || ""}:${search || ""}:${sortBy}:${limit}:${offset}`;
+    const [petitions, total] = await withMobileCache(cacheKey, 5000, () =>
+      Promise.all([listPetitions(options), countPetitions(options)]),
+    );
 
     return apiPaginated(petitions, total, limit, offset);
   } catch (error: any) {
@@ -158,6 +162,7 @@ export async function POST(request: NextRequest) {
       })(),
     ]);
 
+    invalidateMobileCachePrefix("petitions:");
     return apiSuccess(petition, 201);
   } catch (error: any) {
     console.error("Mobile API Create Petition Error:", error);

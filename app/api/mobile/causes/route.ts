@@ -7,6 +7,10 @@ import {
 } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { listCauses, countCauses } from "@/actions/cause-actions";
+import {
+  withMobileCache,
+  invalidateMobileCachePrefix,
+} from "@/lib/api/mobile-cache";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {
@@ -34,10 +38,10 @@ export async function GET(request: NextRequest) {
       offset,
     };
 
-    const [causes, total] = await Promise.all([
-      listCauses(options),
-      countCauses(options),
-    ]);
+    const cacheKey = `causes:${category || ""}:${status || ""}:${search || ""}:${sortBy}:${limit}:${offset}`;
+    const [causes, total] = await withMobileCache(cacheKey, 5000, () =>
+      Promise.all([listCauses(options), countCauses(options)]),
+    );
 
     return apiPaginated(causes, total, limit, offset);
   } catch (error: any) {
@@ -165,6 +169,7 @@ export async function POST(request: NextRequest) {
       })(),
     ]);
 
+    invalidateMobileCachePrefix("causes:");
     return apiSuccess(cause, 201);
   } catch (error: any) {
     console.error("Mobile API Create Cause Error:", error);

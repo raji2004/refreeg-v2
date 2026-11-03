@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { decodeStoreReviewDemoReference } from "@/lib/auth/store-review-demo";
+import { createDonation } from "@/actions/donation-actions";
 import Paystack from "@/services/paystack";
 import { processSuccessfulCharge } from "@/lib/paystack-charge-processing";
 import { prisma } from "@/lib/prisma";
@@ -9,18 +10,84 @@ export async function OPTIONS() {
   return handleCorsPreflight();
 }
 
-async function handleVerification(reference: string | null) {
+async function handleVerification(
+  reference: string | null,
+  request?: NextRequest,
+) {
   if (!reference) {
     return apiError("Missing payment reference", 400);
   }
 
   // Strictly scoped Store Reviewer Demo Mode verification (Decision #7 / B10):
   // Only succeeds when STORE_REVIEW_DEMO_ENABLED="true" and reference was issued by
-  // the store-review-demo encoder. Never mutates real campaign raised balances.
+  // the store-review-demo encoder. Never mutates real campaign raised balances unless
+  // explicitly running an isolated sandbox DB concurrency test against a test campaign.
   const demoPayload = decodeStoreReviewDemoReference(reference);
   if (demoPayload) {
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isSandboxDbTest =
+      (process.env.NODE_ENV !== "production" ||
+        process.env.STORE_REVIEW_DEMO_ENABLED === "true") &&
+      request?.headers.get("x-load-test-sandbox-db") === "true" &&
+      uuidRegex.test(demoPayload.causeId);
+
+    if (isSandboxDbTest) {
+      await createDonation(
+        demoPayload.causeId,
+        null,
+        {
+          amount: demoPayload.amount,
+          name: demoPayload.donorName,
+          email: demoPayload.email,
+          message: demoPayload.message,
+          isAnonymous: demoPayload.isAnonymous,
+          tip_amount: demoPayload.tipAmount,
+        },
+        demoPayload.tipAmount,
+        reference,
+        "paystack",
+      );
+
+      const persisted = await prisma.donation.findFirst({
+        where: { paystack_reference: reference },
+        include: {
+          cause: {
+            select: {
+              id: true,
+              title: true,
+              raised: true,
+              goal: true,
+              category: true,
+            },
+          },
+        },
+      });
+
+      return apiSuccess({
+        verified: true,
+        reference,
+        isStoreReviewDemo: true,
+        sandboxDbPersisted: true,
+        donation: persisted
+          ? {
+              id: persisted.id,
+              amount: Number(persisted.amount),
+              tipAmount: Number(persisted.tip_amount || 0),
+              donorName: persisted.name,
+              email: persisted.email,
+              message: persisted.message,
+              isAnonymous: persisted.is_anonymous,
+              createdAt: persisted.createdAt,
+              causeId: persisted.causeId,
+              causeTitle: persisted.cause?.title,
+              causeRaised: Number(persisted.cause?.raised || 0),
+              causeGoal: Number(persisted.cause?.goal || 0),
+            }
+          : null,
+      });
+    }
+
     const cause = uuidRegex.test(demoPayload.causeId)
       ? await prisma.cause.findUnique({
           where: { id: demoPayload.causeId },
@@ -116,7 +183,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const reference = searchParams.get("reference");
-    return await handleVerification(reference);
+    return await handleVerification(reference, request);
   } catch (error: any) {
     console.error("Mobile API Payment Verification Error (GET):", error);
     return apiError(error.message || "Failed to verify payment", 500);
@@ -127,7 +194,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const reference = body?.reference;
-    return await handleVerification(reference);
+    return await handleVerification(reference, request);
   } catch (error: any) {
     console.error("Mobile API Payment Verification Error (POST):", error);
     return apiError(error.message || "Failed to verify payment", 500);

@@ -44,42 +44,55 @@ export async function createDonation(
 
   let data;
   try {
-    if (paystackReference) {
-      const existing = await prisma.donation.findFirst({
-        where: { paystack_reference: paystackReference },
-        select: { id: true },
+    const txResult = await prisma.$transaction(async (tx) => {
+      if (paystackReference) {
+        // Acquire a transaction-scoped PostgreSQL advisory lock on the reference hash
+        // so concurrent verification requests (e.g. mobile 2s poller + webhook + callback)
+        // cannot race and double-insert or double-increment cause.raised.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${paystackReference}))`;
+
+        const existing = await tx.donation.findFirst({
+          where: { paystack_reference: paystackReference },
+        });
+
+        if (existing) {
+          return { donation: existing, alreadyExisted: true };
+        }
+      }
+
+      const created = await tx.donation.create({
+        data: {
+          causeId: causeId,
+          ...(userId ? { userId: userId } : {}),
+          ...(paystackReference
+            ? { paystack_reference: paystackReference }
+            : {}),
+          payment_provider: paymentProvider,
+          amount: donationAmount,
+          tip_amount: finalTipAmount,
+          name:
+            String(donationData.isAnonymous).toLocaleLowerCase() === "true"
+              ? "Anonymous"
+              : donationData.name,
+          email: donationData.email,
+          message: donationData.message || null,
+          is_anonymous: donationData.isAnonymous,
+          status: "completed",
+        },
       });
 
-      if (existing) {
-        const existingDonation = await prisma.donation.findUnique({
-          where: { id: existing.id },
-        });
-        if (existingDonation) return mapPrismaToDonation(existingDonation);
-      }
-    }
-    data = await prisma.donation.create({
-      data: {
-        causeId: causeId,
-        ...(userId ? { userId: userId } : {}),
-        ...(paystackReference ? { paystack_reference: paystackReference } : {}),
-        payment_provider: paymentProvider,
-        amount: donationAmount,
-        tip_amount: finalTipAmount,
-        name:
-          String(donationData.isAnonymous).toLocaleLowerCase() === "true"
-            ? "Anonymous"
-            : donationData.name,
-        email: donationData.email,
-        message: donationData.message || null,
-        is_anonymous: donationData.isAnonymous,
-        status: "completed",
-      },
+      await tx.cause.update({
+        where: { id: causeId },
+        data: { raised: { increment: donationAmount } },
+      });
+
+      return { donation: created, alreadyExisted: false };
     });
 
-    await prisma.cause.update({
-      where: { id: causeId },
-      data: { raised: { increment: donationAmount } },
-    });
+    if (txResult.alreadyExisted) {
+      return mapPrismaToDonation(txResult.donation);
+    }
+    data = txResult.donation;
     try {
       await syncMilestoneRequirements(causeId);
     } catch (e) {

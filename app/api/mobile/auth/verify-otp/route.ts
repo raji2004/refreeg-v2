@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
+import { enforceRateLimit } from "@/lib/api/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { signMobileToken } from "@/lib/auth/jwt";
 import { createReferralRecord } from "@/lib/referral-utils";
@@ -12,6 +13,13 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimited = enforceRateLimit(request, {
+      namespace: "mobile_auth_verify_otp",
+      limit: 10,
+      windowMs: 60_000,
+    });
+    if (rateLimited) return rateLimited;
+
     const body = await request.json();
     const { email, otpCode } = body;
 
