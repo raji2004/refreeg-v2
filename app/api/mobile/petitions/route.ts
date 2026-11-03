@@ -19,8 +19,10 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category") || undefined;
     const search = searchParams.get("search") || undefined;
     const sortBy = (searchParams.get("sortBy") as any) || "latest";
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const rawLimit = parseInt(searchParams.get("limit") || "10", 10);
+    const rawOffset = parseInt(searchParams.get("offset") || "0", 10);
+    const limit = Math.min(Math.max(isNaN(rawLimit) ? 10 : rawLimit, 1), 50);
+    const offset = Math.max(isNaN(rawOffset) ? 0 : rawOffset, 0);
 
     const options = {
       category,
@@ -102,52 +104,59 @@ export async function POST(request: NextRequest) {
       return newPetition;
     });
 
-    try {
-      const { createNotification } =
-        await import("@/lib/notifications/notification-service");
-      await createNotification({
-        userId: user!.id,
-        title: "Petition submitted for review 📝",
-        message: `Your petition "${body.title}" has been registered and is under moderation.`,
-        type: "petition_signed",
-        data: { petitionId: petition.id },
-      });
-    } catch (notifErr) {
-      console.warn("Failed to create petition notification:", notifErr);
-    }
+    await Promise.allSettled([
+      (async () => {
+        try {
+          const { createNotification } =
+            await import("@/lib/notifications/notification-service");
+          await createNotification({
+            userId: user!.id,
+            title: "Petition submitted for review 📝",
+            message: `Your petition "${body.title}" has been registered and is under moderation.`,
+            type: "petition_signed",
+            data: { petitionId: petition.id },
+          });
+        } catch (notifErr) {
+          console.warn("Failed to create petition notification:", notifErr);
+        }
+      })(),
+      (async () => {
+        try {
+          const profile = await prisma.user.findUnique({
+            where: { id: user!.id },
+            select: { fullName: true, email: true },
+          });
 
-    try {
-      const profile = await prisma.user.findUnique({
-        where: { id: user!.id },
-        select: { fullName: true, email: true },
-      });
+          if (profile?.email) {
+            const baseUrl =
+              process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
+            const reviewUrl = `${baseUrl}/dashboard/admin/petitions?tab=pending`;
 
-      if (profile?.email) {
-        const baseUrl =
-          process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
-        const reviewUrl = `${baseUrl}/dashboard/admin/petitions?tab=pending`;
+            const {
+              sendPetitionSubmissionAdminNotification,
+              sendPetitionUnderReviewEmail,
+            } = await import("@/services/mail");
 
-        const {
-          sendPetitionSubmissionAdminNotification,
-          sendPetitionUnderReviewEmail,
-        } = await import("@/services/mail");
+            sendPetitionSubmissionAdminNotification(
+              profile.fullName || "User",
+              profile.email,
+              body.title,
+              reviewUrl,
+            ).catch((err) => console.error("Admin notification error:", err));
 
-        sendPetitionSubmissionAdminNotification(
-          profile.fullName || "User",
-          profile.email,
-          body.title,
-          reviewUrl,
-        ).catch((err) => console.error("Admin notification error:", err));
-
-        sendPetitionUnderReviewEmail({
-          petitionName: body.title,
-          userEmail: profile.email,
-          userName: profile.fullName || "User",
-        }).catch((err) => console.error("User email notification error:", err));
-      }
-    } catch (mailErr) {
-      console.warn("Failed to dispatch petition emails:", mailErr);
-    }
+            sendPetitionUnderReviewEmail({
+              petitionName: body.title,
+              userEmail: profile.email,
+              userName: profile.fullName || "User",
+            }).catch((err) =>
+              console.error("User email notification error:", err),
+            );
+          }
+        } catch (mailErr) {
+          console.warn("Failed to dispatch petition emails:", mailErr);
+        }
+      })(),
+    ]);
 
     return apiSuccess(petition, 201);
   } catch (error: any) {

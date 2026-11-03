@@ -13,8 +13,10 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
-    const offset = parseInt(searchParams.get("offset") || "0", 10);
+    const rawLimit = parseInt(searchParams.get("limit") || "20", 10);
+    const rawOffset = parseInt(searchParams.get("offset") || "0", 10);
+    const limit = Math.min(Math.max(isNaN(rawLimit) ? 20 : rawLimit, 1), 50);
+    const offset = Math.max(isNaN(rawOffset) ? 0 : rawOffset, 0);
 
     const result = await getNotifications(user!.id, limit, offset);
     return apiSuccess(result);
