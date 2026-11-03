@@ -95,6 +95,8 @@ export async function POST(request: NextRequest) {
       metadata?: {
         cause_id?: string;
         purpose?: string;
+        email?: string;
+        user_id?: string;
       };
       authorization?: {
         authorization_code?: string;
@@ -125,15 +127,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const txEmail = (
+      tx.metadata?.email ||
+      tx.customer?.email ||
+      ""
+    ).toLowerCase();
+    const txUserId = tx.metadata?.user_id;
+    if (
+      (txUserId && txUserId !== user.id) ||
+      (txEmail &&
+        txEmail !== user.email.toLowerCase() &&
+        txEmail !== "donor@refreeg.com" &&
+        txEmail !== "donor@refreeg.org")
+    ) {
+      return apiError("Transaction does not belong to authenticated user", 403);
+    }
+
     const isSetupTx =
-      Boolean(refundSetupCharge) ||
-      tx.metadata?.cause_id === "card_setup" ||
-      tx.metadata?.purpose === "card_setup";
+      (tx.metadata?.cause_id === "card_setup" ||
+        tx.metadata?.purpose === "card_setup") &&
+      typeof tx.amount === "number" &&
+      tx.amount <= 10000;
 
     let refundInitiated = false;
     if (isSetupTx) {
       try {
-        await Paystack.refundTransaction(reference, tx.amount || 5000);
+        await Paystack.refundTransaction(
+          reference,
+          Math.min(tx.amount || 5000, 5000),
+        );
         refundInitiated = true;
       } catch (refundErr) {
         console.warn(
