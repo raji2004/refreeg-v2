@@ -105,6 +105,9 @@ export async function POST(request: NextRequest) {
         400,
       );
     }
+    if (isCardSetup && numAmount !== 50) {
+      return apiError("Card setup verification charge must be exactly ₦50", 400);
+    }
 
     if (!isCardSetup) {
       try {

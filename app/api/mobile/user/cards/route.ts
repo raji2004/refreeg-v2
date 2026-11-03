@@ -143,18 +143,20 @@ export async function POST(request: NextRequest) {
       return apiError("Transaction does not belong to authenticated user", 403);
     }
 
+    const CARD_SETUP_KOBO = 5000; // ₦50.00 in Paystack kobo units (100 kobo = ₦1)
     const isSetupTx =
       (tx.metadata?.cause_id === "card_setup" ||
         tx.metadata?.purpose === "card_setup") &&
       typeof tx.amount === "number" &&
-      tx.amount <= 10000;
+      tx.amount > 0 &&
+      tx.amount <= CARD_SETUP_KOBO;
 
     let refundInitiated = false;
     if (isSetupTx) {
       try {
         await Paystack.refundTransaction(
           reference,
-          Math.min(tx.amount || 5000, 5000),
+          Math.min(tx.amount || CARD_SETUP_KOBO, CARD_SETUP_KOBO),
         );
         refundInitiated = true;
       } catch (refundErr) {
