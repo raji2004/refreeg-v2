@@ -33,7 +33,7 @@ import {
   Sparkles,
   // Star,
   Target,
-  TargetIcon,
+  // TargetIcon,
   Trophy,
   UserCog,
   Users,
@@ -146,18 +146,9 @@ const publicNavItems: NavItem[] = [
   },
   {
     title: "About RefreeG",
-    header: "The thinking and mission behind the platform.",
+    href: "/about-us",
+    type: "link",
     icon: Sparkles,
-    type: "dropdown",
-    items: [
-      {
-        title: "Our Mission",
-        description:
-          "See the mission driving RefreeG and the product direction behind the platform.",
-        href: "/about-us/OurMission",
-        icon: TargetIcon,
-      },
-    ],
   },
 ];
 

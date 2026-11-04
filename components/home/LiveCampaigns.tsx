@@ -46,7 +46,8 @@ export default function LiveCampaigns() {
         const allCauses = await listCauses();
         const rankedCauses = sortCausesByFunding(allCauses);
 
-        const transformedCampaigns = rankedCauses.map((cause) => ({
+        // The top-ranked cause is featured in LiveSpotlight.
+        const transformedCampaigns = rankedCauses.slice(1).map((cause) => ({
           id: cause.id,
           slug: cause.slug,
           title: cause.title,
@@ -182,15 +183,7 @@ export default function LiveCampaigns() {
     );
   }
 
-  if (campaigns.length === 0) {
-    return (
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-500">No campaigns available</p>
-        </div>
-      </section>
-    );
-  }
+  if (campaigns.length === 0) return null;
 
   return (
     <section ref={sectionRef} className="py-16 bg-white">
