@@ -52,7 +52,7 @@ const footerColumns = [
   {
     title: "COMPANY",
     links: [
-      { label: "About", href: "/how-it-works" },
+      { label: "About", href: "/about-us" },
       { label: "Press", href: "/#faq" },
       { label: "Careers", href: "/how-it-works" },
       { label: "Contact", href: "/#faq" },
@@ -66,7 +66,7 @@ const footerColumns = [
         href: COMMUNITY_LINK,
         external: true,
       },
-      { label: "Our Mission", href: "/about-us/OurMission" },
+      // { label: "Our Mission", href: "/about-us/OurMission" },
       { label: "Success Stories", href: "/about-us/OurImpact" },
     ],
   },

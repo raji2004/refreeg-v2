@@ -1,14 +1,53 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function Accountability() {
+type AccountabilityProps = {
+  title?: ReactNode;
+  description?: ReactNode;
+  actions?: ReactNode;
+};
+
+const defaultTitle = (
+  <>
+    Giving,
+    <br />
+    finally
+    <br />
+    <em className="italic">accountable.</em>
+  </>
+);
+
+const defaultActions = (
+  <>
+    <Link
+      href="/causes"
+      className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-blue px-5 py-3 text-sm font-medium text-brand-blue-foreground transition-colors hover:bg-brand-blue/90"
+    >
+      Give to a cause
+      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+    </Link>
+
+    <Link
+      href="/dashboard/causes/create"
+      className="inline-flex items-center justify-center rounded-full border border-ink px-5 py-3 text-sm font-medium text-ink transition-colors hover:bg-ink/5"
+    >
+      Start a campaign
+    </Link>
+  </>
+);
+
+export default function Accountability({
+  title = defaultTitle,
+  description = "Whether you give ₦10 or rally ten thousand people, RefreeG turns intent into impact you can prove.",
+  actions = defaultActions,
+}: AccountabilityProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const subRef = useRef<HTMLParagraphElement>(null);
@@ -63,51 +102,29 @@ export default function Accountability() {
   return (
     <div
       ref={sectionRef}
-      className="bg-[#F1ECDD] px-4 sm:px-8 md:px-12 lg:px-20 py-12 sm:py-16 lg:py-24 my-16 rounded-2xl"
+      className="my-16 rounded-2xl bg-warm-neutral px-6 py-14 sm:px-10 md:py-20 lg:px-16 lg:py-24 xl:px-24"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-24 max-w-6xl mx-auto">
-        <h1
+      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-8 md:grid-cols-[1.2fr_1fr] md:gap-10 lg:gap-16">
+        <h2
           ref={headlineRef}
-          className="font-serif font-normal text-[#0D0D0D] 
-             text-[40px] sm:text-[56px] md:text-[52px] lg:text-[96px] 
-             leading-[1.0] m-0 text-center md:text-left"
+          className="m-0 text-center font-fraunces text-[40px] font-normal leading-[1.02] tracking-tight text-ink sm:text-[52px] md:text-left lg:text-[64px] xl:text-[80px]"
         >
-          Giving,
-          <br />
-          finally
-          <br />
-          <em className="italic">accountable.</em>
-        </h1>
+          {title}
+        </h2>
 
-        <div className="flex flex-col justify-center mt-8 md:mt-0 lg:mt-32 max-w-md mx-auto md:mx-0">
+        <div className="mx-auto flex max-w-md flex-col md:mx-0">
           <p
             ref={subRef}
-            className="text-[#0D0D0D] text-sm sm:text-base leading-relaxed m-0 mb-6 sm:mb-8 text-center md:text-left"
+            className="m-0 mb-6 text-center text-sm leading-relaxed text-ink/70 sm:text-base md:text-left"
           >
-            Whether you give ₦10 or rally ten thousand people, RefreeG turns
-            intent into impact you can prove.
+            {description}
           </p>
 
           <div
             ref={buttonsRef}
-            className="flex flex-col sm:flex-row md:flex-col items-center gap-3"
+            className="flex flex-wrap items-center justify-center gap-3 md:justify-start"
           >
-            <Link
-              href="/causes"
-              className="flex items-center justify-center gap-2 bg-[#1C3CD5] text-white text-[12px] font-medium rounded-full px-4 py-[14px] hover:opacity-90 transition-colors no-underline w-full sm:w-auto"
-            >
-              Give to a cause
-              <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                <ChevronRight size={14} strokeWidth={2.5} />
-              </span>
-            </Link>
-
-            <Link
-              href="/dashboard/causes/create"
-              className="flex items-center justify-center text-[#0D0D0D] text-[12px] font-medium rounded-full px-4 py-[14px] border border-[#0D0D0D] hover:bg-black/5 transition-colors no-underline w-full sm:w-auto"
-            >
-              Start a campaign
-            </Link>
+            {actions}
           </div>
         </div>
       </div>
