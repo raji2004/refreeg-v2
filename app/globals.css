@@ -118,6 +118,10 @@ select:focus {
     /* #0a3cb5 hyperlinks, informational icons, system notices */
     --blue-accent-foreground: 0 0% 100%;
 
+    --brand-blue: 230 77% 47%;
+    /* #1c3cd5 marketing-page brand blue: hero highlights, bands, CTA pills */
+    --brand-blue-foreground: 0 0% 100%;
+
     /* Secondary Palette */
     --sand: 44 69% 81%;
     /* #f0deae secondary warm neutral, soft callouts */

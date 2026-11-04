@@ -1,6 +1,7 @@
 import Hero from "@/components/home/hero";
 
 import LiveCampaigns from "@/components/home/LiveCampaigns";
+import { LiveSpotlight } from "@/components/home/LiveSpotlight";
 
 import { AnnouncementMarquee } from "@/components/ui/announcement-marquee";
 
@@ -21,6 +22,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen mt-12 md:mt-16 ">
       <Hero />
+      <LiveSpotlight />
       <LiveCampaigns />
 
       <div className="mx-8">
