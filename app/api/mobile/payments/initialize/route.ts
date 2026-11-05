@@ -116,7 +116,10 @@ export async function POST(request: NextRequest) {
     } else if (data.channel === "ussd") {
       channels = ["ussd"];
     } else if (data.channel === "opay") {
-      channels = ["mobile_money", "bank"];
+      // Paystack has no standalone "opay" channel: OPay is a sub-option of the
+      // "bank" channel. "mobile_money" is intentionally excluded because it adds
+      // unrelated options (e.g. Zap) to the hosted checkout page.
+      channels = ["bank"];
     }
 
     const response = await Paystack.initializeTransaction({
