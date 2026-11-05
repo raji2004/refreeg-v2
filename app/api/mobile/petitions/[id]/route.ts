@@ -1,8 +1,11 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
+import { withMobileCache, invalidateMobileCachePrefix } from "@/lib/api/mobile-cache";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { getPetition, deletePetition } from "@/actions/petition-actions";
 import { prisma } from "@/lib/prisma";
+
+const PETITION_DETAIL_CACHE_TTL_MS = 5_000;
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -14,7 +17,11 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const petition = await getPetition(id);
+    const petition = await withMobileCache(
+      `petitions:detail:${id}`,
+      PETITION_DETAIL_CACHE_TTL_MS,
+      () => getPetition(id),
+    );
     
     if (!petition) {
       return apiError("Petition not found", 404);
@@ -96,6 +103,7 @@ export async function PUT(
       return edit;
     });
 
+    invalidateMobileCachePrefix("petitions:");
     return apiSuccess(editData, 202);
   } catch (error: any) {
     console.error("Mobile API Update Petition Error:", error);
@@ -126,6 +134,7 @@ export async function DELETE(
     }
 
     await deletePetition(id);
+    invalidateMobileCachePrefix("petitions:");
     
     return apiSuccess({ message: "Petition deleted successfully" });
   } catch (error: any) {

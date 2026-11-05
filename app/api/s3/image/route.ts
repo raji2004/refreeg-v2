@@ -1,6 +1,7 @@
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
+import { withMobileCache } from "@/lib/api/mobile-cache";
 import { findLegacyNormalizedCenterCrop } from "@/lib/media/legacy-normalized-image";
 import { s3Client } from "@/lib/s3/s3-client";
 import { generatePresignedGetUrl, getBucketName } from "@/lib/s3/s3-utils";
@@ -9,51 +10,91 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const CLEAN_PRESENTATION = "clean-v3";
+const S3_IMAGE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes server memory cache
+
+function isSafeExternalImageUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return false;
+    }
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host === "localhost" ||
+      host === "0.0.0.0" ||
+      host === "[::1]" ||
+      host.endsWith(".local") ||
+      host.endsWith(".internal") ||
+      /^127\./.test(host) ||
+      /^10\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^169\.254\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(host)
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 async function presentCauseImage(key: string) {
-  const object = await s3Client.send(
-    new GetObjectCommand({ Bucket: getBucketName(), Key: key }),
-  );
-  if (!object.Body) throw new Error("S3 image has no body");
-
-  const input = Buffer.from(await object.Body.transformToByteArray());
-  const metadata = await sharp(input, { failOn: "none" }).metadata();
-  let output: Buffer<ArrayBufferLike> = input;
-  let presentation = "original";
-
-  if (metadata.width && metadata.height) {
-    const analysis = await sharp(input, { failOn: "none" })
-      .resize({ width: 1000, fit: "inside", withoutEnlargement: true })
-      .removeAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-    const crop = findLegacyNormalizedCenterCrop({
-      data: analysis.data,
-      width: analysis.info.width,
-      height: analysis.info.height,
-      channels: analysis.info.channels,
-    });
-
-    if (crop) {
-      const scale = metadata.width / analysis.info.width;
-      const left = Math.max(0, Math.round(crop.left * scale));
-      const width = Math.min(
-        metadata.width - left,
-        Math.round(crop.width * scale),
+  const processed = await withMobileCache(
+    `s3:clean:${key}`,
+    S3_IMAGE_CACHE_TTL_MS,
+    async () => {
+      const object = await s3Client.send(
+        new GetObjectCommand({ Bucket: getBucketName(), Key: key }),
       );
-      output = await sharp(input, { failOn: "none" })
-        .extract({ left, top: 0, width, height: metadata.height })
-        .toBuffer();
-      presentation = "recovered-portrait";
-    }
-  }
+      if (!object.Body) throw new Error("S3 image has no body");
 
-  return new Response(new Uint8Array(output), {
+      const input = Buffer.from(await object.Body.transformToByteArray());
+      const metadata = await sharp(input, { failOn: "none" }).metadata();
+      let output: Buffer<ArrayBufferLike> = input;
+      let presentation = "original";
+
+      if (metadata.width && metadata.height) {
+        const analysis = await sharp(input, { failOn: "none" })
+          .resize({ width: 1000, fit: "inside", withoutEnlargement: true })
+          .removeAlpha()
+          .raw()
+          .toBuffer({ resolveWithObject: true });
+        const crop = findLegacyNormalizedCenterCrop({
+          data: analysis.data,
+          width: analysis.info.width,
+          height: analysis.info.height,
+          channels: analysis.info.channels,
+        });
+
+        if (crop) {
+          const scale = metadata.width / analysis.info.width;
+          const left = Math.max(0, Math.round(crop.left * scale));
+          const width = Math.min(
+            metadata.width - left,
+            Math.round(crop.width * scale),
+          );
+          output = await sharp(input, { failOn: "none" })
+            .extract({ left, top: 0, width, height: metadata.height })
+            .toBuffer();
+          presentation = "recovered-portrait";
+        }
+      }
+
+      return {
+        bytes: new Uint8Array(output),
+        contentType: object.ContentType || "image/jpeg",
+        presentation,
+      };
+    },
+  );
+
+  return new Response(processed.bytes, {
     headers: {
       "Cache-Control":
-        "public, max-age=2592000, s-maxage=31536000, stale-while-revalidate=86400",
-      "Content-Type": object.ContentType || "image/jpeg",
-      "X-RefreeG-Media-Presentation": presentation,
+          "public, max-age=2592000, s-maxage=31536000, stale-while-revalidate=86400",
+      "Content-Type": processed.contentType,
+      "X-RefreeG-Media-Presentation": processed.presentation,
     },
   });
 }
@@ -75,10 +116,7 @@ export async function GET(req: Request) {
     let key = searchParams.get("key");
 
     const urlParam = searchParams.get("url");
-    if (
-      urlParam &&
-      (urlParam.startsWith("http://") || urlParam.startsWith("https://"))
-    ) {
+    if (urlParam && isSafeExternalImageUrl(urlParam)) {
       try {
         const fetched = await fetch(urlParam);
         if (fetched.ok) {
@@ -119,7 +157,7 @@ export async function GET(req: Request) {
       }
     } catch (e) {}
 
-    if (key.startsWith("http://") || key.startsWith("https://")) {
+    if (isSafeExternalImageUrl(key)) {
       try {
         const fetched = await fetch(key);
         if (fetched.ok) {
@@ -157,20 +195,30 @@ export async function GET(req: Request) {
     }
 
     try {
-      const object = await s3Client.send(
-        new GetObjectCommand({ Bucket: getBucketName(), Key: key }),
+      const rawS3 = await withMobileCache(
+        `s3:raw:${key}`,
+        S3_IMAGE_CACHE_TTL_MS,
+        async () => {
+          const object = await s3Client.send(
+            new GetObjectCommand({ Bucket: getBucketName(), Key: key }),
+          );
+          if (!object.Body) return null;
+          return {
+            bytes: Buffer.from(await object.Body.transformToByteArray()),
+            contentType: object.ContentType || "image/jpeg",
+          };
+        },
       );
 
-      if (object.Body) {
-        const bytes = Buffer.from(await object.Body.transformToByteArray());
-        return new Response(bytes, {
+      if (rawS3) {
+        return new Response(rawS3.bytes, {
           status: 200,
           headers: {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, OPTIONS",
             "Cache-Control":
               "public, max-age=2592000, s-maxage=31536000, stale-while-revalidate=86400",
-            "Content-Type": object.ContentType || "image/jpeg",
+            "Content-Type": rawS3.contentType,
           },
         });
       }

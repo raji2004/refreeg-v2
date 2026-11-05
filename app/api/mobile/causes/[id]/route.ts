@@ -1,11 +1,14 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
+import { withMobileCache, invalidateMobileCachePrefix } from "@/lib/api/mobile-cache";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { getCause, deleteCause } from "@/actions/cause-actions";
 import { listDonationsForCause } from "@/actions/donation-actions";
 import { listCommentsForCause } from "@/actions/comment-actions";
 import { getApprovedProofUpdates } from "@/actions/proof-update-actions";
 import { prisma } from "@/lib/prisma";
+
+const CAUSE_DETAIL_CACHE_TTL_MS = 5_000;
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -17,36 +20,45 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const cause = await getCause(id);
+    const payload = await withMobileCache(
+      `causes:detail:${id}`,
+      CAUSE_DETAIL_CACHE_TTL_MS,
+      async () => {
+        const cause = await getCause(id);
+        if (!cause) return null;
 
-    if (!cause) {
+        const [donors, comments, proofUpdates, pledgesData] = await Promise.all([
+          listDonationsForCause(cause.id).catch(() => []),
+          listCommentsForCause(cause.id).catch(() => []),
+          getApprovedProofUpdates(cause.id).catch(() => []),
+          prisma.pledges
+            .aggregate({
+              where: {
+                cause_id: cause.id,
+                status: { in: ["pending", "active", "fulfilled"] },
+              },
+              _sum: { amount: true },
+            })
+            .catch(() => null),
+        ]);
+
+        const pledged = Number(pledgesData?._sum?.amount ?? 0);
+
+        return {
+          ...cause,
+          pledged,
+          donors: donors || [],
+          comments: comments || [],
+          proof_updates: proofUpdates || [],
+        };
+      },
+    );
+
+    if (!payload) {
       return apiError("Cause not found", 404);
     }
 
-    const [donors, comments, proofUpdates, pledgesData] = await Promise.all([
-      listDonationsForCause(cause.id).catch(() => []),
-      listCommentsForCause(cause.id).catch(() => []),
-      getApprovedProofUpdates(cause.id).catch(() => []),
-      prisma.pledges
-        .aggregate({
-          where: {
-            cause_id: cause.id,
-            status: { in: ["pending", "active", "fulfilled"] },
-          },
-          _sum: { amount: true },
-        })
-        .catch(() => null),
-    ]);
-
-    const pledged = Number(pledgesData?._sum?.amount ?? 0);
-
-    return apiSuccess({
-      ...cause,
-      pledged,
-      donors: donors || [],
-      comments: comments || [],
-      proof_updates: proofUpdates || [],
-    });
+    return apiSuccess(payload);
   } catch (error: any) {
     console.error("Mobile API Get Cause Error:", error);
     return apiError("Internal server error", 500);
@@ -137,6 +149,7 @@ export async function PUT(
       return edit;
     });
 
+    invalidateMobileCachePrefix("causes:");
     return apiSuccess(editData, 202);
   } catch (error: any) {
     console.error("Mobile API Update Cause Error:", error);
@@ -167,6 +180,7 @@ export async function DELETE(
     }
 
     await deleteCause(id);
+    invalidateMobileCachePrefix("causes:");
 
     return apiSuccess({ message: "Cause deleted successfully" });
   } catch (error: any) {
