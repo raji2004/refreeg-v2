@@ -11,7 +11,7 @@ import { Metadata } from "next";
 import Accountability from "@/components/home/Accountability";
 
 export const metadata: Metadata = {
-  title: "RefreeG | Powering Social Impact Through Blockchain",
+  title: "Refreeg - Powering Giving",
   description:
     "Join RefreeG to launch causes, start petitions, and drive social change with secure, transparent blockchain crowdfunding.",
 };
