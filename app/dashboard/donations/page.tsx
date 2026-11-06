@@ -97,7 +97,7 @@ export default async function MyGivingPage({
           action={
             <div className="flex flex-wrap justify-center gap-2.5">
               {saved > 0 && (
-                <Link href="/saved">
+                <Link href="/dashboard/saved">
                   <Button
                     variant="ink"
                     className="h-12 rounded-2xl px-[22px] text-[15px] font-semibold shadow-[0_8px_20px_-8px_hsl(var(--ink)/0.55)]"
