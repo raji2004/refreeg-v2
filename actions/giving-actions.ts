@@ -19,7 +19,6 @@ export type GiftRow = {
   amount: number;
   date: string;
   status: GiftStatus;
-  /** Payment reference, for the receipt link; null for pledges. */
   reference: string | null;
 };
 
@@ -142,14 +141,12 @@ export async function getGivingOverview({
           cause_id: true,
         },
       }),
-      prisma.bookmarks.count({ where: { user_id: user.id } }),
+      prisma.bookmark.count({ where: { user_id: user.id } }),
       prisma.user.findUnique({
         where: { id: user.id },
         select: { total_points: true },
       }),
     ]);
-
-  // Pledges and subscriptions only store a cause id.
   const otherCauseIds = [
     ...new Set(
       [...pledges, ...subscriptions]
@@ -213,8 +210,6 @@ export async function getGivingOverview({
       }),
     ];
   });
-
-  // Period applies to completed gifts; open pledges are always current.
   const sum = (rows: GiftRow[]) => rows.reduce((t, r) => t + r.amount, 0);
   const periodDonations = donationRows.filter((r) =>
     inPeriod(new Date(r.date), period, now),

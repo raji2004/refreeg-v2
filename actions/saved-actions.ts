@@ -16,29 +16,25 @@ async function requireUserId() {
   if (!id) throw new Error("Unauthorized");
   return id;
 }
+function countBookmarks(userId: string) {
+  return prisma.bookmark.count({ where: { user_id: userId } });
+}
+
+export type ToggleBookmarkResult = { saved: boolean; count: number };
 
 export async function toggleBookmark(
   targetId: string,
   targetType: "cause" | "petition",
-) {
+): Promise<ToggleBookmarkResult> {
   const userId = await requireUserId();
   if (targetType !== "cause" && targetType !== "petition") {
     throw new Error("Invalid target type");
   }
-
-  const key = {
-    user_id_target_id_target_type: {
-      user_id: userId,
-      target_id: targetId,
-      target_type: targetType,
-    },
-  };
-
-  const existing = await prisma.bookmark.findUnique({ where: key });
-  if (existing) {
-    await prisma.bookmark.delete({ where: { id: existing.id } });
-    revalidatePath("/dashboard/saved");
-    return { saved: false };
+  const removed = await prisma.bookmark.deleteMany({
+    where: { user_id: userId, target_id: targetId, target_type: targetType },
+  });
+  if (removed.count > 0) {
+    return { saved: false, count: await countBookmarks(userId) };
   }
 
   const target =
@@ -66,16 +62,12 @@ export async function toggleBookmark(
       throw err;
     }
   }
-  revalidatePath("/dashboard/saved");
-  return { saved: true };
+  return { saved: true, count: await countBookmarks(userId) };
 }
 
 type CreateListResult =
   | { ok: true; list: { id: string; name: string; color: string } }
   | { ok: false; error: string };
-
-// Returns a result instead of throwing: in production Next masks the message
-// of an error thrown from a server action, so the UI could not show it.
 export async function createList(
   name: string,
   color?: string,
@@ -137,14 +129,17 @@ export async function moveBookmarksToList(
   return { ok: true };
 }
 
-export async function removeBookmarks(ids: string[]) {
+export async function removeBookmarks(
+  ids: string[],
+): Promise<{ count: number | null }> {
   const userId = await requireUserId();
-  if (ids.length === 0 || ids.length > MAX_BATCH) return;
+  if (ids.length === 0 || ids.length > MAX_BATCH) return { count: null };
 
   await prisma.bookmark.deleteMany({
     where: { id: { in: ids }, user_id: userId },
   });
   revalidatePath("/dashboard/saved");
+  return { count: await countBookmarks(userId) };
 }
 
 export async function updateAlertPrefs(prefs: {
@@ -168,12 +163,6 @@ export async function updateAlertPrefs(prefs: {
   });
   revalidatePath("/dashboard/saved");
 }
-
-/**
- * Returns the current user's bookmarked target IDs as bare strings.
- * Callers that need to disambiguate cause vs. petition should use
- * `listBookmarkedKeys()` (below) which includes the type.
- */
 export async function listBookmarkedIds(): Promise<string[]> {
   const session = await auth();
   const userId = session?.user?.id;
@@ -186,11 +175,6 @@ export async function listBookmarkedIds(): Promise<string[]> {
 
   return rows.map((r) => r.target_id);
 }
-
-/**
- * Returns the current user's bookmarks in the `${targetType}:${targetId}`
- * shape used by Discover.
- */
 export async function listBookmarkedKeys(): Promise<string[]> {
   const session = await auth();
   const userId = session?.user?.id;

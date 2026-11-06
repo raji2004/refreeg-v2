@@ -1,39 +1,55 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toggleBookmark } from "@/actions/saved-actions";
 import { toast } from "@/hooks/use-toast";
+import { bumpSavedCount, setSavedCount } from "@/lib/saved-count";
+import { useAuthContext } from "@/components/auth-provider";
 
 interface Props {
   itemId: string;
   itemType: "cause" | "petition";
   initialSaved: boolean;
 }
-
-/**
- * The Discover-side bookmark. The saved page has its own unsave control in
- * SavedCard, because removing there goes through the undo flow.
- */
 export function BookmarkButton({ itemId, itemType, initialSaved }: Props) {
   const [saved, setSaved] = useState(initialSaved);
   const [pending, setPending] = useState(false);
+  const { isAuthenticated, isLoading } = useAuthContext();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const handleToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (pending) return;
 
+    if (!isAuthenticated) {
+      if (!isLoading) {
+        toast({
+          title: "Sign in to save campaigns",
+          description: "Your shortlist follows you across devices.",
+        });
+        router.push(`/auth/signin?redirect=${encodeURIComponent(pathname)}`);
+      }
+      return;
+    }
+
     const next = !saved;
-    setSaved(next); // optimistic
+    setSaved(next);
+    bumpSavedCount(next ? 1 : -1);
     setPending(true);
     try {
       const res = await toggleBookmark(itemId, itemType);
       setSaved(res.saved);
+      setSavedCount(res.count);
       toast({ title: res.saved ? "Added to saved" : "Removed from saved" });
     } catch {
-      setSaved(!next); // rollback
+      setSaved(!next);
+      bumpSavedCount(next ? -1 : 1);
       toast({ title: "Failed to update", variant: "destructive" });
     } finally {
       setPending(false);

@@ -4,14 +4,17 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { listCauses } from "@/actions";
+import { listBookmarkedIds } from "@/actions/saved-actions";
 import { sortCausesByFunding } from "@/lib/causes/funding-rank";
 import { causePublicPath } from "@/lib/causes/slug";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BookmarkButton } from "@/components/saved/BookmarkButton";
 
 type Spotlight = {
+  id: string;
   title: string;
   category: string;
   location: string;
@@ -32,16 +35,19 @@ const formatNaira = (amount: number) =>
 
 export function LiveSpotlight() {
   const [cause, setCause] = useState<Spotlight | null>(null);
+  const [bookmarked, setBookmarked] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
-    listCauses()
-      .then((causes) => {
+    Promise.all([listCauses(), listBookmarkedIds().catch(() => [] as string[])])
+      .then(([causes, bookmarks]) => {
         const top = sortCausesByFunding(causes)[0];
         if (cancelled || !top) return;
+        setBookmarked(bookmarks.includes(top.id));
         setCause({
+          id: top.id,
           title: top.title,
           category: top.category || "Cause",
           location: top.location || "",
@@ -106,6 +112,11 @@ export function LiveSpotlight() {
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-accent" />
                 Live
               </span>
+              <BookmarkButton
+                itemId={cause.id}
+                itemType="cause"
+                initialSaved={bookmarked}
+              />
             </Link>
 
             <div className="flex flex-col justify-center">
