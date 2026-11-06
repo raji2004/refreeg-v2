@@ -7,7 +7,7 @@ import { Logo } from "@/components/logo";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { getProfile } from "@/actions/profile-actions";
-import { listBookmarkedIds } from "@/actions/bookmark-actions";
+import { listBookmarkedIds } from "@/actions/saved-actions";
 import { AppShellNav } from "./app-shell-nav";
 import { AppShellHeader } from "./app-shell-header";
 import { SidebarCtaCard } from "./sidebar-cta-card";

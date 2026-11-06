@@ -56,3 +56,6 @@ temp_interactive_push.bat
 .idea/
 .cursor/
 .claude/
+/repomix-output.xml
+scripts/delete-user-by-email.ts
+/scripts/list-fks.ts

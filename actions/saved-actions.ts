@@ -1,0 +1,205 @@
+"use server";
+
+import { Prisma } from "@prisma/client";
+import { auth } from "@/lib/auth/auth";
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+
+const MAX_LISTS = 20;
+const MAX_NAME = 40;
+const MAX_BATCH = 200;
+const DEFAULT_COLOR = "#0D1E16";
+
+async function requireUserId() {
+  const session = await auth();
+  const id = session?.user?.id;
+  if (!id) throw new Error("Unauthorized");
+  return id;
+}
+
+export async function toggleBookmark(
+  targetId: string,
+  targetType: "cause" | "petition",
+) {
+  const userId = await requireUserId();
+  if (targetType !== "cause" && targetType !== "petition") {
+    throw new Error("Invalid target type");
+  }
+
+  const key = {
+    user_id_target_id_target_type: {
+      user_id: userId,
+      target_id: targetId,
+      target_type: targetType,
+    },
+  };
+
+  const existing = await prisma.bookmark.findUnique({ where: key });
+  if (existing) {
+    await prisma.bookmark.delete({ where: { id: existing.id } });
+    revalidatePath("/dashboard/saved");
+    return { saved: false };
+  }
+
+  const target =
+    targetType === "cause"
+      ? await prisma.cause.findUnique({
+          where: { id: targetId },
+          select: { id: true },
+        })
+      : await prisma.petitions.findUnique({
+          where: { id: targetId },
+          select: { id: true },
+        });
+  if (!target) throw new Error("Not found");
+
+  try {
+    await prisma.bookmark.create({
+      data: { user_id: userId, target_id: targetId, target_type: targetType },
+    });
+  } catch (err) {
+    // A double tap raced us to the unique index. It is saved either way.
+    if (!(
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    )) {
+      throw err;
+    }
+  }
+  revalidatePath("/dashboard/saved");
+  return { saved: true };
+}
+
+type CreateListResult =
+  | { ok: true; list: { id: string; name: string; color: string } }
+  | { ok: false; error: string };
+
+// Returns a result instead of throwing: in production Next masks the message
+// of an error thrown from a server action, so the UI could not show it.
+export async function createList(
+  name: string,
+  color?: string,
+): Promise<CreateListResult> {
+  const userId = await requireUserId();
+
+  const clean = name.trim().replace(/\s+/g, " ");
+  if (!clean) return { ok: false, error: "Give the list a name" };
+  if (clean.length > MAX_NAME) {
+    return { ok: false, error: `Keep it under ${MAX_NAME} characters` };
+  }
+
+  const [count, duplicate] = await Promise.all([
+    prisma.savedList.count({ where: { user_id: userId } }),
+    prisma.savedList.findFirst({
+      where: { user_id: userId, name: { equals: clean, mode: "insensitive" } },
+      select: { id: true },
+    }),
+  ]);
+  if (duplicate) return { ok: false, error: "You already have that list" };
+  if (count >= MAX_LISTS) {
+    return { ok: false, error: `You can keep up to ${MAX_LISTS} lists` };
+  }
+
+  const list = await prisma.savedList.create({
+    data: {
+      user_id: userId,
+      name: clean,
+      color: color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : DEFAULT_COLOR,
+    },
+    select: { id: true, name: true, color: true },
+  });
+  revalidatePath("/dashboard/saved");
+  return { ok: true, list };
+}
+
+export async function moveBookmarksToList(
+  bookmarkIds: string[],
+  listId: string | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await requireUserId();
+  if (bookmarkIds.length === 0 || bookmarkIds.length > MAX_BATCH) {
+    return { ok: false, error: "Nothing to move" };
+  }
+
+  if (listId) {
+    const owned = await prisma.savedList.findFirst({
+      where: { id: listId, user_id: userId },
+      select: { id: true },
+    });
+    if (!owned) return { ok: false, error: "That list no longer exists" };
+  }
+
+  await prisma.bookmark.updateMany({
+    where: { id: { in: bookmarkIds }, user_id: userId },
+    data: { list_id: listId },
+  });
+  revalidatePath("/dashboard/saved");
+  return { ok: true };
+}
+
+export async function removeBookmarks(ids: string[]) {
+  const userId = await requireUserId();
+  if (ids.length === 0 || ids.length > MAX_BATCH) return;
+
+  await prisma.bookmark.deleteMany({
+    where: { id: { in: ids }, user_id: userId },
+  });
+  revalidatePath("/dashboard/saved");
+}
+
+export async function updateAlertPrefs(prefs: {
+  closing_3d?: boolean;
+  reached_80pct?: boolean;
+  delivered?: boolean;
+  weekly_digest?: boolean;
+}) {
+  const userId = await requireUserId();
+
+  const data = {
+    closing_3d: prefs.closing_3d,
+    reached_80pct: prefs.reached_80pct,
+    delivered: prefs.delivered,
+    weekly_digest: prefs.weekly_digest,
+  };
+  await prisma.userAlertPrefs.upsert({
+    where: { user_id: userId },
+    update: { ...data, updated_at: new Date() },
+    create: { user_id: userId, ...data },
+  });
+  revalidatePath("/dashboard/saved");
+}
+
+/**
+ * Returns the current user's bookmarked target IDs as bare strings.
+ * Callers that need to disambiguate cause vs. petition should use
+ * `listBookmarkedKeys()` (below) which includes the type.
+ */
+export async function listBookmarkedIds(): Promise<string[]> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return [];
+
+  const rows = await prisma.bookmark.findMany({
+    where: { user_id: userId },
+    select: { target_id: true },
+  });
+
+  return rows.map((r) => r.target_id);
+}
+
+/**
+ * Returns the current user's bookmarks in the `${targetType}:${targetId}`
+ * shape used by Discover.
+ */
+export async function listBookmarkedKeys(): Promise<string[]> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return [];
+
+  const rows = await prisma.bookmark.findMany({
+    where: { user_id: userId },
+    select: { target_id: true, target_type: true },
+  });
+
+  return rows.map((r) => `${r.target_type}:${r.target_id}`);
+}

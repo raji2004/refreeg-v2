@@ -14,7 +14,6 @@ import {
   type DiscoverFilters,
   type DiscoverItem,
 } from "@/actions/discover-actions";
-import { toggleBookmark } from "@/actions/bookmark-actions";
 import { DISCOVER_RESULT_CAP } from "@/lib/discover-constants";
 
 const PAGE_SIZE = 12;
@@ -24,7 +23,7 @@ export function DiscoverGrid({
   view,
   initialItems,
   initialHasMore,
-  initialBookmarks,
+  bookmarkedSet,
   onFiltersChange,
   onClearFilters,
   onLoaded,
@@ -34,7 +33,8 @@ export function DiscoverGrid({
   view: "grid" | "list";
   initialItems: DiscoverItem[];
   initialHasMore: boolean;
-  initialBookmarks: string[];
+  /** Server-rendered bookmark keys in `${targetType}:${targetId}` form. */
+  bookmarkedSet: Set<string>;
   onFiltersChange: (next: DiscoverFilters) => void;
   onClearFilters: () => void;
   onLoaded: () => void;
@@ -46,9 +46,6 @@ export function DiscoverGrid({
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingFresh, setLoadingFresh] = useState(false);
-  const [bookmarked, setBookmarked] = useState<Set<string>>(
-    () => new Set(initialBookmarks),
-  );
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const isFirstRender = useRef(true);
 
@@ -135,40 +132,6 @@ export function DiscoverGrid({
     return () => observer.disconnect();
   }, [loadMore]);
 
-  const handleToggleBookmark = async (item: DiscoverItem) => {
-    if (!user) {
-      toast({ title: "Sign in to save campaigns and petitions." });
-      return;
-    }
-    const key = `${item.type === "campaign" ? "cause" : "petition"}:${item.id}`;
-    const wasBookmarked = bookmarked.has(key);
-    setBookmarked((prev) => {
-      const next = new Set(prev);
-      if (wasBookmarked) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-    try {
-      const { error } = await toggleBookmark({
-        targetType: item.type === "campaign" ? "cause" : "petition",
-        targetId: item.id,
-      });
-      if (error) throw new Error(error);
-    } catch (err) {
-      setBookmarked((prev) => {
-        const next = new Set(prev);
-        if (wasBookmarked) next.add(key);
-        else next.delete(key);
-        return next;
-      });
-      toast({
-        title:
-          err instanceof Error ? err.message : "Couldn't save that. Try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const gridClass = useMemo(
     () =>
       view === "grid"
@@ -200,14 +163,15 @@ export function DiscoverGrid({
         <>
           <div className={gridClass}>
             {items.map((item) => {
-              const key = `${item.type === "campaign" ? "cause" : "petition"}:${item.id}`;
+              const bookmarkKey = `${
+                item.type === "campaign" ? "cause" : "petition"
+              }:${item.id}`;
               return (
                 <DiscoverCard
-                  key={key}
+                  key={bookmarkKey}
                   item={item}
                   view={view}
-                  bookmarked={bookmarked.has(key)}
-                  onToggleBookmark={() => handleToggleBookmark(item)}
+                  initialBookmarked={bookmarkedSet.has(bookmarkKey)}
                   onGiveClick={() => setGiveModal({ id: item.id })}
                   onPledgeClick={() =>
                     setPledgeModal({
