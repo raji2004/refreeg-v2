@@ -188,5 +188,4 @@ describe("POST /api/payments/initialize", () => {
     expect(Flutterwave.createSubaccount).not.toHaveBeenCalled();
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
-  });
 });
