@@ -169,13 +169,21 @@ export function ListFilterRow({
               {list.name}
               <span className="text-xs opacity-60">{list.count}</span>
             </button>
+
+            {/* Manage actions live on the active chip only — you are almost
+                always managing the list you are looking at, and it keeps the
+                row calm. The button carries an explicit light color + visible
+                circle: it used to inherit the page's dark ink color and sit
+                invisible on the dark chip. The menu portals out, so the
+                scroll container never clips it. */}
             {active && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
                     aria-label={`Manage ${list.name}`}
-                    className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full hover:bg-white/10"
+                    title="Rename or delete this list"
+                    className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-ink-foreground transition-colors hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-foreground/60"
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
@@ -283,11 +291,10 @@ export function ListFilterRow({
               Delete &ldquo;{deleteTarget?.name}&rdquo;?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              The{" "}
               {deleteTarget?.count === 1
-                ? "campaign in it stays saved"
-                : "campaigns in it stay saved"}
-              — they will just show under All again. This cannot be undone.
+                ? "The campaign will remain saved under All."
+                : "The campaigns will remain saved under All."}{" "}
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
