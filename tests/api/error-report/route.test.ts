@@ -30,36 +30,50 @@ describe("POST /api/error-report", () => {
 
   it("forwards a valid same-origin browser error", async () => {
     (reportToRefreegAlert as jest.Mock).mockResolvedValue(true);
-    const response = await POST(request({
-      type: "window",
-      name: "TypeError",
-      message: "Something failed",
-      path: "/causes",
-    }) as never);
+    const response = await POST(
+      request({
+        type: "window",
+        name: "TypeError",
+        message: "Something failed",
+        path: "/causes",
+      }) as never,
+    );
 
     expect(response.status).toBe(202);
-    expect(reportToRefreegAlert).toHaveBeenCalledWith(expect.objectContaining({
-      source: "browser",
-      name: "TypeError",
-      message: "Something failed",
-    }));
+    expect(reportToRefreegAlert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "browser",
+        name: "TypeError",
+        message: "Something failed",
+      }),
+    );
   });
 
   it("rejects reports from another origin", async () => {
-    const response = await POST(request({
-      type: "window",
-      message: "Something failed",
-    }, "https://attacker.example") as never);
+    const response = await POST(
+      request(
+        {
+          type: "window",
+          message: "Something failed",
+        },
+        "https://attacker.example",
+      ) as never,
+    );
 
     expect(response.status).toBe(403);
     expect(reportToRefreegAlert).not.toHaveBeenCalled();
   });
 
   it("rejects a matching host when the origin protocol differs", async () => {
-    const response = await POST(request({
-      type: "window",
-      message: "Something failed",
-    }, "http://www.refreeg.com") as never);
+    const response = await POST(
+      request(
+        {
+          type: "window",
+          message: "Something failed",
+        },
+        "http://www.refreeg.com",
+      ) as never,
+    );
 
     expect(response.status).toBe(403);
     expect(reportToRefreegAlert).not.toHaveBeenCalled();
@@ -85,12 +99,14 @@ describe("POST /api/error-report", () => {
     expect(response.status).toBe(429);
   });
 
-  it("returns 503 when RefreeG Alert is unavailable", async () => {
+  it("returns 503 when Refreeg Alert is unavailable", async () => {
     (reportToRefreegAlert as jest.Mock).mockResolvedValue(false);
-    const response = await POST(request({
-      type: "react",
-      message: "Render failed",
-    }) as never);
+    const response = await POST(
+      request({
+        type: "react",
+        message: "Render failed",
+      }) as never,
+    );
 
     expect(response.status).toBe(503);
   });

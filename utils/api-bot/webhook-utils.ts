@@ -1,4 +1,3 @@
-
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
@@ -20,20 +19,18 @@ interface WebhookPayload {
   [key: string]: any;
 }
 
-
 export async function dispatchWebhook(
   userId: string,
   event: WebhookEvent,
   payload: WebhookPayload,
 ) {
   try {
-    
     const webhooks = await prisma.api_webhooks.findMany({
       where: {
         user_id: userId,
         is_active: true,
         events: {
-          has: event, 
+          has: event,
         },
       },
       select: {
@@ -47,7 +44,6 @@ export async function dispatchWebhook(
       return;
     }
 
-    
     const dispatchPromises = webhooks.map(async (webhook) => {
       const timestamp = Math.floor(Date.now() / 1000);
       const body = JSON.stringify({
@@ -56,7 +52,6 @@ export async function dispatchWebhook(
         payload,
       });
 
-      
       const signaturePayload = `${timestamp}.${body}`;
       const hmac = crypto.createHmac("sha256", webhook.secret);
       const signature = hmac.update(signaturePayload).digest("hex");
@@ -66,8 +61,8 @@ export async function dispatchWebhook(
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-RefreeG-Signature": `t=${timestamp},v1=${signature}`,
-            "User-Agent": "RefreeG-Webhook-Dispatcher/1.0",
+            "X-Refreeg-Signature": `t=${timestamp},v1=${signature}`,
+            "User-Agent": "Refreeg-Webhook-Dispatcher/1.0",
           },
           body,
         });

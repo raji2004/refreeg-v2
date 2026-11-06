@@ -12,7 +12,7 @@ function OurMission() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="prose max-w-none text-md text-gray-700">
             <p>
-              At RefreeG, we believe in the power of community-driven change.
+              At Refreeg, we believe in the power of community-driven change.
               Our mission is simple yet powerful: to connect those who want to
               help with those who need it the most.
             </p>

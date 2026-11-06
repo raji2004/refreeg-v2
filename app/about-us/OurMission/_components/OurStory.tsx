@@ -19,7 +19,7 @@ function OurStory() {
           <div className="space-y-8">
             <div className="space-y-4 text-gray-300 leading-relaxed text-md">
               <p>
-                RefreeG was born out of a simple yet powerful idea: to create a
+                Refreeg was born out of a simple yet powerful idea: to create a
                 platform where giving is transparent, impactful, and accessible
                 to all. In a world where millions struggle to access basic
                 necessities, education, and opportunities, we saw a need for a

@@ -92,7 +92,7 @@ export async function getQuickDonateProps(causeId: string) {
     goal: cause.goal,
     raised: cause.raised,
     subaccount: cause.user?.sub_account_code ?? undefined,
-    orgName: cause.user?.name || "RefreeG campaign",
+    orgName: cause.user?.name || "g campaign",
     orgVerified: !!cause.user?.is_verified,
     defaultName: profile?.display_name || profile?.full_name || "",
     defaultEmail: profile?.email ?? "",

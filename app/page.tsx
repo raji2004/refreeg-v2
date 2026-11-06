@@ -13,7 +13,7 @@ import Accountability from "@/components/home/Accountability";
 export const metadata: Metadata = {
   title: "Refreeg - Powering Giving",
   description:
-    "Join RefreeG to launch causes, start petitions, and drive social change with secure, transparent blockchain crowdfunding.",
+    "Join Refreeg to launch causes, start petitions, and drive social change with secure, transparent blockchain crowdfunding.",
 };
 
 // No request-time data here (LiveCampaigns loads in the browser), so this

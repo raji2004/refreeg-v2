@@ -184,7 +184,7 @@ export async function getGivingOverview({
   ): GiftRow => ({
     ...extra,
     title: cause.title,
-    owner: cause.user?.fullName || "RefreeG campaign",
+    owner: cause.user?.fullName || "Refreeg campaign",
     image: cause.image,
     href: causePublicPath(cause),
   });
@@ -254,7 +254,7 @@ export async function getGivingOverview({
       {
         id: s.id,
         title: cause.title,
-        owner: cause.user?.fullName || "RefreeG campaign",
+        owner: cause.user?.fullName || "Refreeg campaign",
         amount: Number(s.amount),
         interval: s.interval,
         nextCharge: nextChargeDate(s.created_at, s.interval, now).toISOString(),

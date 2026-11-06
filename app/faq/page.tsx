@@ -10,7 +10,7 @@ import { FaqExplorer } from "./_components/FaqExplorer";
 import { faqCategories } from "./_data/faqs";
 
 export const metadata: Metadata = {
-  title: "FAQ | RefreeG Help Centre",
+  title: "FAQ - Refreeg Help Centre",
   description:
     "Answers to common questions about giving, milestone releases, receipts, fees and starting a cause on RefreeG.",
 };

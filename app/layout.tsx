@@ -21,11 +21,11 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.refreeg.com"),
   title: {
-    default: "RefreeG | Secure Crowdfunding & Petitions",
-    template: "%s | RefreeG",
+    default: "Refreeg - Secure Crowdfunding & Petitions",
+    template: "%s - Refreeg",
   },
   description:
-    "RefreeG is a secure, blockchain-powered crowdfunding and petition platform.",
+    "Refreeg is a secure, blockchain-powered crowdfunding and petition platform.",
   keywords: [
     "crowdfunding",
     "petitions",
@@ -33,24 +33,24 @@ export const metadata: Metadata = {
     "social impact",
     "charity",
   ],
-  authors: [{ name: "RefreeG Team" }],
+  authors: [{ name: "Refreeg Team" }],
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "https://www.refreeg.com",
-    siteName: "RefreeG",
+    siteName: "Refreeg",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "RefreeG",
+        alt: "Refreeg",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "RefreeG | Secure Crowdfunding & Petitions",
+    title: "Refreeg - Secure Crowdfunding & Petitions",
     description:
       "Empowering social change through secure crowdfunding and global petitions.",
     images: ["/og-image.png"],
