@@ -36,9 +36,7 @@ interface Props {
   totalCount: number;
   activeListId: string | null;
   onChange: (listId: string | null) => void;
-  /** Fired after a successful rename so the shell refetches fresh names. */
   onListRenamed: () => void;
-  /** Fired with the deleted id; the grid must drop its filter if it was active. */
   onListDeleted: (listId: string) => void;
 }
 
