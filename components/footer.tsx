@@ -2,9 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useRef } from "react";
+import { useGsap } from "@/hooks/use-gsap";
 
 import { Linkedin, Youtube } from "lucide-react";
 
@@ -16,8 +15,6 @@ import {
 } from "react-icons/fa6";
 
 import { legalLinks, socialLinks } from "@/lib/links";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const COMMUNITY_LINK = "https://t.me/+ibsgFy6SL0AwYmE8";
 
@@ -85,81 +82,73 @@ export function Footer() {
   const year = new Date().getFullYear();
   const footerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: footerRef.current,
-          start: "top 80%",
+  useGsap((gsap) => {
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: footerRef.current,
+        start: "top 80%",
+      },
+    });
+
+    tl.from(".footer-logo", {
+      y: 60,
+      opacity: 0,
+      scale: 0.9,
+      duration: 1,
+      ease: "power4.out",
+    })
+      .from(
+        ".footer-brand",
+        {
+          y: 40,
+          opacity: 0,
+          filter: "blur(8px)",
+          duration: 0.8,
+          ease: "power3.out",
         },
-      });
-
-      tl.from(".footer-logo", {
-        y: 60,
-        opacity: 0,
-        scale: 0.9,
-        duration: 1,
-        ease: "power4.out",
-      })
-
-        .from(
-          ".footer-brand",
-          {
-            y: 40,
-            opacity: 0,
-            filter: "blur(8px)",
-            duration: 0.8,
-            ease: "power3.out",
-          },
-          "-=0.6",
-        )
-
-        .from(
-          ".footer-columns > div",
-          {
-            y: 70,
-            opacity: 0,
-            scale: 0.9,
-            rotateX: 10,
-            transformOrigin: "top",
-            stagger: 0.12,
-            duration: 0.9,
-            ease: "back.out(1.4)",
-          },
-          "-=0.5",
-        )
-
-        .from(
-          ".footer-social",
-          {
-            y: 30,
-            opacity: 0,
-            scale: 0.85,
-            duration: 0.7,
-            ease: "elastic.out(1, 0.6)",
-          },
-          "-=0.5",
-        )
-
-        .from(
-          ".footer-bottom",
-          {
-            y: 25,
-            opacity: 0,
-            duration: 0.6,
-            ease: "power2.out",
-          },
-          "-=0.4",
-        );
-    }, footerRef);
-
-    return () => ctx.revert();
-  }, []);
+        "-=0.6",
+      )
+      .from(
+        ".footer-columns > div",
+        {
+          y: 70,
+          opacity: 0,
+          scale: 0.9,
+          rotateX: 10,
+          transformOrigin: "top",
+          stagger: 0.12,
+          duration: 0.9,
+          ease: "back.out(1.4)",
+        },
+        "-=0.5",
+      )
+      .from(
+        ".footer-social",
+        {
+          y: 30,
+          opacity: 0,
+          scale: 0.85,
+          duration: 0.7,
+          ease: "elastic.out(1, 0.6)",
+        },
+        "-=0.5",
+      )
+      .from(
+        ".footer-bottom",
+        {
+          y: 25,
+          opacity: 0,
+          duration: 0.6,
+          ease: "power2.out",
+        },
+        "-=0.4",
+      );
+  }, footerRef);
 
   return (
     <footer ref={footerRef} className="bg-background text-black">
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-        {}
+        {/* Logo */}
         <div className="pb-4 footer-logo">
           <Image
             src="/logo.svg"
@@ -170,9 +159,8 @@ export function Footer() {
           />
         </div>
 
-        {}
+        {/* Brand and Footer Links */}
         <div className="grid items-center gap-14 py-4 lg:grid-cols-[0.25fr_0.75fr]">
-          {}
           <div className="footer-brand">
             <p className="mt-4 max-w-lg text-[#0A3CB5] text-sm leading-snug">
               Global giving, on-chain. Built so every dollar is traceable from
@@ -180,7 +168,6 @@ export function Footer() {
             </p>
           </div>
 
-          {}
           <div className="grid grid-cols-2 gap-10 md:grid-cols-5 footer-columns">
             {footerColumns.map((column) => (
               <div key={column.title}>
@@ -207,7 +194,7 @@ export function Footer() {
           </div>
         </div>
 
-        {}
+        {/* Social Links */}
         <div className="footer-social flex flex-col gap-6 pt-8 pb-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center border p-2 rounded-xl gap-3 text-sm">
             <Image
@@ -235,7 +222,7 @@ export function Footer() {
           </div>
         </div>
 
-        {}
+        {/* Footer Bottom */}
         <div className="footer-bottom w-full flex flex-col gap-8 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="w-3/4 flex flex-col gap-4 lg:flex-row lg:items-center">
             <p className="text-sm">© {year} RefreeG</p>
@@ -276,7 +263,7 @@ export function Footer() {
           </div>
         </div>
 
-        {}
+        {/* Legal Disclaimer */}
         <div className="pt-4">
           <p className="max-w-6xl text-xs font-medium leading-tight">
             RefreeG is a next-generation decentralized philanthropy

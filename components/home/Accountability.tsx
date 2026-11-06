@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
+import { useGsap } from "@/hooks/use-gsap";
 
 type AccountabilityProps = {
   title?: ReactNode;
@@ -53,51 +50,47 @@ export default function Accountability({
   const subRef = useRef<HTMLParagraphElement>(null);
   const buttonsRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const triggerStart = window.innerWidth < 768 ? "top 90%" : "top 80%";
+  useGsap((gsap) => {
+    const triggerStart = window.innerWidth < 768 ? "top 90%" : "top 80%";
 
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: headlineRef.current,
-          start: triggerStart,
-          toggleActions: "play none none reverse",
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: headlineRef.current,
+        start: triggerStart,
+        toggleActions: "play none none reverse",
+      },
+    });
+
+    tl.from(headlineRef.current, {
+      opacity: 0,
+      y: 40,
+      scale: 0.95,
+      filter: "blur(4px)",
+      duration: 0.8,
+      ease: "power3.out",
+    })
+      .from(
+        subRef.current,
+        {
+          opacity: 0,
+          y: 24,
+          duration: 0.7,
+          ease: "power3.out",
         },
-      });
-
-      tl.from(headlineRef.current, {
-        opacity: 0,
-        y: 40,
-        scale: 0.95,
-        filter: "blur(4px)",
-        duration: 0.8,
-        ease: "power3.out",
-      })
-        .from(
-          subRef.current,
-          {
-            opacity: 0,
-            y: 24,
-            duration: 0.7,
-            ease: "power3.out",
-          },
-          "-=0.4",
-        )
-        .from(
-          buttonsRef.current?.children || [],
-          {
-            opacity: 0,
-            y: 16,
-            duration: 0.6,
-            ease: "power3.out",
-            stagger: 0.15,
-          },
-          "-=0.3",
-        );
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+        "-=0.4",
+      )
+      .from(
+        buttonsRef.current?.children || [],
+        {
+          opacity: 0,
+          y: 16,
+          duration: 0.6,
+          ease: "power3.out",
+          stagger: 0.15,
+        },
+        "-=0.3",
+      );
+  }, sectionRef);
 
   return (
     <div

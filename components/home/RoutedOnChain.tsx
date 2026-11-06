@@ -1,57 +1,50 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import Image from "next/image";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
+import { useGsap } from "@/hooks/use-gsap";
 
 export function RoutedOnChain() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const stepsRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.from(headlineRef.current, {
-        scrollTrigger: {
-          trigger: headlineRef.current,
-          start: "top 80%",
-          toggleActions: "play none none reverse",
-        },
-        opacity: 0,
-        y: 50,
-        duration: 1,
-        ease: "power3.out",
-      });
+  useGsap((gsap) => {
+    gsap.from(headlineRef.current, {
+      scrollTrigger: {
+        trigger: headlineRef.current,
+        start: "top 80%",
+        toggleActions: "play none none reverse",
+      },
+      opacity: 0,
+      y: 50,
+      duration: 1,
+      ease: "power3.out",
+    });
 
-      gsap.from(stepsRef.current?.children || [], {
-        scrollTrigger: {
-          trigger: stepsRef.current,
-          start: "top 85%",
-          toggleActions: "play none none reverse",
-        },
-        opacity: 0,
-        y: 40,
-        duration: 0.8,
-        ease: "power2.out",
-        stagger: 0.25,
-      });
+    gsap.from(stepsRef.current?.children || [], {
+      scrollTrigger: {
+        trigger: stepsRef.current,
+        start: "top 85%",
+        toggleActions: "play none none reverse",
+      },
+      opacity: 0,
+      y: 40,
+      duration: 0.8,
+      ease: "power2.out",
+      stagger: 0.25,
+    });
 
-      gsap.to(".bg-image", {
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top bottom",
-          scrub: true,
-        },
-        yPercent: 20,
-        ease: "none",
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+    gsap.to(".bg-image", {
+      scrollTrigger: {
+        trigger: sectionRef.current,
+        start: "top bottom",
+        scrub: true,
+      },
+      yPercent: 20,
+      ease: "none",
+    });
+  }, sectionRef);
 
   return (
     <>
@@ -59,7 +52,6 @@ export function RoutedOnChain() {
         ref={sectionRef}
         className="relative h-screen w-full overflow-hidden mt-8 md:mt-12 lg:mt-16 rounded-lg shadow-lg"
       >
-        {}
         <Image
           src="/routed-funds.jpg"
           alt="Routed on chain illustration"
@@ -68,10 +60,8 @@ export function RoutedOnChain() {
           className="object-cover bg-image"
         />
 
-        {}
         <div className="absolute inset-0" />
 
-        {}
         <div className="relative z-10 flex h-full items-center justify-center px-6">
           <div className="max-w-4xl text-center">
             <h2
@@ -95,9 +85,10 @@ export function RoutedOnChain() {
             alt="For the people illustration"
             width={1190}
             height={1190}
-            className="w-full rounded-2xl "
+            className="w-full rounded-2xl"
           />
         </div>
+
         <div className="w-full md:w-1/2 px-4">
           <div className="mb-4 text-xl md:text-2xl font-semibold">
             We replaced trust with proof.
@@ -106,7 +97,6 @@ export function RoutedOnChain() {
             <br /> artifact you own.
           </div>
 
-          {}
           <div className="border-b pb-4 mb-8">
             <div className="flex items-start gap-4 w-full md:w-11/12">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border">
@@ -125,7 +115,6 @@ export function RoutedOnChain() {
             </div>
           </div>
 
-          {}
           <div className="border-b pb-4 mb-8">
             <div className="flex items-start gap-4 w-full md:w-11/12">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border">
@@ -144,7 +133,6 @@ export function RoutedOnChain() {
             </div>
           </div>
 
-          {}
           <div className="border-b pb-4 mb-8">
             <div className="flex items-start gap-4 w-full md:w-11/12">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border">

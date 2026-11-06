@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
+import { useGsap } from "@/hooks/use-gsap";
 import Image from "next/image";
 import Link from "next/link";
-import gsap from "gsap";
 import { Button } from "@/components/ui/button";
 
 const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useGsap((gsap) => {
     const ctx = gsap.context(() => {
       gsap.from(".hero-badge", {
         y: -20,
@@ -50,9 +50,7 @@ const Hero = () => {
         ease: "power3.out",
       });
     }, heroRef);
-
-    return () => ctx.revert();
-  }, []);
+  }, heroRef);
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-background px-4 sm:px-6">

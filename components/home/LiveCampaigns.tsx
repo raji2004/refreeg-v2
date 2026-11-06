@@ -3,22 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { listCauses } from "@/actions";
 import { listBookmarkedIds } from "@/actions/saved-actions";
 import { sortCausesByFunding } from "@/lib/causes/funding-rank";
 import { causePublicPath } from "@/lib/causes/slug";
 import { BookmarkButton } from "@/components/saved/BookmarkButton";
+import { useGsap } from "@/hooks/use-gsap";
 import {
   ChevronRight,
   ChevronLeft,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-
-gsap.registerPlugin(ScrollTrigger);
 
 type Campaign = {
   id: string;
@@ -73,10 +70,10 @@ export default function LiveCampaigns() {
     fetchCampaigns();
   }, []);
 
-  useEffect(() => {
-    if (loading || campaigns.length === 0) return;
+  useGsap(
+    (gsap) => {
+      if (loading || campaigns.length === 0) return;
 
-    const ctx = gsap.context(() => {
       gsap.from(headerRef.current, {
         scrollTrigger: {
           trigger: headerRef.current,
@@ -105,10 +102,10 @@ export default function LiveCampaigns() {
           });
         }
       });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [loading, campaigns]);
+    },
+    sectionRef,
+    [loading, campaigns],
+  );
 
   const checkScrollButtons = () => {
     const container = scrollContainerRef.current;
