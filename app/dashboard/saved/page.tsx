@@ -5,11 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SavedGrid } from "@/components/saved/SavedGrid";
-import {
-  isClosingSoon,
-  toSavedItems,
-  type SavedListSummary,
-} from "@/lib/saved";
+import { toSavedItems, type SavedListSummary } from "@/lib/saved";
 
 export default async function SavedPage() {
   const session = await auth();
@@ -94,21 +90,15 @@ export default async function SavedPage() {
     count: items.filter((i) => i.listId === l.id).length,
   }));
 
-  const closingSoon = items.filter(isClosingSoon).length;
-  const closed = items.filter((i) => i.status === "closed").length;
-
   return (
     <div className="min-h-screen bg-cream">
       <main className="mx-auto max-w-7xl p-6 lg:p-10">
-        <header className="mb-6">
-          <h1 className="mb-2 font-fraunces text-4xl font-semibold text-ink">
-            {items.length} saved
-          </h1>
-          <p className="text-ink/60">
-            {closingSoon} close within a week · {closed} already closed
-          </p>
-        </header>
-
+        {/*
+         * The page header (count + closing/closed stats) now lives inside
+         * SavedGrid, because those numbers must react to client-side removals.
+         * Rendering them here would keep them frozen at the server-fetched
+         * count until a full reload.
+         */}
         <SavedGrid
           items={items}
           lists={listSummaries}

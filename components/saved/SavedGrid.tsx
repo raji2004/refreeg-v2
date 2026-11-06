@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,9 +9,15 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ToastAction } from "@/components/ui/toast";
 import { GiveModal } from "@/components/discover/give-modal";
 import { SignModal } from "@/components/discover/sign-modal";
-import { removeBookmarks } from "@/actions/saved-actions";
+import { removeBookmarks, toggleBookmark } from "@/actions/saved-actions";
 import { toast } from "@/hooks/use-toast";
-import { isEligible, type SavedItem, type SavedListSummary } from "@/lib/saved";
+import { bumpSavedCount, setSavedCount } from "@/lib/saved-count";
+import {
+  isClosingSoon,
+  isEligible,
+  type SavedItem,
+  type SavedListSummary,
+} from "@/lib/saved";
 import { AlertsModal } from "./AlertsModal";
 import { ListFilterRow } from "./ListFilterRow";
 import { MoveToListModal } from "./MoveToListModal";
@@ -31,7 +38,17 @@ interface Props {
   user: { name: string; email: string };
 }
 
-type PendingRemoval = { timer: ReturnType<typeof setTimeout>; ids: string[] };
+/**
+ * A removal in progress. Unlike the old timer-based design, the deletion is
+ * committed to the server immediately — `undone`/`committed` only exist to
+ * make Undo correct when it fires before or after that commit lands.
+ */
+type PendingRemoval = {
+  ids: string[];
+  snapshot: SavedItem[];
+  undone: boolean;
+  committed: boolean;
+};
 
 export function SavedGrid({ items, lists, alertPrefs, user }: Props) {
   const [selectMode, setSelectMode] = useState(false);
@@ -45,6 +62,8 @@ export function SavedGrid({ items, lists, alertPrefs, user }: Props) {
     id: string;
     title: string;
   } | null>(null);
+
+  const router = useRouter();
 
   const pending = useRef(new Map<string, PendingRemoval>());
 
@@ -72,6 +91,11 @@ export function SavedGrid({ items, lists, alertPrefs, user }: Props) {
     [selectedIds, byId],
   );
 
+  // Header stats now read from `liveItems`, so they drop the moment a card is
+  // hidden — no server round trip, no stale "2 saved" after removing one.
+  const closingSoon = liveItems.filter(isClosingSoon).length;
+  const closed = liveItems.filter((i) => i.status === "closed").length;
+
   const exitSelect = useCallback(() => {
     setSelectMode(false);
     setSelectedIds(new Set());
@@ -88,39 +112,88 @@ export function SavedGrid({ items, lists, alertPrefs, user }: Props) {
     });
   };
 
-  // Removal is committed after the undo window, so Undo is real: until the
-  // timer fires nothing has been deleted on the server.
+  // Re-create bookmarks after an Undo, then refresh the route so the new
+  // bookmark ids replace the stale ones in `items` (toggleBookmark mints a
+  // new row, so the old bookmark id is gone for good).
+  const recreate = useCallback(
+    async (snapshot: SavedItem[]) => {
+      let lastCount: number | null = null;
+      for (const item of snapshot) {
+        try {
+          const res = await toggleBookmark(item.targetId, item.kind);
+          lastCount = res.count;
+        } catch {
+          // best effort — leave it to the next refresh to reconcile
+        }
+      }
+      if (lastCount !== null) setSavedCount(lastCount);
+      router.refresh();
+    },
+    [router],
+  );
+
+  // Removal commits immediately. Undo re-creates via toggleBookmark. This
+  // fixes the old bug where a refresh during the undo window brought the
+  // bookmark back, because the deletion had not been sent yet.
   const scheduleRemoval = (ids: string[]) => {
     if (ids.length === 0) return;
     const key = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const snapshot = ids
+      .map((id) => byId.get(id))
+      .filter((i): i is SavedItem => !!i);
 
+    // Optimistic: hide the cards and nudge the sidebar badge right now.
     setHiddenIds((prev) => new Set([...prev, ...ids]));
+    bumpSavedCount(-ids.length);
 
-    const timer = setTimeout(async () => {
-      pending.current.delete(key);
-      try {
-        await removeBookmarks(ids);
-      } catch {
+    const entry: PendingRemoval = {
+      ids,
+      snapshot,
+      undone: false,
+      committed: false,
+    };
+    pending.current.set(key, entry);
+
+    // Commit the deletion immediately — no timer.
+    removeBookmarks(ids)
+      .then((res) => {
+        entry.committed = true;
+        if (res.count !== null) setSavedCount(res.count);
+        // If Undo fired while the commit was in flight, re-create now.
+        if (entry.undone) void recreate(snapshot);
+      })
+      .catch(() => {
+        if (entry.undone) return; // Undo already restored visibility.
         setHiddenIds((prev) => {
           const next = new Set(prev);
           ids.forEach((id) => next.delete(id));
           return next;
         });
+        bumpSavedCount(ids.length);
+        pending.current.delete(key);
         toast({ title: "Failed to remove", variant: "destructive" });
-      }
-    }, UNDO_MS);
-    pending.current.set(key, { timer, ids });
+      });
 
     const undo = () => {
-      const entry = pending.current.get(key);
-      if (!entry) return;
-      clearTimeout(entry.timer);
+      const e = pending.current.get(key);
+      if (!e) return;
       pending.current.delete(key);
+
+      // Un-hide optimistically and bump the badge back.
       setHiddenIds((prev) => {
         const next = new Set(prev);
-        entry.ids.forEach((id) => next.delete(id));
+        ids.forEach((id) => next.delete(id));
         return next;
       });
+      bumpSavedCount(ids.length);
+
+      if (e.committed) {
+        // Already deleted — re-create now.
+        void recreate(snapshot);
+      } else {
+        // Commit still in flight — flag it so the .then() re-creates.
+        e.undone = true;
+      }
     };
 
     toast({
@@ -137,18 +210,6 @@ export function SavedGrid({ items, lists, alertPrefs, user }: Props) {
     });
   };
 
-  // Leaving the page mid-window commits what is still pending.
-  useEffect(() => {
-    const map = pending.current;
-    return () => {
-      map.forEach(({ timer, ids }) => {
-        clearTimeout(timer);
-        void removeBookmarks(ids);
-      });
-      map.clear();
-    };
-  }, []);
-
   const handleBulkRemove = () => {
     scheduleRemoval(Array.from(selectedIds));
     exitSelect();
@@ -156,6 +217,15 @@ export function SavedGrid({ items, lists, alertPrefs, user }: Props) {
 
   return (
     <>
+      <header className="mb-6">
+        <h1 className="mb-2 font-fraunces text-4xl font-semibold text-ink">
+          {liveItems.length} saved
+        </h1>
+        <p className="text-ink/60">
+          {closingSoon} close within a week · {closed} already closed
+        </p>
+      </header>
+
       <div className="sticky top-0 z-30 -mx-2 mb-6 bg-cream/95 px-2 py-3 backdrop-blur">
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
