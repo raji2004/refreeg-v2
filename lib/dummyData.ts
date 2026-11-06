@@ -254,8 +254,8 @@ export const stories = [
     imageSrc: "/images/radio.svg",
     title: "How It Started",
     points: [
-      "It all began with a frustration with traditional donation systems—high transaction fees, lack of transparency, and little accountability. Too often, money meant to help those in need never reaches them due to middlemen, mismanagement, or lack of proper tracking.",
-      "We envisioned a better way—a decentralized, community-driven platform where:\n✅ Anyone can raise funds for causes they believe in\n✅ Donors can track how their money is spent\n✅ Every contribution leads to measurable impact\n\nWhat started as a dream quickly became a mission—and now, a growing movement.",
+      "It all began with a frustration with traditional donation systems: high transaction fees, lack of transparency, and little accountability. Too often, money meant to help those in need never reaches them due to middlemen, mismanagement, or lack of proper tracking.",
+      "We envisioned a better way: a decentralized, community-driven platform where:\n✅ Anyone can raise funds for causes they believe in\n✅ Donors can track how their money is spent\n✅ Every contribution leads to measurable impact\n\nWhat started as a dream quickly became a mission, and now a growing movement.",
     ],
     linkHref: "#",
   },
@@ -263,7 +263,7 @@ export const stories = [
     imageSrc: "/images/radio.svg",
     title: "Where We Are Today",
     points: [
-      "From helping victims of disasters, to funding education for children, to supporting small businesses in underserved communities, RefreeG has become more than just a crowdfunding platform—it’s a force for social change.",
+      "From helping victims of disasters, to funding education for children, to supporting small businesses in underserved communities, RefreeG has become more than just a crowdfunding platform. It’s a force for social change.",
       "With a thriving community of donors, changemakers, and organizations, we are proving that small acts of generosity can create life-changing ripple effects.\n ✅ Thousands of lives impacted through verified fundraisers\n✅ Millions in donations tracked securely using blockchain\n✅ A growing global community committed to making a difference",
     ],
     linkHref: "#",
@@ -306,7 +306,7 @@ export const faqs = [
     icon: CreditCard,
     question: "How do I create a cause on RefreeG?",
     answer:
-      "Simply sign up, click 'Start a Cause,' and fill in the required details—title, description, goal amount, category, and a banner. Once submitted, our team will review and verify your cause before it goes live.",
+      "Simply sign up, click 'Start a Cause,' and fill in the required details: title, description, goal amount, category, and a banner. Once submitted, our team will review and verify your cause before it goes live.",
   },
   {
     category: "features",
@@ -327,14 +327,14 @@ export const faqs = [
     icon: ShieldCheck,
     question: "What is blockchain transparency?",
     answer:
-      "Blockchain allows every transaction on RefreeG to be recorded on a secure, tamper-proof ledger. This ensures donations are visible, trackable, and accountable—no middlemen, no funny business.",
+      "Blockchain allows every transaction on RefreeG to be recorded on a secure, tamper-proof ledger. This ensures donations are visible, trackable, and accountable, with no middlemen, no funny business.",
   },
   {
     category: "features",
     icon: HeartHandshake,
     question: "Can I start a petition on RefreeG?",
     answer:
-      "Yes! Our petition system allows anyone to start or support petitions around social, political, or community causes—giving users a way to drive both funding and awareness.",
+      "Yes! Our petition system allows anyone to start or support petitions around social, political, or community causes, giving users a way to drive both funding and awareness.",
   },
   {
     category: "features",

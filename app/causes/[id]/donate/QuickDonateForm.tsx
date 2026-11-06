@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Icons } from "@/components/icons";
-import { calculateServiceFee } from "@/lib/utils";
+import { calculateProviderFee, calculateServiceFee } from "@/lib/utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { usePayment } from "@/hooks/use-payment";
 import {
@@ -71,7 +71,9 @@ export default function QuickDonateForm({
     () => calculateServiceFee(donationAmount),
     [donationAmount],
   );
-  const total = donationAmount + serviceFee;
+  // This form always pays through Paystack, whose fee the server adds too.
+  const processingFee = calculateProviderFee(donationAmount, "paystack");
+  const total = donationAmount + serviceFee + processingFee;
   const percent =
     goal > 0 ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
 
@@ -138,7 +140,7 @@ export default function QuickDonateForm({
                 <CarouselItem key={index}>
                   <div className="relative aspect-video w-full bg-slate-100">
                     <Image
-                      src={getMediaUrl(img)}
+                      src={getMediaUrl(img) || "/placeholder.svg"}
                       alt={`${causeTitle} image ${index + 1}`}
                       fill
                       className="object-cover"
@@ -279,6 +281,10 @@ export default function QuickDonateForm({
             <div className="flex justify-between">
               <span>Service fee (max ₦10,000)</span>
               <span>₦{serviceFee.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Payment processing</span>
+              <span>₦{processingFee.toLocaleString()}</span>
             </div>
             <div className="flex justify-between border-t border-slate-200 pt-1 font-semibold text-slate-700">
               <span>Total</span>

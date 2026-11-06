@@ -18,13 +18,17 @@ export async function UrgentCauses() {
   const now = new Date();
 
   const urgentCauses = allCauses.filter((cause) => {
-    const createdAt = new Date(cause.created_at);
-    const hoursSinceCreated =
-      (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    const effectiveDate = cause.start_date
+      ? new Date(cause.start_date)
+      : cause.updated_at
+        ? new Date(cause.updated_at)
+        : new Date(cause.created_at);
+    const hoursSinceActive =
+      (now.getTime() - effectiveDate.getTime()) / (1000 * 60 * 60);
     const percentageRaised =
       cause.goal > 0 ? (cause.raised / cause.goal) * 100 : 0;
 
-    return hoursSinceCreated <= 24 && percentageRaised >= 1;
+    return hoursSinceActive <= 24 && percentageRaised >= 1;
   });
 
   const normalCauses = allCauses.filter(

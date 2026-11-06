@@ -155,10 +155,23 @@ describe("signature-actions", () => {
   });
 
   describe("listSignaturesForPetition", () => {
+    it.each([
+      "abc",
+      "Growth.png",
+      "",
+      "550e8400-e29b-41d4-a716-44665544000z",
+      "550e8400-e29b-41d4-a716-446655440000\n",
+    ])("rejects invalid ID %s without querying Prisma", async (id) => {
+      await expect(listSignaturesForPetition(id)).resolves.toEqual([]);
+      expect(mockPrisma.signatures.findMany).not.toHaveBeenCalled();
+    });
+
     it("returns signatures with ISO date strings", async () => {
       mockPrisma.signatures.findMany.mockResolvedValue([signatureRecord]);
 
-      const result = await listSignaturesForPetition("petition-1");
+      const result = await listSignaturesForPetition(
+        "550e8400-e29b-41d4-a716-446655440000",
+      );
 
       expect(result).toHaveLength(1);
       expect(result[0].amount).toBe(1);

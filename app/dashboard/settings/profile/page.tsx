@@ -35,7 +35,10 @@ export default async function ProfileSettingsPage({
     !isComplete || params.error === "profile_incomplete";
 
   return (
-    <SettingsShell isOrganization={profile.account_type === "organization"}>
+    <SettingsShell
+      isOrganization={profile.account_type === "organization"}
+      isVerified={profile.is_verified}
+    >
       {profileIncomplete ? (
         <>
           <ProfileIncompleteToast />

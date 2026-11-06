@@ -3,6 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export interface RecordDonorReferralParams {
   donationId: string;
   causeId: string;
@@ -40,13 +43,21 @@ export async function recordDonorReferralAttribution(
         referrerId: existing.referrer_id,
       };
     }
+    const isUuid = UUID_RE.test(referralCode);
 
     let referrer = await prisma.user.findUnique({
       where: { referralCode },
       select: { id: true },
     });
 
-    if (!referrer) {
+    if (!referrer && !isUuid) {
+      referrer = await prisma.user.findUnique({
+        where: { username: referralCode },
+        select: { id: true },
+      });
+    }
+
+    if (!referrer && isUuid) {
       referrer = await prisma.user.findUnique({
         where: { id: referralCode },
         select: { id: true },
@@ -54,6 +65,12 @@ export async function recordDonorReferralAttribution(
     }
 
     if (!referrer) {
+      console.warn(
+        "[recordDonorReferralAttribution] Referrer not found for code:",
+        referralCode,
+        "donation:",
+        donationId,
+      );
       return { recorded: false, reason: "referrer_not_found" };
     }
 
@@ -100,9 +117,7 @@ export async function recordDonorReferralAttribution(
       try {
         revalidatePath("/leaderboard");
         revalidatePath(`/leaderboard/${referrer.id}`);
-      } catch (revalErr) {
-        // Ignored in non-page contexts
-      }
+      } catch (revalErr) {}
     }
 
     return {

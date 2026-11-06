@@ -167,7 +167,7 @@ export function TrustPanel({
                     className="group relative aspect-[4/3] w-[78%] shrink-0 snap-center overflow-hidden rounded-xl border border-white/15 bg-[#08162B] sm:aspect-video sm:w-auto"
                   >
                     <Image
-                      src={getMediaUrl(item)}
+                      src={getMediaUrl(item) || "/placeholder.svg"}
                       alt=""
                       fill
                       className="scale-110 object-cover opacity-35 blur-xl"
@@ -176,7 +176,7 @@ export function TrustPanel({
                       aria-hidden="true"
                     />
                     <Image
-                      src={getMediaUrl(item)}
+                      src={getMediaUrl(item) || "/placeholder.svg"}
                       alt=""
                       fill
                       className="object-contain transition-transform duration-200 group-hover:scale-[1.03]"
@@ -201,7 +201,7 @@ export function TrustPanel({
 
               <ImageLightbox
                 images={visibleProofMedia.map((item, mediaIndex) => ({
-                  src: getMediaUrl(item),
+                  src: getMediaUrl(item) || "/placeholder.svg",
                   alt: `${cause.title} evidence ${mediaIndex + 1}`,
                 }))}
                 currentIndex={lightboxIndex}

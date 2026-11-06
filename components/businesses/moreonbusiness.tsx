@@ -25,8 +25,8 @@ export default function MoreOnBusiness() {
     >
       <div className="text-xl">More than Donations. A Growth Engine.</div>
       <div className="text-base md:text-2xl lg:text-5xl font-semibold leading-relaxed">
-        RefreeG isn’t just about raising money — it’s about creating momentum
-        for your business. With transparency, blockchain-backed trust, and yield
+        RefreeG isn’t just about raising money. It’s about creating momentum for
+        your business. With transparency, blockchain-backed trust, and yield
         opportunities, we give you the tools to build stronger.
       </div>
       <Link

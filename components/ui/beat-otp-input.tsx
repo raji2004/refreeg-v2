@@ -128,7 +128,7 @@ export function BeatOtpInput({
                 )}
                 aria-hidden="true"
               >
-                —
+                -
               </span>
 
               {}

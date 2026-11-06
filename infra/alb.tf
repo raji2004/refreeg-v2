@@ -1,4 +1,4 @@
-# ACM certificate — DNS validated. This does NOT assume Route53 manages the
+# ACM certificate - DNS validated. This does NOT assume Route53 manages the
 # zone (nothing in this repo indicates it does); the CNAME validation records
 # are surfaced as a Terraform output for you to add manually wherever
 # www.refreeg.com / apps.refreeg.com DNS actually lives, then `terraform apply`
@@ -33,7 +33,7 @@ resource "aws_lb" "app" {
 
 # NOTE: the app's /api/health route (lib/health/checks.ts) returns 401 if
 # HEALTH_CHECK_TOKEN is set, and ALB target group health checks cannot send
-# custom headers — leave HEALTH_CHECK_TOKEN unset in SSM Parameter Store (the
+# custom headers - leave HEALTH_CHECK_TOKEN unset in SSM Parameter Store (the
 # route fails open with no token configured) so ALB health checks keep working.
 
 resource "aws_lb_target_group" "frontend" {

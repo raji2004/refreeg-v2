@@ -15,6 +15,13 @@ jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
 }));
 
+jest.mock("@/lib/prisma", () => ({
+  prisma: {
+    donation: { groupBy: jest.fn().mockResolvedValue([]) },
+    cause: { findMany: jest.fn().mockResolvedValue([]) },
+  },
+}));
+
 jest.mock("@/actions/cause-actions", () => ({
   listCauses: jest.fn(),
   countCauses: jest.fn(),
@@ -85,11 +92,11 @@ describe("discover caching", () => {
     mockListCauses.mockResolvedValue([cause("a", 10), cause("b", 20)]);
 
     await listDiscoverResults(
-      { category: "health", sortBy: "newest" },
+      { categories: ["health"], sortBy: "newest" },
       { limit: 10, offset: 0 },
     );
     await listDiscoverResults(
-      { category: "health", sortBy: "most-given" },
+      { categories: ["health"], sortBy: "most-given" },
       { limit: 10, offset: 0 },
     );
 
@@ -100,13 +107,31 @@ describe("discover caching", () => {
   it("uses a different cache entry for a different category", async () => {
     mockListCauses.mockResolvedValue([]);
 
-    await listDiscoverResults({ category: "health" }, { limit: 10, offset: 0 });
     await listDiscoverResults(
-      { category: "education" },
+      { categories: ["health"] },
+      { limit: 10, offset: 0 },
+    );
+    await listDiscoverResults(
+      { categories: ["education"] },
       { limit: 10, offset: 0 },
     );
 
     expect(mockCacheKeys[0]).not.toBe(mockCacheKeys[1]);
+  });
+
+  it("shares a cache entry for the same causes picked in any order", async () => {
+    mockListCauses.mockResolvedValue([]);
+
+    await listDiscoverResults(
+      { categories: ["health", "education"] },
+      { limit: 10, offset: 0 },
+    );
+    await listDiscoverResults(
+      { categories: ["education", "health"] },
+      { limit: 10, offset: 0 },
+    );
+
+    expect(mockCacheKeys[0]).toBe(mockCacheKeys[1]);
   });
 
   it("bypasses the cache for free-text search", async () => {
@@ -120,7 +145,7 @@ describe("discover caching", () => {
   });
 
   it("caches counts and facets when there is no search", async () => {
-    await countDiscoverResults({ category: "health" });
+    await countDiscoverResults({ categories: ["health"] });
     await getDiscoverFacets({}, ["health"]);
 
     expect(mockCacheKeys).toHaveLength(2);

@@ -320,7 +320,10 @@ export default function Step3({
                   >
                     {profilePhotoUrl ? (
                       <Image
-                        src={getMediaUrl(profilePhotoUrl)}
+                        src={
+                          getMediaUrl(profilePhotoUrl) ||
+                          "/placeholder-user.jpg"
+                        }
                         alt="Profile preview"
                         width={80}
                         height={80}

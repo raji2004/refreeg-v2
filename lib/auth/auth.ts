@@ -10,6 +10,7 @@ import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
 import { createReferralRecord } from "@/lib/referral-utils";
 import { deriveFullNameFromEmail } from "@/lib/auth/registration";
+import { timingSafeEqual } from "crypto";
 
 export class UserNotFoundError extends CredentialsSignin {
   code = "user_not_found";
@@ -117,7 +118,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.token) return null;
 
         const tokenStr = credentials.token as string;
-        const secret = process.env.AUTH_SECRET || "fallback_secret";
+        const secret = process.env.AUTH_SECRET;
+        if (!secret) throw new Error("AUTH_SECRET is not set");
 
         try {
           const [b64Email, timestamp, hmac] = tokenStr.split(":");
@@ -145,7 +147,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             .map((b) => b.toString(16).padStart(2, "0"))
             .join("");
 
-          if (expectedHmac !== hmac) return null;
+          const a = Buffer.from(expectedHmac);
+          const b = Buffer.from(hmac);
+          if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
 
           const user = await prisma.user.findUnique({
             where: { email },
@@ -173,11 +177,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        console.error(
-          `[NextAuth] authorize called with email: ${credentials?.email}`,
-        );
         if (!credentials?.email || !credentials?.password) {
-          console.error(`[NextAuth] missing credentials`);
+          console.info(
+            "[NextAuth] Missing credentials during sign-in attempt.",
+          );
           return null;
         }
 
@@ -215,9 +218,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             throw new IncorrectPasswordError();
           }
 
-          console.error(
-            `[NextAuth] user authenticated successfully: ${credentials.email}`,
-          );
+          console.info("[NextAuth] User authenticated successfully.");
+
           return {
             id: user.id,
             email: user.email,

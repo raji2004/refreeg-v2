@@ -33,7 +33,7 @@ export function ProofMediaGallery({ media }: { media: MediaEntry[] }) {
                   className="relative aspect-square overflow-hidden rounded-lg border border-slate-200"
                 >
                   <Image
-                    src={getMediaUrl(img.url) ?? ""}
+                    src={getMediaUrl(img.url) || "/placeholder.svg"}
                     alt={img.name}
                     fill
                     sizes="(max-width: 640px) 33vw, 25vw"
@@ -111,7 +111,7 @@ export function ProofMediaGallery({ media }: { media: MediaEntry[] }) {
           )}
           {}
           <img
-            src={getMediaUrl(open.url) ?? ""}
+            src={getMediaUrl(open.url) || "/placeholder.svg"}
             alt={open.name}
             className="max-h-[85vh] max-w-full rounded-lg object-contain"
             onClick={(e) => e.stopPropagation()}

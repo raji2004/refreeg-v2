@@ -3,7 +3,7 @@ locals {
 
   # Runs on every boot via cloud-init user-data. The actual deploy logic lives
   # in /opt/refreeg-bootstrap/bootstrap-instance.sh, baked into the AMI by
-  # infra/packer/base-ami.pkr.hcl — this just supplies the two env vars it
+  # infra/packer/base-ami.pkr.hcl - this just supplies the two env vars it
   # needs and invokes it.
   user_data = <<-EOF
     #!/bin/bash
@@ -24,7 +24,7 @@ resource "aws_launch_template" "app" {
 
   vpc_security_group_ids = [aws_security_group.app.id]
 
-  # Public IP so instances can reach S3/SSM without a NAT Gateway — locked
+  # Public IP so instances can reach S3/SSM without a NAT Gateway - locked
   # down by aws_security_group.app (no inbound except from the ALB, no SSH).
   network_interfaces {
     associate_public_ip_address = true
@@ -89,7 +89,7 @@ resource "aws_autoscaling_group" "app" {
   }
 
   # Existing instances get new code via SSM Run Command from CI (see
-  # .github/workflows/deploy.yml), not by replacing the whole ASG — an
+  # .github/workflows/deploy.yml), not by replacing the whole ASG - an
   # instance refresh here is only for base-AMI rollouts (Packer rebuilds),
   # not routine app deploys.
   instance_refresh {

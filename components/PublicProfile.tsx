@@ -220,7 +220,7 @@ export default function PublicProfile({
               )}
               {!profile.bio && (
                 <p className="mt-3 text-gray-400 text-sm italic">
-                  No bio yet — empowering communities one step at a time.
+                  No bio yet. Empowering communities one step at a time.
                 </p>
               )}
             </div>

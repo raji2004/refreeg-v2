@@ -183,6 +183,70 @@ describe("kyc-actions", () => {
       // Restore fetch
       global.fetch = originalFetch;
     });
+
+    it("re-syncs a rejected Didit record that was later approved on Didit", async () => {
+      mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+        id: "kyc-1",
+        user_id: "user-1",
+        status: "rejected",
+        document_type: "didit",
+        document_url: "uuid-123:::https://verify.didit.me/session/shortURL",
+      });
+
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url.includes("verification.didit.me")) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({ session_id: "uuid-123", status: "Approved" }),
+          });
+        }
+        if (url.includes("/api/webhooks/didit")) {
+          return Promise.resolve({ ok: true });
+        }
+        return Promise.reject(new Error("Unknown URL"));
+      }) as jest.Mock;
+
+      mockPrisma.kyc_verifications.findUnique.mockResolvedValue({
+        id: "kyc-1",
+        status: "approved",
+        document_type: "didit",
+        document_url: "uuid-123:::https://verify.didit.me/session/shortURL",
+      });
+
+      const result = await getVerificationStatus("user-1");
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(result.status?.status).toBe("approved");
+
+      global.fetch = originalFetch;
+    });
+
+    it("leaves a rejected Didit record alone when Didit still says declined", async () => {
+      mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
+        id: "kyc-1",
+        user_id: "user-1",
+        status: "rejected",
+        document_type: "didit",
+        document_url: "uuid-123:::https://verify.didit.me/session/shortURL",
+      });
+
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({ session_id: "uuid-123", status: "Declined" }),
+      }) as jest.Mock;
+
+      const result = await getVerificationStatus("user-1");
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.kyc_verifications.findUnique).not.toHaveBeenCalled();
+      expect(result.status?.status).toBe("rejected");
+
+      global.fetch = originalFetch;
+    });
   });
 
   describe("updateVerificationStatus", () => {

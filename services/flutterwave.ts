@@ -2,6 +2,13 @@ import { ICreateSubaccount, TransactionData } from "@/types";
 import axios from "axios";
 import { getBaseURL } from "@/lib/utils";
 
+/** Spaces and leading zeros must not hide an existing Flutterwave subaccount. */
+export function normalizeAccountNumber(value: unknown): string {
+  return String(value ?? "")
+    .replace(/\s+/g, "")
+    .replace(/^0+/, "");
+}
+
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
 
 if (!FLUTTERWAVE_SECRET_KEY) {
@@ -147,31 +154,69 @@ const Flutterwave = {
   },
 
   verifyByReferenceFull: async function (txRef: string) {
-    const response = await this.api.get(
-      `/transactions/verify_by_reference?tx_ref=${txRef}`,
-    );
-    return response.data.data;
+    try {
+      const response = await this.api.get(
+        `/transactions/verify_by_reference?tx_ref=${encodeURIComponent(txRef)}`,
+      );
+      return response.data.data;
+    } catch (error: any) {
+      if (error.response?.status === 400 || error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   createSubaccount: async function (data: ICreateSubaccount) {
-    const response = await this.api.post("/subaccounts", {
+    const mobile = data.business_mobile?.trim();
+    const payload: Record<string, string> = {
       account_bank: data.bank_code,
       account_number: data.account_number,
       business_name: data.business_name,
       business_email: data.business_email || "no-reply@refreeg.com",
-      business_contact_mobile: data.business_mobile || "08000000000",
-      business_mobile: data.business_mobile || "08000000000",
-      split_type: "percentage",
-      split_value: 0, // RefreeG controls the fee via transaction_charge
       country: "NG",
-    });
-
-    return {
-      subaccount_id: String(
-        response.data.data.subaccount_id || response.data.data.id,
-      ),
-      account_number: data.account_number,
     };
+    if (mobile) {
+      payload.business_mobile = mobile;
+      payload.business_contact_mobile = mobile;
+    }
+
+    try {
+      const response = await this.api.post("/subaccounts", payload);
+      return {
+        subaccount_id: String(
+          response.data.data.subaccount_id || response.data.data.id,
+        ),
+        account_number: data.account_number,
+      };
+    } catch (error: any) {
+      const body = error.response?.data;
+      const message = String(body?.message || error.message || "");
+
+      if (/already exists/i.test(message)) {
+        const existingId = await this.findSubaccountByAccountNumber(
+          data.account_number,
+        );
+        if (existingId) {
+          return {
+            subaccount_id: existingId,
+            account_number: data.account_number,
+          };
+        }
+
+        console.warn(
+          "Flutterwave subaccount already exists but could not be recovered:",
+          body ?? message,
+        );
+      } else {
+        console.error(
+          "Flutterwave createSubaccount failed:",
+          body ?? error.message,
+        );
+      }
+
+      throw error;
+    }
   },
 
   listBanks: async function () {
@@ -404,9 +449,13 @@ const Flutterwave = {
 
         if (subaccounts.length === 0) break; // No more pages
 
-        const match = subaccounts.find(
-          (s: any) => s.account_number === accountNumber,
-        );
+        const wanted = normalizeAccountNumber(accountNumber);
+        const match = wanted
+          ? subaccounts.find((s: any) => {
+              const stored = normalizeAccountNumber(s.account_number);
+              return stored.length > 0 && stored === wanted;
+            })
+          : undefined;
 
         if (match) {
           return String(match.subaccount_id || match.id);

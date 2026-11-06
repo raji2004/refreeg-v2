@@ -79,7 +79,7 @@ const Hero = () => {
         <p className="hero-description mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
           RefreeG puts every naira on-chain. Donors get a receipt, not a
           brochure. Causes get funded in seconds, not weeks. No black box, no
-          trust tax — just verifiable giving.
+          trust tax. Just verifiable giving.
         </p>
 
         <div className="hero-buttons mt-6 flex flex-col items-center gap-4 sm:flex-row">

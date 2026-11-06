@@ -3,6 +3,17 @@
 import type React from "react";
 import { usePathname } from "next/navigation";
 
+/**
+ * Dashboard content chrome (max-width, padding, the rounded card look).
+ * The sidebar this used to render itself (DashboardNav) is now supplied
+ * globally by components/app-shell/app-shell.tsx, so this only owns the
+ * content-area styling — not navigation.
+ *
+ * Pages migrated to the cream/ink system (docs/DESIGN_GUIDE.md) skip the
+ * legacy glass card so they sit flush on AppShell's cream background.
+ */
+const CREAM_ROUTES = ["/dashboard/settings", "/dashboard/donations"];
+
 export default function ClientLayoutWrapper({
   children,
 }: {
@@ -12,7 +23,9 @@ export default function ClientLayoutWrapper({
   const hideNav =
     pathname.startsWith("/dashboard/settings/kyc-setup") ||
     pathname.startsWith("/dashboard/admin/api-docs");
-  const isSettings = pathname.startsWith("/dashboard/settings") && !hideNav;
+  const isCream =
+    pathname === "/dashboard" ||
+    CREAM_ROUTES.some((route) => pathname.startsWith(route));
 
   if (hideNav) {
     return (
@@ -24,7 +37,7 @@ export default function ClientLayoutWrapper({
     );
   }
 
-  if (isSettings) {
+  if (isCream) {
     return <div className="min-h-full w-full bg-cream">{children}</div>;
   }
 

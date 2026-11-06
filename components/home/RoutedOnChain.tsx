@@ -91,11 +91,11 @@ export function RoutedOnChain() {
       >
         <div className="w-full md:w-1/2 px-4">
           <Image
-            src="/trust-with-proof.jpg"
+            src="/trust-with-proof.svg"
             alt="For the people illustration"
-            width={1200}
-            height={1200}
-            className="w-full rounded-lg"
+            width={1190}
+            height={1190}
+            className="w-full rounded-2xl "
           />
         </div>
         <div className="w-full md:w-1/2 px-4">

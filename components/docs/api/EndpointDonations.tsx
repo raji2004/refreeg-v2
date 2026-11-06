@@ -122,7 +122,7 @@ export function SectionDonations() {
     "checkout_url": null,
     "amount": 10000,
     "mode": "test",
-    "message": "Test donation processed instantly — no real payment was made.",
+    "message": "Test donation processed instantly. No real payment was made.",
     "donation_id": "uuid..."
   }
 }`}

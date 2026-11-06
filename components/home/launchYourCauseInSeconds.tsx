@@ -11,14 +11,14 @@ const cards = [
     icon: FaRocket,
     title: "Kickstart Instantly",
     description:
-      "Launch your campaign in less than a minute with our intuitive setup. No delays, no complexities—just a fast, focused way to start raising funds when it matters most.",
+      "Launch your campaign in less than a minute with our intuitive setup. No delays, no complexities, just a fast, focused way to start raising funds when it matters most.",
     iconAlt: "Rocket icon",
   },
   {
     icon: FaBullhorn,
     title: "Amplify Voice",
     description:
-      "RefreeG helps your campaign go beyond your circle. Share across social platforms, messaging apps, and more—giving your story the volume it deserves to reach real supporters.",
+      "RefreeG helps your campaign go beyond your circle. Share across social platforms, messaging apps, and more, giving your story the volume it deserves to reach real supporters.",
     iconAlt: "Bullhorn icon",
   },
   {

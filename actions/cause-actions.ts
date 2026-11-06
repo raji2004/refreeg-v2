@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { after } from "next/server";
+import { warmCauseImage } from "@/lib/media/cause-image-render";
 import { DISCOVER_CACHE_TAG } from "@/lib/discover-constants";
 import type {
   Cause,
@@ -90,6 +92,8 @@ export async function getQuickDonateProps(causeId: string) {
     goal: cause.goal,
     raised: cause.raised,
     subaccount: cause.user?.sub_account_code ?? undefined,
+    orgName: cause.user?.name || "RefreeG campaign",
+    orgVerified: !!cause.user?.is_verified,
     defaultName: profile?.display_name || profile?.full_name || "",
     defaultEmail: profile?.email ?? "",
     defaultAnonymous: profile?.donation_preference === "anonymous",
@@ -264,14 +268,18 @@ export async function createCause(
     throw new Error("Campaign location must be less than 100 characters");
   }
   const causeId = crypto.randomUUID();
-  let coverImageUrl = null;
+  let coverImageUrl: string | null = null;
   if (causeData.coverImage) {
-    coverImageUrl = await uploadFileToS3(
-      causeData.coverImage,
-      userId,
-      causeId,
-      "cover",
-    );
+    if (typeof causeData.coverImage === "string") {
+      coverImageUrl = causeData.coverImage;
+    } else {
+      coverImageUrl = await uploadFileToS3(
+        causeData.coverImage,
+        userId,
+        causeId,
+        "cover",
+      );
+    }
   }
 
   let daysActive = null;
@@ -380,6 +388,13 @@ export async function createCause(
       console.error("Error sending cause admin notification:", error);
     }
 
+    // Render the card image now so the first visitor doesn't pay for it.
+    after(() =>
+      warmCauseImage(coverImageUrl).catch((err) =>
+        console.error("Cause cover warm failed:", err),
+      ),
+    );
+
     revalidatePath("/dashboard/causes");
     return mapPrismaToCause(cause);
   } catch (causeError) {
@@ -410,14 +425,21 @@ export async function updateCause(
     );
   }
 
-  let coverImageUrl = causeData.coverImage
-    ? await uploadFileToS3(
+  let coverImageUrl: string | null = null;
+  if (causeData.coverImage) {
+    if (typeof causeData.coverImage === "string") {
+      coverImageUrl = causeData.coverImage;
+    } else {
+      coverImageUrl = await uploadFileToS3(
         causeData.coverImage as File,
         userId,
         causeId,
         "cover",
-      )
-    : causeData.image || null;
+      );
+    }
+  } else {
+    coverImageUrl = causeData.image || null;
+  }
 
   let daysActive = null;
   if (causeData.startDate && causeData.endDate) {
@@ -523,6 +545,13 @@ export async function updateCause(
     } catch (error) {
       console.error("Error sending cause edit admin notification:", error);
     }
+
+    // Render the card image now so the first visitor doesn't pay for it.
+    after(() =>
+      warmCauseImage(coverImageUrl).catch((err) =>
+        console.error("Cause cover warm failed:", err),
+      ),
+    );
 
     revalidatePath("/dashboard/causes");
     return editData;
@@ -723,7 +752,9 @@ function buildCauseCountWhere(options: CauseFilterOptions) {
     }
   }
 
-  if (options.category && options.category !== "all") {
+  if (options.categories && options.categories.length > 0) {
+    whereClause.category = { in: options.categories };
+  } else if (options.category && options.category !== "all") {
     whereClause.category = options.category;
   }
 

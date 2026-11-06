@@ -43,7 +43,7 @@ export default function SmartCrowdfund() {
     },
     {
       title: "Grow with Yield",
-      desc: "Don’t just raise funds—make them work. Stake your raised capital in our liquidity pool to earn a yield while you plan and execute your growth.",
+      desc: "Don’t just raise funds, make them work. Stake your raised capital in our liquidity pool to earn a yield while you plan and execute your growth.",
       image: "/images/statscoin.png",
     },
   ];

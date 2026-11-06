@@ -85,6 +85,56 @@ describe("Flutterwave Service", () => {
     });
   });
 
+  describe("verifyByReferenceFull", () => {
+    it("encodes the reference and returns the transaction", async () => {
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: { data: { status: "successful", id: 9 } },
+      });
+
+      const result = await Flutterwave.verifyByReferenceFull("flw 1&2");
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        "/transactions/verify_by_reference?tx_ref=flw%201%262",
+      );
+      expect(result).toEqual({ status: "successful", id: 9 });
+    });
+
+    it.each([400, 404])(
+      "returns null when Flutterwave answers %s",
+      async (status) => {
+        mockAxiosInstance.get.mockRejectedValueOnce({
+          response: { status, data: { message: "No transaction" } },
+          message: `Request failed with status code ${status}`,
+        });
+
+        await expect(
+          Flutterwave.verifyByReferenceFull("flw_cancelled"),
+        ).resolves.toBeNull();
+      },
+    );
+
+    it("rethrows a 401", async () => {
+      const error = {
+        response: { status: 401 },
+        message: "Request failed with status code 401",
+      };
+      mockAxiosInstance.get.mockRejectedValueOnce(error);
+
+      await expect(
+        Flutterwave.verifyByReferenceFull("flw_cancelled"),
+      ).rejects.toBe(error);
+    });
+
+    it("rethrows a network failure", async () => {
+      const error = new Error("Network Error");
+      mockAxiosInstance.get.mockRejectedValueOnce(error);
+
+      await expect(
+        Flutterwave.verifyByReferenceFull("flw_cancelled"),
+      ).rejects.toBe(error);
+    });
+  });
+
   describe("createSubaccount", () => {
     it("should call subaccounts endpoint with correct data", async () => {
       mockAxiosInstance.post.mockResolvedValueOnce({
@@ -103,13 +153,80 @@ describe("Flutterwave Service", () => {
         account_number: "0690000031",
         business_name: "Test Cause",
         business_email: "no-reply@refreeg.com",
-        business_contact_mobile: "08000000000",
-        business_mobile: "08000000000",
-        split_type: "percentage",
-        split_value: 0,
         country: "NG",
       });
       expect(result.subaccount_id).toBe("RS_456");
+    });
+
+    it("recovers an existing subaccount when the account number differs by spaces or leading zeros", async () => {
+      const errorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+      mockAxiosInstance.post.mockRejectedValueOnce({
+        response: {
+          data: {
+            message:
+              "A subaccount with the account number and bank already exists.",
+          },
+        },
+      });
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: {
+          data: [{ account_number: "123456789", subaccount_id: "RS_existing" }],
+        },
+      });
+
+      const result = await Flutterwave.createSubaccount({
+        account_number: " 0123456789",
+        bank_code: "044",
+        business_name: "Test Cause",
+        percentage_charge: 0,
+      });
+
+      expect(result).toEqual({
+        subaccount_id: "RS_existing",
+        account_number: " 0123456789",
+      });
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        "/subaccounts?limit=100&page=1",
+      );
+      expect(errorSpy).not.toHaveBeenCalled();
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it("warns only when an existing subaccount cannot be recovered", async () => {
+      const errorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+      mockAxiosInstance.post.mockRejectedValueOnce({
+        response: {
+          data: {
+            message:
+              "A subaccount with the account number and bank already exists.",
+          },
+        },
+      });
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: {
+          data: [{ account_number: "9999999999", subaccount_id: "RS_other" }],
+        },
+      });
+
+      await expect(
+        Flutterwave.createSubaccount({
+          account_number: " 0123456789",
+          bank_code: "044",
+          business_name: "Test Cause",
+          percentage_charge: 0,
+        }),
+      ).rejects.toBeTruthy();
+
+      expect(warnSpy).toHaveBeenCalled();
+      expect(errorSpy).not.toHaveBeenCalled();
     });
   });
 });

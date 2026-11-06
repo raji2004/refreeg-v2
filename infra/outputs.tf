@@ -1,5 +1,5 @@
 output "alb_dns_name" {
-  description = "ALB DNS name — use this to smoke-test the deploy before cutting real DNS over (see plan's staged rollout)."
+  description = "ALB DNS name - use this to smoke-test the deploy before cutting real DNS over (see plan's staged rollout)."
   value       = aws_lb.app.dns_name
 }
 
@@ -11,12 +11,12 @@ output "rds_endpoint" {
 }
 
 output "releases_bucket_name" {
-  description = "S3 bucket GitHub Actions uploads release tarballs to — set as the RELEASES_BUCKET repo variable/secret."
+  description = "S3 bucket GitHub Actions uploads release tarballs to - set as the RELEASES_BUCKET repo variable/secret."
   value       = aws_s3_bucket.releases.bucket
 }
 
 output "ssm_param_path" {
-  description = "SSM Parameter Store path prefix GitHub Actions writes secrets under — set as the SSM_PARAM_PATH repo variable."
+  description = "SSM Parameter Store path prefix GitHub Actions writes secrets under - set as the SSM_PARAM_PATH repo variable."
   value       = local.ssm_param_path
 }
 
@@ -26,6 +26,6 @@ output "acm_certificate_domain_validation_options" {
 }
 
 output "autoscaling_group_name" {
-  description = "ASG name — used by the GitHub Actions workflow to look up current instance IDs for SSM Run Command targeting."
+  description = "ASG name - used by the GitHub Actions workflow to look up current instance IDs for SSM Run Command targeting."
   value       = aws_autoscaling_group.app.name
 }

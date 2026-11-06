@@ -159,4 +159,34 @@ describe("POST /api/payments/initialize", () => {
     const body = await res.json();
     expect(body.error).toContain("Maximum donation amount is ₦10,000,000");
   });
+
+  it("skips Flutterwave subaccount creation when the user already has an id", async () => {
+    (prisma.cause.findUnique as jest.Mock).mockResolvedValue({
+      userId: "user-123",
+      compliance_paused: false,
+    });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      accountNumber: "1234567890",
+      bankName: "Access Bank",
+      fullName: "Test User",
+      subAccountCode: "ACCT_paystack123",
+      flutterwaveSubAccountId: "RS_existing",
+    });
+
+    const req = {
+      json: jest.fn().mockResolvedValue({
+        amount: 5000,
+        email: "test@example.com",
+        causeId: "cause-123",
+        paymentProvider: "flutterwave",
+        subaccounts: [],
+      }),
+    } as any;
+
+    await POST(req);
+
+    expect(Flutterwave.createSubaccount).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+  });
 });

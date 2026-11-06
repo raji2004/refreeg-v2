@@ -75,6 +75,10 @@ export async function POST(request: Request) {
       );
     }
 
+    if (body.webhook_type === "user.data.updated") {
+      return NextResponse.json({ received: true });
+    }
+
     console.log("Didit webhook received:", body);
 
     const result = await processDiditVerificationResult(body);

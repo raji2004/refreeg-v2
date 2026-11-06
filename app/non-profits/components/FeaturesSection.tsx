@@ -117,8 +117,8 @@ const FeaturesSection = () => {
             transition={{ duration: 0.8, delay: 0.4 }}
             viewport={{ once: true }}
           >
-            Transparent fundraising, global payments, and yield
-            opportunities—all in one platform for business growth
+            Transparent fundraising, global payments, and yield opportunities,
+            all in one platform for business growth
           </motion.p>
         </motion.div>
 

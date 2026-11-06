@@ -333,7 +333,14 @@ export async function updateCauseStatus(
     } else {
       const cause = await prisma.cause.findUnique({
         where: { id: causeId },
-        select: { location: true, title: true, slug: true },
+        select: {
+          location: true,
+          title: true,
+          slug: true,
+          daysActive: true,
+          start_date: true,
+          end_date: true,
+        },
       });
       requireApprovalLocation(cause?.location);
 
@@ -346,10 +353,20 @@ export async function updateCauseStatus(
         });
       }
 
+      const activeDays =
+        cause?.daysActive && cause.daysActive > 0 ? cause.daysActive : 30;
+      const startDate = cause?.start_date || new Date();
+      const endDate =
+        cause?.end_date ||
+        new Date(startDate.getTime() + activeDays * 24 * 60 * 60 * 1000);
+
       await prisma.cause.update({
         where: { id: causeId },
         data: {
           status: "approved",
+          daysActive: activeDays,
+          start_date: startDate,
+          end_date: endDate,
           ...(nextSlug ? { slug: nextSlug } : {}),
           updatedAt: new Date(),
         },

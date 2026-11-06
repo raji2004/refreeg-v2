@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { submitProofUpdate } from "@/actions/proof-update-actions";
+import { uploadFileWithPresign } from "@/lib/s3/upload-client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -92,10 +93,34 @@ export function ProofUploadDialog({
     fd.append("causeId", causeId);
     fd.append("description", description);
     fd.append("milestone", milestone);
-    files.forEach((f) => fd.append("media", f));
 
     setSubmitting(true);
     setError(null);
+
+    // Files go straight to S3; only their keys are sent with the update.
+    try {
+      for (const f of files) {
+        const { key } = await uploadFileWithPresign(f, {
+          entityType: "causes",
+          entityId: causeId,
+          mediaType: f.type.startsWith("video/")
+            ? "videos"
+            : f.type === "application/pdf"
+              ? "documents"
+              : "images",
+        });
+        fd.append("media", JSON.stringify({ key, name: f.name }));
+      }
+    } catch (uploadError) {
+      setSubmitting(false);
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "Upload failed. Please try again.",
+      );
+      return;
+    }
+
     const result = await submitProofUpdate(fd);
     setSubmitting(false);
 
@@ -124,7 +149,7 @@ export function ProofUploadDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Post a fund-use update — {causeTitle}</DialogTitle>
+          <DialogTitle>Post a fund-use update: {causeTitle}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -180,8 +205,7 @@ export function ProofUploadDialog({
               className="mt-1 flex w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600"
             >
               <Upload className="h-5 w-5" />
-              Click to upload — images, video or PDF ({files.length}/{MAX_FILES}
-              )
+              Click to upload: images, video or PDF ({files.length}/{MAX_FILES})
             </button>
             <input
               ref={inputRef}

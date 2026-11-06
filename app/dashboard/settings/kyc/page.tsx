@@ -15,7 +15,7 @@ export default async function KycSettingsPage() {
   return (
     <Suspense
       fallback={
-        <SettingsShell>
+        <SettingsShell isVerified={profile?.is_verified}>
           <Skeleton className="h-[400px] w-full" />
         </SettingsShell>
       }

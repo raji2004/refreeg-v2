@@ -13,36 +13,38 @@ All colors are declared as CSS variables in `app/globals.css` (`:root`) and mapp
 
 ### Primary Palette
 
-| Token | Hex Anchor | Role | Tailwind Classes |
-|---|---|---|---|
-| `--ink` | `#0e1b14` | Dark surfaces, money summaries, dark cards, headers, borders, primary text | `bg-ink`, `text-ink`, `border-ink` |
-| `--forest` | `#0b5d3b` | Trust, primary brand identity, active elements, success states, total raised | `bg-forest`, `text-forest`, `border-forest` |
-| `--lime` | `#cff454` | The single primary action / submit button on a page, active progress indicator | `bg-lime`, `text-lime`, `border-lime` |
-| `--blue-accent` | `#0a3cb5` | Hyperlinks, informational icons, system notices, tech tags | `bg-blue-accent`, `text-blue-accent` |
+| Token           | Hex Anchor | Role                                                                               | Tailwind Classes                            |
+| --------------- | ---------- | ---------------------------------------------------------------------------------- | ------------------------------------------- |
+| `--ink`         | `#0e1b14`  | Dark surfaces, money summaries, dark cards, headers, borders, primary text         | `bg-ink`, `text-ink`, `border-ink`          |
+| `--forest`      | `#0b5d3b`  | Trust, primary brand identity, active elements, success states, total raised       | `bg-forest`, `text-forest`, `border-forest` |
+| `--lime`        | `#cff454`  | The single primary action / submit button on a page, active progress indicator     | `bg-lime`, `text-lime`, `border-lime`       |
+| `--blue-accent` | `#0a3cb5`  | Hyperlinks, informational icons, system notices, tech tags                         | `bg-blue-accent`, `text-blue-accent`        |
+| `--brand-blue`  | `#1c3cd5`  | Marketing pages (FAQ, home): hero highlight word, full-bleed bands, blue CTA pills | `bg-brand-blue`, `text-brand-blue`          |
 
 ### Secondary Palette
 
-| Token | Hex Anchor | Role | Tailwind Classes |
-|---|---|---|---|
-| `--sand` | `#f0deae` | Secondary warm neutral, soft callouts, badge fills | `bg-sand`, `text-sand-foreground`, `border-sand` |
-| `--gold` | `#f4c95d` | Pending, under-review, waiting on user action, held balances | `bg-gold`, `text-gold-foreground`, `border-gold` |
-| `--amber` | `#c7951f` | Secondary warnings, held funds, warm accents | `bg-amber`, `text-amber-foreground`, `border-amber` |
-| `--rust` | `#c8401c` | Urgent warnings, destructive actions, critical notifications | `bg-rust`, `text-rust`, `border-rust` |
-| `--cyan` | `#0eb7f1` | Light info badges, tech tags, public verify indicators | `bg-cyan`, `text-cyan-foreground` |
+| Token     | Hex Anchor | Role                                                         | Tailwind Classes                                    |
+| --------- | ---------- | ------------------------------------------------------------ | --------------------------------------------------- |
+| `--sand`  | `#f0deae`  | Secondary warm neutral, soft callouts, badge fills           | `bg-sand`, `text-sand-foreground`, `border-sand`    |
+| `--gold`  | `#f4c95d`  | Pending, under-review, waiting on user action, held balances | `bg-gold`, `text-gold-foreground`, `border-gold`    |
+| `--amber` | `#c7951f`  | Secondary warnings, held funds, warm accents                 | `bg-amber`, `text-amber-foreground`, `border-amber` |
+| `--rust`  | `#c8401c`  | Urgent warnings, destructive actions, critical notifications | `bg-rust`, `text-rust`, `border-rust`               |
+| `--cyan`  | `#0eb7f1`  | Light info badges, tech tags, public verify indicators       | `bg-cyan`, `text-cyan-foreground`                   |
 
 ### Neutrals
 
-| Token | Hex Anchor | Role | Tailwind Classes |
-|---|---|---|---|
-| `--cream` | `#faf9f6` | Default page background (warm off-white) | `bg-cream`, `text-cream-foreground` |
-| `--bone` | `#f7f6f2` | Secondary surface, subtle card backgrounds, tab list pill | `bg-bone`, `text-bone-foreground` |
-| `--surface` | `#ffffff` | Card surface, modal sheets, input backgrounds | `bg-surface`, `text-surface-foreground` |
-| `--cream-muted` | `#f2f2ee` | Inactive controls, subtle borders, divider fills | `bg-cream-muted`, `border-cream-muted` |
-| `--warm-neutral` | `#efebe1` | Soft panel container, category tags | `bg-warm-neutral` |
-| `--parchment` | `#f0ece4` | **Petition surfaces only** — warm paper aesthetic | `bg-parchment` |
-| `--hairline` | `#e0e0dc` | Soft card/row borders, subtle dividers | `border-hairline`, `divide-hairline` |
+| Token            | Hex Anchor | Role                                                      | Tailwind Classes                        |
+| ---------------- | ---------- | --------------------------------------------------------- | --------------------------------------- |
+| `--cream`        | `#faf9f6`  | Default page background (warm off-white)                  | `bg-cream`, `text-cream-foreground`     |
+| `--bone`         | `#f7f6f2`  | Secondary surface, subtle card backgrounds, tab list pill | `bg-bone`, `text-bone-foreground`       |
+| `--surface`      | `#ffffff`  | Card surface, modal sheets, input backgrounds             | `bg-surface`, `text-surface-foreground` |
+| `--cream-muted`  | `#f2f2ee`  | Inactive controls, subtle borders, divider fills          | `bg-cream-muted`, `border-cream-muted`  |
+| `--warm-neutral` | `#efebe1`  | Soft panel container, category tags                       | `bg-warm-neutral`                       |
+| `--parchment`    | `#f0ece4`  | **Petition surfaces only** — warm paper aesthetic         | `bg-parchment`                          |
+| `--hairline`     | `#e0e0dc`  | Soft card/row borders, subtle dividers                    | `border-hairline`, `divide-hairline`    |
 
 ### Palette Usage Rules
+
 1. **Lime is scarce.** One lime button per screen — the single next action. Two lime buttons on one view means the hierarchy is wrong.
 2. **Lime marks the actual money-moving action, not "get to it."** On Discover, every Give/Pledge/Sign/Apply button in the grid, filter dialog, and search results is `ink` (or `outline` for secondary actions). Lime is reserved for the final submission button inside the payment or sign step (`QuickDonateForm`'s "Give ₦5,000" / "Donate ₦X").
 3. **Gold means "waiting," not "error."** Use `rust` (`bg-rust` or `destructive`) for actual failures (declined card, rejected KYC). Gold is for money or process in flight that will resolve on its own.
@@ -54,6 +56,7 @@ All colors are declared as CSS variables in `app/globals.css` (`:root`) and mapp
 ## 2. Typography & Hierarchy
 
 ### Typefaces
+
 - **Fraunces** (`font-fraunces`): Editorial serif with optical sizing. Reserved for:
   - Page titles (`<h1>`) ("Wallet", "Discover", "Verification", "Welcome, Adedayo")
   - Major section headings (`<h2>`) ("Redeem CBA", "Add proof")
@@ -69,6 +72,7 @@ All colors are declared as CSS variables in `app/globals.css` (`:root`) and mapp
 ## 3. Radius, Spacing & Elevation
 
 ### Radius Scale
+
 - `rounded-none` (`0px`): Dividers, full-bleed tables
 - `rounded-xs` (`2px`): Micro badges, tiny tag indicators
 - `rounded-sm` (`4px`): Small badges, control items
@@ -80,9 +84,11 @@ All colors are declared as CSS variables in `app/globals.css` (`:root`) and mapp
 - `rounded-full` (`9999px`): Status pills, avatars, switch toggles, circular icon buttons
 
 ### Spacing Scale
+
 Follows a standard 4px baseline: `4px` (`p-1`), `8px` (`p-2`), `12px` (`p-3`), `16px` (`p-4`), `24px` (`p-6`), `32px` (`p-8`), `48px` (`p-12`).
 
 ### Elevation & Shadows
+
 - `shadow-flat`: `0 0 0 1px hsl(var(--hairline))` — clean, unshadowed hairline container
 - `shadow-subtle`: `0 1px 2px 0 rgba(0, 0, 0, 0.05)` — inputs, dropdown menus, tooltips
 - `shadow-card`: `0 2px 8px -2px rgba(14, 27, 20, 0.08)` — surface cards on hover
@@ -96,6 +102,7 @@ Follows a standard 4px baseline: `4px` (`p-1`), `8px` (`p-2`), `12px` (`p-3`), `
 All components live in `components/ui/` and follow Radix / shadcn conventions (`forwardRef`, `cn()`, `cva`).
 
 ### Button (`button.tsx`)
+
 ```tsx
 import { Button } from "@/components/ui/button"
 
@@ -119,6 +126,7 @@ import { Button } from "@/components/ui/button"
 ```
 
 ### Badge & Status Chips (`badge.tsx`)
+
 ```tsx
 import { Badge } from "@/components/ui/badge"
 
@@ -134,6 +142,7 @@ import { Badge } from "@/components/ui/badge"
 ```
 
 ### Card (`card.tsx`)
+
 ```tsx
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
@@ -160,28 +169,38 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 ```
 
 ### CalloutBanner (`callout-banner.tsx`)
+
 States a single true fact at the top of a surface. Not a button, but can have an inline text link:
+
 ```tsx
-import { CalloutBanner } from "@/components/ui/callout-banner"
+import { CalloutBanner } from "@/components/ui/callout-banner";
 
 <CalloutBanner
   variant="gold"
   title="Your ₦25,000 withdrawal is waiting on this"
   description="Complete Level 2 ID verification to release held funds."
-  action={<a href="/verification" className="underline font-medium">Verify now</a>}
-/>
+  action={
+    <a href="/verification" className="underline font-medium">
+      Verify now
+    </a>
+  }
+/>;
 ```
+
 Variants: `gold` (in-flight/waiting), `lime` (cleared/success), `rust` (urgent/rejected), `forest` (brand notice), `neutral`.
 
 ### Switch (`switch.tsx`)
-Toggle switches use Forest green for checked states and warm neutral for unchecked states:
-```tsx
-import { Switch } from "@/components/ui/switch"
 
-<Switch defaultChecked /> // active: bg-forest, inactive: bg-hairline
+Toggle switches use Forest green for checked states and warm neutral for unchecked states:
+
+```tsx
+import { Switch } from "@/components/ui/switch";
+
+<Switch defaultChecked />; // active: bg-forest, inactive: bg-hairline
 ```
 
 ### Progress (`progress.tsx`)
+
 ```tsx
 import { Progress } from "@/components/ui/progress"
 
@@ -192,35 +211,49 @@ import { Progress } from "@/components/ui/progress"
 ```
 
 ### Tabs (`tabs.tsx`)
+
 Support standard tab styling and fintech `pill` style:
+
 ```tsx
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 <Tabs defaultValue="profile">
   <TabsList variant="pill">
-    <TabsTrigger value="profile" variant="pill">Profile</TabsTrigger>
-    <TabsTrigger value="donations" variant="pill">Donations</TabsTrigger>
-    <TabsTrigger value="kyc" variant="pill">Verification</TabsTrigger>
+    <TabsTrigger value="profile" variant="pill">
+      Profile
+    </TabsTrigger>
+    <TabsTrigger value="donations" variant="pill">
+      Donations
+    </TabsTrigger>
+    <TabsTrigger value="kyc" variant="pill">
+      Verification
+    </TabsTrigger>
   </TabsList>
   <TabsContent value="profile">...</TabsContent>
-</Tabs>
+</Tabs>;
 ```
 
 ### MultiSelectBar (`multi-select-bar.tsx`)
+
 Bottom-docked batch action bar for lists (Saved campaigns, signers, rows):
+
 ```tsx
-import { MultiSelectBar } from "@/components/ui/multi-select-bar"
+import { MultiSelectBar } from "@/components/ui/multi-select-bar";
 
 <MultiSelectBar
   selectedCount={selectedIds.length}
   onClearSelection={() => setSelectedIds([])}
   actions={
     <>
-      <Button variant="subtle" size="sm" onClick={handleMove}>Move to list</Button>
-      <Button variant="rust" size="sm" onClick={handleRemove}>Remove</Button>
+      <Button variant="subtle" size="sm" onClick={handleMove}>
+        Move to list
+      </Button>
+      <Button variant="rust" size="sm" onClick={handleRemove}>
+        Remove
+      </Button>
     </>
   }
-/>
+/>;
 ```
 
 ---
@@ -232,7 +265,7 @@ import { MultiSelectBar } from "@/components/ui/multi-select-bar"
 3. **Removal is reversible until it isn't.** Bookmarking, list membership, and draft edits undo silently (toast with "Undo"). Money movement, deleting a saved list, and account closure require a typed or explicit confirmation and are stated as irreversible.
 4. **A rejection names the exact mismatch and offers the one-tap fix.** ("The name on the slip reads X, your account says Y") plus a button that resolves it directly, never just "try again."
 5. **Confirmation dialogs restate the number.** Withdrawals, bulk actions, and account closure show the exact amount/count being acted on in the confirmation step, not just a generic "Are you sure?".
-6. **A settings-style index has no sub-rail on narrow screens.** Settings (Profile, Notifications, Payments, Privacy, Security, Verification) is a flat index of full, independently-routed pages, not a persistent sub-navigation rail squeezed into a narrow column — the index page itself *is* the navigation.
+6. **A settings-style index has no sub-rail on narrow screens.** Settings (Profile, Notifications, Payments, Privacy, Security, Verification) is a flat index of full, independently-routed pages, not a persistent sub-navigation rail squeezed into a narrow column — the index page itself _is_ the navigation.
 
 ---
 

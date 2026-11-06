@@ -1,4 +1,4 @@
-# Base AMI for the refreeg app tier — rebuilt only when the runtime stack
+# Base AMI for the refreeg app tier - rebuilt only when the runtime stack
 # changes (Node version bump, etc.), NOT on every app deploy. App code itself
 # is pulled from S3 at boot/deploy time (see scripts/bootstrap-instance.sh),
 # so this image only needs the runtime, not the app.
@@ -57,7 +57,7 @@ build {
   name    = "refreeg-app-base"
   sources = ["source.amazon-ebs.base"]
 
-  # Amazon Linux 2023 ships the SSM Agent preinstalled and enabled already —
+  # Amazon Linux 2023 ships the SSM Agent preinstalled and enabled already -
   # nothing to do there. Just the app runtime:
   provisioner "shell" {
     inline = [

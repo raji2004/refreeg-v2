@@ -1,23 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
-import { useProfile } from "@/hooks/use-profile";
+import { getProfile } from "@/actions/profile-actions";
+import { listBookmarkedIds } from "@/actions/bookmark-actions";
 import { AppShellNav } from "./app-shell-nav";
 import { AppShellHeader } from "./app-shell-header";
 import { SidebarCtaCard } from "./sidebar-cta-card";
 
+/**
+ * Persistent sidebar + header shell for the app section of the site
+ * (Discover, Petitions, Dashboard, Wallet, Bounties, Saved, Settings) —
+ * used for both signed-in and signed-out visitors. See
+ * components/client-layout.tsx for the route list that mounts this instead
+ * of the marketing Header/Footer.
+ */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const isAuthenticated = !!user;
+  const [isVerified, setIsVerified] = useState(false);
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [savedCount, setSavedCount] = useState<number | undefined>(undefined);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const { profile } = useProfile(user?.id);
-  const isVerified = !!profile?.is_verified;
-  const totalPoints = profile?.total_points || 0;
+
+  useEffect(() => {
+    if (!user?.id) {
+      setIsVerified(false);
+      setTotalPoints(0);
+      setSavedCount(undefined);
+      return;
+    }
+    let cancelled = false;
+    getProfile(user.id).then((profile) => {
+      if (cancelled) return;
+      setIsVerified(!!profile?.is_verified);
+      setTotalPoints(profile?.total_points || 0);
+    });
+    listBookmarkedIds()
+      .then((bookmarks) => {
+        if (cancelled) return;
+        setSavedCount(bookmarks.length);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   return (
     <div className="flex min-h-screen bg-cream">
@@ -26,7 +58,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Logo />
         </Link>
         <div className="flex-1 overflow-y-auto">
-          <AppShellNav isAuthenticated={isAuthenticated} />
+          <AppShellNav
+            isAuthenticated={isAuthenticated}
+            savedCount={savedCount}
+          />
         </div>
         <div className="mt-4">
           <SidebarCtaCard
@@ -57,7 +92,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Logo />
           </Link>
           <div onClick={() => setMobileNavOpen(false)}>
-            <AppShellNav isAuthenticated={isAuthenticated} />
+            <AppShellNav
+              isAuthenticated={isAuthenticated}
+              savedCount={savedCount}
+            />
           </div>
           <div className="mt-4">
             <SidebarCtaCard

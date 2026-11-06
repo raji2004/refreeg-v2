@@ -5,8 +5,9 @@ import {
   getProfile,
   updateProfile,
   updateBankDetails,
-  updateProfilePhoto,
+  setProfilePhoto,
 } from "@/actions/profile-actions";
+import { uploadFileWithPresign } from "@/lib/s3/upload-client";
 import type { Profile, ProfileFormData, BankDetailsFormData } from "@/types";
 import { toast } from "@/components/ui/use-toast";
 
@@ -56,7 +57,14 @@ export function useProfile(userId: string | undefined) {
   });
 
   const updateProfilePhotoMutation = useMutation({
-    mutationFn: (file: File) => updateProfilePhoto(userId!, file),
+    mutationFn: async (file: File) => {
+      const { key } = await uploadFileWithPresign(file, {
+        entityType: "profiles",
+        entityId: userId,
+        mediaType: "images",
+      });
+      return setProfilePhoto(key);
+    },
     onSuccess: (photoUrl) => {
       queryClient.setQueryData(
         ["profile", userId],

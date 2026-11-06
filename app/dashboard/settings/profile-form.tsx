@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { Check, Eye, Upload } from "lucide-react";
+// import Link from "next/link";
+import { Check, /* Eye, */ Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -222,14 +222,20 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const compressedFile = await compressImage(file, 800, 0.7);
-        await updateProfilePhoto(compressedFile);
-      } catch (error) {
-        console.error("Compression failed, uploading original:", error);
-        await updateProfilePhoto(file);
-      }
+    e.target.value = "";
+    if (!file) return;
+
+    let uploadFile = file;
+    try {
+      uploadFile = await compressImage(file, 800, 0.7);
+    } catch (error) {
+      console.error("Compression failed, uploading original:", error);
+    }
+
+    try {
+      await updateProfilePhoto(uploadFile);
+    } catch {
+      // The profile mutation already shows the error toast.
     }
   };
 
@@ -257,11 +263,11 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
     shortDisplayName(formData.full_name || "You");
   const givingSince = formatGivingSince(profile.created_at);
   const campaignsCount = profile.causes_count ?? 0;
-  const publicProfileHref = formData.username
-    ? profile.account_type === "organization"
-      ? `/${formData.username}?view=personal`
-      : `/${formData.username}`
-    : "";
+  // const publicProfileHref = formData.username
+  //   ? profile.account_type === "organization"
+  //     ? `/${formData.username}?view=personal`
+  //     : `/${formData.username}`
+  //   : "";
 
   const namedPreview = formData.location
     ? `${previewName}, ${formData.location}`
@@ -278,9 +284,10 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
               Settings
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-6 text-ink/60">
-              Editing one row at a time — switches apply on flip.
+              Editing one row at a time. Switches apply on flip.
             </p>
           </div>
+          {/* Hidden until the public profile page gets its styling update.
           {publicProfileHref ? (
             <Button
               asChild
@@ -296,7 +303,7 @@ export function ProfileForm({ profile, user }: ProfileFormProps) {
                 View public profile
               </Link>
             </Button>
-          ) : null}
+          ) : null} */}
         </div>
 
         <Card className="overflow-hidden rounded-2xl border border-hairline bg-white shadow-none">

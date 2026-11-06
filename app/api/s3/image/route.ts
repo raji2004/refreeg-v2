@@ -1,16 +1,21 @@
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
-import sharp from "sharp";
 import { withMobileCache } from "@/lib/api/mobile-cache";
-import { findLegacyNormalizedCenterCrop } from "@/lib/media/legacy-normalized-image";
+import {
+  CLEAN_PRESENTATION,
+  isCauseImageKey,
+  loadCauseImage,
+  normalizeMediaKey,
+} from "@/lib/media/cause-image-render";
 import { s3Client } from "@/lib/s3/s3-client";
 import { generatePresignedGetUrl, getBucketName } from "@/lib/s3/s3-utils";
 
+const CAUSE_IMAGE_CACHE_CONTROL =
+  "public, max-age=2592000, s-maxage=31536000, stale-while-revalidate=86400";
+const S3_IMAGE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes server memory cache
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const CLEAN_PRESENTATION = "clean-v3";
-const S3_IMAGE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes server memory cache
 
 function isSafeExternalImageUrl(rawUrl: string): boolean {
   try {
@@ -40,63 +45,20 @@ function isSafeExternalImageUrl(rawUrl: string): boolean {
 }
 
 async function presentCauseImage(key: string) {
-  const processed = await withMobileCache(
-    `s3:clean:${key}`,
-    S3_IMAGE_CACHE_TTL_MS,
-    async () => {
-      const object = await s3Client.send(
-        new GetObjectCommand({ Bucket: getBucketName(), Key: key }),
-      );
-      if (!object.Body) throw new Error("S3 image has no body");
+  const image = await loadCauseImage(key);
 
-      const input = Buffer.from(await object.Body.transformToByteArray());
-      const metadata = await sharp(input, { failOn: "none" }).metadata();
-      let output: Buffer<ArrayBufferLike> = input;
-      let presentation = "original";
-
-      if (metadata.width && metadata.height) {
-        const analysis = await sharp(input, { failOn: "none" })
-          .resize({ width: 1000, fit: "inside", withoutEnlargement: true })
-          .removeAlpha()
-          .raw()
-          .toBuffer({ resolveWithObject: true });
-        const crop = findLegacyNormalizedCenterCrop({
-          data: analysis.data,
-          width: analysis.info.width,
-          height: analysis.info.height,
-          channels: analysis.info.channels,
-        });
-
-        if (crop) {
-          const scale = metadata.width / analysis.info.width;
-          const left = Math.max(0, Math.round(crop.left * scale));
-          const width = Math.min(
-            metadata.width - left,
-            Math.round(crop.width * scale),
-          );
-          output = await sharp(input, { failOn: "none" })
-            .extract({ left, top: 0, width, height: metadata.height })
-            .toBuffer();
-          presentation = "recovered-portrait";
-        }
-      }
-
-      return {
-        bytes: new Uint8Array(output),
-        contentType: object.ContentType || "image/jpeg",
-        presentation,
-      };
+  return new Response(
+    image.kind === "cached" ? image.body : new Uint8Array(image.output),
+    {
+      headers: {
+        "Cache-Control": CAUSE_IMAGE_CACHE_CONTROL,
+        "Content-Type":
+          image.kind === "cached" ? image.contentType : "image/jpeg",
+        "X-RefreeG-Media-Presentation":
+          image.kind === "cached" ? "cached" : image.presentation,
+      },
     },
   );
-
-  return new Response(processed.bytes, {
-    headers: {
-      "Cache-Control":
-          "public, max-age=2592000, s-maxage=31536000, stale-while-revalidate=86400",
-      "Content-Type": processed.contentType,
-      "X-RefreeG-Media-Presentation": processed.presentation,
-    },
-  });
 }
 
 export async function OPTIONS() {
@@ -113,7 +75,7 @@ export async function OPTIONS() {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    let key = searchParams.get("key");
+    const rawKey = searchParams.get("key");
 
     const urlParam = searchParams.get("url");
     if (urlParam && isSafeExternalImageUrl(urlParam)) {
@@ -138,24 +100,14 @@ export async function GET(req: Request) {
       }
     }
 
-    if (!key) {
+    if (!rawKey) {
       return NextResponse.json(
         { error: "Missing key parameter" },
         { status: 400 },
       );
     }
 
-    try {
-      const decoded = decodeURIComponent(key);
-
-      if (decoded.includes("/api/s3/image")) {
-        const inner = new URL(decoded, "http://localhost");
-        const innerKey = inner.searchParams.get("key");
-        if (innerKey) key = decodeURIComponent(innerKey);
-      } else {
-        key = decoded;
-      }
-    } catch (e) {}
+    const key = normalizeMediaKey(rawKey);
 
     if (isSafeExternalImageUrl(key)) {
       try {
@@ -181,8 +133,7 @@ export async function GET(req: Request) {
 
     if (
       searchParams.get("presentation") === CLEAN_PRESENTATION &&
-      key.startsWith("uploads/causes/") &&
-      key.includes("/images/")
+      isCauseImageKey(key)
     ) {
       try {
         return await presentCauseImage(key);

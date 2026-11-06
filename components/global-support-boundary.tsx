@@ -63,6 +63,7 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
   }
 
   private handleWindowError = (event: ErrorEvent) => {
+    if (!event.error && /^script error\.?$/i.test(event.message)) return;
     if (reloadOnceForStaleChunk(event.error || event.message)) return;
     const message = getErrorMessage(event.error || event.message);
     reportClientError(event.error || event.message, { type: "window" });

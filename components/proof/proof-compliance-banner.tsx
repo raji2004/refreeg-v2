@@ -49,7 +49,7 @@ export async function ProofComplianceBanner({ userId }: { userId: string }) {
                   </p>
                   <p className="text-sm text-red-700">
                     It&apos;s hidden from the platform and not accepting
-                    donations. Submit your fund-use update — the campaign goes
+                    donations. Submit your fund-use update. The campaign goes
                     live again once it&apos;s approved.
                   </p>
                 </div>
@@ -102,7 +102,7 @@ export async function ProofComplianceBanner({ userId }: { userId: string }) {
             <Clock className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
             <div>
               <p className="text-sm font-semibold text-blue-800">
-                Update under review — “{c.title}”
+                Update under review: “{c.title}”
               </p>
               <p className="text-sm text-blue-700">
                 Your {c.submitted.map((m) => `${m}%`).join(" and ")} fund-use

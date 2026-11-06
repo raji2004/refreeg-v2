@@ -6,7 +6,7 @@ function WhyRefreeg() {
     <div className=" text-white   md:p-12">
       <div className=" bg-[#00264C] p-8 rounded-lg max-w-6xl mx-auto text-center">
         <div className="inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
-          <span>Be a Catalyst for Change — Start Here</span>
+          <span>Be a Catalyst for Change: Start Here</span>
         </div>
 
         <h3 className="text-2xl md:text-3xl font-semibold mb-8">Why RefreeG</h3>

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { isUuid } from "@/lib/uuid";
 import type {
   Signature,
   SignatureWithPetition,
@@ -154,6 +155,8 @@ async function checkAndSendPetitionGoalReachedEmail(petitionId: string) {
 export async function listSignaturesForPetition(
   petitionId: string,
 ): Promise<Signature[]> {
+  if (!isUuid(petitionId)) return [];
+
   const data = await prisma.signatures.findMany({
     where: { petition_id: petitionId },
     orderBy: { created_at: "desc" },

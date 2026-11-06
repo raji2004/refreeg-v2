@@ -80,7 +80,7 @@ export default function StepInterests({
           What do you want to fund?
         </h1>
         <p className="mt-2 text-sm leading-6 text-ink/70">
-          Pick at least {MIN_INTERESTS_REQUIRED} — we&apos;ll use these to show
+          Pick at least {MIN_INTERESTS_REQUIRED}. We&apos;ll use these to show
           you campaigns worth your attention first.
         </p>
 
@@ -89,7 +89,7 @@ export default function StepInterests({
           variant="gold"
           icon={<Sparkles className="mt-0.5 h-5 w-5 shrink-0" />}
           title="150 EIZA already credited"
-          description="You earned that just for verifying your email — thanks for joining."
+          description="You earned that just for verifying your email. Thanks for joining."
         />
 
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">

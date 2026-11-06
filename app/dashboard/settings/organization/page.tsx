@@ -1,13 +1,22 @@
 import { Building2 } from "lucide-react";
+import { auth } from "@/lib/auth/auth";
+import { getCachedProfile } from "@/lib/profile-cache";
 import { getOrganizationWorkspace } from "@/actions/organization-actions";
 import { SettingsShell } from "../components/settings-shell";
 import { OrganizationSettingsForm } from "./organization-settings-form";
 
 export default async function OrganizationSettingsPage() {
-  const result = await getOrganizationWorkspace();
+  const [session, result] = await Promise.all([
+    auth(),
+    getOrganizationWorkspace(),
+  ]);
+
+  const profile = session?.user?.id
+    ? await getCachedProfile(session.user.id).catch(() => null)
+    : null;
 
   return (
-    <SettingsShell isOrganization>
+    <SettingsShell isOrganization isVerified={profile?.is_verified}>
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <span className="rounded-xl bg-blue-50 p-2 text-blue-700">

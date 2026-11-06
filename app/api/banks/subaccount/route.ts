@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createDualSubaccounts } from "@/services/payment-provider";
+import { normalizeAccountNumber } from "@/services/flutterwave";
 import type { ICreateSubaccount } from "@/types";
 import { auth } from "@/lib/auth/auth";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -26,7 +28,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await createDualSubaccounts(data);
+    const profile = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { flutterwaveSubAccountId: true, accountNumber: true },
+    });
+    const sameAccount =
+      normalizeAccountNumber(profile?.accountNumber) ===
+      normalizeAccountNumber(data.account_number);
+    const reuseFlutterwaveId =
+      profile?.flutterwaveSubAccountId && sameAccount
+        ? profile.flutterwaveSubAccountId
+        : null;
+
+    const result = await createDualSubaccounts(data, reuseFlutterwaveId);
 
     return NextResponse.json({
       success: true,

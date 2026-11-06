@@ -26,7 +26,7 @@ export default function MoreThanCrowdfunding() {
             viewport={{ once: true }}
           >
             Powered by vetted, audited smart contracts. Withdraw anytime. Your
-            funds remain yours — always.
+            funds remain yours, always.
           </motion.div>
           <motion.h2
             className="text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]"

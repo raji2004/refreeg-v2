@@ -39,7 +39,7 @@ export default function Hero() {
               <div className="text-sm md:text-base lg:text-lg text-gray-700">
                 RefreeG empowers communities, NGOs, and relief organizations to
                 raise urgent funds for disaster response. From floods to fires,
-                donors can send help instantly in fiat or crypto — with
+                donors can send help instantly in fiat or crypto, with
                 transparent tracking and impact updates.
               </div>
             </div>

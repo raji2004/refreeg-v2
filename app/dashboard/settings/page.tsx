@@ -45,7 +45,10 @@ export default async function SettingsPage() {
       </div>
 
       <div className="hidden lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-10">
-        <SettingsNav isOrganization={isOrganization} />
+        <SettingsNav
+          isOrganization={isOrganization}
+          isVerified={profile.is_verified}
+        />
         <div className="rounded-xl border-2 border-ink/10 bg-white p-6">
           <p className="text-sm text-ink/60">
             Choose a section from the left to update your profile, payments,
@@ -71,7 +74,7 @@ export default async function SettingsPage() {
         )}
         <SettingsItem
           title="Payments"
-          description="Manage your bank account for receiving donations"
+          description="Bank account that receives donations to causes you list"
           href="/dashboard/settings/bank"
           icon={<CreditCard className="h-5 w-5" />}
         />

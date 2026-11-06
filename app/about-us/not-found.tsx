@@ -20,7 +20,7 @@ export default function NotFoundPage() {
           Oops! Page Not Found
         </h1>
         <p className="text-gray-600 mt-2 mb-6">
-          Looks like you took a wrong turn, but do not worry—we are here to
+          Looks like you took a wrong turn, but do not worry, we are here to
           guide you back!
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

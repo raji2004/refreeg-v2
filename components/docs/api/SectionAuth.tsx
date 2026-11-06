@@ -50,7 +50,7 @@ export default function SectionAuth() {
             </p>
             <ul className="text-[13px] text-slate-500 space-y-1.5 list-disc list-inside pt-1">
               <li>
-                Donations are <strong>simulated instantly</strong> — no real
+                Donations are <strong>simulated instantly</strong>. No real
                 Paystack checkout
               </li>
               <li>

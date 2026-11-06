@@ -62,7 +62,7 @@ export function SignModal({
 
         {signed ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            Thanks for signing — your voice has been added.
+            Thanks for signing! Your voice has been added.
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -28,7 +28,7 @@ const defaultItems: Item[] = [
   },
   {
     icon: "/users.png",
-    text: "Global reach in 40+ countries — donations flow across borders in minutes.",
+    text: "Global reach in 40+ countries. Donations flow across borders in minutes.",
   },
 ];
 

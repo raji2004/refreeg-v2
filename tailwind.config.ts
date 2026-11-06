@@ -195,6 +195,10 @@ const config: Config = {
           DEFAULT: "hsl(var(--blue-accent))",
           foreground: "hsl(var(--blue-accent-foreground))",
         },
+        "brand-blue": {
+          DEFAULT: "hsl(var(--brand-blue))",
+          foreground: "hsl(var(--brand-blue-foreground))",
+        },
         azure: {
           DEFAULT: "hsl(var(--azure, var(--blue-accent)))",
           foreground:

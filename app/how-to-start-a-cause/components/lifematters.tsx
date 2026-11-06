@@ -52,7 +52,7 @@ export default function LifeMatters() {
           variants={item}
         >
           Powered by vetted, audited smart contracts. Withdraw anytime. Your
-          funds remain yours — always.
+          funds remain yours, always.
         </motion.p>
 
         <motion.div

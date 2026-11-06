@@ -26,7 +26,7 @@ export function MilestoneNotifications({
     (milestone: number) => {
       let title = "";
       let body = "";
-      let icon = "/icons/icon-192x192.png";
+      let icon = "/logo.png";
 
       switch (milestone) {
         case 25:
@@ -38,8 +38,8 @@ export function MilestoneNotifications({
           body = `Your cause "${causeTitle}" has reached 50% of its goal. Time to boost visibility!`;
           break;
         case 75:
-          title = `You're 75% Funded — Almost There! 🏁`;
-          body = `Incredible work — your cause "${causeTitle}" is 75% funded and nearly at the finish line!`;
+          title = `You're 75% Funded, Almost There! 🏁`;
+          body = `Incredible work! Your cause "${causeTitle}" is 75% funded and nearly at the finish line!`;
           break;
         case 100:
           title = `100% Funded! Your Cause is Fully Backed 🎉`;

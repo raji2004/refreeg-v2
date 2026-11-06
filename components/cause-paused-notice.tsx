@@ -17,7 +17,7 @@ export function CausePausedNotice({ title }: { title: string }) {
         variant="gold"
         icon={<Clock3 className="mt-0.5 h-5 w-5 shrink-0" />}
         title="This campaign is temporarily paused"
-        description="Its owner is updating the campaign details. Donations are on hold until that's reviewed and approved — you can still find it listed, just not open it yet."
+        description="Its owner is updating the campaign details. Donations are on hold until that's reviewed and approved. You can still find it listed, just not open it yet."
       />
 
       <div className="mt-8 flex justify-center gap-3">

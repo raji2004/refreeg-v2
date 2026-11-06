@@ -51,6 +51,7 @@ describe("useBank", () => {
       () =>
         useBank({
           userId: "user-123",
+          businessEmail: "user@example.com",
           initialData: {
             account_number: "0000000000",
             bank_name: "Access Bank",
@@ -70,9 +71,10 @@ describe("useBank", () => {
   });
 
   it("updates form data when handleBankChange is called", async () => {
-    const { result } = renderHook(() => useBank({ userId: "user-1" }), {
-      wrapper: createWrapper(),
-    });
+    const { result } = renderHook(
+      () => useBank({ userId: "user-1", businessEmail: "user@example.com" }),
+      { wrapper: createWrapper() },
+    );
 
     await waitFor(() => expect(result.current.isLoadingBanks).toBe(false));
 
@@ -118,6 +120,7 @@ describe("useBank", () => {
       () =>
         useBank({
           userId: "user-1",
+          businessEmail: "user@example.com",
           initialData: {
             account_number: "",
             bank_name: "",

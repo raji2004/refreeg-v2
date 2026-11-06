@@ -61,7 +61,7 @@ export default function HealthcareSupport() {
         How RefreeG Supports{" "}
         <span className="text-gray-500">Healthcare Causes</span>
         <p className="text-sm md:text-base lg:text-lg font-normal mt-3 text-gray-600">
-          Transparent fundraising, global payments, and yield opportunities—all
+          Transparent fundraising, global payments, and yield opportunities, all
           in one platform for healthcare support.
         </p>
       </motion.div>

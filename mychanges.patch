@@ -465,13 +465,13 @@ index 0000000..3c7006f
 +            </ul>
 +          </div>
 +
-+          {/* WHY REFREEG — CARD */}
++          {/* WHY REFREEG  CARD */}
 +          <section className="mt-10">
 +            <div className="bg-white border shadow-sm rounded-2xl p-8 max-w-2xl">
 +              <h3 className="text-[20px] font-semibold text-gray-900">Why RefreeG?</h3>
 +
 +              <p className="mt-3 text-[16px] text-gray-700 leading-7">
-+                We believe crowdfunding should be more than just raising money — it should 
++                We believe crowdfunding should be more than just raising money  it should 
 +                be about building trust, empowering change, and creating sustainable impact.
 +              </p>
 +

@@ -9,7 +9,11 @@ interface UsePaymentReturn {
     pledgeId: string;
     guestToken?: string | null;
   }) => Promise<void>;
-  verifyPayment: (reference: string, provider?: PaymentProviderType, transactionId?: string) => Promise<boolean>;
+  verifyPayment: (
+    reference: string,
+    provider?: PaymentProviderType,
+    transactionId?: string,
+  ) => Promise<boolean>;
   isLoading: boolean;
   error: string | null;
 }
@@ -38,7 +42,12 @@ export const usePayment = (): UsePaymentReturn => {
       }
 
       localStorage.setItem("payment_reference", result.data.reference);
-      localStorage.setItem("payment_provider", data.paymentProvider || "paystack");
+      localStorage.setItem(
+        "payment_provider",
+        data.paymentProvider || "paystack",
+      );
+      // Shown on the declined screen, where no donation record exists.
+      localStorage.setItem("payment_amount", String(data.amount));
 
       window.location.href = result.data.authorization_url;
     } catch (error) {
@@ -75,11 +84,13 @@ export const usePayment = (): UsePaymentReturn => {
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-          throw new Error(result.error || "Failed to initialize pledge payment");
+          throw new Error(
+            result.error || "Failed to initialize pledge payment",
+          );
         }
 
         localStorage.setItem("payment_reference", result.data.reference);
-        
+
         localStorage.setItem("payment_provider", "paystack");
 
         window.location.href = result.data.authorization_url;
@@ -100,20 +111,28 @@ export const usePayment = (): UsePaymentReturn => {
   );
 
   const verifyPayment = useCallback(
-    async (reference: string, provider?: PaymentProviderType, transactionId?: string): Promise<boolean> => {
+    async (
+      reference: string,
+      provider?: PaymentProviderType,
+      transactionId?: string,
+    ): Promise<boolean> => {
       try {
         setIsLoading(true);
         setError(null);
 
-        
-        const resolvedProvider = provider || localStorage.getItem("payment_provider") || "paystack";
+        const resolvedProvider =
+          provider || localStorage.getItem("payment_provider") || "paystack";
 
         const response = await fetch("/api/payments/verify", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ reference, provider: resolvedProvider, transaction_id: transactionId }),
+          body: JSON.stringify({
+            reference,
+            provider: resolvedProvider,
+            transaction_id: transactionId,
+          }),
         });
 
         const result = await response.json();
@@ -138,7 +157,7 @@ export const usePayment = (): UsePaymentReturn => {
         setIsLoading(false);
       }
     },
-    []
+    [],
   );
 
   return {

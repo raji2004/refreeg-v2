@@ -1,6 +1,6 @@
 name: Deploy Refreeg v2 (ALB + Auto Scaling Group)
 
-# Manual only, on purpose — this targets the new AWS ALB/ASG/RDS infrastructure
+# Manual only, on purpose - this targets the new AWS ALB/ASG/RDS infrastructure
 # (see infra/) which is still being staged and validated (see the plan's
 # staged rollout: apply infra -> smoke-test here -> migrate DB -> DNS cutover).
 # It intentionally does NOT trigger on push, so it can never race with the
@@ -33,8 +33,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -47,7 +47,7 @@ jobs:
 
   # ── Build & deploy ────────────────────────────────────────────────────────
   # Deploys via S3 + AWS SSM Run Command to every instance in the Auto Scaling
-  # Group behind the ALB (infra/asg.tf) — there's no single fixed host to SSH
+  # Group behind the ALB (infra/asg.tf) - there's no single fixed host to SSH
   # into anymore. New instances the ASG launches later pull the same release
   # automatically via scripts/bootstrap-instance.sh (baked into the base AMI),
   # so scaling out doesn't need a separate deploy step.
@@ -69,32 +69,32 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install all dependencies
         run: pnpm install --frozen-lockfile
 
       # ── 2b. Apply pending database migrations ──────────────────────────────
-      # Mirrors deploy.yml — keeps the DB in sync with prisma/migrations
+      # Mirrors deploy.yml - keeps the DB in sync with prisma/migrations
       # automatically instead of relying on someone applying schema changes
       # by hand (see deploy.yml for the incident that motivated this).
       #
       # UNVERIFIED for this pipeline: deploy.yml's runner couldn't reach its
-      # DB directly (P1001 — Postgres bound to 127.0.0.1 on the EC2 box) and
+      # DB directly (P1001 - Postgres bound to 127.0.0.1 on the EC2 box) and
       # had to tunnel through SSH to a fixed host instead. This pipeline has
       # no fixed host to tunnel through (ASG instances are ephemeral, per the
       # note at the top of this file), so if this scaled RDS instance is
       # similarly VPC-private, this step will fail the same way until it's
       # replaced with something like an SSM Session Manager port-forward to
       # one instance. Confirm reachability before this pipeline ever goes
-      # live — don't assume this works just because deploy.yml's fix does.
+      # live - don't assume this works just because deploy.yml's fix does.
       - name: Apply database migrations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: pnpm exec prisma migrate deploy
 
-      # NEXT_PUBLIC_* vars are inlined at build time, not read at runtime —
+      # NEXT_PUBLIC_* vars are inlined at build time, not read at runtime
       # see deploy.yml for the full explanation (the service-fee-always-0
       # bug this was discovered from).
       - name: Build application
@@ -129,7 +129,7 @@ jobs:
           cp ecosystem.scaled.config.js .next/standalone/ecosystem.config.js
 
           # sharp's transitive deps live in pnpm's nested .pnpm store and are
-          # only symlinked into node_modules/sharp — Next's output-file tracer
+          # only symlinked into node_modules/sharp - Next's output-file tracer
           # doesn't reliably follow those into .next/standalone. Force a fully
           # dereferenced copy so nothing goes missing (see deploy.yml for the
           # full explanation of the "Cannot find module 'detect-libc'" bug).
@@ -150,7 +150,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       # ── 5. Write secrets to SSM Parameter Store (SecureString) ─────────────
-      # Replaces the old scp'd secrets.env file entirely — instances read
+      # Replaces the old scp'd secrets.env file entirely - instances read
       # these via their own IAM role at deploy time (scripts/remote-deploy-scaled.sh),
       # nothing plaintext ever touches disk on the runner or in S3.
       - name: Write secrets to SSM Parameter Store
@@ -194,7 +194,7 @@ jobs:
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          # HEALTH_CHECK_TOKEN intentionally NOT written — the ALB target group
+          # HEALTH_CHECK_TOKEN intentionally NOT written - the ALB target group
           # health check can't send custom headers, so /api/health must stay
           # unauthenticated (it fails open with no token configured).
         run: |
@@ -286,7 +286,7 @@ jobs:
 
           INSTANCE_IDS=$(aws ssm list-command-invocations --command-id "$COMMAND_ID" --query "CommandInvocations[].InstanceId" --output text)
           if [[ -z "$INSTANCE_IDS" ]]; then
-            echo "ERROR: No instances picked up the command — is the ASG empty, or are instances missing the SSM Agent/IAM role?"
+            echo "ERROR: No instances picked up the command - is the ASG empty, or are instances missing the SSM Agent/IAM role?"
             exit 1
           fi
 
@@ -313,14 +313,14 @@ jobs:
             exit 1
           fi
 
-      # ── 8. Health check — against the ALB directly, by Host header ─────────
-      # Until DNS is manually cut over to the ALB (a deliberate, later step —
+      # ── 8. Health check - against the ALB directly, by Host header ─────────
+      # Until DNS is manually cut over to the ALB (a deliberate, later step
       # see infra rollout plan), www.refreeg.com still points at the old EC2
       # box. Hitting the ALB's own DNS name with an explicit
       # Host header validates the new ALB routing/target groups correctly
       # regardless of DNS cutover status. -k skips TLS hostname verification
       # since the ALB's own DNS name isn't covered by the ACM cert (only the
-      # two real domains are) — acceptable here since we're only testing
+      # two real domains are) - acceptable here since we're only testing
       # routing/connectivity, not treating this as the public-facing check.
       - name: Health check
         env:
@@ -333,7 +333,7 @@ jobs:
             host_header="$1"
             for attempt in 1 2 3; do
               status=$(curl -s -k -L -o /dev/null -w "%{http_code}" -H "Host: ${host_header}" "https://${ALB_DNS_NAME}/api/health" || echo "000")
-              echo "Attempt $attempt — ${host_header} via ${ALB_DNS_NAME} — HTTP $status"
+              echo "Attempt $attempt - ${host_header} via ${ALB_DNS_NAME} - HTTP $status"
               if [ "$status" -eq 200 ]; then
                 echo "✅ ${host_header} passed."
                 return 0
@@ -364,7 +364,7 @@ jobs:
 
       # ── 11. Rollback on any failure ─────────────────────────────────────────
       # Note: the release pointer in S3 is only advanced in step 9, which only
-      # runs after a passing health check — so a new instance scaling out
+      # runs after a passing health check - so a new instance scaling out
       # during a broken deploy still bootstraps the last known-good release,
       # never the broken one, even before this rollback step runs.
       - name: Rollback on failure
@@ -372,7 +372,7 @@ jobs:
         env:
           ASG_NAME: ${{ vars.ASG_NAME }}
         run: |
-          echo "🔄 Deployment failed — triggering rollback on every instance..."
+          echo "🔄 Deployment failed - triggering rollback on every instance..."
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets "Key=tag:aws:autoscaling:groupName,Values=${ASG_NAME}" \

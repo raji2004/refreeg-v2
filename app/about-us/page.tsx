@@ -1,94 +1,51 @@
-import React from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Metadata } from "next";
 
-import { H2, P, Ol } from "@/components/typography";
+import Accountability from "@/components/home/Accountability";
+import { AnnouncementMarquee } from "@/components/ui/announcement-marquee";
 
-import { Console } from "console";
+import { AboutHero } from "./_components/AboutHero";
+import { AboutMission } from "./_components/AboutMission";
+import { AboutPillars } from "./_components/AboutPillars";
+import { PeopleBehind } from "./_components/PeopleBehind";
 
-export default async function Home() {
+export const metadata: Metadata = {
+  title: "About RefreeG | Transparent Crowdfunding",
+  description:
+    "RefreeG connects people who care with causes that matter. Every donation is tracked, so you can see exactly where your money lands.",
+};
+
+export default function AboutPage() {
   return (
-    <div>
-      {}
-      {}
+    <div className="flex flex-col bg-surface">
+      <AboutHero />
 
-      {}
-
-      {}
-
-      <div className="pt-2 px-10 pb-8 mb-8">
-        <H2 className="mt-8 font-semibold text-2xl">How it works</H2>
-        <P className="text-xl mb-12">
-          How donation on{" "}
-          <Link
-            href="https://www.refreeg.com"
-            className="text-gray-500 text-xl font-semibold underline"
-          >
-            Refreeg
-          </Link>{" "}
-          works!
-        </P>
-
-        {}
-      </div>
-
-      <div id="causes-section">{}</div>
-
-      <div className="w-full justify-center pt-20 pb-12 lg:pb-20 px-10 mb-20 space-y-5 text-white bg-customBlueGray">
-        <H2>How do we ensure transparency?</H2>
-        <Ol className="mb-16">
-          <P>
-            At RefreeG, transparency is at the core of our operations. We
-            utilize blockchain technology to provide an immutable and
-            transparent record of all transactions. {"Here's"} how we ensure
-            transparency:
-          </P>
-          <li className="mb-4 text-lg">
-            Blockchain Integration: Every donation and disbursement is recorded
-            on the blockchain, creating a public ledger accessible to all
-            stakeholders. This ensures that funds are tracked and cannot be
-            altered retroactively.
-          </li>
-          <li className="mb-4 text-lg">
-            Real-Time Tracking: Donors can track their contributions in
-            real-time, from donation to final allocation, providing assurance
-            that funds are used as intended.
-          </li>
-          <li className="mb-4 text-lg">
-            Detailed Reporting: We offer comprehensive reports on the use of
-            funds, project outcomes, and the impact created. These reports are
-            made publicly available, ensuring accountability.
-          </li>
-          <li className="mb-4 text-lg">
-            Third-Party Audits: Regular audits by independent third parties
-            verify the accuracy and integrity of our financial records and
-            processes.
-          </li>
-          <li className="mb-4 text-lg">
-            User Verification: Both donors and recipients undergo a verification
-            process to ensure legitimacy and prevent fraud.
-          </li>
-        </Ol>
-        <div className="md:flex lg:flex mt-10 mb-10 text-base lg:text-2xl">
-          <span className="mr-4">Want to be a part of us?</span>
-          <span className="flex mr-1 md:font-semibold lg:font-semibold underline">
-            <button className="flex hover:bg-[#434a52] px-1 rounded-xl">
-              Join our Community!
-              <Image
-                src="/images/arrowRight.svg"
-                alt="arrow right"
-                height={15}
-                width={15}
-              />
-            </button>
-          </span>
+      <div className="px-4 pb-16 sm:px-6 md:pb-24 lg:px-8">
+        <div className="relative mx-auto aspect-[4/3] max-w-7xl overflow-hidden rounded-xl sm:aspect-[1312/620]">
+          <Image
+            src="/about/hands.jpg"
+            alt="Hands of different people reaching together against a blue sky"
+            fill
+            priority
+            sizes="(max-width: 1280px) 100vw, 1280px"
+            className="object-cover"
+          />
         </div>
       </div>
 
-      {}
+      <AnnouncementMarquee />
 
-      {}
-      {}
+      <AboutMission />
+
+      <AboutPillars />
+
+      <div className="mx-auto w-full max-w-7xl px-4 pt-16 sm:px-6 md:pt-24 lg:px-8">
+        <PeopleBehind />
+      </div>
+
+      <div className="mx-8">
+        <Accountability />
+      </div>
     </div>
   );
 }

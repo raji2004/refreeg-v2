@@ -119,11 +119,21 @@ export async function processDiditVerificationResult(
     }
   }
 
-  // If already in terminal state and not newly created, return early (idempotent guard)
+  const lowerStatus = status?.toLowerCase() || "";
+  const isApproved = lowerStatus === "approved" || lowerStatus === "verified";
+  const isRejected = lowerStatus === "declined" || lowerStatus === "rejected";
+  const isResubmitted = lowerStatus === "resubmitted";
+  const isExpired = lowerStatus === "expired" || lowerStatus === "abandoned";
+
+  // A reviewer approving a declined session on Didit must override our previous rejection
+  const isManualOverride = kyc.status === "rejected" && isApproved;
+
+  // If already in terminal state and not newly created (and not manual override), return early
   if (
     kyc.status !== "pending" &&
     kyc.status !== "resubmitted" &&
     kyc.status !== "in_progress" &&
+    !isManualOverride &&
     !isNewRecord
   ) {
     return {
@@ -133,12 +143,6 @@ export async function processDiditVerificationResult(
       status: 200,
     };
   }
-
-  const lowerStatus = status?.toLowerCase() || "";
-  const isApproved = lowerStatus === "approved" || lowerStatus === "verified";
-  const isRejected = lowerStatus === "declined" || lowerStatus === "rejected";
-  const isResubmitted = lowerStatus === "resubmitted";
-  const isExpired = lowerStatus === "expired" || lowerStatus === "abandoned";
 
   // Mark expired/abandoned sessions as 'abandoned' to maintain audit trail
   if (isExpired && (kyc.status === "pending" || kyc.status === "in_progress")) {

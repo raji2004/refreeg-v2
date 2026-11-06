@@ -38,8 +38,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -69,8 +69,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install all dependencies
         run: pnpm install --frozen-lockfile
@@ -153,14 +153,10 @@ jobs:
           NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY: ${{ secrets.NEXT_PUBLIC_PAYSTACK_PLAN_ID_WEEKLY }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           NEXT_PUBLIC_SENTRY_ENVIRONMENT: production
-          # SENTRY_ORG/PROJECT/AUTH_TOKEN are build-time-only — consumed by
-          # the Sentry webpack plugin to upload source maps and associate a
-          # release, never read by the running app. Deliberately NOT written
-          # to secrets.env below; no reason to ship an org-write-scoped auth
-          # token to the production server.
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
         run: pnpm run build
 
       # ── 3. Package the minimal artifact ────────────────────────────────────
@@ -238,6 +234,7 @@ jobs:
           AUTH_TRUST_HOST: ${{ secrets.AUTH_TRUST_HOST }}
           AUTH_URL: ${{ secrets.AUTH_URL }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
           SESSIONS_INVALIDATED_AFTER: ${{ secrets.SESSIONS_INVALIDATED_AFTER }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
@@ -282,6 +279,7 @@ jobs:
           AUTH_TRUST_HOST=${AUTH_TRUST_HOST}
           AUTH_URL=${AUTH_URL}
           AUTH_SECRET=${AUTH_SECRET}
+          NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY}
           SESSIONS_INVALIDATED_AFTER=${SESSIONS_INVALIDATED_AFTER}
           DATABASE_URL=${DATABASE_URL}
           DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}

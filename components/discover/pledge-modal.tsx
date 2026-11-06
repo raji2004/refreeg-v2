@@ -23,7 +23,7 @@ export function PledgeModal({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <ResponsiveDialogContent className="sm:max-w-md p-0 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto bg-transparent border-none shadow-none">
+      <ResponsiveDialogContent className="max-h-[92vh] overflow-y-auto border-none bg-transparent p-0 shadow-none [scrollbar-width:none] sm:max-w-[452px] [&::-webkit-scrollbar]:hidden [&>button]:hidden">
         <DialogTitle className="sr-only">Pledge to {causeTitle}</DialogTitle>
         <PledgeQuickForm
           causeId={causeId}

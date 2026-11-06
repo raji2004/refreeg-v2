@@ -10,6 +10,8 @@ import type {
   PetitionFilterOptions,
 } from "@/types";
 import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth/auth";
+import { isOwnUploadKey } from "@/lib/s3/owned-key";
 import { getCurrentUser } from "./auth-actions";
 import { isAdminOrManager } from "./role-actions";
 import {
@@ -18,10 +20,13 @@ import {
 } from "@/services/mail";
 import { sendPetitionSubmissionAdminNotification } from "@/services/mail";
 import { cache } from "react";
+import { isUuid } from "@/lib/uuid";
 
 export async function getPetition(
   petitionId: string,
 ): Promise<PetitionWithUser | null> {
+  if (!isUuid(petitionId)) return null;
+
   const user = await getCurrentUser();
 
   const petition = await prisma.petitions.findUnique({
@@ -71,7 +76,7 @@ export async function getPetition(
   } as unknown as PetitionWithUser;
 }
 
-export async function uploadFileToS3(
+async function uploadFileToS3(
   file: File,
   userId: string,
   petitionId: string,
@@ -101,6 +106,26 @@ export async function uploadFileToS3(
   }
 }
 
+// Strings are keys the browser already uploaded to S3; they must be in the signed-in user's folder.
+async function resolvePetitionMedia(
+  item: File | string,
+  userId: string,
+  petitionId: string,
+  type: "cover" | "additional",
+): Promise<string> {
+  if (typeof item !== "string") {
+    return uploadFileToS3(item, userId, petitionId, type);
+  }
+  const session = await auth();
+  if (
+    !session?.user?.id ||
+    !isOwnUploadKey(item, "petitions", session.user.id)
+  ) {
+    throw new Error("Invalid petition upload.");
+  }
+  return item;
+}
+
 export async function createPetition(
   userId: string,
   petitionData: PetitionFormData,
@@ -108,7 +133,7 @@ export async function createPetition(
   const petitionId = crypto.randomUUID();
   let coverImageUrl = null;
   if (petitionData.coverImage) {
-    coverImageUrl = await uploadFileToS3(
+    coverImageUrl = await resolvePetitionMedia(
       petitionData.coverImage,
       userId,
       petitionId,
@@ -145,7 +170,7 @@ export async function createPetition(
     try {
       multimediaUrls = await Promise.all(
         petitionData.multimedia.map((file) =>
-          uploadFileToS3(file, userId, petitionId, "additional"),
+          resolvePetitionMedia(file, userId, petitionId, "additional"),
         ),
       );
     } catch (error) {
@@ -222,8 +247,8 @@ export async function updatePetition(
   petitionData: Partial<PetitionFormData>,
 ): Promise<Petition> {
   let coverImageUrl = petitionData.coverImage
-    ? await uploadFileToS3(
-        petitionData.coverImage as File,
+    ? await resolvePetitionMedia(
+        petitionData.coverImage,
         userId,
         petitionId,
         "cover",
@@ -259,7 +284,7 @@ export async function updatePetition(
     try {
       multimediaUrls = await Promise.all(
         petitionData.multimedia.map((file) =>
-          uploadFileToS3(file as File, userId, petitionId, "additional"),
+          resolvePetitionMedia(file, userId, petitionId, "additional"),
         ),
       );
     } catch (error) {
@@ -314,7 +339,9 @@ export const listPetitions = cache(
     // Build where clause dynamically
     const where: any = {};
 
-    if (options.category && options.category !== "all") {
+    if (options.categories && options.categories.length > 0) {
+      where.category = { in: options.categories };
+    } else if (options.category && options.category !== "all") {
       where.category = options.category;
     }
 
@@ -395,7 +422,9 @@ export const listPetitions = cache(
 function buildPetitionCountWhere(options: PetitionFilterOptions) {
   const where: any = {};
 
-  if (options.category && options.category !== "all") {
+  if (options.categories && options.categories.length > 0) {
+    where.category = { in: options.categories };
+  } else if (options.category && options.category !== "all") {
     where.category = options.category;
   }
 
