@@ -42,7 +42,7 @@ function OurStory() {
               </ul>
 
               <p>
-                So, we built RefreeG, a platform that connects people who care
+                So, we built Refreeg, a platform that connects people who care
                 with causes that matter, powered by blockchain technology to
                 ensure full transparency and accountability.
               </p>
