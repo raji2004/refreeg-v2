@@ -77,7 +77,7 @@ const Hero = () => {
         </h1>
 
         <p className="hero-description mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
-          RefreeG puts every naira on-chain. Donors get a receipt, not a
+          Refreeg puts every naira on-chain. Donors get a receipt, not a
           brochure. Causes get funded in seconds, not weeks. No black box, no
           trust tax. Just verifiable giving.
         </p>
