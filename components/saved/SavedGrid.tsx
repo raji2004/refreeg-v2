@@ -242,6 +242,11 @@ export function SavedGrid({ items, lists, alertPrefs, user }: Props) {
                 totalCount={liveItems.length}
                 activeListId={activeListId}
                 onChange={setActiveListId}
+                onListRenamed={() => router.refresh()}
+                onListDeleted={(listId) => {
+                  setActiveListId((cur) => (cur === listId ? null : cur));
+                  router.refresh();
+                }}
               />
             )}
           </div>

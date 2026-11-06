@@ -7,6 +7,12 @@ import { Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { formatNairaShort } from "@/lib/discover-summary";
@@ -49,7 +55,6 @@ function chipFor(item: SavedItem) {
   return null;
 }
 
-/** Normal mode reads as progress. Select mode reads as the gap. */
 function caption(item: SavedItem, selectMode: boolean) {
   const days = item.daysLeft !== null ? ` · ${daysLabel(item.daysLeft)}` : "";
   return selectMode
@@ -111,7 +116,6 @@ export function SavedCard({
             </span>
           )}
 
-          {/* One slot, two occupants: the bookmark, or the checkbox in select mode. */}
           <div className="absolute right-3 top-3 z-10">
             {selectMode ? (
               <div onClick={(e) => e.stopPropagation()}>
@@ -128,14 +132,23 @@ export function SavedCard({
                 />
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => onUnsave(item.id)}
-                aria-label="Remove from saved"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-ink-foreground shadow-sm transition-opacity hover:opacity-90"
-              >
-                <Bookmark className="h-4 w-4" fill="currentColor" />
-              </button>
+              <TooltipProvider delayDuration={250}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => onUnsave(item.id)}
+                      aria-label="Remove from saved"
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-ink-foreground shadow-sm transition-opacity hover:opacity-90"
+                    >
+                      <Bookmark className="h-4 w-4" fill="currentColor" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="text-xs">
+                    Remove from saved
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         </div>

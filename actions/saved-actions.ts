@@ -16,6 +16,7 @@ async function requireUserId() {
   if (!id) throw new Error("Unauthorized");
   return id;
 }
+
 function countBookmarks(userId: string) {
   return prisma.bookmark.count({ where: { user_id: userId } });
 }
@@ -30,6 +31,7 @@ export async function toggleBookmark(
   if (targetType !== "cause" && targetType !== "petition") {
     throw new Error("Invalid target type");
   }
+
   const removed = await prisma.bookmark.deleteMany({
     where: { user_id: userId, target_id: targetId, target_type: targetType },
   });
@@ -54,7 +56,6 @@ export async function toggleBookmark(
       data: { user_id: userId, target_id: targetId, target_type: targetType },
     });
   } catch (err) {
-    // A double tap raced us to the unique index. It is saved either way.
     if (!(
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === "P2002"
@@ -68,6 +69,7 @@ export async function toggleBookmark(
 type CreateListResult =
   | { ok: true; list: { id: string; name: string; color: string } }
   | { ok: false; error: string };
+
 export async function createList(
   name: string,
   color?: string,
@@ -102,6 +104,60 @@ export async function createList(
   });
   revalidatePath("/dashboard/saved");
   return { ok: true, list };
+}
+
+export async function renameList(
+  listId: string,
+  name: string,
+): Promise<CreateListResult> {
+  const userId = await requireUserId();
+
+  const clean = name.trim().replace(/\s+/g, " ");
+  if (!clean) return { ok: false, error: "Give the list a name" };
+  if (clean.length > MAX_NAME) {
+    return { ok: false, error: `Keep it under ${MAX_NAME} characters` };
+  }
+
+  const [owned, duplicate] = await Promise.all([
+    prisma.savedList.findFirst({
+      where: { id: listId, user_id: userId },
+      select: { id: true },
+    }),
+    prisma.savedList.findFirst({
+      where: {
+        user_id: userId,
+        name: { equals: clean, mode: "insensitive" },
+        id: { not: listId },
+      },
+      select: { id: true },
+    }),
+  ]);
+  if (!owned) return { ok: false, error: "That list no longer exists" };
+  if (duplicate) return { ok: false, error: "You already have that list" };
+
+  const list = await prisma.savedList.update({
+    where: { id: listId },
+    data: { name: clean },
+    select: { id: true, name: true, color: true },
+  });
+  revalidatePath("/dashboard/saved");
+  return { ok: true, list };
+}
+
+export async function deleteList(
+  listId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await requireUserId();
+
+  const removed = await prisma.savedList.deleteMany({
+    where: { id: listId, user_id: userId },
+  });
+  if (removed.count === 0) {
+    return { ok: false, error: "That list no longer exists" };
+  }
+
+  revalidatePath("/dashboard/saved");
+  return { ok: true };
 }
 
 export async function moveBookmarksToList(
@@ -163,6 +219,7 @@ export async function updateAlertPrefs(prefs: {
   });
   revalidatePath("/dashboard/saved");
 }
+
 export async function listBookmarkedIds(): Promise<string[]> {
   const session = await auth();
   const userId = session?.user?.id;
@@ -175,6 +232,7 @@ export async function listBookmarkedIds(): Promise<string[]> {
 
   return rows.map((r) => r.target_id);
 }
+
 export async function listBookmarkedKeys(): Promise<string[]> {
   const session = await auth();
   const userId = session?.user?.id;
