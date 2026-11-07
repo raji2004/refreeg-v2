@@ -1,12 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
+import { useGsap } from "@/hooks/use-gsap";
 
 const features = [
   {
@@ -83,7 +80,7 @@ function FeatureCard({
         {title}
       </h3>
 
-      <p className="mb-4 md:mb-2 lg:mb-3  text-sm md:text-base text-white leading-relaxed">
+      <p className="mb-4 md:mb-2 lg:mb-3 text-sm md:text-base text-white leading-relaxed">
         {description}
       </p>
 
@@ -102,71 +99,67 @@ export function MoneyTrail() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        headingRef.current,
-        { opacity: 0, y: 80 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 1.2,
-          ease: "power4.out",
-          scrollTrigger: {
-            trigger: headingRef.current,
-            start: "top 80%",
-          },
-        },
-      );
-
-      gsap.from(".feature-card", {
-        opacity: 0,
-        y: 60,
-        duration: 1,
-        stagger: 0.2,
-        ease: "power3.out",
+  useGsap((gsap) => {
+    gsap.fromTo(
+      headingRef.current,
+      { opacity: 0, y: 80 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 1.2,
+        ease: "power4.out",
         scrollTrigger: {
-          trigger: cardsRef.current,
-          start: "top 85%",
+          trigger: headingRef.current,
+          start: "top 80%",
+        },
+      },
+    );
+
+    gsap.from(".feature-card", {
+      opacity: 0,
+      y: 60,
+      duration: 1,
+      stagger: 0.2,
+      ease: "power3.out",
+      scrollTrigger: {
+        trigger: cardsRef.current,
+        start: "top 85%",
+      },
+    });
+
+    gsap.to(".feature-icon", {
+      y: 6,
+      duration: 2,
+      repeat: -1,
+      yoyo: true,
+      ease: "sine.inOut",
+      stagger: 0.15,
+    });
+
+    if (window.innerWidth >= 768) {
+      gsap.to(".money-trail-top-bg", {
+        yPercent: 10,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: true,
         },
       });
 
-      gsap.to(".feature-icon", {
-        y: 6,
-        duration: 2,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-        stagger: 0.15,
+      gsap.to(".money-trail-bottom-bg", {
+        yPercent: -10,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: true,
+        },
       });
-
-      if (window.innerWidth >= 768) {
-        gsap.to(".money-trail-top-bg", {
-          yPercent: 10,
-          ease: "none",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: true,
-          },
-        });
-
-        gsap.to(".money-trail-bottom-bg", {
-          yPercent: -10,
-          ease: "none",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: true,
-          },
-        });
-      }
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+    }
+  }, sectionRef);
 
   return (
     <section

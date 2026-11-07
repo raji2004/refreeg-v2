@@ -1,4 +1,4 @@
-# RefreeG
+# Refreeg
 
 ## Design system
 

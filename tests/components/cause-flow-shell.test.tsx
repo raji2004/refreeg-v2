@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { FormStepper } from "@/components/ui/premium/form-stepper";
 import { PremiumFormContainer } from "@/components/ui/premium/premium-form-container";
 
-describe("RefreeG cause flow shell", () => {
+describe("Refreeg cause flow shell", () => {
   it("renders the campaign workspace and vertical setup progress", () => {
     const onStepSelect = jest.fn();
     render(

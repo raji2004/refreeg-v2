@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
+import { useGsap } from "@/hooks/use-gsap";
 import Image from "next/image";
 import Link from "next/link";
-import gsap from "gsap";
 import { Button } from "@/components/ui/button";
 
 const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useGsap((gsap) => {
     const ctx = gsap.context(() => {
       gsap.from(".hero-badge", {
         y: -20,
@@ -50,9 +50,7 @@ const Hero = () => {
         ease: "power3.out",
       });
     }, heroRef);
-
-    return () => ctx.revert();
-  }, []);
+  }, heroRef);
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-background px-4 sm:px-6">
@@ -77,7 +75,7 @@ const Hero = () => {
         </h1>
 
         <p className="hero-description mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
-          RefreeG puts every naira on-chain. Donors get a receipt, not a
+          Refreeg puts every naira on-chain. Donors get a receipt, not a
           brochure. Causes get funded in seconds, not weeks. No black box, no
           trust tax. Just verifiable giving.
         </p>

@@ -11,14 +11,14 @@ export async function resolveBankDetails(
     bank_code?: string;
     bank_account_name?: string;
     title?: string;
-  }
+  },
 ) {
   let bankDetails = {
     bank_account_number: data.bank_account_number,
     bank_code: data.bank_code,
     bank_account_name: data.bank_account_name,
     sub_account_code: null as string | null,
-    bank_account_id: data.bank_id || null as string | null
+    bank_account_id: data.bank_id || (null as string | null),
   };
 
   if (data.bank_id) {
@@ -28,32 +28,38 @@ export async function resolveBankDetails(
         where: {
           id: data.bank_id,
           developer_id: userId,
-        }
+        },
       });
     } catch (e) {
       console.error(e);
     }
-    
+
     if (!bankAcc) {
-      return { error: "Bank profile not found or access denied", code: ApiErrorCode.NOT_FOUND, status: 404 };
+      return {
+        error: "Bank profile not found or access denied",
+        code: ApiErrorCode.NOT_FOUND,
+        status: 404,
+      };
     }
 
     bankDetails.bank_account_number = bankAcc.bank_account_number;
     bankDetails.bank_code = bankAcc.bank_code;
     bankDetails.bank_account_name = bankAcc.bank_account_name;
     bankDetails.sub_account_code = bankAcc.sub_account_code;
-  } else if (data.bank_account_number && data.bank_code && data.bank_account_name) {
-    
+  } else if (
+    data.bank_account_number &&
+    data.bank_code &&
+    data.bank_account_name
+  ) {
     try {
       const subAccount = await Paystack.createSubaccount({
-        business_name: data.title || "RefreeG Campaign",
+        business_name: data.title || "Refreeg Campaign",
         bank_code: data.bank_code,
         account_number: data.bank_account_number,
-        percentage_charge: 2 
+        percentage_charge: 2,
       });
       bankDetails.sub_account_code = subAccount.subaccount_code;
 
-      
       let newBank;
       try {
         newBank = await prisma.api_bank_accounts.create({
@@ -63,20 +69,20 @@ export async function resolveBankDetails(
             bank_code: data.bank_code,
             bank_account_name: data.bank_account_name,
             sub_account_code: bankDetails.sub_account_code,
-            mode: mode
-          }
+            mode: mode,
+          },
         });
       } catch (e) {
         console.error("Failed to auto-save bank profile", e);
       }
-      
-      if (newBank) bankDetails.bank_account_id = newBank.id;
 
+      if (newBank) bankDetails.bank_account_id = newBank.id;
     } catch (err: any) {
-      return { 
-        error: "Failed to verify bank details with payment provider. Please ensure the account number and bank code are correct.", 
-        code: ApiErrorCode.PAYMENT_SETUP_FAILED, 
-        status: 400 
+      return {
+        error:
+          "Failed to verify bank details with payment provider. Please ensure the account number and bank code are correct.",
+        code: ApiErrorCode.PAYMENT_SETUP_FAILED,
+        status: 400,
       };
     }
   }

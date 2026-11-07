@@ -12,19 +12,19 @@ import { COMMUNITY_LINK } from "./_data/community";
 export const metadata: Metadata = {
   title: "Community",
   description:
-    "Join the RefreeG community to get funded faster. Connect with donors, share your cause, and grow your support network.",
+    "Join the Refreeg community to get funded faster. Connect with donors, share your cause, and grow your support network.",
   openGraph: {
-    title: "RefreeG Community | Get Funded Faster",
+    title: "Refreeg Community | Get Funded Faster",
     description:
       "Your community is your biggest asset. Join changemakers, donors, and supporters helping each other succeed.",
     url: "https://www.refreeg.com/community",
-    siteName: "RefreeG",
+    siteName: "Refreeg",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "RefreeG Community",
+        alt: "Refreeg Community",
       },
     ],
   },

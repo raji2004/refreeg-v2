@@ -3,20 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { listCauses } from "@/actions";
+import { listBookmarkedIds } from "@/actions/saved-actions";
 import { sortCausesByFunding } from "@/lib/causes/funding-rank";
 import { causePublicPath } from "@/lib/causes/slug";
+import { BookmarkButton } from "@/components/saved/BookmarkButton";
+import { useGsap } from "@/hooks/use-gsap";
 import {
   ChevronRight,
   ChevronLeft,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-
-gsap.registerPlugin(ScrollTrigger);
 
 type Campaign = {
   id: string;
@@ -31,6 +30,7 @@ type Campaign = {
 
 export default function LiveCampaigns() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [showScrollHint, setShowScrollHint] = useState(true);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -43,10 +43,11 @@ export default function LiveCampaigns() {
   useEffect(() => {
     async function fetchCampaigns() {
       try {
-        const allCauses = await listCauses();
+        const [allCauses, bookmarks] = await Promise.all([
+          listCauses(),
+          listBookmarkedIds().catch(() => [] as string[]),
+        ]);
         const rankedCauses = sortCausesByFunding(allCauses);
-
-        // The top-ranked cause is featured in LiveSpotlight.
         const transformedCampaigns = rankedCauses.slice(1).map((cause) => ({
           id: cause.id,
           slug: cause.slug,
@@ -58,6 +59,7 @@ export default function LiveCampaigns() {
           location: cause.location || "",
         }));
         setCampaigns(transformedCampaigns);
+        setBookmarkedIds(new Set(bookmarks));
       } catch (error) {
         console.error("Failed to fetch campaigns:", error);
       } finally {
@@ -68,10 +70,10 @@ export default function LiveCampaigns() {
     fetchCampaigns();
   }, []);
 
-  useEffect(() => {
-    if (loading || campaigns.length === 0) return;
+  useGsap(
+    (gsap) => {
+      if (loading || campaigns.length === 0) return;
 
-    const ctx = gsap.context(() => {
       gsap.from(headerRef.current, {
         scrollTrigger: {
           trigger: headerRef.current,
@@ -100,10 +102,10 @@ export default function LiveCampaigns() {
           });
         }
       });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [loading, campaigns]);
+    },
+    sectionRef,
+    [loading, campaigns],
+  );
 
   const checkScrollButtons = () => {
     const container = scrollContainerRef.current;
@@ -288,6 +290,12 @@ export default function LiveCampaigns() {
                         />
 
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                        <BookmarkButton
+                          itemId={campaign.id}
+                          itemType="cause"
+                          initialSaved={bookmarkedIds.has(campaign.id)}
+                        />
                       </div>
 
                       <div className="absolute top-3 left-3 z-10">
