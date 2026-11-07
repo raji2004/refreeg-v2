@@ -36,7 +36,7 @@ export default function MoreThanCrowdfunding() {
             whileInView="show"
             viewport={{ once: true }}
           >
-            RefreeG is More than Just
+            Refreeg is More than Just
             <br className="hidden md:block" />{" "}
             <span className="text-gray-400"> a Crowdfunding Website </span>
           </motion.h2>

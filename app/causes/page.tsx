@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { DiscoverPageClient } from "@/components/discover/discover-page-client";
-import { listBookmarkedIds } from "@/actions/bookmark-actions";
+import { listBookmarkedKeys } from "@/actions/saved-actions";
 import {
   countDiscoverResults,
   getDiscoverFacets,
@@ -35,7 +35,7 @@ export default async function DiscoverPage({
     await Promise.all([
       listDiscoverResults(initialFilters, { limit: PAGE_SIZE, offset: 0 }),
       getDiscoverFacets(initialFilters, CATEGORY_IDS),
-      listBookmarkedIds().catch(() => []),
+      listBookmarkedKeys().catch(() => []),
       countDiscoverResults(initialFilters),
       getDiscoverRailData(),
     ]);
@@ -50,7 +50,7 @@ export default async function DiscoverPage({
       initialTotal={total}
       topCities={railData.topCities}
       amountCeiling={railData.amountCeiling}
-      initialBookmarks={bookmarks.map((b) => `${b.targetType}:${b.targetId}`)}
+      initialBookmarks={bookmarks}
     />
   );
 }

@@ -10,9 +10,9 @@ import { AboutPillars } from "./_components/AboutPillars";
 import { PeopleBehind } from "./_components/PeopleBehind";
 
 export const metadata: Metadata = {
-  title: "About RefreeG | Transparent Crowdfunding",
+  title: "About Refreeg - Transparent Crowdfunding",
   description:
-    "RefreeG connects people who care with causes that matter. Every donation is tracked, so you can see exactly where your money lands.",
+    "Refreeg connects people who care with causes that matter. Every donation is tracked, so you can see exactly where your money lands.",
 };
 
 export default function AboutPage() {

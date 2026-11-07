@@ -63,7 +63,7 @@ export async function getNotifications(): Promise<{
       orderBy: { createdAt: "desc" },
       take: MAX_ITEMS,
     }),
-    prisma.bookmarks.findMany({
+    prisma.bookmark.findMany({
       where: { user_id: user.id, target_type: "cause" },
       select: { target_id: true, created_at: true },
     }),

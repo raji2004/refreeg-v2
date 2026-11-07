@@ -15,8 +15,7 @@ import { Button } from "@/components/ui/button";
 import { H4, P } from "./typography";
 import AnimatedCard from "./home/components/AnimatedCard";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
-import { Bookmark } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { BookmarkButton } from "./saved/BookmarkButton";
 
 interface PetitionCardProps {
   petition: {
@@ -31,15 +30,14 @@ interface PetitionCardProps {
       full_name?: string;
     } | null;
   };
-  bookmarked?: boolean;
-  onToggleBookmark?: () => void;
+  /** Server-rendered initial saved state for this petition (from listBookmarkedIds). */
+  initialBookmarked?: boolean;
   onSignClick?: () => void;
 }
 
 export function PetitionCard({
   petition,
-  bookmarked,
-  onToggleBookmark,
+  initialBookmarked = false,
   onSignClick,
 }: PetitionCardProps) {
   return (
@@ -55,29 +53,11 @@ export function PetitionCard({
               className="object-cover"
               unoptimized={isProxyMediaUrl(getMediaUrl(petition.image))}
             />
-            {onToggleBookmark && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onToggleBookmark();
-                }}
-                aria-pressed={bookmarked}
-                aria-label={bookmarked ? "Remove bookmark" : "Save"}
-                className={cn(
-                  "absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm shadow-sm transition-colors",
-                  bookmarked
-                    ? "bg-ink text-ink-foreground"
-                    : "bg-white/90 text-slate-700 hover:bg-white",
-                )}
-              >
-                <Bookmark
-                  className="h-4 w-4"
-                  fill={bookmarked ? "currentColor" : "none"}
-                />
-              </button>
-            )}
+            <BookmarkButton
+              itemId={petition.id}
+              itemType="petition"
+              initialSaved={initialBookmarked}
+            />
           </div>
 
           <CardHeader className="flex flex-col flex-1 p-4">

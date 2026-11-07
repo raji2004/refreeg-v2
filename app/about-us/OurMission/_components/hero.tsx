@@ -19,11 +19,11 @@ export default function Hero() {
             </div>
 
             <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-tight">
-              RefreeG&apos;s Mission
+              Refreeg&apos;s Mission
             </h1>
 
             <p className="text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed max-w-none lg:max-w-lg">
-              At RefreeG, we believe in the power of community-driven change.
+              At Refreeg, we believe in the power of community-driven change.
               Our mission is simple yet impactful: to connect those who want to
               help with those who need it the most. To create a transparent and
               accountable crowdfunding platform. To foster socio-economic growth

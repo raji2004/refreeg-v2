@@ -56,7 +56,7 @@ function toGiftCause(c: {
     image: c.image,
     raised: Number(c.raised ?? 0),
     goal: Number(c.goal ?? 0),
-    orgName: c.user?.fullName || "RefreeG campaign",
+    orgName: c.user?.fullName || "Refreeg campaign",
     orgVerified: !!c.user?.isVerified,
   };
 }

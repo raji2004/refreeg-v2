@@ -174,7 +174,7 @@ export async function takedownApiCampaign(campaignId: string) {
       status: "resolved",
       resolved_at: new Date(),
       resolution_notes:
-        "Campaign cancelled by RefreeG moderation team following reports.",
+        "Campaign cancelled by Refreeg's moderation team following reports.",
     },
   });
 
@@ -191,7 +191,7 @@ export async function takedownApiCampaign(campaignId: string) {
       campaign_id: campaign.id,
       campaign_title: campaign.title,
       reason:
-        "Campaign cancelled by RefreeG moderation team following reports.",
+        "Campaign cancelled by Refreeg's moderation team following reports.",
       cancelled_at: new Date().toISOString(),
     });
   } catch (webhookError) {

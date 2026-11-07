@@ -9,7 +9,7 @@ export default function ChangeLives() {
         💙 Your Support Changes Lives
       </div>
       <div className="mt-2 text-base">
-        At RefreeG, every donation counts, every cause matters, and every action
+        At Refreeg, every donation counts, every cause matters, and every action
         leads to real impact. Whether you’re donating, starting a campaign, or
         simply spreading the word, you are helping reshape the future of giving.
       </div>

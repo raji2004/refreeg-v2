@@ -42,7 +42,7 @@ export default function Hero() {
           whileInView="show"
           viewport={{ once: true }}
         >
-          We are RefreeG
+          We are Refreeg
         </motion.h1>
 
         <motion.p
