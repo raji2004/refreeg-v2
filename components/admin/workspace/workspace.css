@@ -1,0 +1,52 @@
+.admin-workspace {
+  color-scheme: light;
+}
+.admin-workspace .text-amber {
+  color: color-mix(in srgb, hsl(var(--amber)) 65%, hsl(var(--ink)));
+}
+.admin-workspace .workspace-table {
+  min-width: 580px;
+  font-size: 13px;
+}
+.admin-workspace .workspace-table thead {
+  background: hsl(var(--ink) / 0.025);
+}
+.admin-workspace .workspace-table thead tr {
+  border: 0;
+}
+.admin-workspace .workspace-table th {
+  height: 42px;
+  padding: 0 20px;
+  color: hsl(var(--ink) / 0.6);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+.admin-workspace .workspace-table td {
+  height: 56px;
+  padding: 9px 20px;
+  white-space: nowrap;
+}
+.admin-workspace .workspace-table tbody tr {
+  border-color: hsl(var(--hairline) / 0.6);
+}
+.admin-workspace .workspace-table tbody tr:hover {
+  background: hsl(var(--ink) / 0.025);
+}
+.admin-workspace button,
+.admin-workspace a,
+.admin-workspace input,
+.admin-workspace select {
+  outline-offset: 3px;
+}
+.admin-workspace :focus-visible {
+  outline: 2px solid hsl(var(--blue-accent));
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-workspace * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
