@@ -1,10 +1,13 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { after } from "next/server";
 import { warmCauseImage } from "@/lib/media/cause-image-render";
-import { DISCOVER_CACHE_TAG } from "@/lib/discover-constants";
+import {
+  DISCOVER_CACHE_TAG,
+  DISCOVER_CACHE_SECONDS,
+} from "@/lib/discover-constants";
 import type {
   Cause,
   CauseWithUser,
@@ -92,7 +95,7 @@ export async function getQuickDonateProps(causeId: string) {
     goal: cause.goal,
     raised: cause.raised,
     subaccount: cause.user?.sub_account_code ?? undefined,
-    orgName: cause.user?.name || "RefreeG campaign",
+    orgName: cause.user?.name || "g campaign",
     orgVerified: !!cause.user?.is_verified,
     defaultName: profile?.display_name || profile?.full_name || "",
     defaultEmail: profile?.email ?? "",
@@ -103,7 +106,9 @@ export async function getQuickDonateProps(causeId: string) {
   };
 }
 
-export async function getCause(causeId: string): Promise<CauseWithUser | null> {
+async function getCauseUncached(
+  causeId: string,
+): Promise<CauseWithUser | null> {
   if (!causeId?.trim()) return null;
   const user = await getCurrentUser();
 
@@ -209,6 +214,15 @@ export async function getCause(causeId: string): Promise<CauseWithUser | null> {
 
   return cause;
 }
+
+/**
+ * React cache() memoizes getCause for the lifetime of a single server
+ * render. Campaign pages call it twice (generateMetadata + the page
+ * component) — this drops that from two database round-trips to one.
+ * Per-request only, so session-aware behavior (owner/admin visibility,
+ * following state) is unchanged.
+ */
+export const getCause = cache(getCauseUncached);
 
 async function uploadFileToS3(
   file: File,
@@ -564,171 +578,174 @@ export async function updateCause(
 /**
  * List causes with filtering options
  */
-export const listCauses = cache(
-  async (options: CauseFilterOptions = {}): Promise<Cause[]> => {
-    let whereClause: any = {};
+async function queryCauses(options: CauseFilterOptions = {}): Promise<Cause[]> {
+  let whereClause: any = {};
 
-    // Category filter
-    if (options.categories && options.categories.length > 0) {
-      whereClause.category = { in: options.categories };
-    } else if (options.category && options.category !== "all") {
-      whereClause.category = options.category;
+  // Category filter
+  if (options.categories && options.categories.length > 0) {
+    whereClause.category = { in: options.categories };
+  } else if (options.category && options.category !== "all") {
+    whereClause.category = options.category;
+  }
+
+  // Status filter
+  if (options.status) {
+    whereClause.status = options.status;
+  } else {
+    if (!options.userId) {
+      whereClause.status = "approved";
     }
+  }
 
-    // Status filter
-    if (options.status) {
-      whereClause.status = options.status;
-    } else {
-      if (!options.userId) {
-        whereClause.status = "approved";
-      }
-    }
+  // User filter
+  if (options.userId) {
+    whereClause.userId = options.userId;
+  } else {
+    // Hide compliance-paused and paused causes from public listings
+    whereClause.compliance_paused = false;
+    whereClause.paused = false;
+  }
 
-    // User filter
-    if (options.userId) {
-      whereClause.userId = options.userId;
-    } else {
-      // Hide compliance-paused and paused causes from public listings
-      whereClause.compliance_paused = false;
-      whereClause.paused = false;
-    }
+  // Search filter
+  if (options.search && options.search.trim()) {
+    whereClause.title = {
+      contains: options.search.trim(),
+      mode: "insensitive",
+    };
+  }
 
-    // Search filter
-    if (options.search && options.search.trim()) {
-      whereClause.title = {
-        contains: options.search.trim(),
-        mode: "insensitive",
-      };
-    }
+  // Location filter — Cause.location is free text, so this is a
+  // contains-match, not a structured lookup against State/City.
+  if (options.location && options.location.trim()) {
+    whereClause.location = {
+      contains: options.location.trim(),
+      mode: "insensitive",
+    };
+  }
 
-    // Location filter — Cause.location is free text, so this is a
-    // contains-match, not a structured lookup against State/City.
-    if (options.location && options.location.trim()) {
-      whereClause.location = {
-        contains: options.location.trim(),
-        mode: "insensitive",
-      };
-    }
+  // Urgent filter — only causes with an explicit end_date within 7 days
+  // can be expressed as a DB predicate; causes that derive daysLeft from
+  // days_active/created_at (see utils/cause/cause-utils.ts) aren't covered.
+  if (options.urgentOnly) {
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    whereClause.end_date = { gt: new Date(), lte: sevenDaysFromNow };
+  }
 
-    // Urgent filter — only causes with an explicit end_date within 7 days
-    // can be expressed as a DB predicate; causes that derive daysLeft from
-    // days_active/created_at (see utils/cause/cause-utils.ts) aren't covered.
-    if (options.urgentOnly) {
-      const sevenDaysFromNow = new Date();
-      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-      whereClause.end_date = { gt: new Date(), lte: sevenDaysFromNow };
-    }
+  // Verified-NGO filter — derived from the creator's account verification;
+  // there's no org-level verified field.
+  if (options.verifiedOnly) {
+    whereClause.user = { isVerified: true };
+  }
 
-    // Verified-NGO filter — derived from the creator's account verification;
-    // there's no org-level verified field.
-    if (options.verifiedOnly) {
-      whereClause.user = { isVerified: true };
-    }
+  // Sorting
+  let orderByClause: any = { createdAt: "desc" };
 
-    // Sorting
-    let orderByClause: any = { createdAt: "desc" };
+  switch (options.sortBy) {
+    case "most-funded":
+      orderByClause = [{ raised: "desc" }, { createdAt: "desc" }];
+      break;
+    case "ending-soon":
+      orderByClause = { end_date: "asc" };
+      break;
+    case "latest":
+      orderByClause = { createdAt: "desc" };
+      break;
+    case "recommended":
+    default:
+      orderByClause = { createdAt: "desc" };
+      break;
+  }
 
-    switch (options.sortBy) {
-      case "most-funded":
-        orderByClause = [{ raised: "desc" }, { createdAt: "desc" }];
-        break;
-      case "ending-soon":
-        orderByClause = { end_date: "asc" };
-        break;
-      case "latest":
-        orderByClause = { createdAt: "desc" };
-        break;
-      case "recommended":
-      default:
-        orderByClause = { createdAt: "desc" };
-        break;
-    }
+  // Amount-still-needed range can't be expressed as a Prisma where clause
+  // (it's goal - raised, a column-to-column computation) — fetch a wider
+  // candidate slice and trim in JS when that filter is active.
+  const hasAmountRange =
+    options.minAmountNeeded != null || options.maxAmountNeeded != null;
+  const fetchTake =
+    hasAmountRange && options.limit ? options.limit * 4 : options.limit;
 
-    // Amount-still-needed range can't be expressed as a Prisma where clause
-    // (it's goal - raised, a column-to-column computation) — fetch a wider
-    // candidate slice and trim in JS when that filter is active.
-    const hasAmountRange =
-      options.minAmountNeeded != null || options.maxAmountNeeded != null;
-    const fetchTake =
-      hasAmountRange && options.limit ? options.limit * 4 : options.limit;
-
-    try {
-      const data = await prisma.cause.findMany({
-        where: whereClause,
-        include: {
-          user: {
-            select: {
-              fullName: true,
-              email: true,
-              profilePhoto: true,
-              isVerified: true,
-              accountType: true,
-            },
-          },
-          _count: {
-            select: {
-              donations: true,
-            },
+  try {
+    const data = await prisma.cause.findMany({
+      where: whereClause,
+      include: {
+        user: {
+          select: {
+            fullName: true,
+            email: true,
+            profilePhoto: true,
+            isVerified: true,
+            accountType: true,
           },
         },
-        orderBy: orderByClause,
-        skip: hasAmountRange ? undefined : options.offset,
-        take: fetchTake,
+        _count: {
+          select: {
+            donations: true,
+          },
+        },
+      },
+      orderBy: orderByClause,
+      skip: hasAmountRange ? undefined : options.offset,
+      take: fetchTake,
+    });
+
+    let causes = data.map((d: any) => ({
+      ...mapPrismaToCause(d),
+      donors_count: d._count?.donations ?? 0,
+      profiles: d.user
+        ? {
+            full_name: d.user.fullName,
+            email: d.user.email,
+            profile_photo: d.user.profilePhoto,
+            is_verified: !!d.user.isVerified,
+            account_type: d.user.accountType || "individual",
+          }
+        : undefined,
+    }));
+
+    if (hasAmountRange) {
+      causes = causes.filter((c) => {
+        const needed = Number(c.goal || 0) - Number(c.raised || 0);
+        if (options.minAmountNeeded != null && needed < options.minAmountNeeded)
+          return false;
+        if (options.maxAmountNeeded != null && needed > options.maxAmountNeeded)
+          return false;
+        return true;
       });
+      const offset = options.offset || 0;
+      causes = causes.slice(offset, offset + (options.limit || causes.length));
+    }
 
-      let causes = data.map((d: any) => ({
-        ...mapPrismaToCause(d),
-        donors_count: d._count?.donations ?? 0,
-        profiles: d.user
-          ? {
-              full_name: d.user.fullName,
-              email: d.user.email,
-              profile_photo: d.user.profilePhoto,
-              is_verified: !!d.user.isVerified,
-              account_type: d.user.accountType || "individual",
-            }
-          : undefined,
-      }));
-
-      if (hasAmountRange) {
-        causes = causes.filter((c) => {
-          const needed = Number(c.goal || 0) - Number(c.raised || 0);
-          if (
-            options.minAmountNeeded != null &&
-            needed < options.minAmountNeeded
-          )
-            return false;
-          if (
-            options.maxAmountNeeded != null &&
-            needed > options.maxAmountNeeded
-          )
-            return false;
+    const isOwnerScoped = !!options.userId;
+    const result = isOwnerScoped
+      ? causes
+      : causes.filter((c) => {
+          if (c.status === "expired") return false;
+          const now = new Date();
+          if (c.end_date && new Date(c.end_date) < now) return false;
           return true;
         });
-        const offset = options.offset || 0;
-        causes = causes.slice(
-          offset,
-          offset + (options.limit || causes.length),
-        );
-      }
 
-      const isOwnerScoped = !!options.userId;
-      const result = isOwnerScoped
-        ? causes
-        : causes.filter((c) => {
-            if (c.status === "expired") return false;
-            const now = new Date();
-            if (c.end_date && new Date(c.end_date) < now) return false;
-            return true;
-          });
+    return result;
+  } catch (error) {
+    console.error("Error listing causes:", error);
+    throw error;
+  }
+}
 
-      return result;
-    } catch (error) {
-      console.error("Error listing causes:", error);
-      throw error;
-    }
-  },
-);
+// Cross-request cache for PUBLIC cause listings (home rails, /causes).
+// Same 60s / "discover" tag policy as Discover, so approve/pause/donation
+// mutations already bust it. User-scoped listings and free-text searches
+// bypass the cache (user-specific and high-cardinality respectively).
+const listCausesCached = unstable_cache(queryCauses, ["public-causes"], {
+  revalidate: DISCOVER_CACHE_SECONDS,
+  tags: [DISCOVER_CACHE_TAG],
+});
+
+export const listCauses = cache(async (options: CauseFilterOptions = {}) => {
+  if (options.userId || options.search?.trim()) return queryCauses(options);
+  return listCausesCached(options);
+});
 
 /**
  * Count causes with filtering options

@@ -39,7 +39,7 @@ export function AboutHero() {
 
         <span className="inline-flex items-center gap-2 rounded-full bg-lime px-3 py-1 text-xs font-medium text-ink">
           <span className="h-1.5 w-1.5 rounded-full bg-blue-accent" />
-          About RefreeG
+          About Refreeg
         </span>
 
         <h1 className="mt-6 max-w-3xl font-fraunces lg:max-w-[46rem] text-4xl font-normal leading-[1.05] tracking-tight text-ink sm:text-5xl md:text-6xl lg:text-7xl">
@@ -48,7 +48,7 @@ export function AboutHero() {
         </h1>
 
         <p className="mt-6 max-w-md text-sm leading-relaxed text-ink/70 md:text-base">
-          RefreeG is a transparent crowdfunding platform. Every donation is
+          Refreeg is a transparent crowdfunding platform. Every donation is
           tracked, so you can see exactly where your money lands.
         </p>
 

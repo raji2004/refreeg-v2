@@ -2,19 +2,20 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Bookmark, Flag, ShieldCheck } from "lucide-react";
+import { Flag, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { formatNairaShort } from "@/lib/discover-summary";
+import { BookmarkButton } from "@/components/saved/BookmarkButton";
 import type { DiscoverItem } from "@/actions/discover-actions";
 
 type CardProps = {
   item: DiscoverItem;
   view: "grid" | "list";
-  bookmarked: boolean;
-  onToggleBookmark: () => void;
+  /** Server-rendered initial saved state for this item. */
+  initialBookmarked?: boolean;
   onGiveClick: () => void;
   onPledgeClick: () => void;
   onSignClick: () => void;
@@ -128,32 +129,18 @@ function CampaignActions({
   );
 }
 
-function BookmarkButton({
-  bookmarked,
-  onToggleBookmark,
-}: Pick<CardProps, "bookmarked" | "onToggleBookmark">) {
-  return (
-    <button
-      type="button"
-      onClick={stop(onToggleBookmark)}
-      aria-pressed={bookmarked}
-      aria-label={bookmarked ? "Remove from saved" : "Save"}
-      className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-surface/95 text-ink shadow-sm transition-colors hover:bg-surface"
-    >
-      <Bookmark
-        className="h-3.5 w-3.5"
-        fill={bookmarked ? "currentColor" : "none"}
-      />
-    </button>
-  );
-}
-
-function PetitionGridCard({ item, onSignClick }: CardProps) {
+function PetitionGridCard({ item, onSignClick, initialBookmarked }: CardProps) {
   return (
     <Link
       href={hrefFor(item)}
-      className="group flex h-full flex-col rounded-2xl bg-sand p-5 transition-shadow hover:shadow-lg"
+      className="group relative flex h-full flex-col rounded-2xl bg-sand p-5 transition-shadow hover:shadow-lg"
     >
+      <BookmarkButton
+        itemId={item.id}
+        itemType="petition"
+        initialSaved={initialBookmarked ?? false}
+      />
+
       <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-amber">
         <Flag className="h-3.5 w-3.5" />
         Petition
@@ -185,7 +172,7 @@ function PetitionGridCard({ item, onSignClick }: CardProps) {
 }
 
 function CampaignGridCard(props: CardProps) {
-  const { item } = props;
+  const { item, initialBookmarked } = props;
   const imageUrl = getMediaUrl(item.image) || "/placeholder.svg";
   const chip = statusChip(item, "solid");
 
@@ -208,7 +195,11 @@ function CampaignGridCard(props: CardProps) {
             {chip.label}
           </span>
         )}
-        <BookmarkButton {...props} />
+        <BookmarkButton
+          itemId={item.id}
+          itemType="cause"
+          initialSaved={initialBookmarked ?? false}
+        />
       </div>
 
       <div className="flex flex-1 flex-col p-4">
@@ -247,7 +238,7 @@ function CampaignGridCard(props: CardProps) {
 }
 
 function ListRow(props: CardProps) {
-  const { item } = props;
+  const { item, initialBookmarked } = props;
   const imageUrl = getMediaUrl(item.image) || "/placeholder.svg";
   const chip = statusChip(item, "soft");
   const isCampaign = item.type === "campaign";
@@ -274,6 +265,11 @@ function ListRow(props: CardProps) {
           sizes="104px"
           className="object-cover"
           unoptimized={isProxyMediaUrl(imageUrl)}
+        />
+        <BookmarkButton
+          itemId={item.id}
+          itemType={isCampaign ? "cause" : "petition"}
+          initialSaved={initialBookmarked ?? false}
         />
       </div>
 

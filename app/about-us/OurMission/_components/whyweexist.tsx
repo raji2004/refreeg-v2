@@ -35,19 +35,19 @@ export default function Whyweexist() {
       Icon: Rocket,
       title: "Lack of Transparency",
       description:
-        "RefreeG is dedicated to promoting transparency in fundraising. With our innovative approach, we ensure that every donation is tracked and reported, giving backers clear insight into where their money goes.",
+        "Refreeg is dedicated to promoting transparency in fundraising. With our innovative approach, we ensure that every donation is tracked and reported, giving backers clear insight into where their money goes.",
     },
     {
       Icon: HandshakeIcon,
       title: "Limited Access",
       description:
-        "RefreeG is dedicated to making a real grassroots impact. Unlike many other crowdfunding sites that overlook local initiatives, we prioritize empowering communities and amplifying their voices.",
+        "Refreeg is dedicated to making a real grassroots impact. Unlike many other crowdfunding sites that overlook local initiatives, we prioritize empowering communities and amplifying their voices.",
     },
     {
       Icon: MegaphoneIcon,
       title: "Break Borders",
       description:
-        "RefreeG understands the common struggle of donors wanting to know where their contributions go. With our transparent tools, we provide clear insights into the impact of every donation, making it easy for supporters to see how their funds are making a difference.",
+        "Refreeg understands the common struggle of donors wanting to know where their contributions go. With our transparent tools, we provide clear insights into the impact of every donation, making it easy for supporters to see how their funds are making a difference.",
     },
   ];
 

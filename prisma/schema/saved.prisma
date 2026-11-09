@@ -1,0 +1,46 @@
+// prisma/schema/saved.prisma
+
+model SavedList {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String     @db.Uuid
+  name       String
+  color      String     @default("#0D1E16")
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  bookmarks  Bookmark[]
+
+  @@index([user_id], map: "idx_saved_lists_user_id")
+}
+
+/// Polymorphic on purpose: target_id points at causes.id or petitions.id
+/// depending on target_type. There is no FK, so readers must tolerate
+/// bookmarks whose target has been deleted (see lib/saved.ts).
+model Bookmark {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String     @db.Uuid
+  target_id   String     @db.Uuid
+  target_type String     // 'cause' | 'petition'
+  list_id     String?    @db.Uuid
+  created_at  DateTime   @default(now()) @db.Timestamptz(6)
+
+  user        User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  list        SavedList? @relation(fields: [list_id], references: [id], onDelete: SetNull)
+
+  @@unique([user_id, target_id, target_type])
+  @@index([user_id], map: "idx_saved_bookmarks_user_id")
+  @@index([list_id], map: "idx_saved_bookmarks_list_id")
+}
+
+model UserAlertPrefs {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String   @unique @db.Uuid
+  closing_3d    Boolean  @default(true)
+  reached_80pct Boolean  @default(true)
+  delivered     Boolean  @default(false)
+  weekly_digest Boolean  @default(false)
+  updated_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+}

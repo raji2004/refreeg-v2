@@ -61,7 +61,7 @@ export function AppShellNav({
   const secondaryNavItems: NavItem[] = [
     {
       title: "Saved",
-      href: "/saved",
+      href: "/dashboard/saved",
       icon: Bookmark,
       requiresAuth: true,
       count:

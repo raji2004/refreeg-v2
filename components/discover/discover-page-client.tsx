@@ -121,6 +121,10 @@ export function DiscoverPageClient({
   initialItems: DiscoverItem[];
   initialHasMore: boolean;
   initialFacets: { category: string; count: number }[];
+  /**
+   * Bookmarked target keys, in the format `${targetType}:${targetId}`
+   * (e.g. `cause:abc-123`, `petition:def-456`).
+   */
   initialBookmarks: string[];
   initialTotal: number;
   topCities: string[];
@@ -143,6 +147,12 @@ export function DiscoverPageClient({
   const [draftFilters, setDraftFilters] =
     useState<DiscoverFilters>(initialFilters);
   const [draftCount, setDraftCount] = useState<number | null>(null);
+
+  // Stable set used to resolve `initialBookmarked` for each card.
+  const bookmarkedSet = useMemo(
+    () => new Set(initialBookmarks),
+    [initialBookmarks],
+  );
 
   const activeFilters = useMemo<DiscoverFilters>(
     () => ({ ...filters, sortBy }),
@@ -379,7 +389,7 @@ export function DiscoverPageClient({
               view={view}
               initialItems={initialItems}
               initialHasMore={initialHasMore}
-              initialBookmarks={initialBookmarks}
+              bookmarkedSet={bookmarkedSet}
               onFiltersChange={replaceFilters}
               onClearFilters={handleClearFilters}
               onLoaded={() => {

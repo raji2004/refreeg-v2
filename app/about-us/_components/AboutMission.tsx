@@ -27,7 +27,7 @@ export function AboutMission() {
       <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 md:grid-cols-2 md:gap-16 lg:px-8">
         <Image
           src="/about/give-kindly.png"
-          alt="A hand holding RefreeG stickers that read Give Kindly"
+          alt="A hand holding Refreeg stickers that read Give Kindly"
           width={616}
           height={600}
           sizes="(max-width: 768px) 100vw, 50vw"

@@ -8,7 +8,7 @@ export function PeopleBehind() {
     <section className="relative aspect-[4/5] overflow-hidden rounded-xl sm:aspect-[1312/680]">
       <Image
         src="/about/people-behind.jpg"
-        alt="Members of the RefreeG team smiling together"
+        alt="Members of the Refreeg team smiling together"
         fill
         sizes="100vw"
         className="object-cover"
@@ -17,7 +17,7 @@ export function PeopleBehind() {
 
       <div className="absolute inset-x-0 bottom-0 flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-10">
         <h2 className="font-fraunces text-3xl font-normal leading-tight text-white md:text-5xl">
-          The people behind <span className="text-lime">RefreeG</span>
+          The people behind <span className="text-lime">Refreeg</span>
         </h2>
         <a
           href={TEAM_LINK}

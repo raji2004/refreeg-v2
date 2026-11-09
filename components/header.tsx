@@ -67,6 +67,12 @@ type NavItem = NavLink | NavDropdown;
 
 const publicNavItems: NavItem[] = [
   {
+    title: "About Refreeg",
+    href: "/about-us",
+    type: "link",
+    icon: Sparkles,
+  },
+  {
     title: "Discover",
     href: "/causes",
     type: "link",
@@ -115,40 +121,35 @@ const publicNavItems: NavItem[] = [
     ],
   },
   {
-    title: "How RefreeG works",
-    header: "Everything you need to launch, manage, and grow a campaign.",
-    icon: Lightbulb,
-    type: "dropdown",
-    items: [
-      // Hidden until /rewards and /crypto pages exist.
-      // {
-      //   title: "RefreeG Rewards",
-      //   description:
-      //     "Get rewarded in points, crypto and recognition for driving impact.",
-      //   href: "/rewards",
-      //   icon: Star,
-      // },
-      // {
-      //   title: "Crypto on RefreeG",
-      //   description:
-      //     "Support global causes seamlessly with fast, transparent crypto donations. Real-time tracking and low fees.",
-      //   href: "/crypto",
-      //   icon: Wallet,
-      // },
-      {
-        title: "FAQ",
-        description:
-          "Find answers to common questions about using the platform, campaigns, and donations.",
-        href: "/faq",
-        icon: HelpCircle,
-      },
-    ],
-  },
-  {
-    title: "About RefreeG",
-    href: "/about-us",
+    title: "How Refreeg works",
+    href: "/faq",
     type: "link",
-    icon: Sparkles,
+    // header: "Everything you need to launch, manage, and grow a campaign.",
+    icon: Lightbulb,
+    // items: [
+    //   // Hidden until /rewards and /crypto pages exist.
+    //   // {
+    //   //   title: "RefreeG Rewards",
+    //   //   description:
+    //   //     "Get rewarded in points, crypto and recognition for driving impact.",
+    //   //   href: "/rewards",
+    //   //   icon: Star,
+    //   // },
+    //   // {
+    //   //   title: "Crypto on RefreeG",
+    //   //   description:
+    //   //     "Support global causes seamlessly with fast, transparent crypto donations. Real-time tracking and low fees.",
+    //   //   href: "/crypto",
+    //   //   icon: Wallet,
+    //   // },
+    //   {
+    //     title: "FAQ",
+    //     description:
+    //       "Find answers to common questions about using the platform, campaigns, and donations.",
+    //     href: "/faq",
+    //     icon: HelpCircle,
+    //   },
+    // ],
   },
 ];
 

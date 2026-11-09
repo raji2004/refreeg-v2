@@ -15,29 +15,25 @@ import { DonateButton } from "@/components/donate-button";
 import { Button } from "@/components/ui/button";
 import { H4, P } from "./typography";
 import AnimatedCard from "./home/components/AnimatedCard";
-import { MapPin, Clock, Bookmark, HandHeart } from "lucide-react";
+import { MapPin, Clock, HandHeart } from "lucide-react";
 import type { Cause } from "@/types";
 import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
-import { cn } from "@/lib/utils";
-
 import { calculateDaysLeft, isCauseExpired } from "@/utils/cause/cause-utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { causePublicPath } from "@/lib/causes/slug";
+import { BookmarkButton } from "./saved/BookmarkButton";
 
 interface CauseCardProps {
   cause: Cause;
   action?: string | null;
-  bookmarked?: boolean;
-  onToggleBookmark?: () => void;
+  initialBookmarked?: boolean;
   onGiveClick?: () => void;
   onPledgeClick?: () => void;
 }
 
 export function CauseCard({
   cause,
-  action,
-  bookmarked,
-  onToggleBookmark,
+  initialBookmarked = false,
   onGiveClick,
   onPledgeClick,
 }: CauseCardProps) {
@@ -64,6 +60,7 @@ export function CauseCard({
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               unoptimized={isProxyMediaUrl(getMediaUrl(cause.image))}
             />
+
             <div className="absolute top-3 left-3">
               <Badge
                 variant="secondary"
@@ -73,6 +70,7 @@ export function CauseCard({
                 <span>{catConfig.name}</span>
               </Badge>
             </div>
+
             {cause.paused ? (
               <div className="absolute top-3 right-3">
                 <Badge
@@ -108,29 +106,12 @@ export function CauseCard({
                 </Badge>
               </div>
             ) : null}
-            {onToggleBookmark && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onToggleBookmark();
-                }}
-                aria-pressed={bookmarked}
-                aria-label={bookmarked ? "Remove bookmark" : "Save"}
-                className={cn(
-                  "absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm shadow-sm transition-colors",
-                  bookmarked
-                    ? "bg-ink text-ink-foreground"
-                    : "bg-white/90 text-slate-700 hover:bg-white",
-                )}
-              >
-                <Bookmark
-                  className="h-4 w-4"
-                  fill={bookmarked ? "currentColor" : "none"}
-                />
-              </button>
-            )}
+
+            <BookmarkButton
+              itemId={cause.id}
+              itemType="cause"
+              initialSaved={initialBookmarked}
+            />
           </div>
 
           <CardHeader className="flex flex-col flex-1 p-4 pb-2">
