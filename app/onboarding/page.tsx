@@ -57,8 +57,6 @@ type StepId =
   | "complete";
 
 const INDIVIDUAL_STEPS: StepId[] = [
-  "account-type",
-  "gender",
   "profile",
   "kyc",
   "interests",
@@ -107,14 +105,12 @@ function dbStepToStepId(dbStep: number, accountType: string): StepId {
     if (dbStep === 3.5) return "org-setup";
     return "kyc";
   }
-  if (dbStep <= 1) return "account-type";
-  if (dbStep === 2) return "gender";
-  if (dbStep === 3) return "profile";
+  if (dbStep <= 3) return "profile";
   return "kyc";
 }
 
 export default function OnboardingPage() {
-  const [currentStepId, setCurrentStepId] = useState<StepId>("account-type");
+  const [currentStepId, setCurrentStepId] = useState<StepId>("profile");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -240,7 +236,7 @@ export default function OnboardingPage() {
           setIsLoading(false);
         } catch (error) {
           console.error("Error loading onboarding progress:", error);
-          setCurrentStepId("account-type");
+          setCurrentStepId("profile");
           setIsLoading(false);
         }
       }
@@ -256,19 +252,11 @@ export default function OnboardingPage() {
 
     const profileData = onboardingData.profile;
     const isProfileComplete = !!(
-      profileData?.firstName &&
-      profileData?.lastName &&
-      profileData?.username &&
-      profileData?.location &&
-      profileData?.phone
+      profileData?.firstName && profileData?.lastName
     );
 
     if (!isProfileComplete) {
-      setCurrentStepId(
-        onboardingData.accountType === "organization"
-          ? "profile"
-          : "account-type",
-      );
+      setCurrentStepId("profile");
       toast({
         title: "Complete your profile first",
         description: "Please complete earlier steps before proceeding.",
@@ -279,21 +267,11 @@ export default function OnboardingPage() {
 
   const handleStep1Next = async (accountType: string) => {
     try {
-      if (accountType === "organization") {
-        toast({
-          title: "Invalid account type",
-          description:
-            "Organization accounts must be registered through the dedicated organization page.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       await saveStep1Progress(user.id, accountType);
       updateOnboardingData("accountType", accountType);
 
       setDirection(1);
-      setCurrentStepId("gender");
+      setCurrentStepId("profile");
     } catch (error) {
       console.error("Error saving step 1 progress:", error);
       toast({
@@ -322,23 +300,34 @@ export default function OnboardingPage() {
   const handleStep3Submit = async (profileData: any) => {
     setIsSubmitting(true);
     try {
+      const selectedAccountType =
+        profileData.accountType || onboardingData.accountType || "individual";
+
       await createOnboardingProfile(
         user.id,
         {
+          fullName: profileData.fullName,
           firstName: profileData.firstName,
           lastName: profileData.lastName,
+          displayName: profileData.displayName,
+          dateOfBirth: profileData.dateOfBirth,
           username: profileData.username,
           location: profileData.location,
+          state: profileData.state,
+          city: profileData.city,
           phone: profileData.phone,
           email: user.email || "",
           profilePhoto: profileData.profilePhoto,
-          accountType: onboardingData.accountType || "individual",
-          gender: onboardingData.gender || undefined,
+          accountType: selectedAccountType,
+          gender: profileData.gender || onboardingData.gender || undefined,
+          organizationName: profileData.organizationName,
+          organizationType: profileData.organizationType,
+          organizationRole: profileData.organizationRole,
         },
         user.image,
       );
 
-      if (onboardingData.accountType === "organization") {
+      if (selectedAccountType === "organization") {
         goToStep("org-setup", 1);
       } else {
         goToStep("kyc", 1);

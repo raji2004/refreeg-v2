@@ -54,15 +54,24 @@ export interface Profile {
 }
 
 export interface OnboardingProfileData {
-  firstName: string;
-  lastName: string;
-  username: string;
-  location: string;
-  phone: string;
-  email: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  displayName?: string;
+  dateOfBirth?: string;
+  username?: string;
+  location?: string;
+  state?: string;
+  city?: string;
+  country?: string;
+  phone?: string;
+  email?: string;
   profilePhoto?: File | null;
-  accountType: string;
+  accountType?: string;
   gender?: string;
+  organizationName?: string;
+  organizationType?: string;
+  organizationRole?: string;
 }
 
 export interface OrganizationPreferences {

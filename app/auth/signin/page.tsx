@@ -197,15 +197,6 @@ function SignInContent() {
                 Sign up
               </Link>
             </p>
-            <p className="mt-1 text-sm text-neutral-600">
-              Registering as an organization?{" "}
-              <Link
-                href="/auth/signup/organization"
-                className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Create an organization account
-              </Link>
-            </p>
           </div>
 
           {/* Notice banner if redirected */}

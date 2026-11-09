@@ -1,37 +1,43 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { Building2, Check, Loader2, ShieldAlert, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import { motion } from "framer-motion";
-import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { cn } from "@/lib/utils";
 import {
-  Upload,
-  MailIcon,
-  PhoneIcon,
-  User,
-  Loader2,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-} from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { LocationSelector } from "@/components/location-selector";
-import { checkUsernameAvailability } from "@/actions/profile-actions";
-import { suggestUsername } from "@/utils/username";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  formatOnboardingLocation,
+  NIGERIAN_STATES,
+  ONBOARDING_GENDER_OPTIONS,
+  ORGANIZATION_TYPES,
+  splitFullName,
+  validateOnboardingDob,
+  validateOnboardingFullName,
+} from "@/lib/onboarding/validation";
+
+export interface Step3SubmitPayload {
+  accountType: "individual" | "organization";
+  fullName: string;
+  firstName: string;
+  lastName: string;
+  displayName?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  state: string;
+  city: string;
+  location: string;
+  organizationName?: string;
+  organizationType?: string;
+  organizationRole?: string;
+}
 
 interface Step3Props {
   user: any;
-  onNext: (profileData: any) => void;
-  onBack: () => void;
+  onNext: (profileData: Step3SubmitPayload) => void;
+  onBack?: () => void;
+  onSkip?: () => void;
   onboardingData: any;
   updateOnboardingData: (key: string, value: any) => void;
   isSubmitting: boolean;
@@ -45,541 +51,671 @@ export default function Step3({
   updateOnboardingData,
   isSubmitting,
 }: Step3Props) {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    username: "",
-    location: "",
-    phone: "",
-    email: user?.email || "",
-  });
-  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(
-    onboardingData.profile?.profilePhoto ||
-      user?.user_metadata?.avatar_url ||
-      null,
+  const savedProfile = onboardingData?.profile || {};
+
+  const initialAccountType: "individual" | "organization" =
+    onboardingData?.accountType === "organization"
+      ? "organization"
+      : "individual";
+
+  const initialFullName = useMemo(() => {
+    if (savedProfile.fullName) return savedProfile.fullName;
+    if (savedProfile.firstName || savedProfile.lastName) {
+      return `${savedProfile.firstName || ""} ${savedProfile.lastName || ""}`.trim();
+    }
+    return user?.name || "";
+  }, [savedProfile.fullName, savedProfile.firstName, savedProfile.lastName, user?.name]);
+
+  const [accountType, setAccountType] = useState<"individual" | "organization">(
+    initialAccountType,
   );
+  const [fullName, setFullName] = useState<string>(initialFullName);
+  const [displayName, setDisplayName] = useState<string>(
+    savedProfile.displayName || "",
+  );
+  const [dateOfBirth, setDateOfBirth] = useState<string>(
+    savedProfile.dateOfBirth || "",
+  );
+  const [gender, setGender] = useState<string>(
+    onboardingData?.gender || "prefer_not_to_say",
+  );
+  const [stateName, setStateName] = useState<string>(
+    savedProfile.state || "Lagos",
+  );
+  const [city, setCity] = useState<string>(savedProfile.city || "");
+
+  const [organizationName, setOrganizationName] = useState<string>(
+    savedProfile.organizationName || "",
+  );
+  const [organizationType, setOrganizationType] = useState<string>(
+    savedProfile.organizationType || ORGANIZATION_TYPES[0],
+  );
+  const [organizationRole, setOrganizationRole] = useState<string>(
+    savedProfile.organizationRole || "",
+  );
+
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isConsentChecked, setIsConsentChecked] = useState(false);
-  const [isUsernameAvailable, setIsUsernameAvailable] = useState<
-    boolean | null
-  >(null);
-  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
 
   useEffect(() => {
-    const savedData =
-      onboardingData.profile && Object.keys(onboardingData.profile).length > 0
-        ? onboardingData.profile
-        : {};
-
-    const oauthFirstName = user?.name?.split(" ")[0] || "";
-    const oauthLastName = user?.name?.split(" ").slice(1).join(" ") || "";
-    const oauthPhone = user?.phone || "";
-
-    const existingUsername = savedData.username || "";
-    const usernameFill =
-      existingUsername || suggestUsername(user?.email, user?.name);
-
-    setFormData((prev) => ({
-      ...prev,
-      firstName: savedData.firstName || oauthFirstName,
-      lastName: savedData.lastName || oauthLastName,
-      username: usernameFill,
-      location: savedData.location || "",
-      phone: savedData.phone || oauthPhone,
-      email: savedData.email || user?.email || prev.email,
-    }));
-
-    setProfilePhotoUrl(savedData.profilePhoto || user?.image || null);
-
-    setIsConsentChecked(onboardingData.consent || false);
-  }, [onboardingData.profile, onboardingData.consent, user]);
+    if (onboardingData?.accountType === "organization") {
+      setAccountType("organization");
+    }
+  }, [onboardingData?.accountType]);
 
   useEffect(() => {
-    const checkUsername = async () => {
-      if (formData.username.length < 3) {
-        setIsUsernameAvailable(null);
-        return;
+    if (!displayName && fullName.trim()) {
+      const { firstName, lastName } = splitFullName(fullName);
+      if (firstName && lastName) {
+        setDisplayName(`${firstName} ${lastName.charAt(0).toUpperCase()}.`);
+      } else if (firstName) {
+        setDisplayName(firstName);
       }
+    }
+    // Only auto-suggest display name when displayName is empty on initial name entry
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-      setIsCheckingUsername(true);
-      try {
-        const isAvailable = await checkUsernameAvailability(
-          formData.username,
-          user?.id,
-        );
+  const clearFieldError = (field: string) => {
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
 
-        if (isAvailable) {
-          setIsUsernameAvailable(true);
-          setErrors((prev) => ({ ...prev, username: "" }));
-        } else {
-          setIsUsernameAvailable(false);
-          setErrors((prev) => ({
-            ...prev,
-            username: "Username is already taken",
-          }));
-        }
-      } catch (error) {
-        console.error("Error checking username:", error);
-      } finally {
-        setIsCheckingUsername(false);
+  const handleSelectAccountType = (nextType: "individual" | "organization") => {
+    setAccountType(nextType);
+    updateOnboardingData("accountType", nextType);
+    setErrors({});
+  };
+
+  const validate = (): boolean => {
+    const nextErrors: Record<string, string> = {};
+
+    const nameError = validateOnboardingFullName(fullName);
+    if (nameError) {
+      nextErrors.fullName = nameError;
+    }
+
+    if (accountType === "individual") {
+      const dobError = validateOnboardingDob(dateOfBirth);
+      if (dobError) {
+        nextErrors.dateOfBirth = dobError;
       }
+    } else {
+      if (!organizationName.trim() || organizationName.trim().length < 2) {
+        nextErrors.organizationName =
+          "Enter your organisation name (at least 2 characters).";
+      }
+      if (!organizationRole.trim()) {
+        nextErrors.organizationRole = "Enter your role in the organisation.";
+      }
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const errorCount = Object.keys(errors).length;
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (isSubmitting) return;
+    if (!validate()) return;
+
+    const { firstName, lastName, fullName: normalizedFullName } =
+      splitFullName(fullName);
+    const location = formatOnboardingLocation({
+      city,
+      state: stateName,
+      country: "Nigeria",
+    });
+
+    const payload: Step3SubmitPayload = {
+      accountType,
+      fullName: normalizedFullName,
+      firstName,
+      lastName,
+      displayName: displayName.trim() || `${firstName} ${lastName.charAt(0)}.`,
+      dateOfBirth: dateOfBirth.trim() || undefined,
+      gender: accountType === "individual" ? gender : undefined,
+      state: stateName,
+      city: city.trim(),
+      location: location || stateName,
+      ...(accountType === "organization"
+        ? {
+            organizationName: organizationName.trim(),
+            organizationType,
+            organizationRole: organizationRole.trim(),
+          }
+        : {}),
     };
 
-    const timeoutId = setTimeout(checkUsername, 500);
-    return () => clearTimeout(timeoutId);
-  }, [formData.username, user?.id]);
-
-  const handleChange = (field: string, value: string) => {
-    const newFormData = { ...formData, [field]: value };
-    setFormData(newFormData);
-
+    updateOnboardingData("accountType", accountType);
+    updateOnboardingData("gender", gender);
     updateOnboardingData("profile", {
-      ...onboardingData.profile,
-      ...newFormData,
+      ...savedProfile,
+      ...payload,
     });
 
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
+    onNext(payload);
   };
-
-  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors((prev) => ({
-          ...prev,
-          profilePhoto: "File size must be less than 5MB",
-        }));
-        return;
-      }
-
-      if (!file.type.startsWith("image/")) {
-        setErrors((prev) => ({
-          ...prev,
-          profilePhoto: "Please select an image file",
-        }));
-        return;
-      }
-
-      try {
-        const { compressImage } = await import("@/utils/image-compression");
-        const compressedFile = await compressImage(file, 800, 0.8);
-        setProfilePhoto(compressedFile);
-
-        const photoUrl = URL.createObjectURL(compressedFile);
-        setProfilePhotoUrl(photoUrl);
-        setErrors((prev) => ({ ...prev, profilePhoto: "" }));
-
-        updateOnboardingData("profile", {
-          ...onboardingData.profile,
-          ...formData,
-          profilePhoto: photoUrl,
-        });
-      } catch (error) {
-        console.error("Error compressing image:", error);
-        setErrors((prev) => ({
-          ...prev,
-          profilePhoto: "Error processing the image",
-        }));
-      }
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = "First name is required";
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-    }
-
-    if (!formData.username.trim()) {
-      newErrors.username = "Username is required";
-    } else if (formData.username.length < 3) {
-      newErrors.username = "Username must be at least 3 characters";
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username =
-        "Username can only contain letters, numbers, and underscores";
-    } else if (isUsernameAvailable === false) {
-      newErrors.username = "Username is already taken";
-    } else if (isCheckingUsername) {
-      newErrors.username = "Checking username availability...";
-    }
-
-    if (!formData.location.trim()) {
-      newErrors.location = "Location is required";
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!/^\+?[\d\s\-\(\)]+$/.test(formData.phone)) {
-      newErrors.phone = "Please enter a valid phone number";
-    }
-
-    if (!isConsentChecked) {
-      newErrors.consent = "You must agree to the terms and conditions";
-    }
-
-    if (!profilePhoto && !profilePhotoUrl) {
-      newErrors.profilePhoto = "Profile photo is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const errorCount = useMemo(
-    () => Object.values(errors).filter(Boolean).length,
-    [errors],
-  );
-
-  const handleSubmit = () => {
-    if (!validateForm()) {
-      document
-        .getElementById("error-summary")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
-
-    updateOnboardingData("profile", {
-      ...onboardingData.profile,
-      ...formData,
-    });
-
-    onNext({
-      ...formData,
-      profilePhoto,
-    });
-  };
-
-  const isOrg = onboardingData.accountType === "organization";
 
   return (
-    <div
-      className={`flex h-full items-center justify-center ${
-        isOrg ? "bg-transparent px-0" : "bg-white px-6"
-      }`}
-    >
-      <div
-        className={`grid w-full grid-cols-1 items-center ${
-          isOrg ? "max-w-3xl" : "max-w-6xl gap-12 md:grid-cols-2"
-        }`}
-      >
-        {/* Left Section: Form */}
+    <div className="w-full py-4">
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start">
+        {/* Left Column: Context & Actions */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="w-full"
+          transition={{ duration: 0.35 }}
+          className="flex flex-col justify-between lg:col-span-5"
         >
-          <h1 className="mb-2 text-3xl font-semibold text-gray-900">
-            {isOrg
-              ? "Set up your workspace owner"
-              : "Create your RefreeG account"}
-          </h1>
-          <p className="text-gray-500 mb-8">
-            {isOrg
-              ? "Enter the details of the primary administrator for this organisation."
-              : "It takes less than a minute to create an account"}
-          </p>
+          <div>
+            <h1 className="font-fraunces text-3xl font-normal tracking-tight text-neutral-900 sm:text-4xl">
+              Tell us about you
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-neutral-600 sm:text-base">
+              This is how organisations see you when you give, and the name your
+              receipts are issued to. It takes under a minute.
+            </p>
 
-          {isOrg && (
-            <div className="mb-7 border-l-2 border-blue-700 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-              The workspace owner can manage organisation settings, invite team
-              members, and access verification and payout controls.
+            {/* Why we ask card */}
+            <div className="mt-6 rounded-2xl border border-neutral-200 bg-[#F7F5F0] p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-600">
+                Why we ask
+              </p>
+              <p className="mt-2 text-xs leading-5 text-neutral-700 sm:text-sm">
+                Your legal name and date of birth are checked against your ID if
+                you ever withdraw. Getting them right now saves a failed check
+                later. Gender is optional and only used in aggregate reports to
+                organisations.
+              </p>
             </div>
-          )}
+          </div>
 
-          {/* Inline error summary */}
-          {errorCount > 0 && (
-            <div
-              id="error-summary"
-              className="mb-6 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            >
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>
-                Please fix {errorCount} issue{errorCount > 1 ? "s" : ""} below
-              </span>
-            </div>
-          )}
-
-          <div className="space-y-5">
-            {/* Profile Photo + First + Last Name */}
-            <div className="flex flex-col md:flex-row md:items-center md:space-x-6 space-y-6 md:space-y-0">
-              {/* Profile Photo Upload */}
-              <div className="flex flex-col items-start space-y-2">
-                <div className="relative">
-                  <label
-                    htmlFor="file-upload"
-                    className="w-20 h-20 flex items-center justify-center rounded-full border-2 border-dashed border-gray-300 hover:border-blue-500 cursor-pointer transition-all duration-200 overflow-hidden"
-                  >
-                    {profilePhotoUrl ? (
-                      <Image
-                        src={
-                          getMediaUrl(profilePhotoUrl) ||
-                          "/placeholder-user.jpg"
-                        }
-                        alt="Profile preview"
-                        width={80}
-                        height={80}
-                        className="w-full h-full object-cover rounded-full"
-                        unoptimized={isProxyMediaUrl(
-                          getMediaUrl(profilePhotoUrl),
-                        )}
-                      />
-                    ) : (
-                      <Upload className="w-8 h-8 text-gray-400" />
-                    )}
-                  </label>
-                  <input
-                    id="file-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePhotoChange}
-                  />
-                </div>
-                {errors.profilePhoto && (
-                  <p className="text-sm text-red-500">{errors.profilePhoto}</p>
-                )}
-              </div>
-
-              {/* First + Last Name Inputs */}
-              <div className="flex flex-col md:flex-row md:space-x-4 w-full">
-                <div className="flex flex-col space-y-2 flex-1">
-                  <Label htmlFor="firstName">
-                    {isOrg ? "Owner First Name" : "First Name"}
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-2 w-6 h-6 text-gray-400" />
-                    <Input
-                      id="firstName"
-                      placeholder="Enter your first name"
-                      value={formData.firstName}
-                      onChange={(e) =>
-                        handleChange("firstName", e.target.value)
-                      }
-                      className={`pl-10 ${
-                        errors.firstName ? "border-red-500" : ""
-                      }`}
-                    />
-                  </div>
-                  {errors.firstName && (
-                    <p className="text-sm text-red-500">{errors.firstName}</p>
-                  )}
-                </div>
-
-                <div className="flex flex-col space-y-2 flex-1 mt-4 md:mt-0">
-                  <Label htmlFor="lastName">
-                    {isOrg ? "Owner Last Name" : "Last Name"}
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-2 w-6 h-6 text-gray-400" />
-                    <Input
-                      id="lastName"
-                      placeholder="Enter your last name"
-                      value={formData.lastName}
-                      onChange={(e) => handleChange("lastName", e.target.value)}
-                      className={`pl-10 ${
-                        errors.lastName ? "border-red-500" : ""
-                      }`}
-                    />
-                  </div>
-                  {errors.lastName && (
-                    <p className="text-sm text-red-500">{errors.lastName}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Username */}
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="username">
-                  Username<span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-400 w-6 h-6">
-                    @
-                  </span>
-                  <Input
-                    id="username"
-                    placeholder="Choose a unique username"
-                    value={formData.username}
-                    onChange={(e) => handleChange("username", e.target.value)}
-                    className={`pl-10 pr-10 text-gray-900 placeholder:text-gray-400 ${
-                      errors.username
-                        ? "border-red-500 bg-red-50 text-gray-900"
-                        : ""
-                    }`}
-                  />
-
-                  {/* Loading spinner while checking */}
-                  {isCheckingUsername && (
-                    <div className="absolute right-3 top-2.5 text-blue-500">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    </div>
-                  )}
-
-                  {/* ✅ Username available */}
-                  {isUsernameAvailable === true &&
-                    formData.username.length >= 3 &&
-                    !isCheckingUsername && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="absolute right-3 top-2.5 text-green-500 cursor-help">
-                              <CheckCircle className="w-5 h-5" />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Username is available</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-
-                  {/* ❌ Username taken */}
-                  {isUsernameAvailable === false && !isCheckingUsername && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="absolute right-3 top-2.5 text-red-500 cursor-help">
-                            <XCircle className="w-5 h-5" />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Username is already taken</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                </div>
-                {errors.username && (
-                  <p className="text-sm text-red-500 mt-1">{errors.username}</p>
-                )}
-              </div>
-
-              {/* Location */}
-              <div className="flex flex-col space-y-2">
-                <LocationSelector
-                  selected={formData.location}
-                  onChange={(value) => handleChange("location", value)}
-                  mode="country"
-                  label="Location"
-                  placeholder="Select your country"
-                />
-                {errors.location && (
-                  <p className="text-sm text-red-500">{errors.location}</p>
-                )}
-              </div>
-            </div>
-            {/* Phone & Email */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="phone">
-                  Phone Number<span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <PhoneIcon className="absolute left-3 top-2 w-5 h-5 text-gray-400" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="Enter your phone number"
-                    value={formData.phone}
-                    onChange={(e) => handleChange("phone", e.target.value)}
-                    className={`pl-10 ${errors.phone ? "border-red-500" : ""}`}
-                  />
-                </div>
-                {errors.phone && (
-                  <p className="text-sm text-red-500">{errors.phone}</p>
-                )}
-              </div>
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="email">
-                  Email<span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <MailIcon className="absolute left-3 top-2 w-6 h-6 text-gray-400" />
-                  <Input
-                    disabled
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email address"
-                    value={formData.email}
-                    className="pl-10 bg-gray-50"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Checkbox */}
-            <div className="flex items-start space-x-2 mt-2">
-              <Checkbox
-                id="confirm"
-                checked={isConsentChecked}
-                onCheckedChange={(checked) => {
-                  const newChecked = checked as boolean;
-                  setIsConsentChecked(newChecked);
-                  updateOnboardingData("consent", newChecked);
-                  setErrors((current) => ({
-                    ...current,
-                    consent: "",
-                  }));
-                }}
-                className="border-gray-400 mt-1"
-              />
-              <Label
-                htmlFor="confirm"
-                className="text-sm text-gray-600 leading-relaxed"
+          {/* Primary / Back Buttons (Desktop Left Column) */}
+          <div className="mt-8 hidden flex-col gap-3 lg:flex">
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                onClick={() => handleSubmit()}
+                disabled={isSubmitting}
+                className="h-12 flex-1 rounded-xl bg-[#0D1E16] text-white hover:bg-neutral-900"
               >
-                I confirm that the information provided is accurate and consent
-                to my data being verified securely.
-              </Label>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Continue"
+                )}
+              </Button>
+              {onBack && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onBack}
+                  disabled={isSubmitting}
+                  className="h-12 rounded-xl px-6"
+                >
+                  Back
+                </Button>
+              )}
             </div>
-            {errors.consent && (
-              <p className="text-sm text-red-500">{errors.consent}</p>
+            {errorCount > 0 && (
+              <p
+                role="alert"
+                className="text-xs font-medium text-[#B43E2B]"
+              >
+                Fix the{" "}
+                {errorCount === 1
+                  ? "field"
+                  : errorCount === 2
+                    ? "two fields"
+                    : `${errorCount} fields`}{" "}
+                marked in clay to continue
+              </p>
             )}
-
-            {/* Button */}
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="w-full mt-4 bg-blue-600 text-white py-6 text-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isSubmitting
-                ? "Saving owner profile..."
-                : isOrg
-                  ? "Continue to organisation details"
-                  : "Proceed"}
-            </Button>
           </div>
         </motion.div>
 
-        {/* Right Section: Image + Info */}
-        {!isOrg && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="relative hidden flex-col items-center justify-center md:flex"
-          >
-            <Image
-              src="/onboardingform.svg"
-              alt="Sign up illustration"
-              width={400}
-              height={400}
-              className="rounded-lg object-contain"
-            />
-          </motion.div>
-        )}
+        {/* Right Column: Interactive Form Card */}
+        <motion.form
+          onSubmit={handleSubmit}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.05 }}
+          className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8 lg:col-span-7"
+        >
+          {/* Account Type Selector */}
+          <div>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-neutral-600">
+              Account type
+            </Label>
+            <div
+              role="radiogroup"
+              aria-label="Account type"
+              className="mt-2.5 grid grid-cols-1 gap-3 sm:grid-cols-2"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={accountType === "individual"}
+                data-testid="account-type-individual"
+                onClick={() => handleSelectAccountType("individual")}
+                className={cn(
+                  "flex flex-col items-start rounded-xl border-2 p-4 text-left transition-all",
+                  accountType === "individual"
+                    ? "border-[#0D1E16] bg-[#F5F9F6]"
+                    : "border-neutral-200 bg-white hover:border-neutral-300",
+                )}
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-900">
+                    <User className="h-4 w-4 text-[#0D1E16]" />
+                    Individual giver
+                  </span>
+                  <span
+                    className={cn(
+                      "flex h-4 w-4 items-center justify-center rounded-full border",
+                      accountType === "individual"
+                        ? "border-[#0D1E16] bg-[#0D1E16] text-white"
+                        : "border-neutral-300",
+                    )}
+                  >
+                    {accountType === "individual" && (
+                      <Check className="h-2.5 w-2.5" />
+                    )}
+                  </span>
+                </div>
+                <span className="mt-1.5 text-xs leading-5 text-neutral-600">
+                  Give, pledge, sign petitions and take on bounties
+                </span>
+              </button>
+
+              <button
+                type="button"
+                role="radio"
+                aria-checked={accountType === "organization"}
+                data-testid="account-type-organization"
+                onClick={() => handleSelectAccountType("organization")}
+                className={cn(
+                  "flex flex-col items-start rounded-xl border-2 p-4 text-left transition-all",
+                  accountType === "organization"
+                    ? "border-[#0D1E16] bg-[#F5F9F6]"
+                    : "border-neutral-200 bg-white hover:border-neutral-300",
+                )}
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-900">
+                    <Building2 className="h-4 w-4 text-[#0D1E16]" />
+                    Organisation
+                  </span>
+                  <span
+                    className={cn(
+                      "flex h-4 w-4 items-center justify-center rounded-full border",
+                      accountType === "organization"
+                        ? "border-[#0D1E16] bg-[#0D1E16] text-white"
+                        : "border-neutral-300",
+                    )}
+                  >
+                    {accountType === "organization" && (
+                      <Check className="h-2.5 w-2.5" />
+                    )}
+                  </span>
+                </div>
+                <span className="mt-1.5 text-xs leading-5 text-neutral-600">
+                  An NGO, school, clinic or community group raising money
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <hr className="my-6 border-neutral-200" />
+
+          {accountType === "individual" ? (
+            /* INDIVIDUAL GIVER FIELDS (W1·03b) */
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <div className="flex items-baseline justify-between">
+                    <Label htmlFor="onboarding-full-name" className="text-sm font-medium text-neutral-900">
+                      Full name
+                    </Label>
+                    <span className="text-[11px] text-neutral-500">
+                      As it appears on your ID
+                    </span>
+                  </div>
+                  <Input
+                    id="onboarding-full-name"
+                    value={fullName}
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      clearFieldError("fullName");
+                    }}
+                    placeholder="e.g. Amina Bello"
+                    className={cn(
+                      "mt-1.5 h-11 rounded-xl",
+                      errors.fullName &&
+                        "border-[#B43E2B] bg-[#FDF6F4] focus-visible:ring-[#B43E2B]",
+                    )}
+                  />
+                  {errors.fullName && (
+                    <p className="mt-1.5 text-xs font-medium text-[#B43E2B]">
+                      {errors.fullName}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <div className="flex items-baseline justify-between">
+                    <Label htmlFor="onboarding-display-name" className="text-sm font-medium text-neutral-900">
+                      Display name
+                    </Label>
+                    <span className="text-[11px] text-neutral-500">
+                      Shown on campaigns you back
+                    </span>
+                  </div>
+                  <Input
+                    id="onboarding-display-name"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="e.g. Amina B."
+                    className="mt-1.5 h-11 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <div className="flex items-baseline justify-between">
+                    <Label htmlFor="onboarding-dob" className="text-sm font-medium text-neutral-900">
+                      Date of birth
+                    </Label>
+                    <span className="text-[11px] text-neutral-500">
+                      Never shown publicly
+                    </span>
+                  </div>
+                  <Input
+                    id="onboarding-dob"
+                    type="text"
+                    inputMode="numeric"
+                    value={dateOfBirth}
+                    onChange={(e) => {
+                      setDateOfBirth(e.target.value);
+                      clearFieldError("dateOfBirth");
+                    }}
+                    placeholder="DD / MM / YYYY"
+                    className={cn(
+                      "mt-1.5 h-11 rounded-xl",
+                      errors.dateOfBirth &&
+                        "border-[#B43E2B] bg-[#FDF6F4] focus-visible:ring-[#B43E2B]",
+                    )}
+                  />
+                  {errors.dateOfBirth && (
+                    <p className="mt-1.5 text-xs font-medium text-[#B43E2B]">
+                      {errors.dateOfBirth}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <div className="flex items-baseline justify-between">
+                    <Label className="text-sm font-medium text-neutral-900">
+                      Gender · optional
+                    </Label>
+                  </div>
+                  <div className="mt-1.5 grid grid-cols-3 gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 p-1">
+                    {ONBOARDING_GENDER_OPTIONS.map((option) => {
+                      const active = gender === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => setGender(option.id)}
+                          className={cn(
+                            "h-9 rounded-lg px-2 text-xs font-medium transition-all",
+                            active
+                              ? "bg-[#0D1E16] text-white shadow-xs"
+                              : "text-neutral-700 hover:bg-neutral-200/60",
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="onboarding-state" className="text-sm font-medium text-neutral-900">
+                    State
+                  </Label>
+                  <select
+                    id="onboarding-state"
+                    value={stateName}
+                    onChange={(e) => setStateName(e.target.value)}
+                    className="mt-1.5 flex h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  >
+                    {NIGERIAN_STATES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <Label htmlFor="onboarding-city" className="text-sm font-medium text-neutral-900">
+                    City or area
+                  </Label>
+                  <Input
+                    id="onboarding-city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="e.g. Yaba"
+                    className="mt-1.5 h-11 rounded-xl"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* ORGANISATION FIELDS (W1·03b org variant) */
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="onboarding-org-name" className="text-sm font-medium text-neutral-900">
+                    Organisation name
+                  </Label>
+                  <Input
+                    id="onboarding-org-name"
+                    value={organizationName}
+                    onChange={(e) => {
+                      setOrganizationName(e.target.value);
+                      clearFieldError("organizationName");
+                    }}
+                    placeholder="e.g. Lagos Education Trust"
+                    className={cn(
+                      "mt-1.5 h-11 rounded-xl",
+                      errors.organizationName &&
+                        "border-[#B43E2B] bg-[#FDF6F4] focus-visible:ring-[#B43E2B]",
+                    )}
+                  />
+                  {errors.organizationName && (
+                    <p className="mt-1.5 text-xs font-medium text-[#B43E2B]">
+                      {errors.organizationName}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="onboarding-org-type" className="text-sm font-medium text-neutral-900">
+                    Type
+                  </Label>
+                  <select
+                    id="onboarding-org-type"
+                    value={organizationType}
+                    onChange={(e) => setOrganizationType(e.target.value)}
+                    className="mt-1.5 flex h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  >
+                    {ORGANIZATION_TYPES.map((typeOption) => (
+                      <option key={typeOption} value={typeOption}>
+                        {typeOption}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <div className="flex items-baseline justify-between">
+                    <Label htmlFor="onboarding-owner-full-name" className="text-sm font-medium text-neutral-900">
+                      Your full name
+                    </Label>
+                    <span className="text-[11px] text-neutral-500">
+                      As on your ID
+                    </span>
+                  </div>
+                  <Input
+                    id="onboarding-owner-full-name"
+                    value={fullName}
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      clearFieldError("fullName");
+                    }}
+                    placeholder="e.g. Amina Bello"
+                    className={cn(
+                      "mt-1.5 h-11 rounded-xl",
+                      errors.fullName &&
+                        "border-[#B43E2B] bg-[#FDF6F4] focus-visible:ring-[#B43E2B]",
+                    )}
+                  />
+                  {errors.fullName && (
+                    <p className="mt-1.5 text-xs font-medium text-[#B43E2B]">
+                      {errors.fullName}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="onboarding-org-role" className="text-sm font-medium text-neutral-900">
+                    Your role
+                  </Label>
+                  <Input
+                    id="onboarding-org-role"
+                    value={organizationRole}
+                    onChange={(e) => {
+                      setOrganizationRole(e.target.value);
+                      clearFieldError("organizationRole");
+                    }}
+                    placeholder="e.g. Programme lead"
+                    className={cn(
+                      "mt-1.5 h-11 rounded-xl",
+                      errors.organizationRole &&
+                        "border-[#B43E2B] bg-[#FDF6F4] focus-visible:ring-[#B43E2B]",
+                    )}
+                  />
+                  {errors.organizationRole && (
+                    <p className="mt-1.5 text-xs font-medium text-[#B43E2B]">
+                      {errors.organizationRole}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="onboarding-org-state" className="text-sm font-medium text-neutral-900">
+                    State
+                  </Label>
+                  <select
+                    id="onboarding-org-state"
+                    value={stateName}
+                    onChange={(e) => setStateName(e.target.value)}
+                    className="mt-1.5 flex h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  >
+                    {NIGERIAN_STATES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <Label htmlFor="onboarding-org-city" className="text-sm font-medium text-neutral-900">
+                    City or area
+                  </Label>
+                  <Input
+                    id="onboarding-org-city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="e.g. Yaba"
+                    className="mt-1.5 h-11 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs leading-5 text-amber-950">
+                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" />
+                <p>
+                  A CAC certificate and one trustee are checked at Level 3
+                  before the organisation can receive money. You can draft
+                  campaigns while that runs.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile / Tablet Submit Buttons */}
+          <div className="mt-6 flex flex-col gap-2 lg:hidden">
+            <div className="flex items-center gap-3">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="h-12 flex-1 rounded-xl bg-[#0D1E16] text-white hover:bg-neutral-900"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Continue"
+                )}
+              </Button>
+              {onBack && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onBack}
+                  disabled={isSubmitting}
+                  className="h-12 rounded-xl px-5"
+                >
+                  Back
+                </Button>
+              )}
+            </div>
+            {errorCount > 0 && (
+              <p className="text-xs font-medium text-[#B43E2B]">
+                Fix the{" "}
+                {errorCount === 1
+                  ? "field"
+                  : errorCount === 2
+                    ? "two fields"
+                    : `${errorCount} fields`}{" "}
+                marked in clay to continue
+              </p>
+            )}
+          </div>
+        </motion.form>
       </div>
     </div>
   );

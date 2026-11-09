@@ -11,6 +11,22 @@ import type {
   OnboardingProfileData,
 } from "@/types";
 import { KycStatus, KycVerification } from "@/types/kyc-types";
+import { suggestUsername } from "@/utils/username";
+import {
+  formatOnboardingLocation,
+  splitFullName,
+  validateOnboardingDob,
+} from "@/lib/onboarding/validation";
+
+function createOnboardingOrgSlug(name: string): string {
+  const base = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+  const suffix = Math.floor(1000 + Math.random() * 9000).toString();
+  return `${base || "org"}-${suffix}`;
+}
 
 function mapPrismaToProfile(p: any): Profile {
   return {
@@ -211,9 +227,22 @@ export async function createOnboardingProfile(
   profileData: OnboardingProfileData,
   oauthAvatarUrl?: string | null,
 ): Promise<any> {
+  if (profileData.dateOfBirth && profileData.dateOfBirth.trim()) {
+    const dobError = validateOnboardingDob(profileData.dateOfBirth);
+    if (dobError) {
+      throw new Error(dobError);
+    }
+  }
+
   const existingProfile = await prisma.user.findUnique({
     where: { id: userId },
-    select: { profilePhoto: true, accountType: true },
+    select: {
+      profilePhoto: true,
+      accountType: true,
+      email: true,
+      username: true,
+      onboarding_completed: true,
+    },
   });
 
   let profilePhotoUrl: string | null = existingProfile?.profilePhoto ?? null;
@@ -241,9 +270,29 @@ export async function createOnboardingProfile(
     profilePhotoUrl = oauthAvatarUrl;
   }
 
-  const fullName = `${profileData.firstName ?? ""} ${
-    profileData.lastName ?? ""
-  }`.trim();
+  const parsedName = splitFullName(
+    profileData.fullName ||
+      `${profileData.firstName ?? ""} ${profileData.lastName ?? ""}`,
+  );
+  const effectiveFirstName =
+    profileData.firstName?.trim() || parsedName.firstName;
+  const effectiveLastName = profileData.lastName?.trim() || parsedName.lastName;
+  const effectiveFullName =
+    parsedName.fullName ||
+    `${effectiveFirstName} ${effectiveLastName}`.trim();
+
+  const resolvedLocation = formatOnboardingLocation({
+    city: profileData.city,
+    state: profileData.state,
+    country: profileData.country,
+    fallbackLocation: profileData.location,
+  });
+
+  const effectiveEmail = profileData.email || existingProfile?.email || "";
+  const resolvedUsername =
+    profileData.username?.trim().toLowerCase() ||
+    existingProfile?.username ||
+    suggestUsername(effectiveEmail, effectiveFullName);
 
   const updateData: any = {
     // The wizard is completed explicitly on its final screen. Keeping this
@@ -253,18 +302,18 @@ export async function createOnboardingProfile(
 
   if (profileData.email) updateData.email = profileData.email;
   if (profileData.phone) updateData.phone = profileData.phone;
-  if (fullName) updateData.fullName = fullName;
+  if (effectiveFullName) updateData.fullName = effectiveFullName;
   if (profilePhotoUrl) updateData.profilePhoto = profilePhotoUrl;
 
-  if (profileData.firstName) updateData.firstName = profileData.firstName;
-  if (profileData.lastName) updateData.lastName = profileData.lastName;
-  if (profileData.username) updateData.username = profileData.username;
-  if (profileData.location) updateData.location = profileData.location;
+  if (effectiveFirstName) updateData.firstName = effectiveFirstName;
+  if (effectiveLastName) updateData.lastName = effectiveLastName;
+  if (resolvedUsername) updateData.username = resolvedUsername;
+  if (resolvedLocation) updateData.location = resolvedLocation;
+  if (profileData.displayName !== undefined) {
+    updateData.displayName = profileData.displayName.trim() || null;
+  }
   if (profileData.accountType) {
-    updateData.accountType =
-      existingProfile?.accountType === "individual"
-        ? "individual"
-        : profileData.accountType;
+    updateData.accountType = profileData.accountType;
   }
   if (profileData.gender) updateData.gender = profileData.gender;
 
@@ -273,6 +322,62 @@ export async function createOnboardingProfile(
       where: { id: userId },
       data: updateData,
     });
+
+    if (
+      profileData.accountType === "organization" &&
+      profileData.organizationName?.trim() &&
+      prisma.organization
+    ) {
+      const trimmedOrgName = profileData.organizationName.trim();
+      const existingOrg = await prisma.organization.findFirst({
+        where: { ownerId: userId },
+      });
+
+      const orgPreferences = {
+        donationNotifications: true,
+        teamDigest: true,
+        publicProfile: true,
+        ...(profileData.organizationRole?.trim()
+          ? { ownerRole: profileData.organizationRole.trim() }
+          : {}),
+      };
+
+      if (existingOrg) {
+        await prisma.organization.update({
+          where: { id: existingOrg.id },
+          data: {
+            name: trimmedOrgName,
+            ...(profileData.organizationType?.trim()
+              ? { industry: profileData.organizationType.trim() }
+              : {}),
+            ...(resolvedLocation ? { address: resolvedLocation } : {}),
+            preferences: orgPreferences,
+          },
+        });
+      } else {
+        const createdOrg = await prisma.organization.create({
+          data: {
+            name: trimmedOrgName,
+            slug: createOnboardingOrgSlug(trimmedOrgName),
+            adminEmail: effectiveEmail.toLowerCase(),
+            industry: profileData.organizationType?.trim() || null,
+            address: resolvedLocation || null,
+            ownerId: userId,
+            preferences: orgPreferences,
+          },
+        });
+
+        if (prisma.organizationMember) {
+          await prisma.organizationMember.create({
+            data: {
+              organizationId: createdOrg.id,
+              userId,
+              role: "owner",
+            },
+          });
+        }
+      }
+    }
 
     revalidatePath("/dashboard");
     revalidatePath("/");
@@ -343,36 +448,28 @@ export async function getCurrentOnboardingStep(
       return 1;
     }
 
-    if (profile.accountType !== "organization" && !profile.gender) {
-      return 2;
-    }
-
     const hasProfileData = !!(
       profile.firstName &&
       profile.lastName &&
-      profile.username &&
-      profile.location &&
-      profile.phone &&
-      profile.email
+      profile.username
     );
 
     if (!hasProfileData) {
+      if (profile.accountType !== "organization" && !profile.gender) {
+        return 2;
+      }
       return 3;
     }
 
     // For organization accounts, check if org setup is complete (Step 3B)
-    if (profile.accountType === "organization") {
+    if (profile.accountType === "organization" && prisma.organization) {
       const org = await prisma.organization.findFirst({
         where: { ownerId: userId },
         select: { logoUrl: true, preferences: true },
       });
-      // Org setup step: logo is optional, but we use a flag in preferences
-      // to know the user has visited the step. If preferences is still the
-      // default empty object "{}", they haven't been through org setup.
       const prefs = org?.preferences as Record<string, unknown> | null;
       const hasVisitedOrgSetup = prefs && Object.keys(prefs).length > 0;
       if (!hasVisitedOrgSetup) {
-        // Return a special value — the orchestrator maps this to step 3B
         return 3.5;
       }
     }
@@ -390,6 +487,8 @@ export async function getOnboardingData(userId: string): Promise<{
   profile: {
     firstName: string;
     lastName: string;
+    fullName?: string;
+    displayName?: string;
     username: string;
     location: string;
     phone: string;
@@ -405,6 +504,8 @@ export async function getOnboardingData(userId: string): Promise<{
         gender: true,
         firstName: true,
         lastName: true,
+        fullName: true,
+        displayName: true,
         username: true,
         location: true,
         phone: true,
@@ -420,6 +521,8 @@ export async function getOnboardingData(userId: string): Promise<{
         profile: {
           firstName: "",
           lastName: "",
+          fullName: "",
+          displayName: "",
           username: "",
           location: "",
           phone: "",
@@ -434,6 +537,8 @@ export async function getOnboardingData(userId: string): Promise<{
       profile: {
         firstName: profile.firstName || "",
         lastName: profile.lastName || "",
+        fullName: profile.fullName || "",
+        displayName: profile.displayName || "",
         username: profile.username || "",
         location: profile.location || "",
         phone: profile.phone || "",
@@ -449,6 +554,8 @@ export async function getOnboardingData(userId: string): Promise<{
       profile: {
         firstName: "",
         lastName: "",
+        fullName: "",
+        displayName: "",
         username: "",
         location: "",
         phone: "",
@@ -463,27 +570,13 @@ export async function saveStep1Progress(
   accountType: string,
 ): Promise<void> {
   try {
-    const existing = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { accountType: true },
-    });
-
-    if (
-      existing?.accountType === "individual" &&
-      accountType === "organization"
-    ) {
-      throw new Error(
-        "Individual accounts cannot be converted to organization accounts.",
-      );
-    }
+    const normalizedType =
+      accountType === "organization" ? "organization" : accountType;
 
     await prisma.user.update({
       where: { id: userId },
       data: {
-        accountType:
-          existing?.accountType === "organization"
-            ? "organization"
-            : accountType,
+        accountType: normalizedType,
       },
     });
 
@@ -599,6 +692,8 @@ export async function completeOnboarding(userId: string): Promise<void> {
       accountType: true,
       firstName: true,
       lastName: true,
+      fullName: true,
+      email: true,
       username: true,
       location: true,
       phone: true,
@@ -609,22 +704,42 @@ export async function completeOnboarding(userId: string): Promise<void> {
     throw new Error("Profile not found");
   }
 
+  const parsedName = splitFullName(
+    profile.fullName || `${profile.firstName ?? ""} ${profile.lastName ?? ""}`,
+  );
+  const effectiveFirstName = profile.firstName || parsedName.firstName;
+  const effectiveLastName = profile.lastName || parsedName.lastName;
+
   const missingFields = [
     !profile.accountType && "account type",
-    !profile.firstName && "first name",
-    !profile.lastName && "last name",
-    !profile.username && "username",
-    !profile.location && "location",
-    !profile.phone && "phone number",
+    !effectiveFirstName && "first name",
+    !effectiveLastName && "last name",
   ].filter(Boolean);
 
   if (missingFields.length > 0) {
     throw new Error(`Complete ${missingFields.join(", ")} before continuing`);
   }
 
+  const updatePayload: Record<string, unknown> = {
+    onboarding_completed: true,
+  };
+
+  if (!profile.firstName && effectiveFirstName) {
+    updatePayload.firstName = effectiveFirstName;
+  }
+  if (!profile.lastName && effectiveLastName) {
+    updatePayload.lastName = effectiveLastName;
+  }
+  if (!profile.username) {
+    updatePayload.username = suggestUsername(
+      profile.email,
+      profile.fullName || `${effectiveFirstName} ${effectiveLastName}`,
+    );
+  }
+
   await prisma.user.update({
     where: { id: userId },
-    data: { onboarding_completed: true },
+    data: updatePayload,
   });
 
   revalidatePath("/onboarding");

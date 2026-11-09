@@ -7,11 +7,19 @@ jest.mock("@/lib/prisma", () => ({
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    organization: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    organizationMember: {
+      create: jest.fn(),
+    },
     kyc_verifications: {
       findFirst: jest.fn(),
       update: jest.fn(),
     },
-    donation: { count: jest.fn() },
+    donation: { count: jest.fn(), groupBy: jest.fn().mockResolvedValue([]) },
   },
 }));
 
@@ -34,12 +42,17 @@ import {
   isProfileComplete,
   hasCompletedOnboarding,
   getCurrentOnboardingStep,
+  createOnboardingProfile,
+  saveStep1Progress,
+  completeOnboarding,
 } from "@/actions/profile-actions";
 
 const mockPrisma = prisma as unknown as {
   user: { findUnique: jest.Mock; update: jest.Mock };
+  organization: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
+  organizationMember: { create: jest.Mock };
   kyc_verifications: { findFirst: jest.Mock; update: jest.Mock };
-  donation: { count: jest.Mock };
+  donation: { count: jest.Mock; groupBy: jest.Mock };
 };
 
 const baseUser = {
@@ -91,13 +104,19 @@ describe("profile-actions", () => {
 
     it("counts donations with an indexed per-user query, not a _count include", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(baseUser);
-      mockPrisma.donation.count.mockResolvedValue(4);
+      mockPrisma.donation.groupBy.mockResolvedValue([
+        { causeId: "c1" },
+        { causeId: "c2" },
+        { causeId: "c3" },
+        { causeId: "c4" },
+      ]);
 
       const result = await getProfile("user-1");
 
       expect(result?.causes_count).toBe(4);
-      expect(mockPrisma.donation.count).toHaveBeenCalledWith({
-        where: { userId: "user-1" },
+      expect(mockPrisma.donation.groupBy).toHaveBeenCalledWith({
+        by: ["causeId"],
+        where: { userId: "user-1", status: "successful" },
       });
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: "user-1" },
@@ -300,6 +319,143 @@ describe("profile-actions", () => {
       const result = await getCurrentOnboardingStep("user-1");
 
       expect(result).toBe(4);
+    });
+  });
+
+  describe("onboarding refactoring (unified account type + profile)", () => {
+    it("allows switching accountType from individual to organization in saveStep1Progress", async () => {
+      mockPrisma.user.update.mockResolvedValue({
+        ...baseUser,
+        accountType: "organization",
+      });
+
+      await saveStep1Progress("user-1", "organization");
+
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: "user-1" },
+        data: { accountType: "organization" },
+      });
+    });
+
+    it("splits fullName, formats location, and auto-generates username in createOnboardingProfile", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        profilePhoto: null,
+        accountType: "individual",
+        email: "amina@example.com",
+        username: null,
+        onboarding_completed: false,
+      });
+      mockPrisma.user.update.mockResolvedValue(baseUser);
+
+      await createOnboardingProfile("user-1", {
+        fullName: "Amina Bello",
+        displayName: "Amina B.",
+        dateOfBirth: "15/06/1995",
+        gender: "female",
+        state: "Lagos",
+        city: "Yaba",
+        accountType: "individual",
+      });
+
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "user-1" },
+          data: expect.objectContaining({
+            fullName: "Amina Bello",
+            firstName: "Amina",
+            lastName: "Bello",
+            displayName: "Amina B.",
+            gender: "female",
+            location: "Yaba, Lagos",
+            accountType: "individual",
+            username: expect.stringMatching(/^amina_bello_\d{3}$/),
+          }),
+        }),
+      );
+    });
+
+    it("rejects under-18 date of birth in createOnboardingProfile", async () => {
+      await expect(
+        createOnboardingProfile("user-1", {
+          fullName: "Young User",
+          dateOfBirth: "01/01/2015",
+          accountType: "individual",
+        }),
+      ).rejects.toThrow("You need to be 18 or over to use RefreeG.");
+    });
+
+    it("creates Organization and OrganizationMember when organization is selected in createOnboardingProfile", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        profilePhoto: null,
+        accountType: "individual",
+        email: "lead@lagostrust.org",
+        username: null,
+        onboarding_completed: false,
+      });
+      mockPrisma.user.update.mockResolvedValue({
+        ...baseUser,
+        accountType: "organization",
+      });
+      mockPrisma.organization.findFirst.mockResolvedValue(null);
+      mockPrisma.organization.create.mockResolvedValue({
+        id: "org-1",
+        name: "Lagos Education Trust",
+      });
+
+      await createOnboardingProfile("user-1", {
+        fullName: "Chidi Okonkwo",
+        state: "Lagos",
+        city: "Yaba",
+        accountType: "organization",
+        organizationName: "Lagos Education Trust",
+        organizationType: "Registered NGO",
+        organizationRole: "Programme lead",
+      });
+
+      expect(mockPrisma.organization.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            name: "Lagos Education Trust",
+            industry: "Registered NGO",
+            address: "Yaba, Lagos",
+            ownerId: "user-1",
+            preferences: expect.objectContaining({
+              ownerRole: "Programme lead",
+            }),
+          }),
+        }),
+      );
+      expect(mockPrisma.organizationMember.create).toHaveBeenCalledWith({
+        data: {
+          organizationId: "org-1",
+          userId: "user-1",
+          role: "owner",
+        },
+      });
+    });
+
+    it("completes onboarding without requiring phone or location, auto-filling username if missing", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        accountType: "individual",
+        firstName: "Amina",
+        lastName: "Bello",
+        fullName: "Amina Bello",
+        email: "amina@example.com",
+        username: null,
+        location: null,
+        phone: null,
+      });
+      mockPrisma.user.update.mockResolvedValue(baseUser);
+
+      await completeOnboarding("user-1");
+
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: "user-1" },
+        data: {
+          onboarding_completed: true,
+          username: expect.stringMatching(/^amina_bello_\d{3}$/),
+        },
+      });
     });
   });
 });

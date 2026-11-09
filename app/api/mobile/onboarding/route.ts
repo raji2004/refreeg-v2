@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
           gender: true,
           firstName: true,
           lastName: true,
+          fullName: true,
+          displayName: true,
           username: true,
           location: true,
           phone: true,
@@ -95,6 +97,11 @@ export async function POST(request: NextRequest) {
     return apiSuccess(updatedUser);
   } catch (error: any) {
     console.error("Mobile API Save Onboarding Profile Error:", error);
-    return apiError(error?.message || "Internal server error", 500);
+    const msg = error?.message || "Internal server error";
+    const isValidationError =
+      msg.includes("18 or over") ||
+      msg.includes("date of birth") ||
+      msg.includes("first and last name");
+    return apiError(msg, isValidationError ? 400 : 500);
   }
 }

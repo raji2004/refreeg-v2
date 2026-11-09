@@ -264,10 +264,10 @@ export default function SignUpPage() {
           <div className="mb-6">
             <div className="flex items-center gap-3">
               <span className="text-xs font-semibold tracking-wide text-neutral-900 whitespace-nowrap">
-                Step 1 of 3
+                Step 1 of 4
               </span>
               <div className="h-1 flex-1 bg-neutral-200 rounded-full overflow-hidden">
-                <div className="h-full w-1/3 bg-blue-600 rounded-full" />
+                <div className="h-full w-1/4 bg-blue-600 rounded-full" />
               </div>
             </div>
           </div>
@@ -284,15 +284,6 @@ export default function SignUpPage() {
                 className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
               >
                 Sign in
-              </Link>
-            </p>
-            <p className="mt-1 text-sm text-neutral-600">
-              Registering as an organization?{" "}
-              <Link
-                href="/auth/signup/organization"
-                className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Create an organization account
               </Link>
             </p>
           </div>

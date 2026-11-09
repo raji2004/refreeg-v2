@@ -164,10 +164,10 @@ function VerifyOtpContent() {
           <div className="mb-6">
             <div className="flex items-center gap-3">
               <span className="text-xs font-semibold tracking-wide text-neutral-900 whitespace-nowrap">
-                Step 2 of 3
+                Step 2 of 4
               </span>
               <div className="h-1 flex-1 bg-neutral-200 rounded-full overflow-hidden">
-                <div className="h-full w-2/3 bg-blue-600 rounded-full transition-all duration-300" />
+                <div className="h-full w-2/4 bg-blue-600 rounded-full transition-all duration-300" />
               </div>
             </div>
           </div>

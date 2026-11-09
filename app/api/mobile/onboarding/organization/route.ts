@@ -42,10 +42,16 @@ export async function POST(request: NextRequest) {
       phone,
       address,
       industry,
+      type,
+      role,
+      ownerRole,
       bio,
       websiteUrl,
       whatsappNumber,
     } = body;
+
+    const effectiveIndustry = (industry || type)?.trim() || null;
+    const effectiveOwnerRole = (ownerRole || role)?.trim() || undefined;
 
     const trimmedName = name?.trim();
     if (!trimmedName || trimmedName.length < 2) {
@@ -66,6 +72,12 @@ export async function POST(request: NextRequest) {
     let organization;
 
     if (membership) {
+      const existingPrefs =
+        membership.organization.preferences &&
+        typeof membership.organization.preferences === "object" &&
+        !Array.isArray(membership.organization.preferences)
+          ? (membership.organization.preferences as Record<string, unknown>)
+          : {};
       organization = await prisma.organization.update({
         where: { id: membership.organizationId },
         data: {
@@ -73,10 +85,18 @@ export async function POST(request: NextRequest) {
           adminEmail: effectiveAdminEmail,
           phone: phone?.trim() || null,
           address: address?.trim() || null,
-          industry: industry?.trim() || null,
+          industry: effectiveIndustry,
           bio: bio?.trim() || null,
           websiteUrl: normalizeOptionalUrl(websiteUrl),
           whatsappNumber: whatsappNumber?.trim() || null,
+          ...(effectiveOwnerRole
+            ? {
+                preferences: {
+                  ...existingPrefs,
+                  ownerRole: effectiveOwnerRole,
+                },
+              }
+            : {}),
         },
       });
     } else {
@@ -87,7 +107,7 @@ export async function POST(request: NextRequest) {
           adminEmail: effectiveAdminEmail,
           phone: phone?.trim() || null,
           address: address?.trim() || null,
-          industry: industry?.trim() || null,
+          industry: effectiveIndustry,
           bio: bio?.trim() || null,
           websiteUrl: normalizeOptionalUrl(websiteUrl),
           whatsappNumber: whatsappNumber?.trim() || null,
@@ -96,6 +116,7 @@ export async function POST(request: NextRequest) {
             donationNotifications: true,
             teamDigest: true,
             publicProfile: true,
+            ...(effectiveOwnerRole ? { ownerRole: effectiveOwnerRole } : {}),
           },
         },
       });
