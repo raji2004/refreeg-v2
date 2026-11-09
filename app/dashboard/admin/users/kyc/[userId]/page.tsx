@@ -25,6 +25,10 @@ import {
   FileText,
   CheckCircle,
   XCircle,
+  Cpu,
+  Camera,
+  Activity,
+  AlertTriangle,
 } from "lucide-react";
 import Image from "next/image";
 import KycRejectionDialog from "./KycRejectionDialog";
@@ -69,6 +73,23 @@ export default async function KycReviewPage({
       </div>
     );
   }
+
+  // Parse in-house scorecard from verification_notes
+  let scorecard: any = null;
+  if (kyc.verification_notes) {
+    try {
+      scorecard = JSON.parse(kyc.verification_notes);
+    } catch {
+      // plain text note
+    }
+  }
+
+  // Parse composite document URL: {idDocKey}:::{frame0}:::{frame1}:::{frame2}
+  const rawDocUrl = kyc.document_url || "";
+  const isComposite = rawDocUrl.includes(":::");
+  const urlParts = isComposite ? rawDocUrl.split(":::") : [rawDocUrl];
+  const idDocUrl = urlParts[0] || "";
+  const selfieFrames = urlParts.slice(1);
 
   async function approveAction() {
     "use server";
@@ -284,6 +305,74 @@ export default async function KycReviewPage({
 
           <Separator className="my-6" />
 
+          {scorecard && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Cpu className="h-5 w-5 text-indigo-600" />
+                <h4 className="font-semibold text-sm text-gray-900 uppercase tracking-wide">
+                  Automated Verification Scorecard
+                </h4>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/50 space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Face Match Similarity
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {typeof scorecard.faceMatchScore === "number"
+                      ? `${(scorecard.faceMatchScore * 100).toFixed(1)}%`
+                      : "N/A"}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    {scorecard.faceMatchScore >= 0.78
+                      ? "✓ High confidence match (≥ 78%)"
+                      : scorecard.faceMatchScore >= 0.55
+                        ? "⚠️ Borderline match — review required"
+                        : "✕ Mismatch (< 55%)"}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/50 space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Active Liveness Challenge
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl font-bold text-gray-900">
+                      {scorecard.livenessPassed ? "Passed" : "Flagged"}
+                    </p>
+                    {scorecard.livenessPassed ? (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 text-amber-600" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    Inter-frame delta: {scorecard.telemetry?.challengeDelta ? Number(scorecard.telemetry.challengeDelta).toFixed(3) : "N/A"} (anti-printed photo)
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/50 space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    3-Way Name Match
+                  </p>
+                  <p className="text-base font-bold text-gray-900 capitalize">
+                    {scorecard.nameMatchStatus?.replace(/_/g, " ") || "Exact match"}
+                  </p>
+                  <p className="text-xs text-gray-600 truncate">
+                    OCR: <span className="font-medium text-gray-800">{scorecard.ocrExtractedName || "N/A"}</span>
+                  </p>
+                </div>
+              </div>
+
+              {scorecard.humanReviewReason && (
+                <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50 text-xs text-amber-900">
+                  <strong>Review Reason:</strong> {scorecard.humanReviewReason}
+                </div>
+              )}
+              <Separator className="my-6" />
+            </div>
+          )}
+
           <div className="space-y-4">
             <h4 className="font-semibold text-sm text-gray-600 uppercase tracking-wide">
               Document Preview
@@ -295,23 +384,23 @@ export default async function KycReviewPage({
                   Session ID: {kyc.document_url || "N/A"}
                 </p>
               </div>
-            ) : kyc?.document_url ? (
-              kyc.document_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+            ) : idDocUrl ? (
+              idDocUrl.match(/\.(jpeg|jpg|gif|png)$/i) || !idDocUrl.includes(".") ? (
                 <div className="border rounded-lg p-4 bg-gray-50 flex justify-center items-center">
                   <a
-                    href={getMediaUrl(kyc.document_url)}
+                    href={getMediaUrl(idDocUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block"
                   >
                     <Image
-                      src={getMediaUrl(kyc.document_url) || "/placeholder.svg"}
+                      src={getMediaUrl(idDocUrl) || "/placeholder.svg"}
                       alt="KYC Document"
                       width={500}
                       height={300}
                       className="object-contain rounded shadow-sm hover:shadow-md transition-shadow max-h-64"
                       unoptimized={isProxyMediaUrl(
-                        getMediaUrl(kyc.document_url),
+                        getMediaUrl(idDocUrl),
                       )}
                     />
                     <p className="text-sm text-blue-600 mt-2 text-center">
@@ -330,7 +419,7 @@ export default async function KycReviewPage({
                     </svg>
                   </span>
                   <a
-                    href={getMediaUrl(kyc.document_url)}
+                    href={getMediaUrl(idDocUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 underline"
@@ -342,6 +431,44 @@ export default async function KycReviewPage({
             ) : (
               <div className="border rounded-lg p-8 bg-gray-50 text-center text-gray-500">
                 No document uploaded
+              </div>
+            )}
+
+            {selfieFrames.length > 0 && (
+              <div className="space-y-3 pt-4">
+                <div className="flex items-center gap-2">
+                  <Camera className="h-4 w-4 text-gray-500" />
+                  <h4 className="font-semibold text-sm text-gray-700 uppercase tracking-wide">
+                    Live Active Challenge Frames ({selfieFrames.length} frames)
+                  </h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {selfieFrames.map((frameKey, idx) => (
+                    <div
+                      key={frameKey}
+                      className="border rounded-xl p-2 bg-gray-50 flex flex-col items-center space-y-1.5"
+                    >
+                      <a
+                        href={getMediaUrl(frameKey)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full overflow-hidden rounded-lg aspect-square bg-gray-200 flex items-center justify-center"
+                      >
+                        <Image
+                          src={getMediaUrl(frameKey) || "/placeholder.svg"}
+                          alt={`Stream Frame ${idx + 1}`}
+                          width={200}
+                          height={200}
+                          className="object-cover w-full h-full hover:scale-105 transition-transform"
+                          unoptimized={isProxyMediaUrl(getMediaUrl(frameKey))}
+                        />
+                      </a>
+                      <span className="text-[11px] font-medium text-gray-600">
+                        Frame {idx + 1} (t{idx})
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             {kyc?.status === "rejected" && kyc?.verification_notes && (
