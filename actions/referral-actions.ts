@@ -3,26 +3,29 @@
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 
-type ReferralDashboardData = {
+export type ReferralRow = {
+  id: string;
+  referrer_id?: string | null;
+  referee_id?: string | null;
+  registered: boolean | null;
+  referee_email: string | null;
+  created_at: string | null;
+  reward?: string | null;
+  reward_status?: string | null;
+  profiles?: {
+    first_name: string | null;
+    email: string | null;
+    avatar_url: string | null;
+  } | null;
+};
+
+export type ReferralDashboardData = {
   referralLink: string;
   points: number;
   invites: number;
   signUps: number;
   tier: string;
-  referrals: Array<{
-    id: string;
-    referrer_id?: string | null;
-    referee_id?: string | null;
-    registered: boolean | null;
-    referee_email: string | null;
-    created_at: string | null;
-    reward?: string | null;
-    profiles?: {
-      first_name: string | null;
-      email: string | null;
-      avatar_url: string | null;
-    } | null;
-  }>;
+  referrals: ReferralRow[];
 };
 
 export async function getReferralDashboardData(): Promise<ReferralDashboardData | null> {

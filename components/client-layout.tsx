@@ -47,6 +47,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     "/wallet",
     "/bounties",
     "/saved",
+    "/referrals",
   ];
   const useAppShell =
     !hideLayout && appShellRoutes.some((route) => pathname.startsWith(route));
