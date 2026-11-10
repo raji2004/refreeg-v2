@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import QRCode from "react-qr-code";
 import { format } from "date-fns";
 import {
+  Check,
   Copy,
   Mail,
   MessageCircle,
@@ -52,6 +53,9 @@ interface ReferralsViewProps {
   leaderboardTotal: number;
 }
 
+// The step art uses lucide icons in the same cream-circle treatment as the
+// stat cards below — the old /images/referrals/*.png assets never shipped,
+// so referencing them rendered broken images.
 const STEPS = [
   {
     icon: MessageCircle,
@@ -98,6 +102,11 @@ export function ReferralsView({
   const [tab, setTab] = useState<"hub" | "leaderboard">(initialTab);
   const [shareOpen, setShareOpen] = useState(false);
   const [canShare, setCanShare] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Leaderboard arrives server-rendered; the client only paginates and keeps
+  // it fresh while the tab is open.
   const [entries, setEntries] = useState(leaderboard);
   const [totalCount, setTotalCount] = useState(leaderboardTotal);
   const [page, setPage] = useState(1);
@@ -107,12 +116,24 @@ export function ReferralsView({
   const [detailLoading, setDetailLoading] = useState(false);
   const [detail, setDetail] = useState<ReferrerDonorDetailResult | null>(null);
 
+  // navigator.share exists only on supported devices; check after mount so
+  // server and client render the same markup on first paint.
   useEffect(() => {
     setCanShare(
       typeof navigator !== "undefined" && typeof navigator.share === "function",
     );
   }, []);
 
+  // "Copied!" resets itself after a beat; clear the pending reset on unmount
+  // so a closed page can't update state it no longer owns.
+  useEffect(() => {
+    return () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    };
+  }, []);
+
+  // Silent refresh of page 1 while the leaderboard is visible — rankings move
+  // as donations verify, so a live tab shouldn't go stale for minutes.
   useEffect(() => {
     if (tab !== "leaderboard") return;
     const id = setInterval(async () => {
@@ -121,13 +142,17 @@ export function ReferralsView({
         setEntries(res.entries);
         setTotalCount(res.totalCount);
         setPage(1);
-      } catch {}
+      } catch {
+        // background refresh — stay quiet, next tick may succeed
+      }
     }, POLL_MS);
     return () => clearInterval(id);
   }, [tab]);
 
   const switchTab = (next: "hub" | "leaderboard") => {
     setTab(next);
+    // Keep the deep link (?tab=leaderboard) shareable without a router
+    // round trip — the data is already in memory.
     window.history.replaceState(
       null,
       "",
@@ -138,6 +163,9 @@ export function ReferralsView({
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(false), 2000);
       toast({ title: "Link copied" });
     } catch {
       toast({
@@ -273,6 +301,7 @@ export function ReferralsView({
 
       {tab === "hub" ? (
         <div className="space-y-6">
+          {/* How it works */}
           <section className="rounded-2xl border border-hairline bg-surface p-6 sm:p-8">
             <div className="text-center">
               <Eyebrow>How it works</Eyebrow>
@@ -300,6 +329,7 @@ export function ReferralsView({
             </div>
           </section>
 
+          {/* Invite */}
           <section className="rounded-2xl border border-hairline bg-surface p-6 sm:p-8">
             <Eyebrow>Your referral link</Eyebrow>
             <h2 className="mt-1 font-fraunces text-xl font-semibold text-ink">
@@ -323,8 +353,12 @@ export function ReferralsView({
                   onClick={handleCopy}
                   className="rounded-xl"
                 >
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy
+                  {copied ? (
+                    <Check className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Copy className="mr-2 h-4 w-4" />
+                  )}
+                  {copied ? "Copied!" : "Copy"}
                 </Button>
                 <Button
                   variant="ink"
@@ -338,6 +372,7 @@ export function ReferralsView({
             </div>
           </section>
 
+          {/* Stats */}
           <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {stats.map((stat) => {
               const Icon = stat.icon;
@@ -441,6 +476,7 @@ export function ReferralsView({
         </div>
       ) : (
         <div className="space-y-6">
+          {/* Leaderboard header */}
           <section className="rounded-2xl border border-hairline bg-surface p-6 sm:p-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -490,6 +526,7 @@ export function ReferralsView({
             />
           ) : (
             <>
+              {/* Podium: 2nd · 1st · 3rd */}
               <div className="grid gap-4 sm:grid-cols-3 sm:items-end">
                 {topThree.map((entry, index) => {
                   const place = index + 1;
@@ -559,6 +596,7 @@ export function ReferralsView({
                 })}
               </div>
 
+              {/* Positions 4+ */}
               {rest.length > 0 && (
                 <div className="overflow-hidden rounded-2xl border border-hairline bg-surface">
                   <div className="divide-y divide-hairline">
@@ -630,6 +668,7 @@ export function ReferralsView({
         </div>
       )}
 
+      {/* Share modal */}
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -673,13 +712,18 @@ export function ReferralsView({
               onClick={handleCopy}
               className="w-full rounded-xl"
             >
-              <Copy className="mr-2 h-4 w-4" />
-              Copy link
+              {copied ? (
+                <Check className="mr-2 h-4 w-4" />
+              ) : (
+                <Copy className="mr-2 h-4 w-4" />
+              )}
+              {copied ? "Copied!" : "Copy link"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
+      {/* Donor breakdown modal */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
