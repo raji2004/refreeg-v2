@@ -7,14 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { navigation } from "./workspace/navigation";
-import type { WorkspaceView } from "./workspace/types";
+import type { NavCounts, WorkspaceView } from "./workspace/types";
 
 export function AnalyticsSidebar({
   view,
   onView,
+  counts = {},
 }: {
   view: WorkspaceView;
   onView: (view: WorkspaceView) => void;
+  counts?: NavCounts;
 }) {
   const [open, setOpen] = useState(false);
   const content = (
@@ -46,6 +48,7 @@ export function AnalyticsSidebar({
                 item.label === "Analytics"
                   ? view === "analytics" || view === "ambassadors"
                   : target === view && item.label !== "Community";
+              const count = counts[item.label as keyof NavCounts];
               return (
                 <button
                   key={item.label}
@@ -64,9 +67,9 @@ export function AnalyticsSidebar({
                 >
                   <item.icon className="h-[15px] w-[15px] shrink-0 stroke-[1.5] text-ink/70" />
                   <span className="flex-1">{item.label}</span>
-                  {"count" in item && (
+                  {!!count && (
                     <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-ink/[0.07] px-1 text-[10px] font-semibold">
-                      {item.count}
+                      {count}
                     </span>
                   )}
                 </button>

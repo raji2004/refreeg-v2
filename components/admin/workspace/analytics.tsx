@@ -2,108 +2,103 @@
 
 import { Panel, Chip, Person } from "./primitives";
 import { BarPlot, Donut, LinePlot } from "./charts";
-import {
-  ambassadors,
-  hourlyBars,
-  monthlyLine,
-  reviewItems,
-} from "./sample-data";
-import type { Period, WorkItem, WorkspaceView } from "./types";
+import type { WorkItem, WorkspaceData, WorkspaceView } from "./types";
 
-export const eizaSegments = [
-  { label: "Donations", value: 52, display: "52%" },
-  { label: "Bounties", value: 21, display: "21%" },
-  { label: "Petitions", value: 14, display: "14%" },
-  { label: "Check-ins", value: 8, display: "8%" },
-  { label: "Referrals", value: 5, display: "5%" },
-];
+function Empty({ children }: { children: string }) {
+  return <p className="py-8 text-center text-xs text-ink/60">{children}</p>;
+}
+
 export function AnalyticsContent({
-  period,
+  data,
   compare,
   onView,
   onSelect,
 }: {
-  period: Period;
+  data: WorkspaceData;
   compare: boolean;
   onView: (view: WorkspaceView) => void;
   onSelect: (item: WorkItem) => void;
 }) {
-  const line =
-    period === "year"
-      ? monthlyLine
-      : [80, 86, 92, 86, 100, 106, 94, 100, 112, 106, 118, 112, 124, 118, 130];
-  const previous = compare
-    ? line.map((v, i) => v * 0.65 + (i % 2 ? 1 : -3))
-    : undefined;
-  if (period === "day")
+  const { period, donations } = data;
+  const previous = compare ? donations.previous : undefined;
+
+  if (period === "day") {
+    const peak = donations.values.indexOf(Math.max(...donations.values));
+    const hasGifts = donations.values.some(Boolean);
     return (
       <div className="space-y-[18px]">
         <Panel
           title="Donations by hour"
-          aside={<span className="text-xs text-ink/60">Peak 20:00–22:00</span>}
+          aside={
+            hasGifts && (
+              <span className="text-xs text-ink/60">
+                Peak {String(peak).padStart(2, "0")}:00
+              </span>
+            )
+          }
         >
           <BarPlot
-            values={hourlyBars}
-            labels={["00:00", "06:00", "12:00", "18:00", "23:00"]}
+            values={donations.values}
+            labels={donations.labels}
             className="h-[230px]"
           />
         </Panel>
         <Panel className="overflow-hidden p-0">
-          <table className="workspace-table w-full">
-            <thead>
-              <tr>
-                {[
-                  "Campaign today",
-                  "Given",
-                  "Donors",
-                  "Conversion",
-                  "Trend",
-                ].map((v) => (
-                  <th className="text-left" key={v}>
-                    {v}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {[reviewItems[1], reviewItems[0], reviewItems[3]].map(
-                (item, i) => (
-                  <tr key={item.id} className="border-b last:border-0">
+          {data.topCampaigns.length ? (
+            <table className="workspace-table w-full">
+              <thead>
+                <tr>
+                  {[
+                    "Campaign today",
+                    "Given",
+                    "Donors",
+                    "Average gift",
+                    "Last 7 days",
+                  ].map((v) => (
+                    <th className="text-left" key={v}>
+                      {v}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.topCampaigns.map((row, i) => (
+                  <tr key={row.item.id} className="border-b last:border-0">
                     <td>
                       <button
-                        onClick={() => onSelect(item)}
+                        onClick={() => onSelect(row.item)}
                         className="text-left"
                       >
                         <Person
-                          name={item.name}
-                          detail={item.detail}
-                          initials={item.initials}
-                          tone={item.avatar}
+                          name={row.item.name}
+                          detail={row.item.detail}
+                          initials={row.item.initials}
+                          tone={row.item.avatar}
                         />
                       </button>
                     </td>
-                    <td className="font-semibold">
-                      {["₦2.4M", "₦1.1M", "₦640k"][i]}
-                    </td>
-                    <td className="font-semibold">{[612, 204, 131][i]}</td>
-                    <td className="font-semibold">
-                      {["9.2%", "11.4%", "5.8%"][i]}
-                    </td>
+                    <td className="font-semibold">{row.given}</td>
+                    <td className="font-semibold">{row.donors}</td>
+                    <td className="font-semibold">{row.averageGift}</td>
                     <td>
                       <LinePlot
                         small
-                        values={ambassadors[i].trend}
+                        values={row.trend}
                         tone={i === 2 ? "blue" : "green"}
                       />
                     </td>
                   </tr>
-                ),
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <Empty>No donations yet today.</Empty>
+          )}
         </Panel>
       </div>
     );
+  }
+
   if (period === "year")
     return (
       <div className="grid gap-4 xl:grid-cols-[1.93fr_1fr]">
@@ -112,11 +107,11 @@ export function AnalyticsContent({
           aside={
             <div className="flex gap-1.5">
               <Chip tone="blue" dot>
-                2026
+                {data.label.slice(0, 4)}
               </Chip>
               {compare && (
                 <Chip tone="neutral" dot>
-                  2025
+                  {data.previousLabel}
                 </Chip>
               )}
             </div>
@@ -124,33 +119,15 @@ export function AnalyticsContent({
         >
           <div className="[&_svg]:h-[235px]">
             <LinePlot
-              values={line}
+              values={donations.values}
               previous={previous}
-              labels={[
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-              ]}
+              labels={donations.labels}
             />
           </div>
         </Panel>
         <Panel title="Year so far">
           <dl className="space-y-5 text-xs">
-            {[
-              ["Donors", "212,480"],
-              ["Gifts per donor", "3.4"],
-              ["Average gift", "₦5,420"],
-              ["EIZA issued", "24.6M"],
-              ["New users", "61,200"],
-              ["Ambassador-driven", "₦612M · 16%"],
-            ].map(([label, value]) => (
+            {data.yearSummary.map(([label, value]) => (
               <div className="flex justify-between" key={label}>
                 <dt className="text-ink/60">{label}</dt>
                 <dd className="font-semibold">{value}</dd>
@@ -160,20 +137,25 @@ export function AnalyticsContent({
         </Panel>
       </div>
     );
+
   return (
     <div className="space-y-[18px]">
       <div className="grid gap-4 xl:grid-cols-[1.78fr_1fr]">
         <Panel title="Donations by day">
           <div className="[&_svg]:h-[165px]">
-            <LinePlot values={line} previous={previous} />
+            <LinePlot
+              values={donations.values}
+              previous={previous}
+              labels={donations.labels}
+            />
           </div>
           <div className="mt-4 flex gap-1.5">
             <Chip tone="blue" dot>
-              October
+              This month
             </Chip>
             {compare && (
               <Chip tone="neutral" dot>
-                September
+                {data.previousLabel}
               </Chip>
             )}
           </div>
@@ -181,13 +163,9 @@ export function AnalyticsContent({
         <Panel title="Campaigns">
           <Donut
             tones={["green", "gold", "red"]}
-            segments={[
-              { label: "Active", value: 1240, display: "1,240" },
-              { label: "Inactive 21+ days", value: 312, display: "312" },
-              { label: "Paused by rules", value: 96, display: "96" },
-            ]}
-            total="1,648"
-            caption="total"
+            segments={data.campaignStatus.segments}
+            total={data.campaignStatus.total}
+            caption="live"
           />
         </Panel>
       </div>
@@ -198,9 +176,21 @@ export function AnalyticsContent({
               EIZA coins issued
             </button>
           }
-          aside={<span className="text-xs text-ink/60">2.8M this month</span>}
+          aside={
+            <span className="text-xs text-ink/60">
+              {data.eiza.total} this month
+            </span>
+          }
         >
-          <Donut segments={eizaSegments} total="2.8M" size={116} />
+          {data.eiza.segments.length ? (
+            <Donut
+              segments={data.eiza.segments}
+              total={data.eiza.total}
+              size={116}
+            />
+          ) : (
+            <Empty>No EIZA issued this month.</Empty>
+          )}
         </Panel>
         <Panel
           title={
@@ -213,28 +203,32 @@ export function AnalyticsContent({
           }
           aside={<span className="text-xs text-ink/60">Donations driven</span>}
         >
-          <div className="space-y-4">
-            {ambassadors.slice(0, 4).map((person, i) => (
-              <button
-                key={person.name}
-                onClick={() => onView("ambassadors")}
-                className="flex w-full items-center gap-3 text-left"
-              >
-                <div className="min-w-0 flex-1">
-                  <Person
-                    name={person.name}
-                    detail={person.region}
-                    initials={person.initials}
-                    tone={i === 0 ? "blue" : "green"}
-                  />
-                </div>
-                <span className="hidden xl:block [&>div]:w-[60px]">
-                  <LinePlot values={person.trend} small tone="green" />
-                </span>
-                <strong className="text-xs">{person.donations}</strong>
-              </button>
-            ))}
-          </div>
+          {data.ambassadors.length ? (
+            <div className="space-y-4">
+              {data.ambassadors.slice(0, 4).map((person, i) => (
+                <button
+                  key={person.id}
+                  onClick={() => onView("ambassadors")}
+                  className="flex w-full items-center gap-3 text-left"
+                >
+                  <div className="min-w-0 flex-1">
+                    <Person
+                      name={person.name}
+                      detail={person.region}
+                      initials={person.initials}
+                      tone={i === 0 ? "blue" : "green"}
+                    />
+                  </div>
+                  <span className="hidden xl:block [&>div]:w-[60px]">
+                    <LinePlot values={person.trend} small tone="green" />
+                  </span>
+                  <strong className="text-xs">{person.donations}</strong>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <Empty>No referral activity this month.</Empty>
+          )}
         </Panel>
         <Panel
           title={
@@ -242,20 +236,24 @@ export function AnalyticsContent({
               Users
             </button>
           }
-          aside={<span className="text-xs text-ink/60">Monthly active</span>}
+          aside={
+            <span className="text-xs text-ink/60">Active, last 30 days</span>
+          }
         >
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
-              <strong className="text-[22px]">84,210</strong>
-              <p className="mt-1 text-xs text-ink/60">+6.1% vs September</p>
+              <strong className="text-[22px]">
+                {data.users.monthlyActive}
+              </strong>
+              <p className="mt-1 text-xs text-ink/60">{data.users.change}</p>
             </div>
             <div>
-              <strong className="text-[22px]">41%</strong>
+              <strong className="text-[22px]">{data.users.retention}</strong>
               <p className="mt-1 text-xs text-ink/60">30-day retention</p>
             </div>
           </div>
           <BarPlot
-            values={[61, 64, 68, 67, 71, 74, 77, 82, 85, 89, 94, 100]}
+            values={data.users.trend}
             className="h-[70px]"
             lastTone="green"
           />

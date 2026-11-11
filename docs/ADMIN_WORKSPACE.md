@@ -1,44 +1,40 @@
-# Admin analytics UI handoff
+# Admin analytics
 
-Run `pnpm install` and `pnpm dev`, then open `/admin-analytics`.
-This standalone route displays local sample data for October 2026. It does not
-require sign-in, call APIs, track activity, or connect to a database. The existing
-application still uses its normal providers on other routes.
+`/admin-analytics` shows live platform analytics to admins and managers. Signed-out
+visitors are sent to sign-in; other roles get a 404.
 
 ## Files
 
-- `app/admin-analytics/page.tsx`: route and metadata.
-- `components/admin/standalone-analytics.tsx`: local period, comparison, detail,
-  campaign-dialog and CSV-export state.
-- `components/admin/analytics-sidebar.tsx`: RefreeG branding, desktop navigation
-  and mobile drawer. Analytics, Community, Users and EIZA stay within the UI;
-  the remaining menu entries are disabled placeholders.
-- `components/admin/workspace/`: sample data, types, navigation configuration,
-  analytics/detail views, charts, shared presentation components and styles.
-- `lib/admin-workspace.ts`: browser-safe CSV escaping utility.
-- `app/providers.tsx` and `components/client-layout.tsx`: isolate this route from
-  authentication/notification providers and the normal application chrome.
+- `app/admin-analytics/page.tsx`: auth/role check, `?period=day|month|year`, loads data.
+- `lib/admin-analytics/workspace-data.ts`: all Prisma queries, cached for 2 minutes
+  (`unstable_cache`, tag `admin-analytics`).
+- `lib/admin-analytics/period.ts`: reporting windows and chart buckets in Lagos time.
+- `components/admin/standalone-analytics.tsx`: page shell, period switching, CSV export.
+- `components/admin/workspace/`: analytics and detail views, charts, shared UI.
+- `app/providers.tsx` and `components/client-layout.tsx`: skip the normal app chrome
+  and client providers on this route.
 
-## Backend integration
+## Where the numbers come from
 
-All displayed figures are sample values, including sidebar counts and detail
-views. CSV export downloads the four summary metrics for the selected period;
-no data is saved. Changing a sidebar view or opening a campaign is local state.
+| Panel                            | Source                                                                                                               |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Donations, donors, average gift  | completed `donations` + `crypto_donations` (naira)                                                                   |
+| Pledge → donation                | `pledges` created in the window that are `fulfilled`                                                                 |
+| Campaign status                  | approved, unended `causes`; inactive = no gift for 21 days; paused = `paused` or `compliance_paused`                 |
+| EIZA issued                      | `reward_transactions` grouped by `transaction_type`                                                                  |
+| Who holds EIZA                   | `profiles.total_points`                                                                                              |
+| Ambassadors                      | `donor_referral_attributions` (donations driven), `referrals_v1` (referrals, sign-up rate), `referral_bonus` rewards |
+| Active users, retention, cohorts | `events` (logins, comments, shares, donations)                                                                       |
+| Sidebar counts                   | pending `causes`, `kyc_verifications`, `petitions`                                                                   |
 
-Start integration at `StandaloneAnalytics`. Load reporting data in a separate
-container or hook and pass typed values to the presentation components. Replace
-`sample-data.ts` consumers in `AnalyticsContent` and `DetailContent` with props,
-including chart series, campaign totals, ambassadors, users and EIZA statistics.
-`Metric`, `Period` and `WorkItem` define the existing UI shapes in `types.ts`.
-Decide authentication and permissions before exposing real admin data.
-
-The Day, Month and Year controls currently choose fixed demo datasets. Real
-reporting windows, comparisons, currency units and loading/error/empty states
-should be defined with the backend integration. No new endpoints, server
-actions, migrations or payment integrations are included in this UI change.
+Windows: Day = today vs same time last week; Month = month to date vs the same span
+of last month; Year = year to date vs the same span last year.
 
 ## Checks
 
 ```sh
-pnpm test --config jest.config.js --runInBand --coverage=false tests/components/standalone-analytics.test.tsx tests/lib/admin-workspace.test.ts
+pnpm exec jest --runInBand --coverage=false tests/components/standalone-analytics.test.tsx tests/lib/admin-workspace.test.ts tests/lib/admin-analytics-period.test.ts
 ```
+
+Migration `20261111120000_admin_analytics_indexes` adds the date-range indexes these
+queries rely on.

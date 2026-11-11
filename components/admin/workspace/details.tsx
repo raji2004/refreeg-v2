@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, TriangleAlert } from "lucide-react";
+import { Info, Search, TriangleAlert } from "lucide-react";
 import { CalloutBanner } from "@/components/ui/callout-banner";
 import {
   Table,
@@ -13,30 +13,26 @@ import {
 } from "@/components/ui/table";
 import { Panel, Person } from "./primitives";
 import { Donut, Breakdown, LinePlot } from "./charts";
-import { ambassadors, monthlyLine } from "./sample-data";
-import { eizaSegments } from "./analytics";
-import type { Period, WorkspaceView } from "./types";
+import type { WorkspaceData, WorkspaceView } from "./types";
 
 export function DetailContent({
   view,
-  query,
-  period,
+  data,
 }: {
   view: WorkspaceView;
-  query: string;
-  period: Period;
+  data: WorkspaceData;
 }) {
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState("all");
-  const [roi, setRoi] = useState("all");
+
   if (view === "ambassadors") {
-    const filtered = ambassadors.filter(
+    const regions = [...new Set(data.ambassadors.map((p) => p.region))].sort();
+    const filtered = data.ambassadors.filter(
       (person) =>
         `${person.name} ${person.region}`
           .toLowerCase()
-          .includes((search || query).toLowerCase()) &&
-        (region === "all" || person.region === region) &&
-        (roi === "all" || person.roi < Number(roi)),
+          .includes(search.toLowerCase()) &&
+        (region === "all" || person.region === region),
     );
     return (
       <div className="space-y-[18px]">
@@ -58,20 +54,11 @@ export function DetailContent({
             className="rounded-xl bg-surface px-3 text-xs"
           >
             <option value="all">Region · All</option>
-            {ambassadors.map((p) => (
-              <option key={p.region}>{p.region}</option>
+            {regions.map((value) => (
+              <option key={value}>{value}</option>
             ))}
           </select>
-          <select
-            aria-label="Filter ambassador ROI"
-            value={roi}
-            onChange={(event) => setRoi(event.target.value)}
-            className="rounded-xl bg-surface px-3 text-xs"
-          >
-            <option value="all">ROI · All</option>
-            <option value="10">ROI below 10×</option>
-            <option value="40">ROI below 40×</option>
-          </select>
+          <span className="self-center text-xs text-ink/60">{data.label}</span>
         </div>
         <Panel className="overflow-hidden p-0">
           <Table className="workspace-table">
@@ -81,11 +68,10 @@ export function DetailContent({
                   "Ambassador",
                   "Region",
                   "Referrals",
+                  "Sign-up rate",
                   "Donations driven",
-                  "Conversion",
-                  "Rewards paid",
-                  "ROI",
-                  "Trend",
+                  "Rewards earned",
+                  "Last 6 months",
                 ].map((label) => (
                   <TableHead key={label}>{label}</TableHead>
                 ))}
@@ -93,7 +79,7 @@ export function DetailContent({
             </TableHeader>
             <TableBody>
               {filtered.map((person, i) => (
-                <TableRow key={person.name}>
+                <TableRow key={person.id}>
                   <TableCell>
                     <Person
                       name={person.name}
@@ -107,39 +93,28 @@ export function DetailContent({
                     {person.referrals}
                   </TableCell>
                   <TableCell className="font-semibold">
-                    {person.donations}
+                    {person.signupRate}
                   </TableCell>
                   <TableCell className="font-semibold">
-                    {person.conversion}
+                    {person.donations}
                   </TableCell>
                   <TableCell className="font-semibold">
                     {person.rewards}
                   </TableCell>
-                  <TableCell
-                    className={
-                      person.roi < 10
-                        ? "font-semibold text-rust"
-                        : "font-semibold"
-                    }
-                  >
-                    {person.roi}×
-                  </TableCell>
                   <TableCell>
-                    <LinePlot
-                      small
-                      tone={person.roi < 10 ? "red" : "green"}
-                      values={person.trend}
-                    />
+                    <LinePlot small tone="green" values={person.trend} />
                   </TableCell>
                 </TableRow>
               ))}
               {!filtered.length && (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={7}
                     className="py-12 text-center text-ink/60"
                   >
-                    No ambassadors match these filters.
+                    {data.ambassadors.length
+                      ? "No ambassadors match these filters."
+                      : "No referral activity in this period."}
                   </TableCell>
                 </TableRow>
               )}
@@ -149,59 +124,49 @@ export function DetailContent({
       </div>
     );
   }
+
   if (view === "eiza")
     return (
       <div className="grid gap-4 xl:grid-cols-2">
-        <Panel title="Issued by source">
-          <Donut
-            size={180}
-            total="2.8M"
-            caption="EIZA"
-            segments={eizaSegments.map((segment, i) => ({
-              ...segment,
-              label: [
-                "Donations",
-                "Bounties",
-                "Petition signatures",
-                "Daily check-ins",
-                "Referrals",
-              ][i],
-              display: ["1.46M", "588k", "392k", "224k", "140k"][i],
-            }))}
-          />
+        <Panel
+          title="Issued by source"
+          aside={<span className="text-xs text-ink/60">{data.label}</span>}
+        >
+          {data.eiza.segments.length ? (
+            <Donut
+              size={180}
+              total={data.eiza.total}
+              caption="EIZA"
+              segments={data.eiza.segments}
+            />
+          ) : (
+            <p className="py-8 text-center text-xs text-ink/60">
+              No EIZA issued in this period.
+            </p>
+          )}
         </Panel>
-        <Panel title="Redeemed for">
-          <Breakdown
-            rows={[
-              { label: "Giving to campaigns", value: 46, tone: "green" },
-              { label: "Airtime and data", value: 31, tone: "blue" },
-              { label: "Cash to bank", value: 17, tone: "gold" },
-              { label: "Merch vouchers", value: 6, tone: "neutral" },
-            ]}
-          />
+        <Panel
+          title="Who holds EIZA"
+          aside={<span className="text-xs text-ink/60">% of all balances</span>}
+        >
+          <Breakdown rows={data.holders.rows} />
           <CalloutBanner
-            variant="gold"
-            icon={<TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />}
-            title="Concentration is rising. 12 of the top 100 holders were flagged by reward abuse detection this month."
-            className="mt-4 border-0 text-xs leading-5 text-amber [&_p]:font-normal"
+            variant={data.holders.top100Share >= 50 ? "gold" : "neutral"}
+            icon={
+              data.holders.top100Share >= 50 ? (
+                <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              ) : (
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              )
+            }
+            title={`The top 100 holders hold ${data.holders.top100Share}% of all EIZA.`}
+            className="mt-4 border-0 text-xs leading-5 [&_p]:font-normal"
           />
         </Panel>
       </div>
     );
-  const cohorts = [
-    [100, 58, 46, 41, 38, 36],
-    [100, 61, 48, 43, 40],
-    [100, 60, 49, 44],
-    [100, 63, 51],
-    [100, 65],
-    [100],
-  ];
-  const values =
-    period === "day"
-      ? monthlyLine.slice(3)
-      : period === "year"
-        ? monthlyLine.map((v) => v * 1.6)
-        : monthlyLine;
+
+  const { userActivity } = data;
   return (
     <div className="grid gap-4 xl:grid-cols-[1.14fr_1fr]">
       <Panel
@@ -219,7 +184,11 @@ export function DetailContent({
         }
       >
         <div className="[&_svg]:h-[245px]">
-          <LinePlot values={values} secondary={values.map((v) => v / 12)} />
+          <LinePlot
+            values={userActivity.returning}
+            secondary={userActivity.new}
+            labels={userActivity.labels}
+          />
         </div>
       </Panel>
       <Panel
@@ -246,26 +215,30 @@ export function DetailContent({
               </tr>
             </thead>
             <tbody>
-              {cohorts.map((row, i) => (
-                <tr key={i}>
+              {data.cohorts.map((row) => (
+                <tr key={row.label}>
                   <th scope="row" className="pr-10 text-left font-normal">
-                    {["May", "Jun", "Jul", "Aug", "Sep", "Oct"][i]}
+                    {row.label}
                   </th>
-                  {row.map((value, j) => (
-                    <td
-                      key={j}
-                      className="h-[31px] min-w-[48px] rounded-md font-medium"
-                      style={{
-                        backgroundColor: `hsl(var(--forest) / ${value / 100})`,
-                        color:
-                          value > 45
-                            ? "hsl(var(--surface))"
-                            : "hsl(var(--ink))",
-                      }}
-                    >
-                      {value}%
-                    </td>
-                  ))}
+                  {row.values.map((value, j) =>
+                    value === null ? (
+                      <td key={j} />
+                    ) : (
+                      <td
+                        key={j}
+                        className="h-[31px] min-w-[48px] rounded-md font-medium"
+                        style={{
+                          backgroundColor: `hsl(var(--forest) / ${value / 100})`,
+                          color:
+                            value > 45
+                              ? "hsl(var(--surface))"
+                              : "hsl(var(--ink))",
+                        }}
+                      >
+                        {value}%
+                      </td>
+                    ),
+                  )}
                 </tr>
               ))}
             </tbody>

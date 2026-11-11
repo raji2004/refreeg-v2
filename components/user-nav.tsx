@@ -192,6 +192,7 @@ export function UserNav() {
             <DropdownMenuSeparator className="my-2 bg-hairline" />
             <p className={sectionLabel}>Admin</p>
             <DropdownMenuGroup>
+              <MenuLink href="/admin-analytics">Analytics</MenuLink>
               <MenuLink href="/dashboard/admin/causes">Manage causes</MenuLink>
               <MenuLink href="/dashboard/admin/users">Manage users</MenuLink>
               <MenuLink href="/dashboard/admin/petitions">

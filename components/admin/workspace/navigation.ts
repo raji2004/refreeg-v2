@@ -54,27 +54,22 @@ export const navigation = [
       {
         label: "Campaigns",
         icon: Heart,
-        count: 14,
       },
       {
         label: "KYC",
         icon: Contact,
-        count: 9,
       },
       {
         label: "Receipts",
         icon: ReceiptText,
-        count: 23,
       },
       {
         label: "Petitions & bounties",
         icon: Trophy,
-        count: 6,
       },
       {
         label: "Reports",
         icon: Flag,
-        count: 11,
       },
     ],
   },
@@ -84,18 +79,15 @@ export const navigation = [
       {
         label: "Fund releases",
         icon: ArrowRight,
-        count: 7,
       },
       {
         label: "Withdrawals",
         icon: Wallet,
-        count: 3,
       },
       { label: "Transactions", icon: List },
       {
         label: "EIZA coins",
         icon: CircleDollarSign,
-        count: 18,
       },
     ],
   },
@@ -103,7 +95,7 @@ export const navigation = [
     label: "People & growth",
     items: [
       { label: "Users & orgs", icon: Users },
-      { label: "Ads", icon: Contact, count: 2 },
+      { label: "Ads", icon: Contact },
     ],
   },
   {
@@ -112,7 +104,6 @@ export const navigation = [
       {
         label: "Rules engine",
         icon: SlidersHorizontal,
-        count: 3,
       },
       {
         label: "System health",
