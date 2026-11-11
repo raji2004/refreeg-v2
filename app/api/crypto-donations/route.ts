@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
+import { enqueueCryptoDonation } from "@/services/donation-ledger";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -72,6 +73,8 @@ export async function POST(request: NextRequest) {
           },
         },
       });
+
+      await enqueueCryptoDonation(tx, donation, "wallet");
 
       return donation;
     });

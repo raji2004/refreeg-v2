@@ -320,3 +320,29 @@ model subscriptions {
 
   @@index([user_id], map: "idx_subscriptions_user_id")
 }
+
+model DonationLedgerEntry {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceType    String    @map("source_type") @db.VarChar
+  sourceId      String    @map("source_id") @db.Uuid
+  causeId       String    @map("cause_id") @db.Uuid
+  kind          String    @default("donation") @db.VarChar
+  amountKobo    BigInt    @map("amount_kobo")
+  payload       String
+  payloadHash   String    @map("payload_hash") @db.VarChar(66)
+  status        String    @default("pending") @db.VarChar
+  chainId       Int?      @map("chain_id")
+  txHash        String?   @map("tx_hash") @db.VarChar(66)
+  blockNumber   BigInt?   @map("block_number")
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error")
+  submittedAt   DateTime? @map("submitted_at") @db.Timestamptz(6)
+  confirmedAt   DateTime? @map("confirmed_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([sourceType, sourceId, kind], map: "donation_ledger_source_unique")
+  @@index([status, createdAt], map: "idx_donation_ledger_status_created")
+  @@index([causeId], map: "idx_donation_ledger_cause_id")
+  @@index([txHash], map: "idx_donation_ledger_tx_hash")
+  @@map("donation_ledger_entries")
+}

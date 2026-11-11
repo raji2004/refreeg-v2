@@ -57,6 +57,9 @@ describe("crypto-actions", () => {
           cause: {
             update: jest.fn().mockResolvedValue({}),
           },
+          donationLedgerEntry: {
+            create: jest.fn().mockResolvedValue({}),
+          },
         }),
       );
 
@@ -104,6 +107,9 @@ describe("crypto-actions", () => {
           },
           cause: {
             update: jest.fn().mockResolvedValue({}),
+          },
+          donationLedgerEntry: {
+            create: jest.fn().mockResolvedValue({}),
           },
         }),
       );

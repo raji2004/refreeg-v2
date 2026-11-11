@@ -11,6 +11,7 @@ import type {
 import { recordEvent } from "@/actions/event-reward-actions";
 import { sendDonationReceivedEmail } from "@/services/mail";
 import { syncMilestoneRequirements } from "@/lib/proof-milestones";
+import { enqueueFiatDonation } from "@/services/donation-ledger";
 
 const mapPrismaToDonation = (d: any): Donation => ({
   ...d,
@@ -52,28 +53,36 @@ export async function createDonation(
         if (existingDonation) return mapPrismaToDonation(existingDonation);
       }
     }
-    data = await prisma.donation.create({
-      data: {
-        causeId: causeId,
-        ...(userId ? { userId: userId } : {}),
-        ...(paystackReference ? { paystack_reference: paystackReference } : {}),
-        payment_provider: paymentProvider,
-        amount: donationAmount,
-        tip_amount: finalTipAmount,
-        name:
-          String(donationData.isAnonymous).toLocaleLowerCase() === "true"
-            ? "Anonymous"
-            : donationData.name,
-        email: donationData.email,
-        message: donationData.message || null,
-        is_anonymous: donationData.isAnonymous,
-        status: "completed",
-      },
-    });
+    data = await prisma.$transaction(async (tx) => {
+      const created = await tx.donation.create({
+        data: {
+          causeId: causeId,
+          ...(userId ? { userId: userId } : {}),
+          ...(paystackReference
+            ? { paystack_reference: paystackReference }
+            : {}),
+          payment_provider: paymentProvider,
+          amount: donationAmount,
+          tip_amount: finalTipAmount,
+          name:
+            String(donationData.isAnonymous).toLocaleLowerCase() === "true"
+              ? "Anonymous"
+              : donationData.name,
+          email: donationData.email,
+          message: donationData.message || null,
+          is_anonymous: donationData.isAnonymous,
+          status: "completed",
+        },
+      });
 
-    await prisma.cause.update({
-      where: { id: causeId },
-      data: { raised: { increment: donationAmount } },
+      await tx.cause.update({
+        where: { id: causeId },
+        data: { raised: { increment: donationAmount } },
+      });
+
+      await enqueueFiatDonation(tx, created);
+
+      return created;
     });
     try {
       await syncMilestoneRequirements(causeId);

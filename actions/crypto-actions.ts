@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { recordEvent } from "@/actions/event-reward-actions";
 import { syncMilestoneRequirements } from "@/lib/proof-milestones";
+import { enqueueCryptoDonation } from "@/services/donation-ledger";
 
 interface CreateCryptoDonationParams {
   cause_id: string;
@@ -59,6 +60,8 @@ export async function createCryptoDonation(data: CreateCryptoDonationParams) {
         where: { id: data.cause_id },
         data: { raised: { increment: data.amount_in_naira } },
       });
+
+      await enqueueCryptoDonation(tx, donation, "breet");
 
       return donation;
     });

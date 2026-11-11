@@ -20,6 +20,10 @@ jest.mock("@/lib/prisma", () => ({
     campaign_follows: {
       findMany: jest.fn(),
     },
+    donationLedgerEntry: {
+      create: jest.fn(),
+    },
+    $transaction: jest.fn(),
   },
 }));
 
@@ -66,6 +70,8 @@ const mockPrisma = prisma as unknown as {
   cause: { update: jest.Mock; findUnique: jest.Mock };
   pledges: { updateMany: jest.Mock };
   campaign_follows: { findMany: jest.Mock };
+  donationLedgerEntry: { create: jest.Mock };
+  $transaction: jest.Mock;
 };
 
 const originalFetch = global.fetch;
@@ -78,6 +84,10 @@ describe("donation-actions", () => {
       .fn()
       .mockResolvedValue({ ok: true }) as unknown as typeof fetch;
     (recordEvent as jest.Mock).mockResolvedValue({});
+    mockPrisma.$transaction.mockImplementation(async (callback) =>
+      callback(mockPrisma),
+    );
+    mockPrisma.donationLedgerEntry.create.mockResolvedValue({});
     (sendDonationReceivedEmail as jest.Mock).mockResolvedValue({});
   });
 
