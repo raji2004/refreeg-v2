@@ -250,8 +250,9 @@ export default async function DashboardPage() {
             livePledges={donorStats.livePledges}
             eizaBalance={profile?.total_points ?? 0}
           />
-
-          <DashboardSetupCard items={checklist} />
+          {checklist.some((item) => !item.done) && (
+            <DashboardSetupCard items={checklist} />
+          )}
 
           <DashboardDeliveredCard
             amount={weeklyStats.amount}
