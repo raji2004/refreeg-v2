@@ -214,6 +214,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   events: {
+    // Fires only for adapter-created (Google/Apple) users.
+    async createUser({ user }) {
+      if (!user.id || !process.env.AUTH_SECRET) return;
+      try {
+        const reqHeaders = await headers();
+        const protocol =
+          process.env.NODE_ENV === "production" ? "https" : "http";
+        const host = reqHeaders.get("host") || "localhost:3000";
+
+        fetch(`${protocol}://${host}/api/auth/welcome`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-secret": process.env.AUTH_SECRET,
+          },
+          body: JSON.stringify({ userId: user.id }),
+        }).catch((e) => console.error("Welcome email API error:", e));
+      } catch (e) {
+        console.error("[OAuth] welcome email trigger failed:", e);
+      }
+    },
     async signIn({ user }) {
       if (user.email) {
         try {
