@@ -27,6 +27,8 @@ interface ClientLayoutProps {
 export function ClientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname();
 
+  if (pathname === "/admin-analytics") return <>{children}</>;
+
   const noLayoutRoutes = [
     "/auth/signin",
     "/auth/signup",

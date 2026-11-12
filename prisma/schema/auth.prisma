@@ -77,6 +77,7 @@ model User {
   sentOrganizationInvitations OrganizationInvitation[] @relation("OrganizationInviter")
 
   @@index([isBlocked], map: "idx_profiles_is_blocked")
+  @@index([createdAt], map: "idx_profiles_created_at")
   @@map("profiles")
 
   /// New Saved feature relations

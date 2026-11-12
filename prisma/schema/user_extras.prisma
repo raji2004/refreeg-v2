@@ -83,6 +83,7 @@ model events {
   @@index([created_at], map: "idx_events_created_at")
   @@index([event_type], map: "idx_events_type")
   @@index([user_id], map: "idx_events_user_id")
+  @@index([user_id, created_at], map: "idx_events_user_id_created_at")
 }
 
 model Referral {
@@ -118,4 +119,5 @@ model referrals_v1 {
   @@index([referee_email_v1], map: "idx_referrals_v1_referee_email")
   @@index([referrer_id_v1], map: "idx_referrals_v1_referrer")
   @@index([utm_source_v1], map: "idx_referrals_v1_utm_source")
+  @@index([created_at_v1], map: "idx_referrals_v1_created_at")
 }

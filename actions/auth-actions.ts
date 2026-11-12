@@ -8,9 +8,8 @@ import bcrypt from "bcryptjs";
 import {
   sendLoginNotificationEmail,
   sendPasswordResetEmail,
-  sendWelcomeEmailToUser,
 } from "@/services/mail";
-import { subscribeToConvertKit } from "@/services/convertkit";
+import { runPostSignupActions } from "@/lib/auth/welcome";
 import crypto from "crypto";
 import { deriveFullNameFromEmail } from "@/lib/auth/registration";
 
@@ -66,22 +65,11 @@ export async function signUpAction(
       },
     });
 
-    try {
-      const firstName = effectiveFullName.split(" ")[0];
-      await subscribeToConvertKit({
-        email,
-        first_name: firstName,
-        fields: {
-          account_type: accountType || "not_selected",
-          signup_date: new Date().toISOString(),
-        },
-      });
-
-      const profileSetupUrl = `${process.env.NEXTAUTH_URL}/dashboard/settings`;
-      await sendWelcomeEmailToUser(email, effectiveFullName, profileSetupUrl);
-    } catch (e) {
-      console.error("Post-signup external actions failed:", e);
-    }
+    await runPostSignupActions({
+      email,
+      fullName: effectiveFullName,
+      accountType,
+    });
 
     // You can handle initial wallets/rewards here using prisma later.
 
