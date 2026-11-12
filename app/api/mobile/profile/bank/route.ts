@@ -6,9 +6,6 @@ import {
   updateBankDetails,
   getProfile,
 } from "@/actions/profile-actions";
-import { evaluateBankAccountSubmission } from "@/lib/kyc/payout-name-lock";
-import { listBanks } from "@/services/payment-provider";
-import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -22,21 +19,12 @@ export async function GET(request: NextRequest) {
     const profile = await getProfile(user!.id);
     const hasBank = !!(profile && profile.account_number && profile.bank_name);
 
-    // Check if user has active campaigns locking self-service edits
-    const activeCampaignsCount = await prisma.cause.count({
-      where: {
-        userId: user!.id,
-        status: { in: ["approved", "pending"] },
-      },
-    });
-
     return apiSuccess({
       hasBankDetails: hasBank,
       accountNumber: profile?.account_number || null,
       bankName: profile?.bank_name || null,
       accountName: profile?.account_name || null,
       subAccountCode: profile?.sub_account_code || null,
-      isLockedByLiveCampaign: activeCampaignsCount > 0,
     });
   } catch (error: any) {
     console.error("Mobile API Check Bank Details Error:", error);
@@ -51,68 +39,17 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
 
-    if (!body.accountNumber || !body.bankName) {
+    if (!body.accountNumber || !body.bankName || !body.accountName) {
       return apiError(
-        "Missing required fields (accountNumber, bankName)",
+        "Missing required fields (accountNumber, bankName, accountName)",
         400,
       );
-    }
-
-    // Resolve bankCode if omitted by mobile client
-    let effectiveBankCode = body.bankCode;
-    if (!effectiveBankCode && body.bankName) {
-      try {
-        const banks = await listBanks();
-        const match = banks?.find(
-          (b: any) =>
-            b.name?.toLowerCase().trim() === body.bankName?.toLowerCase().trim(),
-        );
-        if (match) {
-          effectiveBankCode = match.code;
-        }
-      } catch {
-        // fallback
-      }
-    }
-
-    if (!effectiveBankCode) {
-      return apiError(
-        "Bank code is required or bank name was not recognized",
-        400,
-      );
-    }
-
-    // Evaluate Bank Submission (ALWAYS enforced for all bank updates: checks live campaigns lock & NIBSS name match)
-    const evalResult = await evaluateBankAccountSubmission(user!.id, {
-      accountNumber: body.accountNumber,
-      bankCode: effectiveBankCode,
-      bankName: body.bankName,
-      isBeneficiaryAccount: Boolean(body.is_beneficiary_account),
-      beneficiaryType: body.beneficiary_type,
-      beneficiaryRelationship: body.beneficiary_relationship,
-      proofDocumentUrl: body.proof_document_url,
-    });
-
-    if (!evalResult.allowed) {
-      return apiError(
-        evalResult.error || "Bank account submission not allowed",
-        evalResult.statusCode,
-        {
-          requiresBeneficiaryDeclaration:
-            evalResult.requiresBeneficiaryDeclaration,
-          resolvedAccountName: evalResult.resolvedAccountName,
-        },
-      );
-    }
-
-    if (evalResult.resolvedAccountName) {
-      body.accountName = evalResult.resolvedAccountName;
     }
 
     const bankData = {
       accountNumber: body.accountNumber,
       bankName: body.bankName,
-      accountName: body.accountName || "RefreeG Verified Account",
+      accountName: body.accountName,
       sub_account_code: body.sub_account_code,
     };
 

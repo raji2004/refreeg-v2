@@ -55,68 +55,107 @@ export async function POST(request: NextRequest) {
       data.paymentProvider as "paystack" | "flutterwave",
     );
 
-    // Authoritatively bind creator subaccount from database to prevent client spoofing
-    const { prisma } = await import("@/lib/prisma");
-    const causeRecord = await prisma.cause.findUnique({
-      where: { id: data.causeId },
-      select: {
-        userId: true,
-        user: {
-          select: {
-            subAccountCode: true,
-            flutterwaveSubAccountId: true,
-            accountNumber: true,
-            bankName: true,
-            fullName: true,
-            username: true,
-            email: true,
-          },
-        },
-      },
-    });
+    // JIT Flutterwave Subaccount Creation for existing users
+    if (
+      data.paymentProvider === "flutterwave" &&
+      (!data.subaccounts || data.subaccounts.length === 0)
+    ) {
+      try {
+        const { prisma } = await import("@/lib/prisma");
+        const Flutterwave = (await import("@/services/flutterwave")).default;
 
-    if (data.paymentProvider === "flutterwave") {
-      let flwSubId = causeRecord?.user?.flutterwaveSubAccountId;
+        const cause = await prisma.cause.findUnique({
+          where: { id: data.causeId },
+          select: { userId: true },
+        });
 
-      // JIT Flutterwave Subaccount Creation for existing users if missing
-      if (!flwSubId && causeRecord?.user?.subAccountCode && causeRecord.user.accountNumber && causeRecord.user.bankName) {
-        try {
-          const Flutterwave = (await import("@/services/flutterwave")).default;
-          const bankCode = await Flutterwave.getBankCode(causeRecord.user.bankName);
-          if (bankCode) {
-            const isTestMode = process.env.FLUTTERWAVE_SECRET_KEY?.includes("TEST");
-            const newSubaccount = await Flutterwave.createSubaccount({
-              account_number: isTestMode ? "0690000031" : causeRecord.user.accountNumber,
-              bank_code: isTestMode ? "044" : bankCode,
-              business_name: causeRecord.user.fullName || causeRecord.user.username || "RefreeG Cause Creator",
-              business_email: causeRecord.user.email || "no-reply@refreeg.com",
-            });
-            flwSubId = newSubaccount?.subaccount_id || null;
-            if (flwSubId) {
-              await prisma.user.update({
-                where: { id: causeRecord.userId },
-                data: { flutterwaveSubAccountId: flwSubId },
-              });
+        if (cause?.userId) {
+          const user = await prisma.user.findUnique({
+            where: { id: cause.userId },
+            select: {
+              accountNumber: true,
+              bankName: true,
+              fullName: true,
+              username: true,
+              email: true,
+              subAccountCode: true,
+              flutterwaveSubAccountId: true,
+            },
+          });
+
+          // Only if they don't have flutterwave but HAVE paystack (meaning they are verified)
+          if (
+            user &&
+            !user.flutterwaveSubAccountId &&
+            user.subAccountCode &&
+            user.accountNumber &&
+            user.bankName
+          ) {
+            const bankCode = await Flutterwave.getBankCode(user.bankName);
+            if (bankCode) {
+              const isTestMode =
+                process.env.FLUTTERWAVE_SECRET_KEY?.includes("TEST");
+
+              let subaccountId: string | null = null;
+
+              try {
+                const newSubaccount = await Flutterwave.createSubaccount({
+                  account_number: isTestMode
+                    ? "0690000031"
+                    : user.accountNumber,
+                  bank_code: isTestMode ? "044" : bankCode,
+                  business_name:
+                    user.fullName || user.username || "RefreeG Cause Creator",
+                  business_email: user.email || "no-reply@refreeg.com",
+                });
+                subaccountId = newSubaccount?.subaccount_id || null;
+              } catch (createErr: any) {
+                const msg =
+                  createErr.response?.data?.message || createErr.message || "";
+                if (
+                  msg.toLowerCase().includes("already exists") &&
+                  user.accountNumber
+                ) {
+                  // Recover the existing Flutterwave subaccount ID
+                  subaccountId =
+                    await Flutterwave.findSubaccountByAccountNumber(
+                      user.accountNumber,
+                    );
+                }
+              }
+
+              if (subaccountId) {
+                await prisma.user.update({
+                  where: { id: cause.userId },
+                  data: { flutterwaveSubAccountId: subaccountId },
+                });
+
+                data.subaccounts = [
+                  {
+                    subaccount: subaccountId,
+                    share: Number(data.amount) * 100,
+                  },
+                ];
+              }
             }
           }
-        } catch (jitErr) {
-          console.error("JIT Flutterwave subaccount error:", jitErr);
         }
+      } catch (jitError) {
+        console.error("JIT Flutterwave Subaccount Creation Failed:", jitError);
       }
+    }
 
-      if (flwSubId) {
-        data.subaccounts = [{ subaccount: flwSubId, share: Number(data.amount) * 100 }];
-      } else {
-        data.subaccounts = [];
-      }
-    } else {
-      // Paystack: authoritatively bind from creator DB record
-      const paystackSubCode = causeRecord?.user?.subAccountCode;
-      if (paystackSubCode) {
-        data.subaccounts = [{ subaccount: paystackSubCode, share: Number(data.amount) * 100 }];
-      } else {
-        data.subaccounts = [];
-      }
+    // Ensure Flutterwave gets its specific subaccount ID, not the Paystack one
+    if (
+      data.paymentProvider === "flutterwave" &&
+      data._flutterwaveSubAccountId
+    ) {
+      data.subaccounts = [
+        {
+          subaccount: data._flutterwaveSubAccountId,
+          share: Number(data.amount) * 100,
+        },
+      ];
     }
 
     const response = await initializeTransaction(data, data.paymentProvider);

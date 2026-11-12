@@ -276,16 +276,6 @@ export async function createCause(
 ): Promise<Cause> {
   // GPS verification temporarily disabled while live location data is restored.
   // const location = await resolveDeviceCampaignLocation(causeData.deviceLocation);
-  const userRecord = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { accountNumber: true, bankName: true },
-  });
-  if (!userRecord?.accountNumber || !userRecord?.bankName) {
-    throw new Error(
-      "You must add and verify a payout bank account in Settings before creating a campaign.",
-    );
-  }
-
   const location = causeData.location?.trim();
   if (!location) throw new Error("Campaign location is required");
   if (location.length > 100) {

@@ -287,8 +287,8 @@ describe("KYC Phase 1 Fixes & Verification Suite (B1 - B5)", () => {
     });
   });
 
-  describe("B5 Verified: In-House Mobile KYC Step Persistence & Session Handling", () => {
-    it("reuses active in-progress session when user resumes without force_new", async () => {
+  describe("B5 Verified: Mobile session reuse, abandonment, and DB error handling", () => {
+    it("reuses active pending session when user returns without force_new", async () => {
       (authenticateMobileRequest as jest.Mock).mockResolvedValue({
         user: { id: "user-reuse", fullName: "Reuse User" },
       });
@@ -296,85 +296,95 @@ describe("KYC Phase 1 Fixes & Verification Suite (B1 - B5)", () => {
       mockPrisma.kyc_verifications.findFirst.mockResolvedValue({
         id: "kyc-reuse-1",
         user_id: "user-reuse",
-        status: "in_progress",
-        verification_notes: JSON.stringify({ currentStep: 2 }),
-      });
-      mockPrisma.kyc_verifications.update.mockResolvedValue({
-        id: "kyc-reuse-1",
+        status: "pending",
+        document_url:
+          "didit-active-123:::https://verification.didit.me/v3/session/didit-active-123",
+        created_at: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
       });
 
       const req = new NextRequest("http://localhost/api/mobile/kyc", {
         method: "POST",
-        body: JSON.stringify({
-          action: "save_step",
-          currentStep: 3,
-          idNumber: "12345678901",
-        }),
       });
 
       const res = await mobileKycPOST(req);
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.kycId).toBe("kyc-reuse-1");
-      expect(json.data.currentStep).toBe(3);
+      expect(json.data.session_id).toBe("didit-active-123");
+      expect(json.data.resumed).toBe(true);
     });
 
-    it("marks old pending records as abandoned when creating a new session with force_new", async () => {
+    it("marks old pending records as abandoned when creating a new session", async () => {
       (authenticateMobileRequest as jest.Mock).mockResolvedValue({
         user: { id: "user-new", fullName: "New User" },
       });
 
-      mockPrisma.kyc_verifications.updateMany.mockResolvedValue({ count: 1 });
-      mockPrisma.user.findUnique.mockResolvedValue({
-        fullName: "New User",
-      });
-      mockPrisma.kyc_verifications.create.mockResolvedValue({
-        id: "kyc-brand-new",
+      mockPrisma.kyc_verifications.findFirst.mockResolvedValue(null);
+
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          session_id: "didit-brand-new",
+          session_token: "token-999",
+          url: "https://verification.didit.me/v3/session/didit-brand-new",
+        }),
       });
 
       const req = new NextRequest("http://localhost/api/mobile/kyc", {
         method: "POST",
-        body: JSON.stringify({
-          action: "save_step",
-          force_new: true,
-          currentStep: 2,
-        }),
+        body: JSON.stringify({ force_new: true }),
       });
 
       const res = await mobileKycPOST(req);
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(201);
 
       // Verified: marks old pending as abandoned
       expect(mockPrisma.kyc_verifications.updateMany).toHaveBeenCalledWith({
         where: {
           user_id: "user-new",
-          status: { in: ["in_progress", "pending"] },
+          status: "pending",
         },
         data: {
           status: "abandoned",
-          verification_notes: JSON.stringify({ reason: "User started fresh session" }),
+          verification_notes: "Superseded by new verification session",
         },
       });
+
+      global.fetch = originalFetch;
     });
 
-    it("returns 500 if DB operation fails", async () => {
+    it("returns 500 and does NOT return a token if DB create fails", async () => {
       (authenticateMobileRequest as jest.Mock).mockResolvedValue({
         user: { id: "user-fail", fullName: "Fail User" },
       });
 
-      mockPrisma.kyc_verifications.findFirst.mockRejectedValue(
+      mockPrisma.kyc_verifications.findFirst.mockResolvedValue(null);
+
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          session_id: "didit-untracked",
+          session_token: "token-fail",
+          url: "https://verification.didit.me/v3/session/didit-untracked",
+        }),
+      });
+
+      mockPrisma.kyc_verifications.create.mockRejectedValue(
         new Error("Database connection dropped"),
       );
 
       const req = new NextRequest("http://localhost/api/mobile/kyc", {
         method: "POST",
-        body: JSON.stringify({ action: "save_step" }),
       });
 
       const res = await mobileKycPOST(req);
+      // Verified: DB error is NOT swallowed, returns 500!
       expect(res.status).toBe(500);
       const json = await res.json();
-      expect(json.error).toBe("Database connection dropped");
+      expect(json.error).toBe("Internal server error");
+
+      global.fetch = originalFetch;
     });
   });
 });

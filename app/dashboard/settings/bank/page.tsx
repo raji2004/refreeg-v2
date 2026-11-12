@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
 import { getCachedProfile } from "@/lib/profile-cache";
-import { prisma } from "@/lib/prisma";
 import { BankDetailsForm } from "../bank-details-form";
 import { SettingsShell } from "../components/settings-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -11,15 +10,7 @@ export default async function BankSettingsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
 
-  const [profile, liveCampaignCount] = await Promise.all([
-    getCachedProfile(session.user.id).catch(() => null),
-    prisma.cause.count({
-      where: {
-        userId: session.user.id,
-        status: { in: ["approved", "pending"] },
-      },
-    }),
-  ]);
+  const profile = await getCachedProfile(session.user.id).catch(() => null);
 
   if (!profile) {
     return (
@@ -51,7 +42,6 @@ export default async function BankSettingsPage() {
           id: session.user.id,
           email: profile.email ?? session.user.email ?? "",
         }}
-        hasLiveCampaigns={liveCampaignCount > 0}
       />
     </SettingsShell>
   );

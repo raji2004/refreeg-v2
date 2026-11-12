@@ -48,17 +48,11 @@ export function apiSuccess<T>(data: T, status = 200, headers?: HeadersInit) {
 /**
  * Standardized API error response
  */
-export function apiError(
-  message: string,
-  status = 400,
-  data?: Record<string, unknown>,
-  headers?: HeadersInit,
-) {
+export function apiError(message: string, status = 400, headers?: HeadersInit) {
   return NextResponse.json(
     {
       success: false,
       error: message,
-      ...(data ? { data, ...data } : {}),
     },
     {
       status,

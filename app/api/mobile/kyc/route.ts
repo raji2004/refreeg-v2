@@ -1,13 +1,7 @@
-import crypto from "crypto";
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import {
-  saveKycStepProgress,
-  getResumableSession,
-  submitKycVerification,
-} from "@/lib/kyc/verification-engine";
-import { issueKycChallenge } from "@/lib/kyc/server-biometrics";
+import { getVerificationStatus } from "@/actions/kyc-actions";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {
@@ -16,45 +10,15 @@ export async function OPTIONS() {
 
 /**
  * GET /api/mobile/kyc
- * Returns:
- * - isVerified: boolean
- * - kycTier: "Tier 1" | "Tier 2" | "Tier 3"
- * - status: "not_started" | "in_progress" | "under_review" | "name_mismatch" | "approved" | "rejected"
- * - resumableSession: details to resume at exact step (K2, K3, K4)
+ * Returns the current KYC verification status for the authenticated user.
  */
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await authenticateMobileRequest(request);
   if (errorResponse) return errorResponse;
 
   try {
-    const [profile, kycRecord, resumable] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: user!.id },
-        select: {
-          isVerified: true,
-          current_tier: true,
-          accountType: true,
-          fullName: true,
-        },
-      }),
-      prisma.kyc_verifications.findFirst({
-        where: { user_id: user!.id },
-        orderBy: { created_at: "desc" },
-      }),
-      getResumableSession(user!.id),
-    ]);
-
-    const isVerified = Boolean(profile?.isVerified);
-    let status = kycRecord?.status || "not_started";
-    if (isVerified) status = "approved";
-
-    return apiSuccess({
-      isVerified,
-      kycTier: profile?.current_tier || (isVerified ? "Tier 2" : "Tier 1"),
-      status,
-      accountType: profile?.accountType || "individual",
-      resumableSession: resumable,
-    });
+    const status = await getVerificationStatus(user!.id);
+    return apiSuccess(status);
   } catch (error: any) {
     console.error("Mobile API Get KYC Status Error:", error);
     return apiError("Internal server error", 500);
@@ -63,114 +27,137 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/mobile/kyc
- * Handles:
- * - action: "save_step" (saves progress at Step 2 or 3)
- * - action: "get_challenge" (issues 3-min randomized challenge token for K4)
- * - action: "submit" (runs server-authoritative biometrics, OCR & 3-way name check)
+ *
+ * Creates or resumes a Didit verification session for the authenticated mobile user.
+ * - If user has an active pending session (< 15 min) and `force_new` is false,
+ *   reuses that session to save cost and allow user to continue.
+ * - If creating a new session, marks previous pending sessions as 'abandoned'
+ *   to preserve audit history.
+ * - Rejects if user is already approved (409).
  */
 export async function POST(request: NextRequest) {
   const { user, errorResponse } = await authenticateMobileRequest(request);
   if (errorResponse) return errorResponse;
 
   try {
-    const body = await request.json().catch(() => ({}));
-    const action = body.action || "save_step";
+    let body: any = {};
+    try {
+      body = await request.json();
+    } catch {
+      body = {};
+    }
 
-    // 1. Save step progress (K2 -> K3 -> K4)
-    if (action === "save_step") {
-      const result = await saveKycStepProgress(
-        user!.id,
-        {
-          currentStep: body.currentStep || 2,
-          documentType: body.documentType,
-          idNumber: body.idNumber,
-          idLast4: body.idLast4,
-          dob: body.dob,
-          documentS3Key: body.documentS3Key,
-          ocrRawText: body.ocrRawText,
+    // Check if user already has an approved KYC
+    const existingKyc = await prisma.kyc_verifications.findFirst({
+      where: { user_id: user!.id },
+      orderBy: { created_at: "desc" },
+    });
+
+    if (existingKyc?.status === "approved") {
+      return apiError("KYC already approved", 409);
+    }
+
+    // Cost saving: If an in_progress or pending session exists, reuse it unless force_new is requested.
+    // Didit manages expiration natively via webhooks (Expired/Abandoned status).
+    if (
+      existingKyc &&
+      (existingKyc.status === "in_progress" ||
+        existingKyc.status === "pending") &&
+      !body.force_new &&
+      existingKyc.document_url
+    ) {
+      const parts = existingKyc.document_url.split(":::");
+      const existingSessionId = parts[0];
+      const existingUrl =
+        parts[1] ||
+        `https://verification.didit.me/v3/session/${existingSessionId}`;
+      const existingToken = parts[2] || "";
+
+      if (existingSessionId) {
+        return apiSuccess(
+          {
+            session_id: existingSessionId,
+            session_token: existingToken,
+            verification_url: existingUrl,
+            resumed: true,
+          },
+          200,
+        );
+      }
+    }
+
+    // Mark old in-progress/pending sessions as abandoned before creating a new one (preserves audit trail)
+    await prisma.kyc_verifications.updateMany({
+      where: {
+        user_id: user!.id,
+        status: { in: ["in_progress", "pending"] },
+      },
+      data: {
+        status: "abandoned",
+        verification_notes: "Superseded by new verification session",
+      },
+    });
+
+    // Parse optional callback_url from request body
+    let callbackUrl = "refreeg://kyc/callback"; // Default deep link for Flutter
+    if (body.callback_url && typeof body.callback_url === "string") {
+      callbackUrl = body.callback_url;
+    }
+
+    // Create a new Didit verification session
+    const apiKey =
+      process.env.DIDIT_API_KEY || process.env.DIDIT_CLIENT_SECRET || "";
+
+    const diditResponse = await fetch(
+      "https://verification.didit.me/v3/session/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
         },
-        Boolean(body.force_new),
-      );
-      return apiSuccess(result);
+        body: JSON.stringify({
+          workflow_id: process.env.DIDIT_WORKFLOW_ID || "",
+          callback: callbackUrl,
+          vendor_data: user!.id,
+        }),
+      },
+    );
+
+    if (!diditResponse.ok) {
+      const errorText = await diditResponse.text();
+      console.error("Didit session creation error:", errorText);
+      return apiError("Failed to create verification session", 502);
     }
 
-    // 2. Issue live randomized challenge token for Step 4
-    if (action === "get_challenge") {
-      const kycId = body.kycId || crypto.randomUUID();
-      const challenge = issueKycChallenge(user!.id, kycId);
-      return apiSuccess(challenge);
-    }
+    const diditData = await diditResponse.json();
+    const sessionId = diditData.session_id;
+    const sessionToken = diditData.session_token || diditData.token || "";
+    const verificationUrl =
+      diditData.url || `https://verification.didit.me/v3/session/${sessionId}`;
 
-    // 3. Final submission with 3-frame active challenge & S3/base64 frames
-    if (action === "submit") {
-      if (!body.manifest || !body.manifest.challengeToken) {
-        return apiError("Missing active challenge manifest", 400);
-      }
+    // Record session in database so it is tracked
+    await prisma.kyc_verifications.create({
+      data: {
+        user_id: user!.id,
+        document_type: "didit",
+        document_url: `${sessionId}:::${verificationUrl}:::${sessionToken}`,
+        status: "in_progress",
+        verification_notes: "Session initialized via RefreeG mobile app",
+        full_name: user!.fullName || "RefreeG User",
+      },
+    });
 
-      // Convert incoming frames (Base64 strings or S3 keys)
-      let frame0: Buffer;
-      let frame1: Buffer;
-      let frame2: Buffer;
-      let docBuffer: Buffer | undefined;
-
-      try {
-        if (body.framesBase64 && Array.isArray(body.framesBase64) && body.framesBase64.length === 3) {
-          frame0 = Buffer.from(body.framesBase64[0], "base64");
-          frame1 = Buffer.from(body.framesBase64[1], "base64");
-          frame2 = Buffer.from(body.framesBase64[2], "base64");
-        } else {
-          // If photos were uploaded directly to S3, fetch buffers or read mock
-          frame0 = Buffer.alloc(100);
-          frame1 = Buffer.alloc(100);
-          frame2 = Buffer.alloc(100);
-        }
-
-        if (body.documentImageBase64) {
-          docBuffer = Buffer.from(body.documentImageBase64, "base64");
-        }
-
-        // 1. Ensure valid frame digests on manifest
-        if (
-          !Array.isArray(body.manifest.frameDigests) ||
-          body.manifest.frameDigests.length !== 3 ||
-          body.manifest.frameDigests.some((d: string) => !d)
-        ) {
-          body.manifest.frameDigests = [
-            crypto.createHash("sha256").update(frame0).digest("hex"),
-            crypto.createHash("sha256").update(frame1).digest("hex"),
-            crypto.createHash("sha256").update(frame2).digest("hex"),
-          ];
-        }
-
-        // 2. Calibrate manual camera picker timestamps to 1.2s sequential stream window
-        const [t0, , t2] = body.manifest.timestamps || [0, 0, 0];
-        const streamDuration = t2 - t0;
-        if (streamDuration < 1500 || streamDuration > 6500) {
-          const now = Date.now();
-          body.manifest.timestamps = [now - 2400, now - 1200, now];
-        }
-      } catch (bufErr: any) {
-        return apiError("Invalid frame image data: " + bufErr.message, 400);
-      }
-
-      const outcome = await submitKycVerification(user!.id, {
-        kycId: body.kycId,
-        documentType: body.documentType || "nin_slip",
-        idNumber: body.idNumber,
-        dob: body.dob,
-        documentImageBuffer: docBuffer,
-        documentS3Key: body.documentS3Key,
-        selfieFrames: [frame0, frame1, frame2],
-        manifest: body.manifest,
-        ocrRawText: body.ocrRawText,
-      });
-
-      return apiSuccess(outcome);
-    }
-
-    return apiError("Invalid action", 400);
+    return apiSuccess(
+      {
+        session_id: sessionId,
+        session_token: sessionToken,
+        verification_url: verificationUrl,
+      },
+      201,
+    );
   } catch (error: any) {
-    console.error("Mobile API KYC Error:", error);
-    return apiError(error.message || "Failed to process KYC request", 500);
+    console.error("Mobile API Create KYC Session Error:", error);
+    return apiError("Internal server error", 500);
   }
 }

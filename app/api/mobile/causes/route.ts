@@ -64,17 +64,6 @@ export async function POST(request: NextRequest) {
       return apiError("Missing required fields (title, category, goal)", 400);
     }
 
-    const userProfile = await prisma.user.findUnique({
-      where: { id: user!.id },
-      select: { accountNumber: true, bankName: true },
-    });
-    if (!userProfile?.accountNumber || !userProfile?.bankName) {
-      return apiError(
-        "You must add and verify a payout bank account in Settings before creating a campaign.",
-        400,
-      );
-    }
-
     const causeId = crypto.randomUUID();
     let daysActive = null;
 
