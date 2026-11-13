@@ -7,6 +7,7 @@ import {
 } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { listCauses, countCauses } from "@/actions/cause-actions";
+import { hasBankDetails, isProfileComplete } from "@/actions/profile-actions";
 import {
   withMobileCache,
   invalidateMobileCachePrefix,
@@ -55,6 +56,23 @@ export async function POST(request: NextRequest) {
   if (errorResponse) return errorResponse;
 
   try {
+    const [hasBankInfo, profileStatus] = await Promise.all([
+      hasBankDetails(user!.id),
+      isProfileComplete(user!.id),
+    ]);
+
+    if (!hasBankInfo || !profileStatus.isComplete) {
+      const missing: string[] = [];
+      if (!hasBankInfo) missing.push("bank details");
+      if (!profileStatus.isComplete) {
+        missing.push(...profileStatus.missingFields);
+      }
+      return apiError(
+        `Please complete your ${missing.join(" and ")} before creating a cause.`,
+        403,
+      );
+    }
+
     const body = await request.json();
 
     // We need to bypass the 'createCause' server action because it expects a 'File' object
