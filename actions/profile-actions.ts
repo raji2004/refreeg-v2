@@ -302,6 +302,9 @@ export async function createOnboardingProfile(
 
   if (profileData.email) updateData.email = profileData.email;
   if (profileData.phone) updateData.phone = profileData.phone;
+  if (profileData.bio !== undefined) {
+    updateData.bio = profileData.bio.trim() || null;
+  }
   if (effectiveFullName) updateData.fullName = effectiveFullName;
   if (profilePhotoUrl) updateData.profilePhoto = profilePhotoUrl;
 
@@ -399,6 +402,7 @@ export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
         firstName: true,
         lastName: true,
         username: true,
+        bio: true,
         location: true,
         createdAt: true,
         onboarding_completed: true,
@@ -433,6 +437,7 @@ export async function getCurrentOnboardingStep(
         firstName: true,
         lastName: true,
         username: true,
+        bio: true,
         location: true,
         phone: true,
         email: true,
@@ -490,6 +495,7 @@ export async function getOnboardingData(userId: string): Promise<{
     fullName?: string;
     displayName?: string;
     username: string;
+    bio?: string;
     location: string;
     phone: string;
     email: string;
@@ -507,6 +513,7 @@ export async function getOnboardingData(userId: string): Promise<{
         fullName: true,
         displayName: true,
         username: true,
+        bio: true,
         location: true,
         phone: true,
         email: true,
@@ -524,6 +531,7 @@ export async function getOnboardingData(userId: string): Promise<{
           fullName: "",
           displayName: "",
           username: "",
+          bio: "",
           location: "",
           phone: "",
           email: "",
@@ -540,6 +548,7 @@ export async function getOnboardingData(userId: string): Promise<{
         fullName: profile.fullName || "",
         displayName: profile.displayName || "",
         username: profile.username || "",
+        bio: profile.bio || "",
         location: profile.location || "",
         phone: profile.phone || "",
         email: profile.email || "",

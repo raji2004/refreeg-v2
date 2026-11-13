@@ -60,6 +60,7 @@ export interface OnboardingProfileData {
   displayName?: string;
   dateOfBirth?: string;
   username?: string;
+  bio?: string;
   location?: string;
   state?: string;
   city?: string;
