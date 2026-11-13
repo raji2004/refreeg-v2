@@ -25,7 +25,11 @@ export async function POST(request: NextRequest) {
       return apiError("Invalid Google ID Token", 401);
     }
 
-    const email = googleData.email;
+    if (googleData.email_verified === false || googleData.email_verified === "false") {
+      return apiError("Google email is not verified", 401);
+    }
+
+    const email = (googleData.email as string).trim().toLowerCase();
     const name = googleData.name || "Google User";
     const picture = googleData.picture || null;
     const googleId = googleData.sub; // The unique ID from Google
@@ -60,6 +64,25 @@ export async function POST(request: NextRequest) {
 
       // Initialize wallet for new user
       await initializeUserWallet(user.id);
+    } else if (googleId) {
+      // Ensure existing email/password accounts get linked for cross-platform OAuth consistency
+      const existingAccount = await prisma.account.findFirst({
+        where: {
+          provider: "google",
+          OR: [{ userId: user.id }, { providerAccountId: googleId }],
+        },
+      });
+
+      if (!existingAccount) {
+        await prisma.account.create({
+          data: {
+            userId: user.id,
+            type: "oauth",
+            provider: "google",
+            providerAccountId: googleId,
+          },
+        });
+      }
     }
 
     if (user.isBlocked) {
