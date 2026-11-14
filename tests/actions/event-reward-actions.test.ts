@@ -27,8 +27,13 @@ jest.mock("@/lib/event-bus", () => ({
   },
 }));
 
+jest.mock("@/lib/auth/auth", () => ({
+  auth: jest.fn(),
+}));
+
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth/auth";
 import { Prisma } from "@prisma/client";
 import {
   recordEvent,
@@ -37,6 +42,8 @@ import {
   getUserStats,
   updateUserStreaks,
 } from "@/actions/event-reward-actions";
+
+const mockAuth = auth as jest.Mock;
 
 const mockPrisma = prisma as unknown as {
   events: { findFirst: jest.Mock; create: jest.Mock };
@@ -48,6 +55,8 @@ const mockPrisma = prisma as unknown as {
 describe("event-reward-actions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Every wrapper enforces session ownership; tests act as user-1.
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } });
   });
 
   describe("updateUserStreaks", () => {

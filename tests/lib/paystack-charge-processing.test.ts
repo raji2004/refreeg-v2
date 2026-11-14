@@ -22,6 +22,19 @@ jest.mock("@/lib/pledge-provider", () => ({
 }));
 
 import { processSuccessfulCharge } from "@/lib/paystack-charge-processing";
+import { calculateProviderFee, calculateServiceFee } from "@/lib/utils";
+
+// The processor cross-checks the charged kobo against the total implied by
+// the metadata; both success fixtures must report a consistent amount.
+function expectedKoboFor(donationNaira: number, tipNaira = 0): number {
+  return Math.round(
+    (donationNaira +
+      calculateServiceFee(donationNaira) +
+      calculateProviderFee(donationNaira, "paystack") +
+      tipNaira) *
+      100,
+  );
+}
 
 describe("Paystack Charge Processing - Referral Attribution", () => {
   beforeEach(() => {
@@ -31,6 +44,7 @@ describe("Paystack Charge Processing - Referral Attribution", () => {
   it("extracts ref_v1 from Paystack metadata and passes to createDonation", async () => {
     mockVerifyTransactionFull.mockResolvedValue({
       status: "success",
+      amount: expectedKoboFor(5000),
       metadata: {
         cause_id: "cause-paystack-123",
         user_id: "user-donor-456",
@@ -62,6 +76,7 @@ describe("Paystack Charge Processing - Referral Attribution", () => {
   it("handles missing ref_v1 gracefully in Paystack metadata", async () => {
     mockVerifyTransactionFull.mockResolvedValue({
       status: "success",
+      amount: expectedKoboFor(5000),
       metadata: {
         cause_id: "cause-paystack-123",
         amount: 5000,
@@ -91,6 +106,23 @@ describe("Paystack Charge Processing - Referral Attribution", () => {
     });
 
     const result = await processSuccessfulCharge("failed_ref");
+
+    expect(result.ok).toBe(false);
+    expect(mockCreateDonation).not.toHaveBeenCalled();
+  });
+
+  it("refuses to record a donation when the charged amount differs from metadata", async () => {
+    mockVerifyTransactionFull.mockResolvedValue({
+      status: "success",
+      amount: expectedKoboFor(5000) + 500_00, // attacker-topped-up charge
+      metadata: {
+        cause_id: "cause-paystack-123",
+        amount: 5000,
+        email: "donor@paystack.com",
+      },
+    });
+
+    const result = await processSuccessfulCharge("paystack_ref_003");
 
     expect(result.ok).toBe(false);
     expect(mockCreateDonation).not.toHaveBeenCalled();

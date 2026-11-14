@@ -1,8 +1,18 @@
 import { expect, type Page } from "@playwright/test";
 
-export const TEST_EMAIL =
-  process.env.REFREEG_E2E_EMAIL || "kingraj1344@gmail.com";
-export const TEST_PASSWORD = process.env.REFREEG_E2E_PASSWORD || "12345678";
+// Credentials come from the environment only (SAW-016): a test account's
+// password must never be committed to the repository. Provide
+// REFREEG_E2E_EMAIL / REFREEG_E2E_PASSWORD when running the suite.
+export const TEST_EMAIL = process.env.REFREEG_E2E_EMAIL || "";
+export const TEST_PASSWORD = process.env.REFREEG_E2E_PASSWORD || "";
+
+function assertTestCredentials(email: string, password: string) {
+  if (!email || !password) {
+    throw new Error(
+      "Missing test credentials: set REFREEG_E2E_EMAIL and REFREEG_E2E_PASSWORD in the environment.",
+    );
+  }
+}
 
 /**
  * Signs in against apps.refreeg.com (or PLAYWRIGHT_BASE_URL).
@@ -13,6 +23,7 @@ export async function signIn(
   email = TEST_EMAIL,
   password = TEST_PASSWORD,
 ) {
+  assertTestCredentials(email, password);
   await page.goto("/auth/signin", {
     waitUntil: "domcontentloaded",
     timeout: 60_000,

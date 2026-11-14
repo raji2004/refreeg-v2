@@ -48,6 +48,9 @@ function getDeviceLabel(userAgent: string | null): string {
   return "Unknown Device";
 }
 
+const LOGIN_MAX_FAILED_ATTEMPTS = 5;
+const LOGIN_LOCKOUT_MINUTES = 15;
+
 const baseAdapter = PrismaAdapter(prisma);
 const customAdapter: Adapter = {
   ...baseAdapter,
@@ -82,14 +85,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true,
+      // No allowDangerousEmailAccountLinking: an OAuth identity that merely
+      // shares an email with a local account must never sign in as it
+      // without proving ownership of the original credentials.
     }),
     ...(process.env.APPLE_ID && process.env.APPLE_SECRET
       ? [
           Apple({
             clientId: process.env.APPLE_ID,
             clientSecret: process.env.APPLE_SECRET,
-            allowDangerousEmailAccountLinking: true,
           }),
         ]
       : []),
@@ -185,6 +189,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null;
           }
 
+          // Lock out repeated failures against one account so stolen or
+          // guessed passwords cannot be cycled indefinitely (SAW-007).
+          if (
+            user.locked_until &&
+            new Date(user.locked_until).getTime() > Date.now()
+          ) {
+            console.warn(
+              `[NextAuth] Login refused: account locked until ${user.locked_until.toISOString()}`,
+            );
+            return null;
+          }
+
           const valid = await bcrypt.compare(
             credentials.password as string,
             user.password,
@@ -192,7 +208,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           if (!valid) {
             console.info("[NextAuth] Invalid password attempt.");
+            const attempts = (user.failed_login_attempts ?? 0) + 1;
+            const lock =
+              attempts >= LOGIN_MAX_FAILED_ATTEMPTS
+                ? new Date(Date.now() + LOGIN_LOCKOUT_MINUTES * 60 * 1000)
+                : null;
+            await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                failed_login_attempts: lock ? 0 : attempts,
+                ...(lock ? { locked_until: lock } : {}),
+              },
+            });
             return null;
+          }
+
+          if (user.failed_login_attempts > 0 || user.locked_until) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { failed_login_attempts: 0, locked_until: null },
+            });
           }
 
           console.info("[NextAuth] User authenticated successfully.");
@@ -285,6 +320,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.loginTime < SESSIONS_INVALIDATED_AFTER_MS
       ) {
         return null;
+      }
+
+      // Per-user revocation cutoff (sessions_invalidated_after). The dashboard
+      // layout checked this, but API routes and server actions did not, so a
+      // revoked session kept working against APIs. Skipped on the Edge
+      // runtime (middleware), where Prisma cannot execute.
+      if (!user && token.id && process.env.NEXT_RUNTIME === "nodejs") {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { sessions_invalidated_after: true },
+          });
+          const revokedAfter = dbUser?.sessions_invalidated_after;
+          if (
+            revokedAfter &&
+            typeof token.loginTime === "number" &&
+            new Date(revokedAfter).getTime() > token.loginTime
+          ) {
+            return null;
+          }
+        } catch (error) {
+          console.error("[NextAuth] Per-user revocation check failed:", error);
+        }
       }
 
       const userId = user?.id;

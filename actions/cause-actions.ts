@@ -15,6 +15,7 @@ import type {
   CauseFilterOptions,
 } from "@/types";
 import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth/auth";
 import { getCurrentUser } from "./auth-actions";
 import { isAdminOrManager } from "./role-actions";
 import {
@@ -95,7 +96,7 @@ export async function getQuickDonateProps(causeId: string) {
     goal: cause.goal,
     raised: cause.raised,
     subaccount: cause.user?.sub_account_code ?? undefined,
-    orgName: cause.user?.name || "g campaign",
+    orgName: cause.user?.name || "RefreeG campaign",
     orgVerified: !!cause.user?.is_verified,
     defaultName: profile?.display_name || profile?.full_name || "",
     defaultEmail: profile?.email ?? "",
@@ -422,6 +423,24 @@ export async function updateCause(
   userId: string,
   causeData: Partial<CauseFormData>,
 ): Promise<any> {
+  // Exported server action: confirm the caller is the signed-in owner of the
+  // cause before creating an edit request in their name.
+  const session = await auth();
+  const sessionUserId = session?.user?.id;
+  if (!sessionUserId || sessionUserId !== userId) {
+    throw new Error("You need to be signed in to edit your own campaign.");
+  }
+  const causeOwnership = await prisma.cause.findUnique({
+    where: { id: causeId },
+    select: { userId: true },
+  });
+  if (!causeOwnership) {
+    throw new Error("Campaign not found.");
+  }
+  if (causeOwnership.userId !== sessionUserId) {
+    throw new Error("You can only request edits for campaigns you own.");
+  }
+
   const location = await resolveCampaignLocation(causeData.location);
 
   // Check for existing pending edit for this cause
@@ -1174,7 +1193,8 @@ export async function saveCauseShare(
     // Record event for reward tracking if userId provided
     if (userId) {
       try {
-        const { recordEvent } = await import("@/actions/event-reward-actions");
+        const { recordEventCore: recordEvent } =
+          await import("@/lib/reward-core");
         await recordEvent({
           type: "share",
           userId,

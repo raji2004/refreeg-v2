@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import Flutterwave from "@/services/flutterwave";
+import { requireAdmin } from "@/lib/auth/admin-auth";
 
 export async function GET() {
+  // Returns user emails and drives real bank-account migrations; admin-only.
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json(
+      { error: "Admin access required" },
+      { status: 403 },
+    );
+  }
+
   try {
     const users = await prisma.user.findMany({
       where: {

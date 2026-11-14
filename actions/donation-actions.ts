@@ -8,7 +8,8 @@ import type {
   DonationFormData,
   PaymentProviderType,
 } from "@/types";
-import { recordEvent } from "@/actions/event-reward-actions";
+import { recordEventCore as recordEvent } from "@/lib/reward-core";
+import { internalApiHeaders } from "@/lib/internal-api";
 import { sendDonationReceivedEmail } from "@/services/mail";
 import { syncMilestoneRequirements } from "@/lib/proof-milestones";
 
@@ -52,28 +53,37 @@ export async function createDonation(
         if (existingDonation) return mapPrismaToDonation(existingDonation);
       }
     }
-    data = await prisma.donation.create({
-      data: {
-        causeId: causeId,
-        ...(userId ? { userId: userId } : {}),
-        ...(paystackReference ? { paystack_reference: paystackReference } : {}),
-        payment_provider: paymentProvider,
-        amount: donationAmount,
-        tip_amount: finalTipAmount,
-        name:
-          String(donationData.isAnonymous).toLocaleLowerCase() === "true"
-            ? "Anonymous"
-            : donationData.name,
-        email: donationData.email,
-        message: donationData.message || null,
-        is_anonymous: donationData.isAnonymous,
-        status: "completed",
-      },
-    });
+    // Donation row and the campaign's raised total move together: a crash
+    // between the two writes used to leave raised out of sync with the
+    // donation ledger (SAW-013).
+    data = await prisma.$transaction(async (tx) => {
+      const donation = await tx.donation.create({
+        data: {
+          causeId: causeId,
+          ...(userId ? { userId: userId } : {}),
+          ...(paystackReference
+            ? { paystack_reference: paystackReference }
+            : {}),
+          payment_provider: paymentProvider,
+          amount: donationAmount,
+          tip_amount: finalTipAmount,
+          name:
+            String(donationData.isAnonymous).toLocaleLowerCase() === "true"
+              ? "Anonymous"
+              : donationData.name,
+          email: donationData.email,
+          message: donationData.message || null,
+          is_anonymous: donationData.isAnonymous,
+          status: "completed",
+        },
+      });
 
-    await prisma.cause.update({
-      where: { id: causeId },
-      data: { raised: { increment: donationAmount } },
+      await tx.cause.update({
+        where: { id: causeId },
+        data: { raised: { increment: donationAmount } },
+      });
+
+      return donation;
     });
     try {
       await syncMilestoneRequirements(causeId);
@@ -179,7 +189,10 @@ export async function createDonation(
 
             fetch(`${appUrl}/api/mail/follower-update`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                ...internalApiHeaders(),
+              },
               body: JSON.stringify({
                 type: "milestone",
                 data: {

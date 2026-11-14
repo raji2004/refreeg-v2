@@ -32,7 +32,6 @@
     "@aws-sdk/s3-request-presigner": "^3.1040.0",
     "@didit-protocol/sdk-web": "^0.2.1",
     "@hookform/resolvers": "^3.9.1",
-    "@img/sharp-win32-x64": "^0.35.3",
     "@prisma/client": "^6.19.3",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.4",

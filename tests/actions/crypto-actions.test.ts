@@ -10,8 +10,8 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/actions/event-reward-actions", () => ({
-  recordEvent: jest.fn(),
+jest.mock("@/lib/reward-core", () => ({
+  recordEventCore: jest.fn(),
 }));
 
 jest.mock("@/lib/event-bus", () => ({
@@ -22,7 +22,7 @@ jest.mock("@/lib/event-bus", () => ({
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { recordEvent } from "@/actions/event-reward-actions";
+import { recordEventCore as recordEvent } from "@/lib/reward-core";
 import { createCryptoDonation } from "@/actions/crypto-actions";
 
 const mockPrisma = prisma as unknown as {

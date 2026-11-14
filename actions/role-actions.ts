@@ -315,7 +315,13 @@ export async function getAdminEmails(): Promise<string[]> {
 }
 
 export async function ensureDefaultAdmin(): Promise<void> {
-  const DEFAULT_ADMIN_EMAIL = "kingraj1344@gmail.com";
+  // The bootstrap admin address comes from the environment; it must not be
+  // hardcoded, or every deployment auto-promotes a fixed personal account.
+  const DEFAULT_ADMIN_EMAIL = process.env.DEFAULT_ADMIN_EMAIL;
+
+  if (!DEFAULT_ADMIN_EMAIL) {
+    return;
+  }
 
   const user = await prisma.user.findUnique({
     where: { email: DEFAULT_ADMIN_EMAIL },
