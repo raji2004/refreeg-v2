@@ -1,9 +1,10 @@
 /**
  * @jest-environment node
  */
-jest.mock("@/actions/event-reward-actions", () => ({
-  recordEvent: jest.fn(),
-  updateUserStreaks: jest.fn(),
+jest.mock("@/lib/reward-core", () => ({
+  recordEventCore: jest.fn(),
+  updateUserStreaksCore: jest.fn(),
+  addRewardsCore: jest.fn(),
 }));
 
 jest.mock("@/lib/auth/auth", () => ({
@@ -51,7 +52,10 @@ jest.mock("@/services/convertkit", () => ({
   subscribeToConvertKit: jest.fn(),
 }));
 
-import { recordEvent, updateUserStreaks } from "@/actions/event-reward-actions";
+import {
+  recordEventCore as recordEvent,
+  updateUserStreaksCore as updateUserStreaks,
+} from "@/lib/reward-core";
 import {
   getCurrentUser,
   signUpAction,
@@ -175,6 +179,8 @@ describe("auth-actions", () => {
 
   describe("trackLogin", () => {
     it("records login event and updates streaks", async () => {
+      // trackLogin only acts for the signed-in user (session-guarded).
+      mockAuth.mockResolvedValue({ user: { id: "user-1" } });
       mockRecordEvent.mockResolvedValue(undefined);
       mockUpdateUserStreaks.mockResolvedValue(undefined);
 
@@ -188,6 +194,17 @@ describe("auth-actions", () => {
         }),
       });
       expect(mockUpdateUserStreaks).toHaveBeenCalledWith("user-1");
+    });
+
+    it("ignores calls for a user other than the signed-in session", async () => {
+      mockAuth.mockResolvedValue({ user: { id: "someone-else" } });
+      mockRecordEvent.mockClear();
+      mockUpdateUserStreaks.mockClear();
+
+      await trackLogin("user-1");
+
+      expect(mockRecordEvent).not.toHaveBeenCalled();
+      expect(mockUpdateUserStreaks).not.toHaveBeenCalled();
     });
   });
 

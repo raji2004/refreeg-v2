@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Comment } from "@/types/common-types";
-import { recordEvent } from "@/actions/event-reward-actions";
+import { recordEventCore as recordEvent } from "@/lib/reward-core";
 import { sendNewCommentEmail } from "@/services/mail";
 
 function mapUserToCommentUser(user: {

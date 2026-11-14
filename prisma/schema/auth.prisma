@@ -57,6 +57,11 @@ model User {
   /// affected by the 2026-09-03 data-loss incident, without touching
   /// everyone else's sessions  see scripts/invalidate-incident-sessions.ts.
   sessions_invalidated_after  DateTime?                @db.Timestamptz(6)
+  /// Consecutive failed password attempts; account locks for 15 minutes at
+  /// 5 (lib/auth/auth.ts credentials authorize).
+  failed_login_attempts       Int                      @default(0) @map("failed_login_attempts")
+  /// When set and in the future, password sign-in is refused.
+  locked_until                DateTime?                @map("locked_until") @db.Timestamptz(6)
   accounts                    Account[]
   campaign_follows            campaign_follows[]
   campaign_proof_updates      campaign_proof_updates[]
