@@ -53,7 +53,7 @@ export default function HowItWorks() {
         variants={container}
       >
         <motion.div className="self-start text-left" variants={item}>
-          <div className="w-fit border px-4 py-1.5 mb-4 rounded-full bg-[#8C1823] text-white">
+          <div className="w-fit border px-4 py-1.5 mb-4 rounded-full bg-wine text-white">
             1
           </div>
           <div className="font-bold">Create Your Campaign</div>
@@ -64,7 +64,7 @@ export default function HowItWorks() {
         </motion.div>
 
         <motion.div className="self-center text-left" variants={item}>
-          <div className="w-fit border px-4 py-2 mb-4 rounded-full bg-[#8C1823] text-white">
+          <div className="w-fit border px-4 py-2 mb-4 rounded-full bg-wine text-white">
             2
           </div>
           <div className="font-bold">Verify for Trust</div>
@@ -75,7 +75,7 @@ export default function HowItWorks() {
         </motion.div>
 
         <motion.div className="self-end text-left" variants={item}>
-          <div className="w-fit border px-4 py-2 mb-4 rounded-full bg-[#8C1823] text-white">
+          <div className="w-fit border px-4 py-2 mb-4 rounded-full bg-wine text-white">
             3
           </div>
           <div className="font-bold">Raise Funds Globally</div>
@@ -85,7 +85,7 @@ export default function HowItWorks() {
         </motion.div>
 
         <motion.div className="self-start text-left" variants={item}>
-          <div className="w-fit border px-4 py-2 mb-4 rounded-full bg-[#8C1823] text-white">
+          <div className="w-fit border px-4 py-2 mb-4 rounded-full bg-wine text-white">
             4
           </div>
           <div className="font-bold">Deliver Proof</div>
@@ -104,7 +104,7 @@ export default function HowItWorks() {
         whileTap={{ scale: 0.97 }}
       >
         <Link href="/dashboard/causes/create">
-          <Button className="bg-[#FAFAFA] border text-black px-10 py-4 flex items-center gap-2 rounded-full shadow-sm">
+          <Button className="bg-palette-baseWhite border text-black px-10 py-4 flex items-center gap-2 rounded-full shadow-sm">
             Get Started
             <Image
               src="/images/arrow-right.png"

@@ -164,7 +164,7 @@ export function MoneyTrail() {
   return (
     <section
       ref={sectionRef}
-      className="w-full py-10 md:py-5 bg-[#0A3CB5] md:bg-transparent overflow-hidden"
+      className="w-full py-10 md:py-5 bg-blue-accent md:bg-transparent overflow-hidden"
     >
       <div className="flex flex-col">
         {/* Top Section */}

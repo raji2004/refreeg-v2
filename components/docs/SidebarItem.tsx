@@ -35,13 +35,13 @@ export default function SidebarItem({
         <Icon
           className={`w-4 h-4 mr-2 transition-colors ${
             active
-              ? "text-[#0A2A5C]"
-              : "text-gray-500 group-hover:text-[#0A2A5C]"
+              ? "text-navy-royal"
+              : "text-gray-500 group-hover:text-navy-royal"
           }`}
         />
         <span
           className={`transition-colors ${
-            active ? "text-[#0A2A5C] font-semibold" : "text-gray-700"
+            active ? "text-navy-royal font-semibold" : "text-gray-700"
           }`}
         >
           {label}

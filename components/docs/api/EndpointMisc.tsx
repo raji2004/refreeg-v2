@@ -96,7 +96,7 @@ export function SectionValidateAi() {
 }`}
         />
 
-        <div className="bg-[#0A2A5C] p-8 rounded-3xl border border-slate-800 shadow-2xl relative group">
+        <div className="bg-navy-royal p-8 rounded-3xl border border-slate-800 shadow-2xl relative group">
           <div className="relative z-10 flex gap-5">
             <div className="p-3 bg-white/10 rounded-2xl h-fit">
               <Info className="w-6 h-6 text-blue-300" />

@@ -192,16 +192,16 @@ export default function LiveCampaigns() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={headerRef} className="flex justify-between items-end mb-8">
           <div>
-            <p className="text-[11px] font-medium tracking-[0.16em] uppercase text-[#1C3CD5] mb-3">
+            <p className="text-[11px] font-medium tracking-[0.16em] uppercase text-brand-blue mb-3">
               LIVE ON REFREEG
             </p>
-            <h2 className="font-serif font-normal text-[#0D0D0D] text-4xl md:text-5xl lg:text-6xl leading-[1.08]">
+            <h2 className="font-serif font-normal text-near-black text-4xl md:text-5xl lg:text-6xl leading-[1.08]">
               Real causes. Real receipts.
             </h2>
           </div>
           <Link
             href="/causes"
-            className="hidden md:flex items-center gap-2 text-[#1C3CD5] font-medium text-sm hover:opacity-80 transition-opacity whitespace-nowrap"
+            className="hidden md:flex items-center gap-2 text-brand-blue font-medium text-sm hover:opacity-80 transition-opacity whitespace-nowrap"
           >
             View all
             <ChevronRight size={16} />
@@ -215,10 +215,10 @@ export default function LiveCampaigns() {
 
         {showScrollHint && (
           <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 animate-pulse">
-            <ChevronsLeft size={14} className="text-[#1C3CD5] sm:hidden" />
+            <ChevronsLeft size={14} className="text-brand-blue sm:hidden" />
             <ChevronsLeft
               size={16}
-              className="text-[#1C3CD5] hidden sm:block"
+              className="text-brand-blue hidden sm:block"
             />
             <span className="text-xs sm:text-sm font-medium text-gray-500 tracking-wide text-center">
               <span className="sm:hidden">← Swipe to explore →</span>
@@ -226,10 +226,10 @@ export default function LiveCampaigns() {
                 Swipe to explore more campaigns
               </span>
             </span>
-            <ChevronsRight size={14} className="text-[#1C3CD5] sm:hidden" />
+            <ChevronsRight size={14} className="text-brand-blue sm:hidden" />
             <ChevronsRight
               size={16}
-              className="text-[#1C3CD5] hidden sm:block"
+              className="text-brand-blue hidden sm:block"
             />
           </div>
         )}
@@ -299,7 +299,7 @@ export default function LiveCampaigns() {
                       </div>
 
                       <div className="absolute top-3 left-3 z-10">
-                        <span className="bg-[#CEF037] text-[#0D0D0D] text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+                        <span className="bg-[#CEF037] text-near-black text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
                           LIVE
                         </span>
                       </div>
@@ -325,7 +325,7 @@ export default function LiveCampaigns() {
 
                         <div className="w-full bg-gray-200 rounded-full h-1">
                           <div
-                            className="bg-[#1C3CD5] h-1 rounded-full transition-all duration-300"
+                            className="bg-brand-blue h-1 rounded-full transition-all duration-300"
                             style={{
                               width: `${Math.min(percentRaised, 100)}%`,
                             }}
@@ -357,7 +357,7 @@ export default function LiveCampaigns() {
         <div className="mt-6 text-center md:hidden">
           <Link
             href="/causes"
-            className="inline-flex items-center gap-2 text-[#1C3CD5] font-medium text-sm hover:opacity-80 transition-opacity"
+            className="inline-flex items-center gap-2 text-brand-blue font-medium text-sm hover:opacity-80 transition-opacity"
           >
             View all campaigns
             <ChevronRight size={16} />

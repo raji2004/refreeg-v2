@@ -20,6 +20,7 @@ import { trackLogin } from "@/actions/auth-actions";
 import Link from "next/link";
 import type { RewardTransaction, UserStreak } from "@/types";
 
+import { Button } from "@/components/ui/button";
 interface Transaction {
   label: string;
   time: string;
@@ -180,14 +181,16 @@ export default function EizaRewardsScreen() {
                 EIZA Rewards Wallet
               </p>
             </div>
-            <button
+            <Button
+              variant="bare"
+              size="bare"
               type="button"
               onClick={() => setShowBalance((prev) => !prev)}
               className="rounded-md bg-white/15 p-2 transition hover:bg-white/25"
               aria-label="Toggle balance visibility"
             >
               {showBalance ? <Eye size={16} /> : <EyeOff size={16} />}
-            </button>
+            </Button>
           </div>
 
           <p className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -232,10 +235,14 @@ export default function EizaRewardsScreen() {
         </div>
 
         <div className="grid grid-cols-1 gap-2 p-3 sm:gap-3 sm:p-4">
-          <button className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">
+          <Button
+            variant="bare"
+            size="bare"
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+          >
             <History size={14} />
             History
-          </button>
+          </Button>
         </div>
 
         <div className="px-3 pb-3 sm:px-4 sm:pb-4">
@@ -256,7 +263,9 @@ export default function EizaRewardsScreen() {
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 sm:px-4">
-          <button
+          <Button
+            variant="bare"
+            size="bare"
             type="button"
             onClick={() => setShowAllTransactions((prev) => !prev)}
             className="flex w-full items-center justify-between rounded-md text-left transition active:scale-[0.99]"
@@ -275,7 +284,7 @@ export default function EizaRewardsScreen() {
                 }`}
               />
             </span>
-          </button>
+          </Button>
           <div className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white">
             {transactions.length === 0 ? (
               <div className="p-4 text-center">
@@ -286,24 +295,30 @@ export default function EizaRewardsScreen() {
                 </p>
                 {!loading && (
                   <div className="mt-3 flex flex-wrap justify-center gap-2">
-                    <button
+                    <Button
+                      variant="bare"
+                      size="bare"
                       type="button"
                       className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 active:scale-[0.98]"
                     >
                       Comment on a cause
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="bare"
+                      size="bare"
                       type="button"
                       className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 active:scale-[0.98]"
                     >
                       Share a campaign
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="bare"
+                      size="bare"
                       type="button"
                       className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 active:scale-[0.98]"
                     >
                       Make a donation
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -342,7 +357,9 @@ export default function EizaRewardsScreen() {
               })
             )}
             {transactions.length > 4 && (
-              <button
+              <Button
+                variant="bare"
+                size="bare"
                 type="button"
                 onClick={() => setShowAllTransactions((prev) => !prev)}
                 className="w-full px-3 py-2 text-center text-xs font-semibold text-blue-600 transition hover:bg-blue-50 active:scale-[0.99]"
@@ -350,7 +367,7 @@ export default function EizaRewardsScreen() {
                 {showAllTransactions
                   ? "Show less transactions"
                   : "View all transactions"}
-              </button>
+              </Button>
             )}
           </div>
         </div>

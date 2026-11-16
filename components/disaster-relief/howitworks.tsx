@@ -100,7 +100,7 @@ export default function HowItWorks() {
         viewport={{ once: true }}
       >
         <Link href="/dashboard/causes/create">
-          <Button className="bg-[#FAFAFA] border text-black px-10 py-4 flex items-center gap-2 rounded-full hover:bg-gray-100 transition">
+          <Button className="bg-palette-baseWhite border text-black px-10 py-4 flex items-center gap-2 rounded-full hover:bg-gray-100 transition">
             Get Started
             <Image
               src="/images/arrow-right.png"

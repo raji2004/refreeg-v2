@@ -59,6 +59,8 @@ If the server message is not fit to show, fix the message in the action. Do not 
 
 ## 4. One state object per form
 
+Applies to forms and dialogs with related fields. Tab, open and loading flags in non-form components stay separate `useState` calls.
+
 Related fields share one `useState` object and one updater named `setFormFields`. No `useState` per field.
 
 ```tsx
@@ -72,17 +74,20 @@ const setFormFields = <K extends keyof typeof form>(key: K, value: (typeof form)
 <Input value={form.name} onChange={(event) => setFormFields("name", event.target.value)} />
 ```
 
-When one change must set two fields, call `setForm` directly in that handler.
-
-Forms with real validation use React Hook Form with the zod resolver instead (rule 5). Do not mix both in one form.
+When one change must set two fields, call `setForm` directly in that handler. Two forms that share fields and submit flow (the pledge page and the Discover pledge dialog) share one hook, such as `hooks/use-pledge-form.ts`, instead of copying the state.
 
 ## 5. Validate with a zod schema
 
-Every form has a schema in `lib/schemas/<feature>.schema.ts`, used through `useForm` and `zodResolver`, with `components/ui/form.tsx` showing the message under each field. The schema checks presence, format and relations between fields, such as end date not before start date.
+Every form has a schema in `lib/schemas/<feature>.schema.ts`, checked with `useValidator({ store: form, schema })` from `hooks/use-validator.ts`. It returns `errors`, `validate()` and `clearError(key)`; show `errors.<field>` under each input. The schema checks presence, format and relations between fields, such as end date not before start date.
+
+```ts
+const { errors, validate, clearError } = useValidator({ store: form, schema: pledgeSchema });
+if (!validate()) return;
+```
 
 Do not repeat limits the server owns (fee caps, provider minimums, rate limits). Those come back as errors from the action and show through rule 3.
 
-Keep the submit order: validate, then guard against double submit, then call the action.
+Keep the submit order: validate, then guard against double submit, then call the action. Forms already built on React Hook Form keep it with `zodResolver`; do not mix both in one form.
 
 ## 6. One dialog per file
 

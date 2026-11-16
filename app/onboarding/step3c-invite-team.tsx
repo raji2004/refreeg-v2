@@ -18,6 +18,8 @@ import {
   revokeOrganizationInvitation,
 } from "@/actions/organization-actions";
 import { toast } from "@/components/ui/use-toast";
+import { useValidator } from "@/hooks/use-validator";
+import { makeInviteSchema } from "@/lib/schemas/invite-team.schema";
 
 interface Step3CProps {
   user: any;
@@ -39,43 +41,36 @@ export default function Step3CInviteTeam({
   onBack,
   onboardingData,
 }: Step3CProps) {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("member");
+  const [invite, setInvite] = useState({ email: "", role: "member" });
   const [isSending, setIsSending] = useState(false);
-  const [emailError, setEmailError] = useState("");
   const [sentInvitations, setSentInvitations] = useState<SentInvitation[]>([]);
 
-  const validateEmail = (value: string): boolean => {
-    if (!value.trim()) {
-      setEmailError("Email address is required");
-      return false;
-    }
-    if (!/^\S+@\S+\.\S+$/.test(value.trim())) {
-      setEmailError("Enter a valid email address");
-      return false;
-    }
+  const { errors, validate, clearError } = useValidator({
+    store: invite,
+    schema: makeInviteSchema(
+      sentInvitations
+        .filter((inv) => inv.status === "pending")
+        .map((inv) => inv.email.toLowerCase()),
+    ),
+  });
 
-    if (
-      sentInvitations.some(
-        (inv) =>
-          inv.email.toLowerCase() === value.trim().toLowerCase() &&
-          inv.status === "pending",
-      )
-    ) {
-      setEmailError("This email has already been invited");
-      return false;
-    }
-    return true;
+  const setFormFields = <K extends keyof typeof invite>(
+    key: K,
+    value: (typeof invite)[K],
+  ) => {
+    setInvite((current) => ({ ...current, [key]: value }));
+    clearError(key);
   };
 
   const handleSendInvite = async () => {
-    if (!validateEmail(email)) return;
+    if (!validate()) return;
 
+    const email = invite.email.trim();
     setIsSending(true);
     try {
       const result = await inviteOrganizationMember({
-        email: email.trim(),
-        role,
+        email,
+        role: invite.role,
       });
 
       if (!result.success) {
@@ -86,15 +81,13 @@ export default function Step3CInviteTeam({
         ...prev,
         {
           id: result.invitationId!,
-          email: email.trim().toLowerCase(),
-          role,
+          email: email.toLowerCase(),
+          role: invite.role,
           status: "pending",
         },
       ]);
 
-      setEmail("");
-      setRole("member");
-      setEmailError("");
+      setInvite({ email: "", role: "member" });
 
       if (result.warning) {
         toast({
@@ -105,7 +98,7 @@ export default function Step3CInviteTeam({
       } else {
         toast({
           title: "Invitation sent!",
-          description: `An invitation was sent to ${email.trim()}.`,
+          description: `An invitation was sent to ${email}.`,
         });
       }
     } catch (error) {
@@ -186,28 +179,28 @@ export default function Step3CInviteTeam({
                     id="inviteEmail"
                     type="email"
                     placeholder="teammate@example.com"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (emailError) setEmailError("");
-                    }}
+                    value={invite.email}
+                    onChange={(e) => setFormFields("email", e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
                         handleSendInvite();
                       }
                     }}
-                    className={`pl-10 ${emailError ? "border-red-500" : ""}`}
+                    className={`pl-10 ${errors.email ? "border-red-500" : ""}`}
                   />
                 </div>
-                {emailError && (
-                  <p className="text-sm text-red-500">{emailError}</p>
+                {errors.email && (
+                  <p className="text-sm text-red-500">{errors.email}</p>
                 )}
               </div>
 
               <div className="w-full md:w-36 flex flex-col space-y-2">
                 <Label>Role</Label>
-                <Select value={role} onValueChange={setRole}>
+                <Select
+                  value={invite.role}
+                  onValueChange={(role) => setFormFields("role", role)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -221,7 +214,7 @@ export default function Step3CInviteTeam({
               <div className="flex items-end">
                 <Button
                   onClick={handleSendInvite}
-                  disabled={isSending || !email.trim()}
+                  disabled={isSending || !invite.email.trim()}
                   className="bg-blue-600 text-white hover:bg-blue-700 h-10 px-4"
                 >
                   {isSending ? (

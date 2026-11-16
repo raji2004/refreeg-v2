@@ -11,7 +11,13 @@ import { Switch } from "@/components/ui/switch";
 import { Icons } from "@/components/icons";
 import { calculateProviderFee, calculateServiceFee } from "@/lib/utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { FieldError } from "@/components/ui/field-error";
 import { usePayment } from "@/hooks/use-payment";
+import { useValidator } from "@/hooks/use-validator";
+import {
+  MIN_DONATION_AMOUNT,
+  quickDonateSchema,
+} from "@/lib/schemas/donation.schema";
 import {
   Carousel,
   CarouselContent,
@@ -21,8 +27,6 @@ import {
 } from "@/components/ui/carousel";
 import Image from "next/image";
 
-const MIN_DONATION_AMOUNT = 100;
-const MAX_DONATION_AMOUNT = 10_000_000;
 const PRESETS = [500, 1000, 5000, 10000];
 
 interface QuickDonateFormProps {
@@ -59,14 +63,27 @@ export default function QuickDonateForm({
 }: QuickDonateFormProps) {
   const { initializePayment, isLoading } = usePayment();
 
-  const [amount, setAmount] = useState<string>("");
-  const [name, setName] = useState(defaultName);
-  const [email, setEmail] = useState(defaultEmail);
-  const [message, setMessage] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(defaultAnonymous);
-  const [amountError, setAmountError] = useState("");
+  const [form, setForm] = useState({
+    amount: "",
+    name: defaultName,
+    email: defaultEmail,
+    message: "",
+    isAnonymous: defaultAnonymous,
+  });
+  const donationAmount = Number(form.amount) || 0;
+  const { errors, validate, clearError } = useValidator({
+    store: { ...form, amount: donationAmount },
+    schema: quickDonateSchema,
+  });
 
-  const donationAmount = Number(amount) || 0;
+  const setFormFields = <K extends keyof typeof form>(
+    key: K,
+    value: (typeof form)[K],
+  ) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    if (key !== "message") clearError(key as Exclude<typeof key, "message">);
+  };
+
   const serviceFee = useMemo(
     () => calculateServiceFee(donationAmount),
     [donationAmount],
@@ -79,30 +96,25 @@ export default function QuickDonateForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (donationAmount < MIN_DONATION_AMOUNT) {
-      setAmountError(`Minimum donation is ₦${MIN_DONATION_AMOUNT}.`);
-      return;
-    }
-    if (donationAmount > MAX_DONATION_AMOUNT) {
-      setAmountError(
-        `Maximum donation is ₦${MAX_DONATION_AMOUNT.toLocaleString()}.`,
-      );
-      return;
-    }
+    if (!validate()) return;
 
-    await initializePayment({
-      email,
-      amount: donationAmount,
-      causeId,
-      id: userId || "",
-      full_name: name,
-      serviceFee,
-      subaccounts: [
-        { subaccount: subaccount || "", share: donationAmount * 100 },
-      ],
-      message,
-      isAnonymous,
-    });
+    try {
+      await initializePayment({
+        email: form.email,
+        amount: donationAmount,
+        causeId,
+        id: userId || "",
+        full_name: form.name,
+        serviceFee,
+        subaccounts: [
+          { subaccount: subaccount || "", share: donationAmount * 100 },
+        ],
+        message: form.message,
+        isAnonymous: form.isAnonymous,
+      });
+    } catch {
+      // usePayment shows the toast.
+    }
   };
 
   const images = useMemo(() => {
@@ -188,9 +200,9 @@ export default function QuickDonateForm({
               <button
                 key={p}
                 type="button"
-                onClick={() => setAmount(String(p))}
+                onClick={() => setFormFields("amount", String(p))}
                 className={`rounded-xl border py-2 text-sm font-semibold transition-all ${
-                  amount === String(p)
+                  form.amount === String(p)
                     ? "border-blue-600 bg-blue-600 text-white"
                     : "border-slate-200 bg-slate-50 text-slate-700 hover:border-blue-300"
                 }`}
@@ -202,20 +214,13 @@ export default function QuickDonateForm({
           <Input
             type="number"
             placeholder="Or enter custom amount"
-            value={amount}
-            onChange={(e) => {
-              setAmount(e.target.value);
-              if (amountError) {
-                setAmountError("");
-              }
-            }}
+            value={form.amount}
+            onChange={(e) => setFormFields("amount", e.target.value)}
             className="mt-2"
             min={MIN_DONATION_AMOUNT}
           />
-          {amountError ? (
-            <p className="mt-2 text-xs font-medium text-rose-600">
-              {amountError}
-            </p>
+          {errors.amount ? (
+            <FieldError message={errors.amount} />
           ) : (
             <p className="mt-2 text-xs text-slate-500">
               Minimum donation is ₦{MIN_DONATION_AMOUNT}.
@@ -228,12 +233,12 @@ export default function QuickDonateForm({
           <Label htmlFor="name">Your Name</Label>
           <Input
             id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={form.name}
+            onChange={(e) => setFormFields("name", e.target.value)}
             placeholder="Your name"
-            disabled={isAnonymous}
-            required={!isAnonymous}
+            disabled={form.isAnonymous}
           />
+          <FieldError message={errors.name} />
         </div>
 
         {/* Email */}
@@ -242,11 +247,11 @@ export default function QuickDonateForm({
           <Input
             id="email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={form.email}
+            onChange={(e) => setFormFields("email", e.target.value)}
             placeholder="you@example.com"
-            required
           />
+          <FieldError message={errors.email} />
         </div>
 
         {/* Message */}
@@ -254,8 +259,8 @@ export default function QuickDonateForm({
           <Label htmlFor="message">Message (optional)</Label>
           <Textarea
             id="message"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            value={form.message}
+            onChange={(e) => setFormFields("message", e.target.value)}
             placeholder="Leave a message of support…"
             rows={2}
           />
@@ -265,8 +270,8 @@ export default function QuickDonateForm({
         <div className="flex items-center gap-3">
           <Switch
             id="anon"
-            checked={isAnonymous}
-            onCheckedChange={setIsAnonymous}
+            checked={form.isAnonymous}
+            onCheckedChange={(checked) => setFormFields("isAnonymous", checked)}
           />
           <Label htmlFor="anon">Donate anonymously</Label>
         </div>
@@ -296,11 +301,7 @@ export default function QuickDonateForm({
         <Button
           type="submit"
           variant="lime"
-          disabled={
-            isLoading ||
-            donationAmount < MIN_DONATION_AMOUNT ||
-            donationAmount > MAX_DONATION_AMOUNT
-          }
+          disabled={isLoading || donationAmount < MIN_DONATION_AMOUNT}
           className="w-full rounded-full"
         >
           {isLoading ? (

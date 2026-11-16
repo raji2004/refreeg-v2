@@ -11,7 +11,7 @@ export default function Hero() {
       <div className="mx-auto max-w-[1400px]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 lg:gap-12 items-center">
           <div className="space-y-4 md:space-y-6 text-center lg:text-left">
-            <div className="inline-flex items-center gap-3 bg-[#FAFAFA] rounded-full px-4 py-2 border border-gray-200 ">
+            <div className="inline-flex items-center gap-3 bg-palette-baseWhite rounded-full px-4 py-2 border border-gray-200 ">
               <div className="p-2">
                 <Users2 className="w-6 h-6 text-gray-700" />
               </div>

@@ -22,7 +22,7 @@ export default function MoreOnHealthcare() {
       }}
       viewport={{ amount: 0.6, once: false }}
       transition={{ type: "spring", stiffness: 100, damping: 20 }}
-      className="w-full h-auto text-white flex flex-col justify-center items-start px-6 lg:px-10 py-10 gap-6 border bg-[#8C1823]"
+      className="w-full h-auto text-white flex flex-col justify-center items-start px-6 lg:px-10 py-10 gap-6 border bg-wine"
     >
       <div className="text-xl">
         When Every Second Counts, Funding Shouldn’t Delay
@@ -34,7 +34,7 @@ export default function MoreOnHealthcare() {
         transparent, and instant.
       </div>
       <Link href="/dashboard/causes/create">
-        <Button className="bg-[#FAFAFA] hover:bg-[#5f0f17] hover:text-white border text-black px-10 py-4 flex items-center gap-2 rounded-full">
+        <Button className="bg-palette-baseWhite hover:bg-[#5f0f17] hover:text-white border text-black px-10 py-4 flex items-center gap-2 rounded-full">
           Get started today
           <Image
             src="/images/arrow-right.png"

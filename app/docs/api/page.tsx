@@ -56,6 +56,7 @@ import {
   SectionMobileKycLegacy,
 } from "@/components/docs/api/EndpointMobileKyc";
 
+import { Button } from "@/components/ui/button";
 export default function ApiDocsPage() {
   const [sidebarSelection, setSidebarSelection] = useState("Introduction");
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -160,7 +161,9 @@ export default function ApiDocsPage() {
           </header>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredItems.map((item) => (
-              <button
+              <Button
+                variant="bare"
+                size="bare"
                 key={item.id}
                 onClick={() => {
                   setSidebarSelection(item.id);
@@ -177,7 +180,7 @@ export default function ApiDocsPage() {
                   </p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -289,7 +292,7 @@ export default function ApiDocsPage() {
             <nav className="hidden md:flex items-center gap-6">
               <Link
                 href="/docs/api"
-                className="text-sm font-bold text-[#0A2A5C] border-b-2 border-[#0A2A5C] h-16 flex items-center mt-0.5"
+                className="text-sm font-bold text-navy-royal border-b-2 border-navy-royal h-16 flex items-center mt-0.5"
               >
                 API Reference
               </Link>
@@ -328,7 +331,7 @@ export default function ApiDocsPage() {
             </Link>
             <Link
               href="/dashboard/developer/api-keys"
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#0A2A5C] text-white rounded-full text-sm font-bold hover:bg-slate-800 transition-all shadow-lg shadow-blue-900/10"
+              className="flex items-center gap-2 px-5 py-2.5 bg-navy-royal text-white rounded-full text-sm font-bold hover:bg-slate-800 transition-all shadow-lg shadow-blue-900/10"
             >
               <Key className="w-4 h-4" />
               Get API Keys
@@ -340,13 +343,15 @@ export default function ApiDocsPage() {
 
       {}
       <div className="md:hidden sticky top-[60px] z-40 w-full bg-white/95 backdrop-blur-sm border-b border-slate-100 px-4 py-3 flex items-center justify-between">
-        <button
+        <Button
+          variant="bare"
+          size="bare"
           onClick={() => setMobileOpen(!mobileOpen)}
           className="flex items-center gap-2 text-slate-600 font-bold text-sm"
         >
           <Menu className="w-5 h-5" />
           {sidebarSelection}
-        </button>
+        </Button>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
@@ -367,9 +372,13 @@ export default function ApiDocsPage() {
               <span className="font-extrabold text-blue-600 tracking-tight uppercase">
                 API DOCS
               </span>
-              <button onClick={() => setMobileOpen(false)}>
+              <Button
+                variant="bare"
+                size="bare"
+                onClick={() => setMobileOpen(false)}
+              >
                 <X className="w-5 h-5 text-slate-400" />
-              </button>
+              </Button>
             </div>
             <div className="p-2">
               <div className="px-4 py-6 border-b border-slate-50 mb-4">

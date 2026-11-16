@@ -39,7 +39,7 @@ export function AuthBrandPanel({
   return (
     <div
       className={cn(
-        "hidden lg:flex lg:w-[45%] xl:w-[42%] flex-col justify-between bg-[#0D1E16] p-10 xl:p-14 text-white relative overflow-hidden shrink-0",
+        "hidden lg:flex lg:w-[45%] xl:w-[42%] flex-col justify-between bg-forest-deep p-10 xl:p-14 text-white relative overflow-hidden shrink-0",
         className,
       )}
     >
@@ -87,7 +87,7 @@ export function AuthBrandPanel({
         {testimonial && (
           <div className="rounded-2xl bg-white/[0.05] border border-white/10 p-4 xl:p-5 backdrop-blur-sm">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[#84CC16] text-[#0D1E16] font-bold text-xs flex items-center justify-center shrink-0 shadow-inner">
+              <div className="w-9 h-9 rounded-full bg-[#84CC16] text-forest-deep font-bold text-xs flex items-center justify-center shrink-0 shadow-inner">
                 {testimonial.avatarInitials}
               </div>
               <div className="min-w-0">

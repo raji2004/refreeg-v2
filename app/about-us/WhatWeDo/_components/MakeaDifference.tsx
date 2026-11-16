@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import { H2, P, Ol } from "@/components/typography";
 
+import { Button } from "@/components/ui/button";
 export default function MakeaDifference() {
   return (
     <div className="w-full justify-center mt-16 pt-20 pb-12 lg:pb-20 px-10 mb-20 space-y-5 text-white bg-customBlueGray">
@@ -23,7 +24,11 @@ export default function MakeaDifference() {
       <div className="md:flex lg:flex mt-10 mb-10 text-base lg:text-2xl">
         <span className="mr-4">Want to be a part of us?</span>
         <span className="flex mr-1 md:font-semibold lg:font-semibold underline">
-          <button className="flex hover:bg-[#434a52] px-1 rounded-xl">
+          <Button
+            variant="bare"
+            size="bare"
+            className="flex hover:bg-[#434a52] px-1 rounded-xl"
+          >
             Join our Community!
             <Image
               src="/images/arrowRight.svg"
@@ -31,7 +36,7 @@ export default function MakeaDifference() {
               height={15}
               width={15}
             />
-          </button>
+          </Button>
         </span>
       </div>
     </div>

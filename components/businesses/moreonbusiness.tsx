@@ -31,7 +31,7 @@ export default function MoreOnBusiness() {
       </div>
       <Link
         href="../dashboard/causes/create"
-        className="bg-[#FAFAFA] border text-black px-10 py-4 flex items-center gap-2 rounded-full"
+        className="bg-palette-baseWhite border text-black px-10 py-4 flex items-center gap-2 rounded-full"
       >
         Get started today
         <Image
