@@ -34,7 +34,10 @@ next-env.d.ts
 
 #.agent
 *.agent/
-.agents/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/refreeg-code-standards/
 skills-lock.json
 
 # tests
@@ -59,7 +62,8 @@ temp_interactive_push.bat
 .vscode/
 .idea/
 .cursor/
-.claude/
+.claude/*
+!.claude/skills/
 /repomix-output.xml
 scripts/delete-user-by-email.ts
 /scripts/list-fks.ts

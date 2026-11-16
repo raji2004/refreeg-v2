@@ -33,7 +33,6 @@ const PUBLIC_API_PREFIXES = [
   "/api/states", // Public lookup data
   "/api/mail", // Donor-facing email endpoints (no auth required)
   "/api/s3", // S3 image proxy (public images)
-  "/api/dev", // Temporary local dev/testing routes
   "/api/leaderboard", // Public leaderboard rankings
 ];
 
@@ -112,8 +111,10 @@ const handleAuth = auth(async (req) => {
   }
 
   if (pathname.startsWith("/dashboard/admin") && user) {
-    const role = user.role;
-    if (role === "user") {
+    const role = (user as { role?: string }).role;
+    // Only admin and manager JWTs pass; previously any role except the
+    // literal "user" (including an undefined one) got through.
+    if (role !== "admin" && role !== "manager") {
       return NextResponse.redirect(absoluteUrl("/dashboard", req));
     }
   }

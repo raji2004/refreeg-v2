@@ -1,29 +1,88 @@
 "use server";
 
+import { randomBytes } from "crypto";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 
-type ReferralDashboardData = {
+export type ReferralRow = {
+  id: string;
+  referrer_id?: string | null;
+  referee_id?: string | null;
+  registered: boolean | null;
+  referee_email: string | null;
+  created_at: string | null;
+  reward?: string | null;
+  reward_status?: string | null;
+  profiles?: {
+    first_name: string | null;
+    email: string | null;
+    avatar_url: string | null;
+  } | null;
+};
+
+export type ReferralDashboardData = {
   referralLink: string;
   points: number;
   invites: number;
   signUps: number;
   tier: string;
-  referrals: Array<{
-    id: string;
-    referrer_id?: string | null;
-    referee_id?: string | null;
-    registered: boolean | null;
-    referee_email: string | null;
-    created_at: string | null;
-    reward?: string | null;
-    profiles?: {
-      first_name: string | null;
-      email: string | null;
-      avatar_url: string | null;
-    } | null;
-  }>;
+  referrals: ReferralRow[];
 };
+
+// Short, human-shareable referral codes. The alphabet drops 0/O/1/I/L so a
+// code read aloud or typed from a screenshot can't be misread. 8 chars from
+// 31 symbols is ~850 billion combinations, so collisions are rare and the
+// retry loop in ensureReferralCode handles the ones that still happen.
+const REFERRAL_CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+const REFERRAL_CODE_LENGTH = 8;
+
+function generateReferralCode(): string {
+  const bytes = randomBytes(REFERRAL_CODE_LENGTH);
+  let code = "";
+  for (let i = 0; i < REFERRAL_CODE_LENGTH; i += 1) {
+    code += REFERRAL_CODE_ALPHABET[bytes[i] % REFERRAL_CODE_ALPHABET.length];
+  }
+  return code;
+}
+
+/**
+ * The referral link carries User.referralCode, but nothing in the app ever
+ * minted one — so most accounts fell back to their raw user id and produced
+ * eye-wateringly long links. Mint a code once on first visit and persist it;
+ * every later call reuses it. Old links that carry the user id keep working:
+ * createReferralRecord resolves the referrer by code first, then by id.
+ */
+async function ensureReferralCode(
+  userId: string,
+  existing: string | null,
+): Promise<string> {
+  if (existing) return existing;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const code = generateReferralCode();
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { referralCode: code },
+      });
+      return code;
+    } catch (err) {
+      // Unique-violation: someone else drew the same code — draw again.
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        continue;
+      }
+      // Anything else (connectivity, etc.) — fall back to the user id rather
+      // than failing the whole dashboard over a cosmetic code.
+      break;
+    }
+  }
+
+  return userId;
+}
 
 export async function getReferralDashboardData(): Promise<ReferralDashboardData | null> {
   const session = await auth();
@@ -103,7 +162,10 @@ export async function getReferralDashboardData(): Promise<ReferralDashboardData 
 
   const signUps = referrals.filter((row) => row.registered).length;
   const points = rewardedReferrals * 5;
-  const referralCode = profile?.referralCode || userId;
+  const referralCode = await ensureReferralCode(
+    userId,
+    profile?.referralCode ?? null,
+  );
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||

@@ -6,11 +6,13 @@ export function ComingSoonPage({
   description,
   icon: Icon,
   emptyStateDescription,
+  action,
 }: {
   title: string;
   description: string;
   icon: LucideIcon;
   emptyStateDescription: string;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -24,6 +26,7 @@ export function ComingSoonPage({
         icon={<Icon className="h-8 w-8 text-ink/40" />}
         title="Coming soon"
         description={emptyStateDescription}
+        action={action}
       />
     </div>
   );

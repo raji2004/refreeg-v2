@@ -1,26 +1,44 @@
 import { NextRequest } from "next/server";
+import { auth } from "@/lib/auth/auth";
 import { eventBus } from "@/lib/event-bus";
 import { EventPayload } from "@/hooks/use-event-listeners";
 
 export const dynamic = "force-dynamic";
 
+const MAX_CONNECTIONS_PER_USER = 5;
+const activeConnections = new Map<string, number>();
+
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const userId = searchParams.get("userId");
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const active = activeConnections.get(userId) ?? 0;
+  if (active >= MAX_CONNECTIONS_PER_USER) {
+    return new Response("Too many connections", { status: 429 });
+  }
+  activeConnections.set(userId, active + 1);
+  let released = false;
+  const release = () => {
+    if (released) return;
+    released = true;
+    const n = (activeConnections.get(userId) ?? 1) - 1;
+    if (n <= 0) activeConnections.delete(userId);
+    else activeConnections.set(userId, n);
+  };
 
   const stream = new ReadableStream({
     start(controller) {
       controller.enqueue(`data: ${JSON.stringify({ type: "ping" })}\n\n`);
 
       const handleEvent = (payload: EventPayload) => {
-        // Filter events specific to the user, if a userId was provided by the client
-        if (
-          userId &&
-          payload.data?.user_id &&
-          payload.data.user_id !== userId
-        ) {
-          return;
-        }
+        // Only the signed-in user's own events; events with no owner are dropped.
+        if (payload.data?.user_id !== userId) return;
 
         controller.enqueue(`data: ${JSON.stringify(payload)}\n\n`);
       };
@@ -45,6 +63,7 @@ export async function GET(req: NextRequest) {
 
       // Clean up when the client disconnects
       req.signal.addEventListener("abort", () => {
+        release();
         clearInterval(pingInterval);
         eventBus.off("comment", handleEvent);
         eventBus.off("share", handleEvent);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assertCronAuthorized } from "@/lib/cron-auth";
+import { internalApiHeaders } from "@/lib/internal-api";
 import { causePublicPath } from "@/lib/causes/slug";
 
 async function runPledgeReminders() {
@@ -49,7 +50,10 @@ async function runPledgeReminders() {
     try {
       const res = await fetch(`${appUrl}/api/mail/pledge-reminder`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...internalApiHeaders(),
+        },
         body: JSON.stringify({ pledge }),
       });
       if (res.ok) {
@@ -107,7 +111,10 @@ async function runPledgeReminders() {
 
           await fetch(`${appUrl}/api/mail/follower-update`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...internalApiHeaders(),
+            },
             body: JSON.stringify({
               type: "expiring",
               data: {

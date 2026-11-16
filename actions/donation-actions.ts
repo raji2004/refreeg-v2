@@ -8,7 +8,8 @@ import type {
   DonationFormData,
   PaymentProviderType,
 } from "@/types";
-import { recordEvent } from "@/actions/event-reward-actions";
+import { recordEventCore as recordEvent } from "@/lib/reward-core";
+import { internalApiHeaders } from "@/lib/internal-api";
 import { sendDonationReceivedEmail } from "@/services/mail";
 import { syncMilestoneRequirements } from "@/lib/proof-milestones";
 
@@ -224,7 +225,10 @@ export async function createDonation(
 
             fetch(`${appUrl}/api/mail/follower-update`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                ...internalApiHeaders(),
+              },
               body: JSON.stringify({
                 type: "milestone",
                 data: {

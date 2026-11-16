@@ -41,6 +41,9 @@ jest.mock("bcryptjs", () => ({
   hash: jest.fn().mockResolvedValue("hashed_password"),
 }));
 
+// OTP codes are stored as HMAC(code, AUTH_SECRET); the route needs a secret.
+process.env.AUTH_SECRET = "test-secret";
+
 // ── Import route AFTER mocks ──────────────────────────────────────────────────
 import { POST } from "@/app/api/auth/register-pending/route";
 
@@ -104,32 +107,31 @@ describe("POST /api/auth/register-pending — UTM tracking", () => {
 
     const upsertCall = mockUpsert.mock.calls[0][0];
     expect(upsertCall.create.user_agent).toBe(
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
     );
     expect(upsertCall.update.user_agent).toBe(
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
     );
   });
 
-  it("extracts ip_address from x-forwarded-for header (first IP in chain)", async () => {
+  it("extracts ip_address from the proxy-appended XFF entry (rightmost IP)", async () => {
     const req = makeRequest(
       { ...baseBody },
-      { "x-forwarded-for": "102.89.23.1, 10.0.0.1, 172.16.0.1" }
+      { "x-forwarded-for": "102.89.23.1, 10.0.0.1, 172.16.0.1" },
     );
 
     const res = await POST(req);
     expect(res.status).toBe(200);
 
+    // Earlier entries are client-controlled; only the rightmost entry is
+    // appended by our own proxy and therefore trusted.
     const upsertCall = mockUpsert.mock.calls[0][0];
-    expect(upsertCall.create.ip_address).toBe("102.89.23.1");
-    expect(upsertCall.update.ip_address).toBe("102.89.23.1");
+    expect(upsertCall.create.ip_address).toBe("172.16.0.1");
+    expect(upsertCall.update.ip_address).toBe("172.16.0.1");
   });
 
   it("falls back to x-real-ip when x-forwarded-for is absent", async () => {
-    const req = makeRequest(
-      { ...baseBody },
-      { "x-real-ip": "41.58.120.55" }
-    );
+    const req = makeRequest({ ...baseBody }, { "x-real-ip": "41.58.120.55" });
 
     const res = await POST(req);
     expect(res.status).toBe(200);
