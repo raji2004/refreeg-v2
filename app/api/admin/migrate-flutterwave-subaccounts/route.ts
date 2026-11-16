@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import Flutterwave from "@/services/flutterwave";
+import { requireAdmin } from "@/lib/auth/admin-auth";
 
-export async function GET() {
+export async function POST() {
+  // Returns user emails and drives real bank-account migrations; admin-only.
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json(
+      { error: "Admin access required" },
+      { status: 403 },
+    );
+  }
+
   try {
     const users = await prisma.user.findMany({
       where: {
@@ -39,7 +50,7 @@ export async function GET() {
 
         if (!bankCode) {
           results.push({
-            email: user.email,
+            user_id: user.id,
             status: "Failed",
             reason: `Bank name '${user.bankName}' not found in Flutterwave list`,
           });
@@ -63,13 +74,13 @@ export async function GET() {
           });
 
           results.push({
-            email: user.email,
+            user_id: user.id,
             status: "Success",
             subaccount_id: subaccount.subaccount_id,
           });
         } else {
           results.push({
-            email: user.email,
+            user_id: user.id,
             status: "Failed",
             reason:
               "Flutterwave did not return a subaccount_id (possibly invalid account number)",
@@ -93,7 +104,7 @@ export async function GET() {
                 data: { flutterwaveSubAccountId: existingId },
               });
               results.push({
-                email: user.email,
+                user_id: user.id,
                 status: "Recovered",
                 subaccount_id: existingId,
                 note: "Subaccount already existed in Flutterwave — ID recovered and saved",
@@ -104,10 +115,9 @@ export async function GET() {
         }
 
         results.push({
-          email: user.email,
+          user_id: user.id,
           status: "Failed",
           reason: msg,
-          details: err.response?.data || null,
         });
       }
     }
@@ -118,7 +128,7 @@ export async function GET() {
     });
   } catch (error: any) {
     return NextResponse.json(
-      { error: "Migration script failed", details: error.message },
+      { error: "Migration script failed" },
       { status: 500 },
     );
   }

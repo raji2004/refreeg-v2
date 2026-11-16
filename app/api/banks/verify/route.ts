@@ -1,8 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAccountNumber } from "@/services/payment-provider";
+import { auth } from "@/lib/auth/auth";
+import { createRateLimiter } from "@/lib/rate-limit";
 import type { PaymentProviderType } from "@/types";
 
+const limited = createRateLimiter({ max: 10, windowMs: 60_000 });
+
 export async function POST(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Authentication required", success: false },
+      { status: 401 },
+    );
+  }
+  if (limited(session.user.id)) {
+    return NextResponse.json(
+      {
+        error: "Too many verification attempts. Try again shortly.",
+        success: false,
+      },
+      { status: 429 },
+    );
+  }
+
   try {
     const { accountNumber, bankCode, provider } = (await request.json()) as {
       accountNumber?: string;
@@ -10,7 +31,12 @@ export async function POST(request: NextRequest) {
       provider?: PaymentProviderType;
     };
 
-    if (!accountNumber || !bankCode) {
+    if (
+      !accountNumber ||
+      !bankCode ||
+      !/^\d{6,20}$/.test(accountNumber) ||
+      !/^[A-Za-z0-9_-]{1,20}$/.test(bankCode)
+    ) {
       return NextResponse.json(
         {
           error: "Account number and bank code are required",

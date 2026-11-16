@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import { createDonation } from "@/actions";
 import Flutterwave from "@/services/flutterwave";
+import { calculateProviderFee, calculateServiceFee } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   try {
@@ -95,6 +96,35 @@ export async function POST(request: NextRequest) {
 
         const baseAmount = Number(meta.amount);
         const tipAmount = Number(meta.tip_amount || 0);
+
+        // Cross-check what Flutterwave actually charged against the total
+        // implied by the metadata (donation + server-side fees + tip, in
+        // naira). A mismatch means the charge does not match the
+        // initialization, so it is left for manual review (SAW-013).
+        const expectedTotal =
+          baseAmount +
+          calculateServiceFee(baseAmount) +
+          calculateProviderFee(baseAmount, "flutterwave") +
+          tipAmount;
+        const chargedAmount = Number(full.amount);
+
+        if (
+          !Number.isFinite(chargedAmount) ||
+          !Number.isFinite(baseAmount) ||
+          Math.abs(
+            Math.round(chargedAmount * 100) - Math.round(expectedTotal * 100),
+          ) > 1
+        ) {
+          console.error(
+            `[Flutterwave] Amount mismatch for ${txRef}: charged ${chargedAmount}, metadata implies ${expectedTotal} - not recording donation`,
+          );
+          return new NextResponse(
+            JSON.stringify({
+              message: "Amount mismatch; transaction flagged for review",
+            }),
+            { status: 200 },
+          );
+        }
 
         await createDonation(
           String(meta.cause_id),

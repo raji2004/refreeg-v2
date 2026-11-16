@@ -13,3 +13,12 @@ banner/status-chip/stepper — the pattern likely already exists.
 The existing navy/white theme (`--primary`, `--secondary`, `--brand`, etc.)
 still drives untouched pages; the two systems coexist until pages are
 deliberately migrated.
+
+## Code standards
+
+All new code, and any file you substantially change, must follow
+[docs/CODE_STANDARDS.mdx](docs/CODE_STANDARDS.mdx): actions only do the work,
+no intermediary layers, real backend errors only, one state object per form,
+zod validation, one dialog per file, options files, say-it-once, use existing
+components. The `refreeg-code-standards` skill (`.claude/skills/`) applies it
+when writing and when reviewing changes "against the standard".

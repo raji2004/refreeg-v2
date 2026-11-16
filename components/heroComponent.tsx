@@ -20,8 +20,8 @@ const HeroComponent: React.FC<HeroComponentProps> = ({ img1, img2 }) => {
         />
       </div>
 
-      <div className="border-l-[#1A7499] border-l-2 w-[1px] h-[60px] hidden md:block" />
-      <div className="border-b-[#1A7499] border-b-2 w-full h-[1px] block md:hidden" />
+      <div className="border-l-secondaryShades-800 border-l-2 w-[1px] h-[60px] hidden md:block" />
+      <div className="border-b-secondaryShades-800 border-b-2 w-full h-[1px] block md:hidden" />
 
       {}
       <div>
@@ -34,8 +34,8 @@ const HeroComponent: React.FC<HeroComponentProps> = ({ img1, img2 }) => {
         />
       </div>
 
-      <div className="border-l-[#1A7499] border-l-2 w-[1px] h-[60px] hidden md:block" />
-      <div className="border-b-[#1A7499] border-b-2 w-full h-[1px] block md:hidden" />
+      <div className="border-l-secondaryShades-800 border-l-2 w-[1px] h-[60px] hidden md:block" />
+      <div className="border-b-secondaryShades-800 border-b-2 w-full h-[1px] block md:hidden" />
 
       {}
       <div className="border-[#637D92] w-[250px] md:size-[130px] rounded-full border-2 md:border-4 p-1 md:p-2">

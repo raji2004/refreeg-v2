@@ -27,7 +27,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="border rounded-full w-fit px-4 py-2 mb-4 bg-[#FAFAFA] text-sm font-medium inline-flex items-center justify-center mx-auto"
+          className="border rounded-full w-fit px-4 py-2 mb-4 bg-palette-baseWhite text-sm font-medium inline-flex items-center justify-center mx-auto"
         >
           <Image
             src="/users.png"

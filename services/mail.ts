@@ -6,6 +6,7 @@ import path from "path";
 import Handlebars from "handlebars";
 import type { TemplateDelegate } from "handlebars";
 import { headers } from "next/headers";
+import { getClientIp } from "@/lib/client-ip";
 import { getCurrentUser } from "@/actions/auth-actions";
 import { getProfile } from "@/actions/profile-actions";
 
@@ -502,10 +503,10 @@ export async function sendLoginNotificationEmail(context: {
   let ipAddress = "Unknown IP";
   try {
     const headersList = await headers();
-    const xff = headersList.get("x-forwarded-for");
-    const xri = headersList.get("x-real-ip");
 
-    let detectedIp = (xff?.split(",")[0] || xri || "Unknown IP").trim();
+    // Trust only proxy-derived values (X-Real-IP, or the proxy-appended
+    // rightmost XFF entry); the first XFF entry is client-controlled.
+    let detectedIp = getClientIp(headersList) || "Unknown IP";
 
     if (detectedIp === "::1" || detectedIp === "127.0.0.1") {
       detectedIp = `${detectedIp} (Localhost)`;

@@ -127,7 +127,7 @@ export default function HealthcareSupport() {
           >
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
               <Link href="/dashboard/causes/create">
-                <Button className="w-full bg-[#8C1823] hover:bg-[#861722] border px-10 py-6 flex items-center justify-center gap-2 rounded-full shadow transition-all duration-300">
+                <Button className="w-full bg-wine hover:bg-[#861722] border px-10 py-6 flex items-center justify-center gap-2 rounded-full shadow transition-all duration-300">
                   <Image
                     src="/images/doctorsbag.png"
                     height={20}

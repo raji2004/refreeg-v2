@@ -66,12 +66,18 @@ export async function generatePresignedPutUrl(
   key: string,
   contentType: string,
   expiresIn = 900,
+  contentLength?: number,
 ) {
   const command = new PutObjectCommand({
     Bucket: getBucketName(),
     Key: key,
     ContentType: contentType,
+    // Signed into the URL so S3 rejects bodies of a different size.
+    ...(contentLength ? { ContentLength: contentLength } : {}),
   });
 
-  return getSignedUrl(s3Client, command, { expiresIn });
+  return getSignedUrl(s3Client, command, {
+    expiresIn,
+    ...(contentLength ? { signableHeaders: new Set(["content-length"]) } : {}),
+  });
 }

@@ -8,7 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { FieldError } from "@/components/ui/field-error";
 import { signPetitionQuick } from "@/actions/sign-petition-actions";
+import { useValidator } from "@/hooks/use-validator";
+import {
+  petitionSignSchema,
+  type PetitionSignFields,
+} from "@/lib/schemas/petition-sign.schema";
 
 export function SignModal({
   petitionId,
@@ -25,33 +31,38 @@ export function SignModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [name, setName] = useState(defaultName);
-  const [email, setEmail] = useState(defaultEmail);
-  const [message, setMessage] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [signed, setSigned] = useState(false);
+  const [form, setForm] = useState<PetitionSignFields>({
+    name: defaultName,
+    email: defaultEmail,
+    message: "",
+    isAnonymous: false,
+  });
+  const [status, setStatus] = useState({
+    submitting: false,
+    error: null as string | null,
+    signed: false,
+  });
+  const { errors, validate, clearError } = useValidator({
+    store: form,
+    schema: petitionSignSchema,
+  });
+
+  const setFormFields = <K extends keyof PetitionSignFields>(
+    key: K,
+    value: PetitionSignFields[K],
+  ) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    clearError(key);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
-    setError(null);
+    if (!validate()) return;
+    setStatus((current) => ({ ...current, submitting: true, error: null }));
 
-    const { error: submitError } = await signPetitionQuick({
-      petitionId,
-      name,
-      email,
-      message,
-      isAnonymous,
-    });
+    const { error } = await signPetitionQuick({ petitionId, ...form });
 
-    setSubmitting(false);
-    if (submitError) {
-      setError(submitError);
-      return;
-    }
-    setSigned(true);
+    setStatus({ submitting: false, error, signed: !error });
   };
 
   return (
@@ -60,7 +71,7 @@ export function SignModal({
         <DialogTitle>Sign this petition</DialogTitle>
         <p className="text-sm text-muted-foreground -mt-2">{petitionTitle}</p>
 
-        {signed ? (
+        {status.signed ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
             Thanks for signing! Your voice has been added.
           </div>
@@ -70,30 +81,30 @@ export function SignModal({
               <Label htmlFor="sign-name">Your Name</Label>
               <Input
                 id="sign-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={isAnonymous}
-                required={!isAnonymous}
+                value={form.name}
+                onChange={(e) => setFormFields("name", e.target.value)}
+                disabled={form.isAnonymous}
                 placeholder="Your name"
               />
+              <FieldError message={errors.name} />
             </div>
             <div>
               <Label htmlFor="sign-email">Email</Label>
               <Input
                 id="sign-email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                value={form.email}
+                onChange={(e) => setFormFields("email", e.target.value)}
                 placeholder="you@example.com"
               />
+              <FieldError message={errors.email} />
             </div>
             <div>
               <Label htmlFor="sign-message">Message (optional)</Label>
               <Textarea
                 id="sign-message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                value={form.message}
+                onChange={(e) => setFormFields("message", e.target.value)}
                 rows={2}
                 placeholder="Why does this matter to you?"
               />
@@ -101,16 +112,24 @@ export function SignModal({
             <div className="flex items-center gap-3">
               <Switch
                 id="sign-anon"
-                checked={isAnonymous}
-                onCheckedChange={setIsAnonymous}
+                checked={form.isAnonymous}
+                onCheckedChange={(checked) =>
+                  setFormFields("isAnonymous", checked)
+                }
               />
               <Label htmlFor="sign-anon">Sign anonymously</Label>
             </div>
-            {error && (
-              <p className="text-sm font-medium text-rose-600">{error}</p>
+            {status.error && (
+              <p className="text-sm font-medium text-rose-600">
+                {status.error}
+              </p>
             )}
-            <Button type="submit" disabled={submitting} className="w-full">
-              {submitting ? "Signing…" : "Sign this petition"}
+            <Button
+              type="submit"
+              disabled={status.submitting}
+              className="w-full"
+            >
+              {status.submitting ? "Signing…" : "Sign this petition"}
             </Button>
           </form>
         )}

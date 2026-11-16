@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createReferralRecord } from "@/lib/referral-utils";
+import { otpMatches } from "@/lib/auth/otp";
 import { deriveFullNameFromEmail } from "@/lib/auth/registration";
 
 const SIGNUP_EIZA_BONUS = 150;
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
 
     if (!pending) {
       return NextResponse.json(
-        { error: "No pending registration found for this email." },
+        { error: "Invalid or expired verification request." },
         { status: 404 },
       );
     }
@@ -68,8 +69,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Validate OTP
-    if (pending.otpCode !== otpCode) {
+    // 4. Validate OTP (constant-time comparison against the stored HMAC)
+    if (!otpMatches(otpCode, pending.otpCode)) {
       const newAttempts = pending.failedAttempts + 1;
       if (newAttempts >= 5) {
         await prisma.pendingRegistration.delete({
@@ -84,10 +85,9 @@ export async function POST(req: Request) {
         where: { email: normalizedEmail },
         data: { failedAttempts: newAttempts },
       });
+      // Deliberately does not reveal how many attempts remain.
       return NextResponse.json(
-        {
-          error: `Invalid verification code. ${5 - newAttempts} attempt(s) remaining.`,
-        },
+        { error: "Invalid verification code." },
         { status: 400 },
       );
     }

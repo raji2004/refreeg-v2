@@ -45,7 +45,7 @@ export default function DespairAndHope() {
       >
         <motion.p
           variants={itemVariants}
-          className="text-xs p-2 border rounded-full bg-[#FAFAFA]"
+          className="text-xs p-2 border rounded-full bg-palette-baseWhite"
         >
           Powered by vetted, audited smart contracts. Withdraw anytime. Your
           funds remain yours, always.
@@ -66,7 +66,7 @@ export default function DespairAndHope() {
 
         <motion.div variants={itemVariants} whileHover={{ scale: 1.05 }}>
           <Link href="/dashboard/causes/create">
-            <Button className="bg-[#FAFAFA] hover:bg-[#0A0A0B] hover:text-white border text-black px-10 py-4 flex items-center gap-2 rounded-full transition-all duration-300">
+            <Button className="bg-palette-baseWhite hover:bg-[#0A0A0B] hover:text-white border text-black px-10 py-4 flex items-center gap-2 rounded-full transition-all duration-300">
               Get Started
               <ArrowRight size={16} />
             </Button>

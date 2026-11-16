@@ -35,8 +35,8 @@ const eyebrowLineVariants = cva("h-px w-8", {
   variants: {
     variant: {
       light: "bg-[#2f5c5a]",
-      dark: "bg-[#b5e02e]",
-      blue: "bg-[#b5e02e]",
+      dark: "bg-lime-deep",
+      blue: "bg-lime-deep",
     },
   },
   defaultVariants: {
@@ -50,8 +50,8 @@ const eyebrowTextVariants = cva(
     variants: {
       variant: {
         light: "text-[#355e59]",
-        dark: "text-[#b5e02e]",
-        blue: "text-[#b5e02e]",
+        dark: "text-lime-deep",
+        blue: "text-lime-deep",
       },
     },
     defaultVariants: {
@@ -64,8 +64,8 @@ const accentWordVariants = cva("italic", {
   variants: {
     variant: {
       light: "text-[#1847cf]",
-      dark: "text-[#b5e02e]",
-      blue: "text-[#b5e02e]",
+      dark: "text-lime-deep",
+      blue: "text-lime-deep",
     },
   },
   defaultVariants: {
@@ -103,8 +103,8 @@ const bulletSquareVariants = cva("mt-1.5 inline-block h-2 w-2 shrink-0", {
   variants: {
     variant: {
       light: "bg-[#0f1d20]",
-      dark: "bg-[#b5e02e]",
-      blue: "bg-[#b5e02e]",
+      dark: "bg-lime-deep",
+      blue: "bg-lime-deep",
     },
   },
   defaultVariants: {
@@ -144,8 +144,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         light: "bg-[#1546cc] text-white hover:bg-[#103cae]",
-        dark: "bg-[#b5e02e] text-[#0d1a3c] hover:bg-[#a6d127]",
-        blue: "bg-[#b5e02e] text-[#0d1a3c] hover:bg-[#a6d127]",
+        dark: "bg-lime-deep text-[#0d1a3c] hover:bg-[#a6d127]",
+        blue: "bg-lime-deep text-[#0d1a3c] hover:bg-[#a6d127]",
       },
     },
     defaultVariants: {

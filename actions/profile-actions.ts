@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth/auth";
 import { isOwnUploadKey } from "@/lib/s3/owned-key";
+import {
+  fetchBreetBanks,
+  resolveBreetBankId,
+  validateBreetBankAccount,
+} from "@/lib/breet";
 import type {
   Profile,
   ProfileFormData,
@@ -48,6 +53,20 @@ function mapPrismaToProfile(p: any): Profile {
   } as Profile;
 }
 
+// Server actions are reachable as unauthenticated RPC by anyone with the
+// bundle, so every mutation must re-derive the actor from the session and
+// refuse to touch a profile the caller does not own.
+async function assertSelf(userId: string): Promise<void> {
+  const session = await auth();
+  const sessionUserId = session?.user?.id;
+  if (!sessionUserId) {
+    throw new Error("You need to be signed in.");
+  }
+  if (userId !== sessionUserId) {
+    throw new Error("You can only manage your own profile.");
+  }
+}
+
 export async function getProfile(userId: string): Promise<Profile | null> {
   try {
     // A Prisma `_count` include makes Postgres GROUP BY the whole causes and
@@ -74,12 +93,6 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 
 export async function hasBankDetails(userId: string): Promise<boolean> {
   const profile = await getProfile(userId);
-  console.log("hasBankDetails check for user:", userId);
-  console.log("Profile data found:", {
-    exists: !!profile,
-    account_number: profile?.account_number,
-    bank_name: profile?.bank_name,
-  });
   return !!(profile && profile.account_number && profile.bank_name);
 }
 
@@ -87,6 +100,7 @@ export async function updateProfile(
   userId: string,
   profileData: ProfileFormData,
 ): Promise<Profile> {
+  await assertSelf(userId);
   try {
     const data = await prisma.user.update({
       where: { id: userId },
@@ -158,6 +172,31 @@ export async function updateBankDetails(
   userId: string,
   bankData: BankDetailsFormData,
 ): Promise<Profile> {
+  await assertSelf(userId);
+  // When the Breet settlement integration is configured, verify the account
+  // against its bank list so crypto auto-settlement is pointed at a real
+  // account. Only a definitive rejection blocks the save; provider outages
+  // and unsupported banks stay fail-open.
+  if (
+    process.env.BREET_APP_ID &&
+    process.env.BREET_APP_SECRET &&
+    bankData.accountNumber &&
+    bankData.bankName
+  ) {
+    const banks = await fetchBreetBanks().catch(() => []);
+    const breetBankId = resolveBreetBankId(bankData.bankName, banks);
+    if (breetBankId) {
+      const validation = await validateBreetBankAccount(
+        breetBankId,
+        bankData.accountNumber,
+      );
+      if (validation.status === "invalid") {
+        throw new Error(
+          "We could not verify this bank account with our settlement provider. Please double-check the bank and account number.",
+        );
+      }
+    }
+  }
   try {
     const data = await prisma.user.update({
       where: { id: userId },
@@ -182,6 +221,7 @@ export async function updateBankDetails(
 }
 
 export async function clearBankDetails(userId: string): Promise<Profile> {
+  await assertSelf(userId);
   try {
     const data = await prisma.user.update({
       where: { id: userId },
@@ -208,6 +248,7 @@ export async function createOnboardingProfile(
   profileData: OnboardingProfileData,
   oauthAvatarUrl?: string | null,
 ): Promise<any> {
+  await assertSelf(userId);
   const existingProfile = await prisma.user.findUnique({
     where: { id: userId },
     select: { profilePhoto: true, accountType: true },
@@ -459,6 +500,7 @@ export async function saveStep1Progress(
   userId: string,
   accountType: string,
 ): Promise<void> {
+  await assertSelf(userId);
   try {
     const existing = await prisma.user.findUnique({
       where: { id: userId },
@@ -495,6 +537,7 @@ export async function saveStep2Progress(
   userId: string,
   gender: string,
 ): Promise<void> {
+  await assertSelf(userId);
   try {
     await prisma.user.update({
       where: { id: userId },
@@ -590,6 +633,7 @@ export async function getOrganizationOnboardingData(userId: string) {
 }
 
 export async function completeOnboarding(userId: string): Promise<void> {
+  await assertSelf(userId);
   const profile = await prisma.user.findUnique({
     where: { id: userId },
     select: {

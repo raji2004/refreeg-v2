@@ -26,6 +26,7 @@ jest.mock("@/lib/s3/s3-utils", () => ({
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth/auth";
 import {
   getProfile,
   hasBankDetails,
@@ -73,6 +74,8 @@ const baseUser = {
 describe("profile-actions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Mutating actions enforce session ownership; tests act as user-1.
+    (auth as jest.Mock).mockResolvedValue({ user: { id: "user-1" } });
   });
 
   describe("getProfile", () => {
