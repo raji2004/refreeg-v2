@@ -1,0 +1,140 @@
+---
+title: Refreeg code standards
+description: Rules for keeping Refreeg code small, flat and easy to read. Adapted from the standard used in the affidavit admin app.
+---
+
+# Refreeg code standards
+
+Short rules, each one earned from a real review correction. Follow them for new code and for any file you substantially change. Do not mass-rewrite old files; fix them when you next touch them.
+
+Visual rules (colors, typography, shared UI) live in [DESIGN_GUIDE.md](./DESIGN_GUIDE.md). This page covers structure and code.
+
+## Where code lives
+
+| Layer | Location | Job |
+| --- | --- | --- |
+| Server actions | `actions/<feature>-actions.ts` | Auth check, input check, one Prisma or provider call, return a result. Nothing else. |
+| Provider clients | `services/`, `lib/` | Talk to Paystack, Flutterwave, Breet, mail. No UI knowledge. |
+| Hooks | `hooks/use-<feature>.ts` | React Query wiring and any post-processing of a result. |
+| Schemas | `lib/schemas/<feature>.schema.ts` | One zod schema per form. |
+| Options | `lib/options/<feature>.options.ts` | Label and value lists. |
+| Components | `components/<feature>/` | Thin. Render, call hooks, hold local UI state. |
+
+`lib/schemas/` and `lib/options/` are new folders. Older `*-constants.ts` files stay until a change touches them.
+
+## 1. Actions only do the work, nothing around it
+
+An action authenticates, validates, performs one operation and returns `{ success, error }` or the data. It does not format for display, open anything, or toast. Parsing, renaming, building view objects and side effects go in a hook.
+
+```ts
+// actions/referral-actions.ts: the request only
+export async function getReferralDashboard() {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "Not authenticated" };
+  return { success: true, data: await loadDashboard(session.user.id) };
+}
+
+// hooks/use-referrals.ts: post-processing lives here
+export function useReferralDashboard() {
+  const query = useQuery({ queryKey: ["referrals"], queryFn: getReferralDashboard });
+  return { dashboard: query.data?.data ?? null, error: query.data?.error ?? query.error?.message ?? null };
+}
+```
+
+## 2. No intermediary layers
+
+Make the plain call. Use the backend's own pagination and filters. Do not add a wrapper hook that fetches every page and merges, a mapper that renames fields for no reason, or a helper used once.
+
+Before adding a hook, helper or abstraction ask: does the existing query plus a filter or a page state already solve it? If yes, stop.
+
+This does not forbid a hook that holds post-processing a reviewer asked for (rule 1). It forbids wrappers that re-fetch, re-merge or re-shape for no reader.
+
+## 3. Show the real error, no error maps
+
+Errors shown to people come straight from the action result or the query: `result.error`, `query.error?.message`. Do not add an error helper, a `*_ERRORS` constant, per-status wording, or generic "Something went wrong" strings at call sites.
+
+Field-level validation errors (rule 5) are separate and stay.
+
+If the server message is not fit to show, fix the message in the action. Do not translate it in the component.
+
+## 4. One state object per form
+
+Related fields share one `useState` object and one updater named `setFormFields`. No `useState` per field.
+
+```tsx
+const [form, setForm] = useState({
+  name: item?.name ?? "",
+  description: item?.description ?? "",
+});
+const setFormFields = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
+  setForm((current) => ({ ...current, [key]: value }));
+
+<Input value={form.name} onChange={(event) => setFormFields("name", event.target.value)} />
+```
+
+When one change must set two fields, call `setForm` directly in that handler.
+
+Forms with real validation use React Hook Form with the zod resolver instead (rule 5). Do not mix both in one form.
+
+## 5. Validate with a zod schema
+
+Every form has a schema in `lib/schemas/<feature>.schema.ts`, used through `useForm` and `zodResolver`, with `components/ui/form.tsx` showing the message under each field. The schema checks presence, format and relations between fields, such as end date not before start date.
+
+Do not repeat limits the server owns (fee caps, provider minimums, rate limits). Those come back as errors from the action and show through rule 3.
+
+Keep the submit order: validate, then guard against double submit, then call the action.
+
+## 6. One dialog per file
+
+Each dialog (create, edit, delete, confirm) gets its own file named for what it does, such as `create-pledge-dialog.tsx`, exported by name with its own imports. The page or section file only imports dialogs and decides which is open. Share constants through a helper, never by copy.
+
+Existing `ConfirmationModal` covers plain confirm and delete cases; use it before writing a new one.
+
+## 7. Option lists go in options files
+
+Every `{ label, value }` list lives in `lib/options/<feature>.options.ts`, typed once and named `xxxOptions`.
+
+```ts
+// lib/options/pledge.options.ts
+import type { Option } from "@/types/options";
+
+export const pledgeFrequencyOptions = [
+  { label: "Weekly", value: "weekly" },
+  { label: "Monthly", value: "monthly" },
+] as const satisfies readonly Option[];
+```
+
+Not `UPPER_CASE`, and not inside a component, helper or constants file. Components that accept `options` props take a `readonly` array.
+
+## 8. Say it once
+
+When the same expression, lookup or type-based branch appears twice in a file, compute it once: a variable, or a small helper or hook in that file. Scan the files you wrote for repeats before you finish.
+
+## 9. Use what exists
+
+Before writing raw HTML, check `components/ui/` and the shared components. Look for existing pieces first: `EmptyState`, `CalloutBanner`, `Eyebrow`, `Card`, `Button`, `Badge`, `ConfirmationModal`.
+
+- Empty list: render the one list component and vary its empty message by state. Do not wrap it in a ternary with a second empty component.
+- Banner, status chip, stepper: use the shared component, not a one-off.
+- Colors and fonts: tokens from the design guide, never hardcoded values.
+
+## 10. Small and flat
+
+- One component per file. A component over about 200 lines is a candidate to split.
+- Early returns over nesting.
+- No dead code, commented-out blocks or unused exports left behind.
+- Names say what a thing is. Plain words over clever ones.
+- Add a comment only when the reason is not obvious from the code. Say why, not what.
+
+## Review procedure
+
+When asked to review or rate changes against the standard:
+
+1. List changed and untracked files.
+2. Check each file against rules 1 to 10 and `DESIGN_GUIDE.md`.
+3. Report violations as `file:line`, the rule number, and the fix.
+4. Fix them when asked, then review again until clean. Also run `pnpm lint` and `pnpm tsc --noEmit`.
+
+## Recording corrections
+
+When a reviewer or the team corrects a pattern, add it here as a rule with a short example, and mirror it in `.agents/skills/refreeg-code-standards/SKILL.md`. One source of truth for the reason; the skill holds the checklist.
