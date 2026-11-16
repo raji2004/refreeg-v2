@@ -2,6 +2,10 @@ import { GET } from "@/app/api/admin/migrate-flutterwave-subaccounts/route";
 import { prisma } from "@/lib/prisma";
 import Flutterwave from "@/services/flutterwave";
 
+jest.mock("@/lib/auth/admin-auth", () => ({
+  requireAdmin: jest.fn().mockResolvedValue({ id: "admin-1" }),
+}));
+
 jest.mock("next/server", () => ({
   NextResponse: {
     json: jest.fn().mockImplementation((body, init) => {

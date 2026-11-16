@@ -93,7 +93,9 @@ const handleAuth = auth(async (req) => {
 
   if (pathname.startsWith("/dashboard/admin") && user) {
     const role = (user as { role?: string }).role;
-    if (role === "user") {
+    // Only admin and manager JWTs pass; previously any role except the
+    // literal "user" (including an undefined one) got through.
+    if (role !== "admin" && role !== "manager") {
       return NextResponse.redirect(absoluteUrl("/dashboard", req));
     }
   }

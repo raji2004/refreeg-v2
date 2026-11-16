@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { createCryptoDonation } from "@/actions/crypto-actions";
 import { syncMilestoneRequirements } from "@/lib/proof-milestones";
-import { safeFetch } from "@/lib/http-client";
+import {
+  breetAssetNetwork,
+  fetchBreetTransaction,
+  parseBreetLabel,
+} from "@/lib/breet";
+import { getClientIp } from "@/lib/client-ip";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +30,7 @@ export async function GET(req: Request) {
       const dynamicWindow = new Date(Date.now() - 3 * 60 * 1000);
       const recentRecord = await prisma.crypto_donations.findFirst({
         where: {
-          OR: [{ cause_id: causeId }, { status: "completed" }],
+          cause_id: causeId,
           created_at: { gte: dynamicWindow },
         },
         orderBy: { created_at: "desc" },
@@ -45,10 +51,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const forwardedFor = req.headers.get("x-forwarded-for");
-    const clientIp = forwardedFor
-      ? forwardedFor.split(",")[0].trim()
-      : req.headers.get("x-real-ip");
+    const clientIp = getClientIp(req.headers);
 
     if (
       process.env.NODE_ENV === "production" &&
@@ -63,12 +66,45 @@ export async function POST(req: Request) {
       );
     }
 
-    const incomingSecret = req.headers.get("x-webhook-secret");
-    if (incomingSecret !== process.env.NEXT_PUBLIC_BREET_WEBHOOK_SECRET) {
-      console.warn("❌ Webhook verification secret mismatch.");
+    const incomingSecret = req.headers.get("x-webhook-secret") || "";
+    const expectedSecret =
+      process.env.BREET_WEBHOOK_SECRET ||
+      process.env.NEXT_PUBLIC_BREET_WEBHOOK_SECRET ||
+      "";
+
+    if (expectedSecret && !process.env.BREET_WEBHOOK_SECRET) {
+      console.error(
+        "🚨 BREET_WEBHOOK_SECRET is unset; falling back to NEXT_PUBLIC_BREET_WEBHOOK_SECRET. " +
+          "NEXT_PUBLIC_ variables are inlined into the client JavaScript bundle and readable " +
+          "by every visitor - rename this secret (BREET_WEBHOOK_SECRET) so it stays server-only.",
+      );
+    }
+
+    if (expectedSecret) {
+      const providedBuf = Buffer.from(incomingSecret, "utf8");
+      const expectedBuf = Buffer.from(expectedSecret, "utf8");
+      if (
+        !incomingSecret ||
+        providedBuf.length !== expectedBuf.length ||
+        !timingSafeEqual(providedBuf, expectedBuf)
+      ) {
+        console.warn("❌ Webhook verification secret mismatch.");
+        return NextResponse.json(
+          { error: "Invalid signature key" },
+          { status: 401 },
+        );
+      }
+    } else if (process.env.NODE_ENV === "production") {
+      console.error(
+        "❌ BREET_WEBHOOK_SECRET is not configured; rejecting webhook",
+      );
       return NextResponse.json(
-        { error: "Invalid signature key" },
-        { status: 401 },
+        { error: "Webhook not configured" },
+        { status: 503 },
+      );
+    } else {
+      console.warn(
+        "⚠️ BREET_WEBHOOK_SECRET not set; accepting webhook outside production",
       );
     }
 
@@ -106,22 +142,66 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: "Already processed" });
     }
 
-    let donorId: string | null = null;
-    let causeId: string = "";
+    // Our label is `donorId_causeId`, but Breet prefixes labels with its
+    // merchant reference (e.g. "Partner_B-XXXX_donorId_causeId"), so parse
+    // from the END of the string, not the front (parseBreetLabel is shared
+    // with the reconciliation backfill).
+    const labelDescription: string = payload.destinationDescription || "";
+    const { donorId, causeId } = parseBreetLabel(labelDescription);
 
-    const labelDescription = payload.destinationDescription;
-    if (labelDescription && labelDescription.includes("_")) {
-      const parts = labelDescription.split("_");
-      donorId = parts[0] === "guest" ? null : parts[0];
-      causeId = parts[1];
+    // Record the GROSS donation (amountInUSD × rate) so campaign totals show
+    // what donors actually gave; the 5% markup and Breet's fees are payout
+    // economics (amountSettled) and must not shrink the public figure.
+    const finalAmountNaira = Math.round(
+      Number(payload.amountInUSD || 0) * Number(payload.rate || 0),
+    );
+    const cryptoReceived = Number(payload.cryptoAmount || 0);
+    const verifiedNetwork = breetAssetNetwork(payload.asset);
+
+    // A trade we cannot attribute to a live cause is settled by Breet either
+    // way; recording it would only crash, trigger retries and eventually get
+    // the webhook auto-disabled. Acknowledge and log instead.
+    if (causeId) {
+      const causeExists = await prisma.cause.findUnique({
+        where: { id: causeId },
+        select: { id: true },
+      });
+      if (!causeExists) {
+        console.error(
+          `💥 Label "${labelDescription}" resolved to unknown cause ${causeId}; skipping record`,
+        );
+        return NextResponse.json({
+          success: true,
+          message: "Unattributable trade acknowledged",
+        });
+      }
+    } else {
+      console.error(
+        `💥 Trade ${uniqueBreetEventId} has no parsable label ("${labelDescription}"); skipping record`,
+      );
+      return NextResponse.json({
+        success: true,
+        message: "Unattributable trade acknowledged",
+      });
     }
 
-    const finalAmountNaira = Number(payload.amountSettled || 0);
-    const cryptoReceived = Number(payload.cryptoAmount || 0);
-
-    let verifiedNetwork = "Solana Mainnet";
-    if (payload.asset === "USDT_TRC20" || payload.asset === "USDT_TRX_TEST2") {
-      verifiedNetwork = "TRON Mainnet";
+    // Breet's recommended extra verification: confirm the trade exists on
+    // their side before acting. A definitive miss is ignored; API downtime
+    // fails open because IP + secret checks already passed.
+    const breetTrade = await fetchBreetTransaction(String(payload.id || ""));
+    if (breetTrade === "not-found") {
+      console.error(
+        `💥 Breet has no trade ${payload.id}; ignoring unverifiable webhook`,
+      );
+      return NextResponse.json({
+        success: true,
+        message: "Unverifiable trade acknowledged",
+      });
+    }
+    if (breetTrade === "unavailable") {
+      console.warn(
+        `⚠️ Could not verify trade ${payload.id} with Breet API; proceeding on verified IP+secret`,
+      );
     }
 
     // 1. CRITICAL: Create DB record (Must succeed)
@@ -133,7 +213,11 @@ export async function POST(req: Request) {
       status: "completed",
       tx_hash: uniqueBreetEventId || payload.txHash,
       tx_signature: payload.txHash,
-      donor_wallet_address: payload.sourceAddress || "External Exchange Node",
+      // Breet's field is senderAddress; sourceAddress kept as a legacy alias.
+      donor_wallet_address:
+        payload.senderAddress ||
+        payload.sourceAddress ||
+        "External Exchange Node",
       recipient_address: payload.destinationAddress || "Breet Liquidity Node",
       network: verifiedNetwork,
       currency: "USDT",
@@ -143,110 +227,8 @@ export async function POST(req: Request) {
     Promise.resolve().then(async () => {
       try {
         await syncMilestoneRequirements(causeId);
-
-        const creatorProfile = await prisma.user.findFirst({
-          where: { causes: { some: { id: causeId } } },
-        });
-
-        const accountNumber = creatorProfile?.accountNumber;
-        const bankNameText = creatorProfile?.bankName || "";
-
-        if (accountNumber && bankNameText) {
-          console.log(
-            `💸 [Background] Generating Paystack Transfer Recipient...`,
-          );
-
-          const paystackBankResponse = await safeFetch(
-            "https://api.paystack.co/bank?country=nigeria",
-            {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-              },
-              timeoutMs: 5000,
-            },
-          );
-
-          const paystackBankData = await paystackBankResponse.json();
-          let resolvedBankCode: string | null = null;
-
-          if (paystackBankData.status && Array.isArray(paystackBankData.data)) {
-            const savedBankLower = bankNameText.toLowerCase().trim();
-            const matchedBankObject = paystackBankData.data.find(
-              (bank: any) => {
-                const currentBankNameLower = bank.name.toLowerCase();
-                return (
-                  currentBankNameLower.includes(savedBankLower) ||
-                  savedBankLower.includes(currentBankNameLower)
-                );
-              },
-            );
-
-            if (matchedBankObject) {
-              resolvedBankCode = matchedBankObject.code;
-            }
-          }
-
-          if (!resolvedBankCode) {
-            resolvedBankCode = "999992"; // OPay fallback
-          }
-
-          const recipientResponse = await safeFetch(
-            "https://api.paystack.co/transferrecipient",
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                type: "nuban",
-                name: creatorProfile?.fullName || "Refreeg Creator Beneficiary",
-                account_number: accountNumber,
-                bank_code: resolvedBankCode,
-                currency: "NGN",
-              }),
-              timeoutMs: 5000,
-            },
-          );
-
-          const recipientResult = await recipientResponse.json();
-
-          if (recipientResult.status && recipientResult.data?.recipient_code) {
-            const recipientCode = recipientResult.data.recipient_code;
-            const transferAmountInKobo = Math.round(finalAmountNaira * 100);
-
-            const paystackPayoutResponse = await safeFetch(
-              "https://api.paystack.co/transfer",
-              {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  source: "balance",
-                  amount: transferAmountInKobo,
-                  recipient: recipientCode,
-                  reason: `Refreeg Crypto Settlement for Campaign ID: ${causeId}`,
-                }),
-                timeoutMs: 5000,
-              },
-            );
-
-            const payoutResult = await paystackPayoutResponse.json();
-            if (payoutResult.status) {
-              console.log(
-                `🚀 [Background] SUCCESS: Cash routed to creator! Ref: ${payoutResult.data.reference}`,
-              );
-            } else {
-              console.warn(
-                `⚠️ [Background] Paystack Transfer declined:`,
-                payoutResult.message,
-              );
-            }
-          }
-        }
+        // The creator is paid exactly once, by Breet auto-settlement at
+        // address-generation time. The webhook deliberately never moves money.
       } catch (bgError) {
         console.error("[Webhook Background] Failed:", bgError);
       }

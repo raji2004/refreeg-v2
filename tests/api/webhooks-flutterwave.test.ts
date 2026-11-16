@@ -1,5 +1,6 @@
 import { createDonation } from "@/actions";
 import Flutterwave from "@/services/flutterwave";
+import { calculateProviderFee, calculateServiceFee } from "@/lib/utils";
 
 jest.mock("next/server", () => ({
   NextResponse: class {
@@ -13,7 +14,7 @@ jest.mock("next/server", () => ({
       return Promise.resolve(JSON.parse(this.body));
     }
   },
-  NextRequest: class {}
+  NextRequest: class {},
 }));
 
 import { POST } from "@/app/api/webhooks/flutterwave/route";
@@ -47,7 +48,7 @@ describe("Flutterwave Webhook", () => {
     return {
       text: jest.fn().mockResolvedValue(JSON.stringify(body)),
       headers: {
-        get: (name: string) => name === "verif-hash" ? hash : null
+        get: (name: string) => (name === "verif-hash" ? hash : null),
       },
     } as any;
   };
@@ -74,6 +75,12 @@ describe("Flutterwave Webhook", () => {
 
     (Flutterwave.verifyByReferenceFull as jest.Mock).mockResolvedValueOnce({
       status: "successful",
+      // The webhook cross-checks the charged amount against the metadata
+      // total (donation + server-side fees + tip, in naira).
+      amount:
+        1000 +
+        calculateServiceFee(1000) +
+        calculateProviderFee(1000, "flutterwave"),
       meta: {
         cause_id: "c1",
         user_id: "u1",
@@ -109,6 +116,10 @@ describe("Flutterwave Webhook", () => {
 
     (Flutterwave.verifyByReferenceFull as jest.Mock).mockResolvedValueOnce({
       status: "successful",
+      amount:
+        2500 +
+        calculateServiceFee(2500) +
+        calculateProviderFee(2500, "flutterwave"),
       meta: {
         cause_id: "c2",
         user_id: "u2",

@@ -1,8 +1,11 @@
 "use server";
 
-import { recordEvent, updateUserStreaks } from "@/actions/event-reward-actions";
 import { cache } from "react";
 import { auth } from "@/lib/auth/auth";
+import {
+  recordEventCore as recordEvent,
+  updateUserStreaksCore as updateUserStreaks,
+} from "@/lib/reward-core";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import {
@@ -96,6 +99,13 @@ export async function signUpAction(
  * Track user login and update streaks
  */
 export async function trackLogin(userId: string) {
+  // Exported server action: derive the actor from the session instead of the
+  // argument, or any client could mint login rewards for an arbitrary user.
+  const session = await auth();
+  const sessionUserId = session?.user?.id;
+  if (!sessionUserId || sessionUserId !== userId) {
+    return;
+  }
   try {
     // Record login event for rewards
     await recordEvent({

@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     }
 
     if (
-      email === "kingraj1344@gmail.com" ||
+      process.env.REFREEG_E2E_EMAIL &&
       email === process.env.REFREEG_E2E_EMAIL
     ) {
       return NextResponse.json({

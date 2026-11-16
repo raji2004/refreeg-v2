@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
+import QRCode from "react-qr-code";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +32,6 @@ export function BreetCryptoDonationModal({
   const [copied, setCopied] = useState(false);
   const [paymentData, setPaymentData] = useState<{
     address: string;
-    qrCode: string;
   } | null>(null);
 
   const [isConfirmed, setIsConfirmed] = useState(false);
@@ -61,7 +60,6 @@ export function BreetCryptoDonationModal({
 
       setPaymentData({
         address: result.address,
-        qrCode: result.qr_code,
       });
     } catch (error: any) {
       console.error("Checkout modal launch breakdown:", error.message);
@@ -195,14 +193,13 @@ export function BreetCryptoDonationModal({
           </div>
         ) : paymentData ? (
           <div className="flex flex-col items-center space-y-5 pt-2">
-            <div className="relative p-4 border border-slate-100 bg-slate-50 rounded-2xl shadow-inner max-w-[200px] aspect-square flex items-center justify-center">
-              <Image
-                src={paymentData.qrCode}
-                alt="Scan QR Code to transfer assets"
-                fill
-                sizes="200px"
-                unoptimized
-                className="rounded-xl mix-blend-multiply object-contain"
+            <div className="relative p-4 border border-slate-100 bg-white rounded-2xl shadow-inner max-w-[200px] aspect-square flex items-center justify-center">
+              {/* QR is generated locally so the deposit address never leaves
+                  our domain to a third-party image service. */}
+              <QRCode
+                value={paymentData.address}
+                size={168}
+                style={{ width: "100%", height: "100%" }}
               />
             </div>
 

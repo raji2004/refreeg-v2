@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { recordEvent } from "@/actions/event-reward-actions";
+import { recordEventCore as recordEvent } from "@/lib/reward-core";
 import { syncMilestoneRequirements } from "@/lib/proof-milestones";
 
 interface CreateCryptoDonationParams {

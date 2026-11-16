@@ -1,8 +1,8 @@
 /**
  * @jest-environment node
  */
-jest.mock("@/lib/prisma", () => ({
-  prisma: {
+jest.mock("@/lib/prisma", () => {
+  const prismaMock = {
     donation: {
       findFirst: jest.fn(),
       findUnique: jest.fn(),
@@ -20,11 +20,16 @@ jest.mock("@/lib/prisma", () => ({
     campaign_follows: {
       findMany: jest.fn(),
     },
-  },
-}));
+    $transaction: jest.fn(),
+  };
+  // createDonation runs donation.create and cause.update inside one
+  // transaction; the mock passes the same mock object through as tx.
+  prismaMock.$transaction = jest.fn((callback: any) => callback(prismaMock));
+  return { prisma: prismaMock };
+});
 
-jest.mock("@/actions/event-reward-actions", () => ({
-  recordEvent: jest.fn(),
+jest.mock("@/lib/reward-core", () => ({
+  recordEventCore: jest.fn(),
 }));
 
 jest.mock("@/services/mail", () => ({
@@ -46,7 +51,7 @@ jest.mock("@/actions/referral-attribution", () => ({
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { recordDonorReferralAttribution } from "@/actions/referral-attribution";
-import { recordEvent } from "@/actions/event-reward-actions";
+import { recordEventCore as recordEvent } from "@/lib/reward-core";
 import { sendDonationReceivedEmail } from "@/services/mail";
 import {
   createDonation,

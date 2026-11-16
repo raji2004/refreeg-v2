@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { sendMilestoneEmail, sendCampaignExpiringEmail } from "@/services/mail";
+import { assertInternalApiKey } from "@/lib/internal-api";
 
 export async function POST(request: Request) {
+  const denied = assertInternalApiKey(request);
+  if (denied) return denied;
+
   try {
     const { type, data } = await request.json();
 
