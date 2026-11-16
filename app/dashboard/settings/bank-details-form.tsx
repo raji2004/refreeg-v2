@@ -37,7 +37,12 @@ export function BankDetailsForm({
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    setAccount(profile);
+    setAccount({
+      account_number: profile.account_number,
+      bank_name: profile.bank_name,
+      account_name: profile.account_name,
+      sub_account_code: profile.sub_account_code,
+    });
   }, [
     profile.account_number,
     profile.bank_name,

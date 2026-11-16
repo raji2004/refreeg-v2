@@ -109,11 +109,13 @@ export function ProofMediaGallery({ media }: { media: MediaEntry[] }) {
               </button>
             </>
           )}
-          {}
-          <img
+          <Image
             src={getMediaUrl(open.url) || "/placeholder.svg"}
             alt={open.name}
-            className="max-h-[85vh] max-w-full rounded-lg object-contain"
+            width={1200}
+            height={800}
+            unoptimized
+            className="max-h-[85vh] w-auto max-w-full rounded-lg object-contain"
             onClick={(e) => e.stopPropagation()}
           />
         </div>

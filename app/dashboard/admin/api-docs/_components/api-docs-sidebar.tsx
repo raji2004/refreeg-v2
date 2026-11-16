@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ENDPOINT_GROUPS } from '../_data/endpoints';
 
+const ALL_GROUPS = [...ENDPOINT_GROUPS, "Data Models"];
+
 export function ApiDocsSidebar() {
-  const ALL_GROUPS = [...ENDPOINT_GROUPS, "Data Models"];
   const [activeGroup, setActiveGroup] = useState<string>(ALL_GROUPS[0] || "");
 
   const scrollToGroup = (group: string) => {

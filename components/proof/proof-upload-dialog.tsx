@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { submitProofUpdate } from "@/actions/proof-update-actions";
 import { uploadFileWithPresign } from "@/lib/s3/upload-client";
 import { Button } from "@/components/ui/button";
@@ -233,10 +234,12 @@ export function ProofUploadDialog({
                     >
                       {previewUrl ? (
                         isImage ? (
-                          <img
+                          <Image
                             src={previewUrl}
                             alt={f.name}
-                            className="h-full w-full object-cover"
+                            fill
+                            unoptimized
+                            className="object-cover"
                           />
                         ) : (
                           <video
