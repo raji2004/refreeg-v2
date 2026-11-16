@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
 export default function BlogPage({
   params,
 }: {
@@ -41,9 +42,13 @@ export default function BlogPage({
           target="_blank"
           rel="noopener noreferrer"
         >
-          <button className="mt-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition">
+          <Button
+            variant="bare"
+            size="bare"
+            className="mt-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition"
+          >
             Join our community to track donations
-          </button>
+          </Button>
         </Link>
       </section>
 

@@ -102,7 +102,7 @@ export default function CampaignQualityLab({
   );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#10233F] overflow-x-hidden">
+    <div className="min-h-screen bg-[#F8FAFC] text-navy-ink overflow-x-hidden">
       <main className="mx-auto w-full flex flex-col lg:grid max-w-[1280px] gap-4 px-4 pb-24 pt-4 sm:gap-6 sm:px-6 sm:pb-28 sm:pt-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)] lg:gap-8 lg:px-8 lg:items-start">
         <motion.div
           className="order-1 lg:col-start-1 lg:row-start-1"
@@ -173,13 +173,13 @@ export default function CampaignQualityLab({
         <div className="order-3 lg:col-start-1 lg:row-start-3">
           <section className="space-y-4 sm:space-y-6">
             <motion.div
-              className="rounded-2xl border border-[#DDE3EA] bg-white p-4 text-sm text-[#53647A] sm:rounded-[20px] sm:p-7"
+              className="rounded-2xl border border-mist bg-white p-4 text-sm text-steel sm:rounded-[20px] sm:p-7"
               variants={{
                 hidden: { opacity: 0, y: 16 },
                 show: { opacity: 1, y: 0 },
               }}
             >
-              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-[#235DA7]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-blue-steel">
                 The story
               </p>
 
@@ -187,7 +187,7 @@ export default function CampaignQualityLab({
                 <div className="flex flex-wrap items-center gap-2 text-xs text-[#65758B]">
                   <Link
                     href={`/${cause.user.username}`}
-                    className="flex items-center gap-2 font-semibold text-[#10233F] hover:text-[#235DA7]"
+                    className="flex items-center gap-2 font-semibold text-navy-ink hover:text-blue-steel"
                   >
                     {cause.user.profile_photo ? (
                       <Image
@@ -204,7 +204,7 @@ export default function CampaignQualityLab({
                         )}
                       />
                     ) : (
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#10233F] text-[9px] text-white">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-navy-ink text-[9px] text-white">
                         {cause.user.name.slice(0, 1)}
                       </span>
                     )}
@@ -251,13 +251,13 @@ export default function CampaignQualityLab({
       </main>
 
       {!isDonateVisible && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#D8E0E8] bg-white/95 px-4 py-3 shadow-[0_-16px_40px_rgba(16,35,63,0.14)] backdrop-blur-xl sm:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-mist-light bg-white/95 px-4 py-3 shadow-[0_-16px_40px_rgba(16,35,63,0.14)] backdrop-blur-xl sm:hidden">
           <div className="mx-auto flex max-w-md items-center gap-4">
             <div className="min-w-0">
               <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#65758B]">
                 Raised
               </p>
-              <p className="truncate text-sm font-bold text-[#10233F]">
+              <p className="truncate text-sm font-bold text-navy-ink">
                 ₦{cause.raised.toLocaleString()}
               </p>
             </div>
@@ -269,7 +269,7 @@ export default function CampaignQualityLab({
                   block: "start",
                 })
               }
-              className="flex-1 rounded-xl bg-[#235DA7] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_-12px_rgba(35,93,167,0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#235DA7]"
+              className="flex-1 rounded-xl bg-blue-steel px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_-12px_rgba(35,93,167,0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-steel"
             >
               Donate now
             </button>

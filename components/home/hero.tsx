@@ -54,7 +54,7 @@ const Hero = () => {
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-background px-4 sm:px-6">
-      <div className="absolute top-[-200px] left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#0A3CB5]/20 blur-3xl" />
+      <div className="absolute top-[-200px] left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-blue-accent/20 blur-3xl" />
       <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/40 to-background z-0" />
 
       <div
@@ -71,7 +71,7 @@ const Hero = () => {
         <h1 className="hero-title mt-4 max-w-4xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl">
           Give and see <br className="hidden sm:block" />
           exactly where <br className="hidden sm:block" />
-          it <span className="italic text-[#0A3CB5]">lands.</span>
+          it <span className="italic text-blue-accent">lands.</span>
         </h1>
 
         <p className="hero-description mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
@@ -83,7 +83,7 @@ const Hero = () => {
         <div className="hero-buttons mt-6 flex flex-col items-center gap-4 sm:flex-row">
           <Button
             size="lg"
-            className="w-full rounded-full bg-[#0A3CB5] px-8 text-white shadow-xl sm:w-auto"
+            className="w-full rounded-full bg-blue-accent px-8 text-white shadow-xl sm:w-auto"
           >
             <Link href="/causes">
               Give to a cause

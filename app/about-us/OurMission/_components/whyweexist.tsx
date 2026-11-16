@@ -15,7 +15,7 @@ export const FeatureCard: FC<FeatureCardProps> = ({
   description,
 }) => (
   <div className="w-full">
-    <div className="p-3 bg-[#FAFAFA] rounded-full mb-4 inline-flex">
+    <div className="p-3 bg-palette-baseWhite rounded-full mb-4 inline-flex">
       <Icon className="text-blue-600" />
     </div>
     <div className="w-10/12 flex items-center space-x-4">

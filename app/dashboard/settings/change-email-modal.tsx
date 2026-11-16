@@ -16,6 +16,8 @@ import { requestEmailChangeAction } from "@/actions/auth-actions";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
+const emptyForm = { newEmail: "", password: "" };
+
 type ChangeEmailModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,15 +29,18 @@ export function ChangeEmailModal({
   onOpenChange,
   currentEmail,
 }: ChangeEmailModalProps) {
-  const [newEmail, setNewEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState(emptyForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showFailureCopy, setShowFailureCopy] = useState(false);
 
+  const setFormFields = <K extends keyof typeof form>(
+    key: K,
+    value: (typeof form)[K],
+  ) => setForm((current) => ({ ...current, [key]: value }));
+
   const resetLocal = () => {
-    setNewEmail("");
-    setPassword("");
+    setForm(emptyForm);
     setPasswordError(null);
     setShowFailureCopy(false);
   };
@@ -51,7 +56,10 @@ export function ChangeEmailModal({
     setPasswordError(null);
 
     try {
-      const result = await requestEmailChangeAction(newEmail, password);
+      const result = await requestEmailChangeAction(
+        form.newEmail,
+        form.password,
+      );
       if (!result.success) {
         if (result.code === "bad_password") {
           setPasswordError(result.error);
@@ -71,7 +79,7 @@ export function ChangeEmailModal({
 
       toast({
         title: "Confirmation sent",
-        description: `Check ${newEmail.trim()} and click the link to finish changing your email.`,
+        description: `Check ${form.newEmail.trim()} and click the link to finish changing your email.`,
       });
       handleClose(false);
     } finally {
@@ -107,8 +115,8 @@ export function ChangeEmailModal({
               <Input
                 type="email"
                 autoComplete="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
+                value={form.newEmail}
+                onChange={(e) => setFormFields("newEmail", e.target.value)}
                 placeholder="you@work.ng"
                 className="h-11 rounded-lg border-azure/70 bg-white text-ink placeholder:text-ink/35 focus-visible:border-azure focus-visible:ring-azure/25"
                 required
@@ -120,9 +128,9 @@ export function ChangeEmailModal({
               <Input
                 type="password"
                 autoComplete="current-password"
-                value={password}
+                value={form.password}
                 onChange={(e) => {
-                  setPassword(e.target.value);
+                  setFormFields("password", e.target.value);
                   if (passwordError) setPasswordError(null);
                 }}
                 className="h-11 rounded-lg border-transparent bg-cream-muted text-ink placeholder:text-ink/35 focus-visible:border-azure focus-visible:bg-white focus-visible:ring-azure/25"

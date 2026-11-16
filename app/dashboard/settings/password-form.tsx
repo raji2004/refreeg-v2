@@ -17,13 +17,27 @@ import {
   updatePasswordAction,
 } from "@/actions/auth-actions";
 import { toast } from "@/components/ui/use-toast";
+import { useValidator } from "@/hooks/use-validator";
+import { changePasswordSchema } from "@/lib/schemas/registration.schema";
+
+const emptyForm = { currentPassword: "", newPassword: "", confirmPassword: "" };
 
 export function PasswordForm() {
   const [hasPassword, setHasPassword] = useState<boolean | null>(null);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [form, setForm] = useState(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
+  const { errors, validate, clearError } = useValidator({
+    store: form,
+    schema: changePasswordSchema,
+  });
+
+  const setFormFields = <K extends keyof typeof form>(
+    key: K,
+    value: (typeof form)[K],
+  ) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    clearError(key);
+  };
 
   useEffect(() => {
     getHasPasswordAction().then(setHasPassword);
@@ -32,7 +46,7 @@ export function PasswordForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (newPassword !== confirmPassword) {
+    if (!validate()) {
       toast({
         title: "Passwords don't match",
         description: "Re-enter your new password to confirm it.",
@@ -44,8 +58,8 @@ export function PasswordForm() {
     setIsSaving(true);
     try {
       const result = await updatePasswordAction(
-        hasPassword ? currentPassword : null,
-        newPassword,
+        hasPassword ? form.currentPassword : null,
+        form.newPassword,
       );
 
       if (!result.success) {
@@ -64,9 +78,7 @@ export function PasswordForm() {
           : "You can now sign in with your email and this password too.",
       });
       setHasPassword(true);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+      setForm(emptyForm);
     } finally {
       setIsSaving(false);
     }
@@ -96,8 +108,10 @@ export function PasswordForm() {
                 id="currentPassword"
                 type="password"
                 autoComplete="current-password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
+                value={form.currentPassword}
+                onChange={(e) =>
+                  setFormFields("currentPassword", e.target.value)
+                }
                 required
               />
             </div>
@@ -111,8 +125,8 @@ export function PasswordForm() {
               type="password"
               autoComplete="new-password"
               minLength={8}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              value={form.newPassword}
+              onChange={(e) => setFormFields("newPassword", e.target.value)}
               required
             />
           </div>
@@ -123,10 +137,16 @@ export function PasswordForm() {
               type="password"
               autoComplete="new-password"
               minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              value={form.confirmPassword}
+              onChange={(e) => setFormFields("confirmPassword", e.target.value)}
+              aria-invalid={!!errors.confirmPassword}
               required
             />
+            {errors.confirmPassword && (
+              <p role="alert" className="text-sm text-destructive">
+                {errors.confirmPassword}
+              </p>
+            )}
           </div>
           <Button type="submit" disabled={isSaving}>
             {isSaving

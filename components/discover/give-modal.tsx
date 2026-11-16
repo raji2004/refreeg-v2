@@ -11,6 +11,8 @@ import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Icons } from "@/components/icons";
 import { getQuickDonateProps } from "@/actions/cause-actions";
 import { usePayment } from "@/hooks/use-payment";
+import { useValidator } from "@/hooks/use-validator";
+import { MIN_DONATION_AMOUNT, giveSchema } from "@/lib/schemas/donation.schema";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { calculateProviderFee, calculateServiceFee, cn } from "@/lib/utils";
 
@@ -20,7 +22,7 @@ type QuickDonateProps = NonNullable<
 type Provider = "paystack" | "flutterwave";
 
 const PRESETS = [2000, 5000, 10000];
-const MIN_AMOUNT = 100;
+const MIN_AMOUNT = MIN_DONATION_AMOUNT;
 
 const PROVIDERS: {
   id: Provider;
@@ -48,14 +50,27 @@ const label =
 
 function GiveForm({ props }: { props: QuickDonateProps }) {
   const { initializePayment, isLoading } = usePayment();
-  const [preset, setPreset] = useState<number | "other">(5000);
-  const [other, setOther] = useState("");
-  const [provider, setProvider] = useState<Provider>("paystack");
-  const [name, setName] = useState(props.defaultName);
-  const [email, setEmail] = useState(props.defaultEmail);
-  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    preset: 5000 as number | "other",
+    other: "",
+    provider: "paystack" as Provider,
+    name: props.defaultName,
+    email: props.defaultEmail,
+  });
+  const { preset, provider } = form;
 
-  const amount = preset === "other" ? Number(other) || 0 : preset;
+  const amount = preset === "other" ? Number(form.other) || 0 : preset;
+  const { errors, validate, clearError } = useValidator({
+    store: { amount, email: form.email },
+    schema: giveSchema,
+  });
+  const error = errors.amount ?? errors.email;
+
+  const setFormFields = <K extends keyof typeof form>(
+    key: K,
+    value: (typeof form)[K],
+  ) => setForm((current) => ({ ...current, [key]: value }));
+
   const fees =
     calculateServiceFee(amount) + calculateProviderFee(amount, provider);
   const imageUrl = getMediaUrl(props.causeImage) || "/placeholder.svg";
@@ -63,22 +78,14 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
   const isGuest = !props.userId;
 
   const give = async () => {
-    if (amount < MIN_AMOUNT) {
-      setError(`The smallest gift is ${naira(MIN_AMOUNT)}.`);
-      return;
-    }
-    if (!email.trim()) {
-      setError("Add your email so we can send your receipt.");
-      return;
-    }
-    setError("");
+    if (!validate()) return;
     try {
       await initializePayment({
-        email: email.trim(),
+        email: form.email.trim(),
         amount,
         causeId: props.causeId,
         id: props.userId || "",
-        full_name: name.trim() || "Supporter",
+        full_name: form.name.trim() || "Supporter",
         serviceFee: calculateServiceFee(amount),
         paymentProvider: provider,
         // Flutterwave needs its own sub-account; the server creates or looks
@@ -138,8 +145,9 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
             key={value}
             type="button"
             onClick={() => {
-              setPreset(value);
-              setError("");
+              setFormFields("preset", value);
+              clearError("amount");
+              clearError("email");
             }}
             className={cn(
               "h-12 rounded-xl border text-[15px] font-semibold transition-colors",
@@ -158,8 +166,8 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
           inputMode="numeric"
           min={MIN_AMOUNT}
           autoFocus
-          value={other}
-          onChange={(e) => setOther(e.target.value)}
+          value={form.other}
+          onChange={(e) => setFormFields("other", e.target.value)}
           placeholder="Amount in naira"
           aria-label="Amount in naira"
           className="mt-2.5 h-12 w-full rounded-xl border border-hairline bg-bone px-4 text-[15px] text-ink outline-none focus:border-ink/40"
@@ -169,16 +177,16 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
       {isGuest && (
         <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={form.name}
+            onChange={(e) => setFormFields("name", e.target.value)}
             placeholder="Your name"
             aria-label="Your name"
             className="h-11 rounded-xl border border-hairline bg-bone px-4 text-sm text-ink outline-none focus:border-ink/40"
           />
           <input
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={form.email}
+            onChange={(e) => setFormFields("email", e.target.value)}
             placeholder="Email for your receipt"
             aria-label="Email for your receipt"
             className="h-11 rounded-xl border border-hairline bg-bone px-4 text-sm text-ink outline-none focus:border-ink/40"
@@ -196,7 +204,7 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
               type="button"
               role="radio"
               aria-checked={selected}
-              onClick={() => setProvider(id)}
+              onClick={() => setFormFields("provider", id)}
               className={cn(
                 "flex w-full items-center gap-3.5 rounded-2xl border p-3.5 text-left transition-colors",
                 selected

@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 interface ApiCausesFilterProps {
   search: string;
   modeFilter: string;
@@ -30,9 +31,9 @@ export function ApiCausesFilter({ search, modeFilter }: ApiCausesFilterProps) {
         <option value="live">Live Campaigns</option>
         <option value="test">Test Campaigns</option>
       </select>
-      <button type="submit" className="hidden">
+      <Button variant="bare" size="bare" type="submit" className="hidden">
         Submit
-      </button>
+      </Button>
     </form>
   );
 }
