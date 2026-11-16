@@ -231,7 +231,7 @@ export async function updateUserStreaksCore(userId: string) {
         const { eventBus } = await import("@/lib/event-bus");
         eventBus.emit("weekly_streak", {
           type: "weekly_streak",
-          data: updatedStreak,
+          data: { ...updatedStreak, user_id: userId },
           timestamp: new Date().toISOString(),
         });
       } catch (e) {
@@ -250,7 +250,7 @@ export async function updateUserStreaksCore(userId: string) {
         const { eventBus } = await import("@/lib/event-bus");
         eventBus.emit("monthly_active", {
           type: "monthly_active",
-          data: updatedStreak,
+          data: { ...updatedStreak, user_id: userId },
           timestamp: new Date().toISOString(),
         });
       } catch (e) {

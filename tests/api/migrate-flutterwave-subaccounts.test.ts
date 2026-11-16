@@ -1,4 +1,4 @@
-import { GET } from "@/app/api/admin/migrate-flutterwave-subaccounts/route";
+import { POST } from "@/app/api/admin/migrate-flutterwave-subaccounts/route";
 import { prisma } from "@/lib/prisma";
 import Flutterwave from "@/services/flutterwave";
 
@@ -31,7 +31,7 @@ const mockApi = {
   get: jest.fn(),
 };
 
-describe("GET /api/admin/migrate-flutterwave-subaccounts", () => {
+describe("POST /api/admin/migrate-flutterwave-subaccounts", () => {
   const originalKey = process.env.FLUTTERWAVE_SECRET_KEY;
 
   beforeEach(() => {
@@ -77,7 +77,7 @@ describe("GET /api/admin/migrate-flutterwave-subaccounts", () => {
       },
     });
 
-    const response = await GET();
+    const response = await POST();
     const body = await response.json();
 
     expect(prisma.user.findMany).toHaveBeenCalledWith(
@@ -111,7 +111,7 @@ describe("GET /api/admin/migrate-flutterwave-subaccounts", () => {
       },
     ]);
 
-    const response = await GET();
+    const response = await POST();
     const body = await response.json();
 
     expect(mockApi.post).not.toHaveBeenCalled();

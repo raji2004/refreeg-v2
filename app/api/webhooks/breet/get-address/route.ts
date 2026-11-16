@@ -12,7 +12,12 @@ import {
   updateBreetWalletBank,
 } from "@/lib/breet";
 
+import { getClientIp } from "@/lib/client-ip";
+import { createRateLimiter } from "@/lib/rate-limit";
+
 export const dynamic = "force-dynamic";
+
+const limited = createRateLimiter({ max: 10, windowMs: 60_000 });
 
 // Breet's production note: test asset identifiers don't exist in production,
 // so the USDT-on-Solana deposit asset is resolved from GET /trades/assets at
@@ -32,14 +37,25 @@ export async function POST(req: Request) {
       );
     }
 
-    if (donorId && donorId !== "guest") {
-      const session = await auth();
-      if (session?.user?.id !== donorId) {
-        return NextResponse.json(
-          { error: "Donor identity does not match the current session" },
-          { status: 403 },
-        );
-      }
+    if (typeof causeId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(causeId)) {
+      return NextResponse.json({ error: "Invalid causeId" }, { status: 400 });
+    }
+
+    // Donor identity comes from the session only; a caller-supplied donorId
+    // is never trusted. Signed-out checkouts are attributed to "guest".
+    const session = await auth();
+    const sessionUserId = session?.user?.id;
+    if (donorId && donorId !== "guest" && donorId !== sessionUserId) {
+      return NextResponse.json(
+        { error: "Donor identity does not match the current session" },
+        { status: 403 },
+      );
+    }
+    const verifiedDonorId = sessionUserId || "guest";
+
+    const ip = getClientIp(req.headers) || "unknown";
+    if (limited(`${ip}:${verifiedDonorId}`)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
     const causeDetails = await prisma.cause.findUnique({
@@ -98,7 +114,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const trackingDonorId = donorId || "guest";
+    const trackingDonorId = verifiedDonorId;
     const label = `${trackingDonorId}_${causeId}`;
 
     // Resolve the deposit asset per Breet's production guidance (real asset
@@ -165,6 +181,9 @@ export async function POST(req: Request) {
     }
   } catch (error: any) {
     console.error("Critical Exception:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Crypto checkout could not be prepared" },
+      { status: 500 },
+    );
   }
 }

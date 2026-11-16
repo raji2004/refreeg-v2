@@ -38,6 +38,28 @@ export function assertInternalApiKey(request: Request): NextResponse | null {
   return null;
 }
 
+const EMAIL_RE = /^[^\s@<>"]{1,64}@[^\s@<>"]{1,255}$/;
+
+export function isValidEmail(value: unknown): value is string {
+  return (
+    typeof value === "string" && value.length <= 320 && EMAIL_RE.test(value)
+  );
+}
+
+/** True only for http(s) URLs on this app's own origin. */
+export function isOwnAppUrl(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    const base = new URL(
+      process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com",
+    );
+    const u = new URL(value);
+    return u.origin === base.origin;
+  } catch {
+    return false;
+  }
+}
+
 export function internalApiHeaders(): Record<string, string> {
   return { [INTERNAL_API_KEY_HEADER]: process.env.INTERNAL_API_KEY || "" };
 }
