@@ -122,11 +122,11 @@ async function resolveReportedUserId(
       return comment?.user_id ?? null;
     }
     if (targetType === "cause") {
-      const cause = await prisma.causes.findUnique({
+      const cause = await prisma.cause.findUnique({
         where: { id: targetId },
-        select: { user_id: true },
+        select: { userId: true },
       });
-      return cause?.user_id ?? null;
+      return cause?.userId ?? null;
     }
     if (targetType === "petition") {
       const petition = await prisma.petitions.findUnique({
@@ -364,7 +364,7 @@ export async function listModerationReports(options?: {
         })
       : Promise.resolve([]),
     causeIds.length > 0
-      ? prisma.causes.findMany({
+      ? prisma.cause.findMany({
           where: { id: { in: causeIds } },
           select: { id: true, title: true },
         })
@@ -484,12 +484,12 @@ export async function resolveModerationReport(input: {
         },
       });
     } else if (report.target_type === "cause" && isValidUuid(report.target_id)) {
-      await prisma.causes.updateMany({
+      await prisma.cause.updateMany({
         where: { id: report.target_id },
         data: {
           paused: true,
           status: "rejected",
-          rejection_reason:
+          rejectionReason:
             input.resolutionNote || "Removed following moderation review.",
         },
       });
@@ -509,9 +509,9 @@ export async function resolveModerationReport(input: {
   }
 
   if (input.action === "block_user" && isValidUuid(report.reported_user_id)) {
-    await prisma.profiles.updateMany({
+    await prisma.user.updateMany({
       where: { id: report.reported_user_id },
-      data: { is_blocked: true },
+      data: { isBlocked: true },
     });
   }
 

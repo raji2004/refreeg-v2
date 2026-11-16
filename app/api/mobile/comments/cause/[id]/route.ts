@@ -41,7 +41,7 @@ export async function GET(
         : {}),
     };
 
-    const comments = await prisma.comments.findMany({
+    const topLevelComments = await prisma.comments.findMany({
       where: whereClause,
       orderBy: { created_at: "desc" },
       skip: offset,
@@ -55,25 +55,45 @@ export async function GET(
             profilePhoto: true,
           },
         },
-        replies: {
-          where:
-            blockedUserIds.length > 0
-              ? { user_id: { notIn: blockedUserIds } }
-              : undefined,
-          orderBy: { created_at: "asc" },
-          include: {
-            user: {
-              select: {
-                id: true,
-                fullName: true,
-                username: true,
-                profilePhoto: true,
-              },
-            },
-          },
-        },
       },
     });
+
+    const parentIds = topLevelComments.map((c) => c.id);
+    const repliesList =
+      parentIds.length > 0
+        ? await prisma.comments.findMany({
+            where: {
+              parent_id: { in: parentIds },
+              ...(blockedUserIds.length > 0
+                ? { user_id: { notIn: blockedUserIds } }
+                : {}),
+            },
+            orderBy: { created_at: "asc" },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  username: true,
+                  profilePhoto: true,
+                },
+              },
+            },
+          })
+        : [];
+
+    const repliesByParent = new Map<string, typeof repliesList>();
+    for (const reply of repliesList) {
+      if (!reply.parent_id) continue;
+      const list = repliesByParent.get(reply.parent_id) ?? [];
+      list.push(reply);
+      repliesByParent.set(reply.parent_id, list);
+    }
+
+    const comments = topLevelComments.map((comment) => ({
+      ...comment,
+      replies: repliesByParent.get(comment.id) ?? [],
+    }));
 
     const total = await prisma.comments.count({
       where: whereClause,

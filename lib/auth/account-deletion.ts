@@ -116,14 +116,12 @@ export async function executeUserAccountDeletion(
           id: true,
           image: true,
           multimedia: true,
-          video_links: true,
+          videoLinks: true,
           raised: true,
           _count: {
             select: {
               donations: true,
               crypto_donations: true,
-              pledges: true,
-              subscriptions: true,
             },
           },
         },
@@ -137,6 +135,29 @@ export async function executeUserAccountDeletion(
           video_links: true,
         },
       }),
+    ]);
+
+    const userCauseIds = userCauses.map((c) => c.id);
+    const [causePledges, causeSubscriptions] =
+      userCauseIds.length > 0
+        ? await Promise.all([
+            prisma.pledges.findMany({
+              where: { cause_id: { in: userCauseIds } },
+              select: { cause_id: true },
+              distinct: ["cause_id"],
+            }),
+            prisma.subscriptions.findMany({
+              where: { cause_id: { in: userCauseIds } },
+              select: { cause_id: true },
+              distinct: ["cause_id"],
+            }),
+          ])
+        : [[], []];
+    const causesWithPledgesOrSubs = new Set<string>([
+      ...causePledges.map((p) => p.cause_id),
+      ...causeSubscriptions
+        .map((s) => s.cause_id)
+        .filter((id): id is string => Boolean(id)),
     ]);
 
     const diditSessionIds: string[] = [];
@@ -161,16 +182,19 @@ export async function executeUserAccountDeletion(
         Number(cause.raised ?? 0) > 0 ||
         cause._count.donations > 0 ||
         cause._count.crypto_donations > 0 ||
-        cause._count.pledges > 0 ||
-        cause._count.subscriptions > 0;
+        causesWithPledgesOrSubs.has(cause.id);
 
       if (hasFinancialHistory) {
         historicalFundedCauseIds.push(cause.id);
       } else {
         deletableCauseIds.push(cause.id);
         extraS3Keys.push(cause.image);
-        for (const item of cause.multimedia ?? []) {
-          extraS3Keys.push(item);
+        if (Array.isArray(cause.multimedia)) {
+          for (const item of cause.multimedia) {
+            if (typeof item === "string") {
+              extraS3Keys.push(item);
+            }
+          }
         }
       }
     }
@@ -192,6 +216,7 @@ export async function executeUserAccountDeletion(
       ),
     ]);
 
+    const userEmail = user.email?.trim() || null;
     const anonymizedEmail = buildAnonymizedEmail(userId);
     const anonymizedName = DATA_RETENTION_POLICY.DELETED_ACCOUNT_DISPLAY_NAME;
 
@@ -200,33 +225,28 @@ export async function executeUserAccountDeletion(
       // 4a. Anonymize financial records (retained for audit/tax compliance without PII)
       await tx.donation.updateMany({
         where: {
-          OR: [{ userId }, { email: user.email }],
+          OR: [{ userId }, ...(userEmail ? [{ email: userEmail }] : [])],
         },
         data: {
           userId: null,
           name: anonymizedName,
           email: anonymizedEmail,
           message: null,
-          isAnonymous: true,
+          is_anonymous: true,
         },
       });
 
       await tx.crypto_donations.updateMany({
-        where: {
-          OR: [{ user_id: userId }, { email: user.email }],
-        },
+        where: { user_id: userId },
         data: {
           user_id: null,
-          name: anonymizedName,
-          email: anonymizedEmail,
-          message: null,
           donor_wallet_address: null,
         },
       });
 
       await tx.pledges.updateMany({
         where: {
-          OR: [{ user_id: userId }, { email: user.email }],
+          OR: [{ user_id: userId }, ...(userEmail ? [{ email: userEmail }] : [])],
         },
         data: {
           user_id: null,
@@ -234,8 +254,7 @@ export async function executeUserAccountDeletion(
           email: anonymizedEmail,
           note: null,
           paystack_authorization_code: null,
-          paystack_customer_code: null,
-          paystack_email_token: null,
+          authorization_email: null,
         },
       });
 
@@ -249,11 +268,14 @@ export async function executeUserAccountDeletion(
 
       await tx.donorReferralAttribution.updateMany({
         where: {
-          OR: [{ donorUserId: userId }, { donorEmail: user.email }],
+          OR: [
+            { donor_user_id: userId },
+            ...(userEmail ? [{ donor_email: userEmail }] : []),
+          ],
         },
         data: {
-          donorUserId: null,
-          donorEmail: anonymizedEmail,
+          donor_user_id: null,
+          donor_email: anonymizedEmail,
         },
       });
 
@@ -262,10 +284,12 @@ export async function executeUserAccountDeletion(
       await tx.deviceToken.deleteMany({ where: { userId } });
       await tx.user_saved_cards.deleteMany({ where: { user_id: userId } });
       await tx.notification.deleteMany({ where: { userId } });
-      await tx.bookmarks.deleteMany({ where: { user_id: userId } });
+      await tx.bookmark.deleteMany({ where: { user_id: userId } });
       await tx.saved_searches.deleteMany({ where: { user_id: userId } });
       await tx.campaign_follows.deleteMany({
-        where: { OR: [{ user_id: userId }, { email: user.email }] },
+        where: {
+          OR: [{ user_id: userId }, ...(userEmail ? [{ email: userEmail }] : [])],
+        },
       });
       await tx.cause_shares.deleteMany({ where: { user_id: userId } });
       await tx.userStreak.deleteMany({ where: { userId } });
@@ -277,7 +301,7 @@ export async function executeUserAccountDeletion(
         where: { OR: [{ referrerId: userId }, { refereeId: userId }] },
       });
       await tx.referrals_v1.deleteMany({
-        where: { OR: [{ referrer_id: userId }, { referred_id: userId }] },
+        where: { OR: [{ referrer_id_v1: userId }, { referee_id_v1: userId }] },
       });
       await tx.api_keys.deleteMany({ where: { user_id: userId } });
       await tx.api_webhooks.deleteMany({ where: { user_id: userId } });
@@ -293,7 +317,7 @@ export async function executeUserAccountDeletion(
           OR: [
             { user_id: userId },
             ...(deletableCauseIds.length > 0
-              ? [{ cause_id: { in: deletableCauseIds } }]
+              ? [{ original_cause_id: { in: deletableCauseIds } }]
               : []),
           ],
         },
@@ -314,7 +338,7 @@ export async function executeUserAccountDeletion(
           OR: [
             { user_id: userId },
             ...(petitionIds.length > 0
-              ? [{ petition_id: { in: petitionIds } }]
+              ? [{ original_petition_id: { in: petitionIds } }]
               : []),
           ],
         },
@@ -360,8 +384,11 @@ export async function executeUserAccountDeletion(
         await tx.cause_shares.deleteMany({
           where: { cause_id: { in: deletableCauseIds } },
         });
-        await tx.bookmarks.deleteMany({
-          where: { cause_id: { in: deletableCauseIds } },
+        await tx.bookmark.deleteMany({
+          where: {
+            target_type: "cause",
+            target_id: { in: deletableCauseIds },
+          },
         });
         await tx.campaign_proof_updates.deleteMany({
           where: { cause_id: { in: deletableCauseIds } },
@@ -377,7 +404,7 @@ export async function executeUserAccountDeletion(
       // 4g. Delete OAuth accounts, sessions, and roles
       await tx.session.deleteMany({ where: { userId } });
       await tx.account.deleteMany({ where: { userId } });
-      await tx.role.deleteMany({ where: { userId } });
+      await tx.role.deleteMany({ where: { user_id: userId } });
 
       // 4h. If historical funded causes remain, anonymize the profile into an inert
       // tombstone so foreign keys on closed campaigns stay valid while freeing the
@@ -388,6 +415,9 @@ export async function executeUserAccountDeletion(
           data: {
             email: anonymizedEmail,
             fullName: anonymizedName,
+            firstName: null,
+            lastName: null,
+            displayName: null,
             username: null,
             phone: null,
             password: null,
@@ -397,18 +427,15 @@ export async function executeUserAccountDeletion(
             accountName: null,
             bankName: null,
             subAccountCode: null,
+            flutterwaveSubAccountId: null,
             solana_wallet: null,
             twitter_url: null,
             facebook_url: null,
             instagram_url: null,
-            tiktok_url: null,
             linkedin_url: null,
-            referral_code: null,
-            referred_by: null,
+            referralCode: null,
             isVerified: false,
             isBlocked: true,
-            emailNotifications: false,
-            pushNotifications: false,
             sessions_invalidated_after: new Date(),
           },
         });

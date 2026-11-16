@@ -146,10 +146,6 @@
   },
   "packageManager": "pnpm@10.24.0+sha512.01ff8ae71b4419903b65c60fb2dc9d34cf8bb6e06d03bde112ef38f7a34d6904c424ba66bea5cdcf12890230bf39f9580473140ed9c946fef328b6e5238a345a",
   "pnpm": {
-    "overrides": {
-      "handlebars": ">=4.7.9",
-      "form-data": ">=4.0.4"
-    },
     "onlyBuiltDependencies": [
       "@prisma/client",
       "@prisma/engines",
@@ -173,6 +169,8 @@
       ]
     },
     "overrides": {
+      "handlebars": ">=4.7.9",
+      "form-data": ">=4.0.4",
       "@auth/core": ">=0.41.3",
       "lodash": ">=4.18.0",
       "serialize-javascript": ">=7.0.3",
