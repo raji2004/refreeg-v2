@@ -59,10 +59,10 @@ export default function Hero() {
           transition={{ duration: 1, ease: "easeOut" }}
           className="text-lg md:text-xl mb-6"
         >
-          RefreeG empowers hospitals, clinics, and healthcare nonprofits to
-          raise funds transparently for treatments, equipment, and emergency
-          response. Donors can give in fiat or crypto, track impact, and even
-          earn yield while saving lives.
+          RefreeG helps hospitals, clinics, and healthcare nonprofits raise
+          funds transparently for treatments, equipment, and emergency response.
+          Donors can give in fiat or crypto, track impact, and even earn yield
+          while saving lives.
         </motion.p>
 
         <motion.div

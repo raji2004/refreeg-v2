@@ -765,7 +765,7 @@ export async function sendIncompleteKycVerificationEmail(context: {
   const currentYear = new Date().getFullYear();
   return sendMail({
     to: profile?.email || "",
-    subject: "Just one more step to unlock your account ✅",
+    subject: "One more step to finish setting up your account ✅",
     templateName: "incomplete-kyc",
     context: {
       ...context,
@@ -1197,7 +1197,7 @@ export async function sendProofUpdateRejectedEmail(params: {
 
 /**
  * "recovered image only" causes (see prisma/schema/cause.prisma
- * `reconstruction_note`) never got a real title back — don't print that
+ * `reconstruction_note`) never got a real title back: don't print that
  * placeholder string to the campaign owner as if it were their title.
  */
 function isPlaceholderCauseTitle(title: string): boolean {

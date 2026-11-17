@@ -431,7 +431,7 @@ export async function sendKycReminderToUnverifiedUsers(): Promise<{
     const failed = results.length - sent;
 
     console.log(
-      `[KYC Reminder] Emails dispatched — sent: ${sent}, failed: ${failed}, skipped (already in progress): ${skipped}`,
+      `[KYC Reminder] Emails dispatched. Sent: ${sent}, failed: ${failed}, skipped (already in progress): ${skipped}`,
     );
 
     await logAdminActivity("send-kyc-reminders", user.id);
@@ -443,7 +443,7 @@ export async function sendKycReminderToUnverifiedUsers(): Promise<{
       sent: 0,
       failed: 0,
       skipped: 0,
-      error: error instanceof Error ? error.message : "Unexpected error",
+      error: error instanceof Error ? error.message : "Something went wrong",
     };
   }
 }

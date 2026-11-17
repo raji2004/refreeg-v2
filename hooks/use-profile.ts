@@ -44,7 +44,7 @@ export function useProfile(userId: string | undefined) {
       } else if (error.message && typeof error.message === "string") {
         errorMessage =
           error.message.length > 100
-            ? "An error occurred while updating your profile."
+            ? "Couldn't update your profile. Please try again."
             : error.message;
       }
 

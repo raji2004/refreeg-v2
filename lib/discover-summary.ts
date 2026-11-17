@@ -20,7 +20,7 @@ const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven"];
 
 export const countWord = (n: number) => WORDS[n] ?? String(n);
 
-/** ₦12.4M, ₦450,000 — compact for millions, exact below. */
+/** ₦12.4M, ₦450,000: compact for millions, exact below. */
 export function formatNairaShort(value: number) {
   if (value >= 1_000_000) {
     return `₦${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
@@ -85,7 +85,7 @@ export function filterSummary(filters: DiscoverFilters): string {
 
 /**
  * The tail of "There are 154 water campaigns, but none in Kano marked
- * urgent." — every active filter except the causes.
+ * urgent.": every active filter except the causes.
  */
 export function noneClause(filters: DiscoverFilters): string {
   return [

@@ -11,8 +11,8 @@ export default function Hero() {
             What We Do 🌍💙
           </div>
           <div className="text-sm md:text-base lg:text-lg">
-            At RefreeG, we are revolutionizing the way people give, receive, and
-            track donations through a transparent, community-driven crowdfunding
+            At RefreeG, we are changing how people give, receive, and track
+            donations through a transparent, community-driven crowdfunding
             platform. Our mission is to connect people who care with causes that
             matter, ensuring that every contribution leads to real impact.
           </div>

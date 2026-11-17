@@ -40,7 +40,7 @@ interface Props {
 
 /**
  * A removal in progress. Unlike the old timer-based design, the deletion is
- * committed to the server immediately — `undone`/`committed` only exist to
+ * committed to the server immediately: `undone`/`committed` only exist to
  * make Undo correct when it fires before or after that commit lands.
  */
 type PendingRemoval = {
@@ -92,7 +92,7 @@ export function SavedGrid({ items, lists, alertPrefs, user }: Props) {
   );
 
   // Header stats now read from `liveItems`, so they drop the moment a card is
-  // hidden — no server round trip, no stale "2 saved" after removing one.
+  // hidden: no server round trip, no stale "2 saved" after removing one.
   const closingSoon = liveItems.filter(isClosingSoon).length;
   const closed = liveItems.filter((i) => i.status === "closed").length;
 
@@ -123,7 +123,7 @@ export function SavedGrid({ items, lists, alertPrefs, user }: Props) {
           const res = await toggleBookmark(item.targetId, item.kind);
           lastCount = res.count;
         } catch {
-          // best effort — leave it to the next refresh to reconcile
+          // best effort: leave it to the next refresh to reconcile
         }
       }
       if (lastCount !== null) setSavedCount(lastCount);
@@ -154,7 +154,7 @@ export function SavedGrid({ items, lists, alertPrefs, user }: Props) {
     };
     pending.current.set(key, entry);
 
-    // Commit the deletion immediately — no timer.
+    // Commit the deletion immediately: no timer.
     removeBookmarks(ids)
       .then((res) => {
         entry.committed = true;
@@ -188,10 +188,10 @@ export function SavedGrid({ items, lists, alertPrefs, user }: Props) {
       bumpSavedCount(ids.length);
 
       if (e.committed) {
-        // Already deleted — re-create now.
+        // Already deleted: re-create now.
         void recreate(snapshot);
       } else {
-        // Commit still in flight — flag it so the .then() re-creates.
+        // Commit still in flight: flag it so the .then() re-creates.
         e.undone = true;
       }
     };

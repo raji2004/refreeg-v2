@@ -216,7 +216,7 @@ async function getCauseUncached(
 /**
  * React cache() memoizes getCause for the lifetime of a single server
  * render. Campaign pages call it twice (generateMetadata + the page
- * component) — this drops that from two database round-trips to one.
+ * component): this drops that from two database round-trips to one.
  * Per-request only, so session-aware behavior (owner/admin visibility,
  * following state) is unchanged.
  */
@@ -630,7 +630,7 @@ async function queryCauses(options: CauseFilterOptions = {}): Promise<Cause[]> {
     };
   }
 
-  // Location filter — Cause.location is free text, so this is a
+  // Location filter: Cause.location is free text, so this is a
   // contains-match, not a structured lookup against State/City.
   if (options.location && options.location.trim()) {
     whereClause.location = {
@@ -639,7 +639,7 @@ async function queryCauses(options: CauseFilterOptions = {}): Promise<Cause[]> {
     };
   }
 
-  // Urgent filter — only causes with an explicit end_date within 7 days
+  // Urgent filter: only causes with an explicit end_date within 7 days
   // can be expressed as a DB predicate; causes that derive daysLeft from
   // days_active/created_at (see utils/cause/cause-utils.ts) aren't covered.
   if (options.urgentOnly) {
@@ -648,7 +648,7 @@ async function queryCauses(options: CauseFilterOptions = {}): Promise<Cause[]> {
     whereClause.end_date = { gt: new Date(), lte: sevenDaysFromNow };
   }
 
-  // Verified-NGO filter — derived from the creator's account verification;
+  // Verified-NGO filter: derived from the creator's account verification;
   // there's no org-level verified field.
   if (options.verifiedOnly) {
     whereClause.user = { isVerified: true };
@@ -674,7 +674,7 @@ async function queryCauses(options: CauseFilterOptions = {}): Promise<Cause[]> {
   }
 
   // Amount-still-needed range can't be expressed as a Prisma where clause
-  // (it's goal - raised, a column-to-column computation) — fetch a wider
+  // (it's goal - raised, a column-to-column computation): fetch a wider
   // candidate slice and trim in JS when that filter is active.
   const hasAmountRange =
     options.minAmountNeeded != null || options.maxAmountNeeded != null;
@@ -838,7 +838,7 @@ export async function countCauses(
   try {
     if (hasAmountRangeFilter(options)) {
       // No column-to-column (goal - raised) predicate in Prisma's filter
-      // API — count by fetching just the two numeric fields and filtering
+      // API: count by fetching just the two numeric fields and filtering
       // in JS instead of pulling full rows.
       const rows = await prisma.cause.findMany({
         where: whereClause,
@@ -1031,7 +1031,7 @@ export async function updateCauseStatus(
 }
 
 /**
- * Locks a cause's detail page (still shown in listings) — used for causes
+ * Locks a cause's detail page (still shown in listings): used for causes
  * missing real content instead of hiding them outright. Cleared
  * automatically when a submitted edit for the cause is approved, or
  * manually via unpauseCause.
@@ -1238,7 +1238,7 @@ export async function shareCause(
 }
 
 /**
- * Follow a campaign — requires authentication
+ * Follow a campaign: requires authentication
  * Returns { error: 'unauthenticated' } if no session so the UI can show a login modal
  */
 export async function followCampaign(

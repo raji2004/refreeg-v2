@@ -66,8 +66,8 @@ export default function LifeMatters() {
         </motion.div>
 
         <motion.p className="text-lg text-gray-600" variants={item}>
-          Join RefreeG and fund the future of healthcare, one donation, one life
-          at a time.
+          Join RefreeG and fund better healthcare, one donation, one life at a
+          time.
         </motion.p>
 
         <motion.div variants={item}>

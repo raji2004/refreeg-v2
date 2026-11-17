@@ -235,7 +235,7 @@ export async function getOrganizationPublicProfile(ownerId: string) {
 
 /**
  * Search organizations by name for the Discover ⌘K overlay. Verified status
- * is derived from the owning user's account verification — there's no
+ * is derived from the owning user's account verification: there's no
  * org-level verified field.
  */
 export async function searchOrganizations(query: string, limit = 4) {

@@ -41,7 +41,7 @@ export default function Whyweexist() {
       Icon: HandshakeIcon,
       title: "Limited Access",
       description:
-        "Refreeg is dedicated to making a real grassroots impact. Unlike many other crowdfunding sites that overlook local initiatives, we prioritize empowering communities and amplifying their voices.",
+        "Refreeg is dedicated to making a real grassroots impact. Unlike many other crowdfunding sites that overlook local initiatives, we put communities first and amplify their voices.",
     },
     {
       Icon: MegaphoneIcon,

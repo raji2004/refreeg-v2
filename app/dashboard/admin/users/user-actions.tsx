@@ -124,7 +124,7 @@ export function UserActions({
       console.error("Action error:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "Something went wrong. Please try again",
         variant: "destructive",
       });
     } finally {

@@ -48,7 +48,7 @@ function generateReferralCode(): string {
 
 /**
  * The referral link carries User.referralCode, but nothing in the app ever
- * minted one — so most accounts fell back to their raw user id and produced
+ * minted one: so most accounts fell back to their raw user id and produced
  * eye-wateringly long links. Mint a code once on first visit and persist it;
  * every later call reuses it. Old links that carry the user id keep working:
  * createReferralRecord resolves the referrer by code first, then by id.
@@ -68,14 +68,14 @@ async function ensureReferralCode(
       });
       return code;
     } catch (err) {
-      // Unique-violation: someone else drew the same code — draw again.
+      // Unique-violation: someone else drew the same code: draw again.
       if (
         err instanceof Prisma.PrismaClientKnownRequestError &&
         err.code === "P2002"
       ) {
         continue;
       }
-      // Anything else (connectivity, etc.) — fall back to the user id rather
+      // Anything else (connectivity, etc.): fall back to the user id rather
       // than failing the whole dashboard over a cosmetic code.
       break;
     }

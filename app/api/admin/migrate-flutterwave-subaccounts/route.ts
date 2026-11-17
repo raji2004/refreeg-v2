@@ -107,7 +107,7 @@ export async function GET() {
                 email: user.email,
                 status: "Recovered",
                 subaccount_id: existingId,
-                note: "Subaccount already existed in Flutterwave — ID recovered and saved",
+                note: "Subaccount already existed in Flutterwave, ID recovered and saved",
               });
               continue;
             }

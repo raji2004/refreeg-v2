@@ -97,7 +97,7 @@ select:focus {
     --announcement-status: 216 31% 18%;
     --announcement-border: 83 57% 46%;
 
-    /* Fintech surface system (see docs/DESIGN_GUIDE.md) — additive, opt-in
+    /* Fintech surface system (see docs/DESIGN_GUIDE.md): additive, opt-in
        tokens for new/rebuilt screens. Do not repoint --background/--primary
        at these; existing pages keep the navy/white theme until re-themed. */
 
@@ -244,7 +244,7 @@ select:focus {
 }
 
 /* Small-caps section labels used throughout the fintech surface system,
-   e.g. "STEP 1 OF 4", "WHAT LEVEL 2 UNLOCKS". See docs/DESIGN_GUIDE.md. */
+   e.g. "STEP 1 OF 4", "WHAT LEVEL 2 INCLUDES". See docs/DESIGN_GUIDE.md. */
 .label-eyebrow {
   @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground;
 }

@@ -292,7 +292,7 @@ export async function resetPasswordAction(token: string, password: string) {
  * profile details or has no password set.
  *
  * If true, issues a password setup token so they can be routed to set up
- * a new password and then seamlessly complete the profile flow.
+ * a new password and then continue into the profile flow.
  */
 export async function checkCauseUserLoginAction(email: string) {
   try {
@@ -383,7 +383,7 @@ export async function checkCauseUserLoginAction(email: string) {
 /**
  * Sets or changes the signed-in user's password. If the account already has
  * one (vs. a Google-only signup with password: null), the current password
- * must be verified first — this runs from Settings, not the logged-out
+ * must be verified first: this runs from Settings, not the logged-out
  * token-based reset-password flow above, so there's no token to prove intent.
  */
 export async function updatePasswordAction(

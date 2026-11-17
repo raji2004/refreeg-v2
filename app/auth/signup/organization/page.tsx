@@ -198,7 +198,7 @@ export default function OrganizationSignUpPage() {
         </div>
         <AuthBrandPanel
           headline="Built for verified, transparent impact."
-          subtitle="Empower your organization with verifiable disbursement milestones and real-time public accounting."
+          subtitle="Give your organization verifiable disbursement milestones and real-time public accounting."
           checklist={[
             {
               title: "Transparent accountability",
@@ -232,7 +232,7 @@ export default function OrganizationSignUpPage() {
       {/* Left Brand Panel (Desktop) */}
       <AuthBrandPanel
         headline="Built for verified, transparent impact."
-        subtitle="Empower your organization with verifiable disbursement milestones and real-time public accounting."
+        subtitle="Give your organization verifiable disbursement milestones and real-time public accounting."
         checklist={[
           {
             title: "Transparent accountability",

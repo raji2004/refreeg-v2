@@ -41,7 +41,7 @@ export default function CreatorTrust() {
     },
     {
       title: "Direct Connection",
-      desc: "Let people comment, follow your updates, and engage directly with your journey, turning donors into long-term supporters.",
+      desc: "Let people comment, follow your updates, and stay engaged with your cause, turning donors into long-term supporters.",
       image: "/images/chainlock.png",
     },
     {

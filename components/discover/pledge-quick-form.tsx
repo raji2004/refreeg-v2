@@ -32,7 +32,7 @@ function getDefaultPledgeDate() {
 const pledgePresets = [5000, 10000, 25000, 50000];
 
 /**
- * A slim, modal-sized version of PledgeScreen's pledge form — just the
+ * A slim, modal-sized version of PledgeScreen's pledge form: just the
  * amount/date/name/email/note fields + submit. Deliberately drops the
  * hero, story, stats, and sticky mobile CTA bar from the full /pledge page,
  * which don't fit a dialog. The full page (app/campaign/_components/pledge-screen.tsx)

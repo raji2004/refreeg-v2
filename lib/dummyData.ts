@@ -215,7 +215,7 @@ export const causes = [
     imageSrc: "/images/radio.svg",
     title: "Vocational Training",
     points: [
-      "Empowering Artisans: We provide vocational training to individuals, helping them acquire valuable skills to become proficient artisans.",
+      "Supporting Artisans: We provide vocational training to individuals, helping them acquire valuable skills to become proficient artisans.",
       "Economic Contribution: By gaining these skills, individuals can join the labor force, contributing to the nation’s GDP and overall economic growth.",
     ],
     linkHref: "#",
@@ -273,7 +273,7 @@ export const stories = [
     title: "Where We’re Headed",
     points: [
       "We’re just getting started. Our goal is to make RefreeG the go-to crowdfunding platform for Africa, one that not only raises funds but also drives sustainable change.",
-      "🔹 More transparency – Strengthening our blockchain-powered tracking system\n🔹 More impact – Expanding partnerships with NGOs, businesses, and institutions\n🔹 More accessibility – Making it easier for anyone to start and support causes We believe in a future where no cause goes unfunded, no dream goes unsupported, and no life goes unchanged.",
+      "🔹 More transparency: strengthening our blockchain-powered tracking system\n🔹 More impact: expanding partnerships with NGOs, businesses, and institutions\n🔹 More accessibility: making it easier for anyone to start and support causes. We believe in a future where no cause goes unfunded, no dream goes unsupported, and no life goes unchanged.",
     ],
     linkHref: "#",
   },
@@ -285,7 +285,7 @@ export const faqs = [
     icon: Info,
     question: "What is RefreeG?",
     answer:
-      "RefreeG is a blockchain-powered crowdfunding platform designed to help individuals, NGOs, and community-led projects raise funds transparently and efficiently. Whether it's emergency aid, education, or creative work. RefreeG empowers changemakers with tools to create verified causes and receive support.",
+      "RefreeG is a blockchain-powered crowdfunding platform designed to help individuals, NGOs, and community-led projects raise funds transparently and efficiently. Whether it's emergency aid, education, or creative work, RefreeG gives changemakers the tools to create verified causes and receive support.",
   },
   {
     category: "features",

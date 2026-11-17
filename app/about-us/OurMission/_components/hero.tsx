@@ -23,14 +23,13 @@ export default function Hero() {
             </h1>
 
             <p className="text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed max-w-none lg:max-w-lg">
-              At Refreeg, we believe in the power of community-driven change.
-              Our mission is simple yet impactful: to connect those who want to
-              help with those who need it the most. To create a transparent and
+              At Refreeg, we believe change starts in communities themselves.
+              Our mission is simple: to connect those who want to help with
+              those who need it the most. To create a transparent and
               accountable crowdfunding platform. To foster socio-economic growth
-              by supporting impactful causes. We exist to empower individuals,
+              by supporting impactful causes. We exist to help individuals,
               businesses, and communities by providing a trustworthy platform
-              where funds are securely donated and effectively utilized for
-              meaningful change.
+              where funds are securely donated and put to meaningful use.
             </p>
 
             <Link

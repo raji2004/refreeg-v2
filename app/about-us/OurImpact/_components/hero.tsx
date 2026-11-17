@@ -14,7 +14,7 @@ export default function Hero() {
             At RefreeG, we are redefining crowdfunding in Africa by ensuring
             transparency, accountability, and real, measurable change. Every
             donation made on our platform contributes to building stronger
-            communities, supporting urgent causes, and empowering individuals to
+            communities, supporting urgent causes, and helping individuals
             create a better future.
           </div>
         </div>

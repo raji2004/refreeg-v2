@@ -500,7 +500,7 @@ const Flutterwave = {
   },
 
   /**
-   * Charge a saved card (token) — used for scheduled pledge fulfillment.
+   * Charge a saved card (token): used for scheduled pledge fulfillment.
    * @see https://developer.flutterwave.com/docs/recurring-payments/tokenized-charges
    */
   chargeToken: async function (params: {

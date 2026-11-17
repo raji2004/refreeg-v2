@@ -11,7 +11,7 @@ export default function ChangeLives() {
       <div className="mt-2 text-base">
         At Refreeg, every donation counts, every cause matters, and every action
         leads to real impact. Whether you’re donating, starting a campaign, or
-        simply spreading the word, you are helping reshape the future of giving.
+        simply spreading the word, you are helping reshape how people give.
       </div>
       <div className="mt-8 text-base">✨ Want to be part of the movement?</div>
       <div className="flex space-x-2 mt-4">

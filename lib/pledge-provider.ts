@@ -199,7 +199,7 @@ export async function processPledgeScheduledChargeSuccess(
 }
 
 /**
- * Charge due pledges for today — provider-agnostic.
+ * Charge due pledges for today: provider-agnostic.
  * Currently uses Paystack for all pledges (since authorization codes are Paystack's).
  * When Flutterwave pledges exist, this function detects the stored token format
  * and routes to the correct provider.

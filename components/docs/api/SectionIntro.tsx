@@ -59,7 +59,7 @@ export default function SectionIntro() {
             Core Concepts
           </h2>
           <p className="text-slate-600 leading-relaxed max-w-3xl">
-            The RefreeG API is designed for robustness. Whether you&apos;re
+            The RefreeG API is built to be dependable. Whether you&apos;re
             building a Discord bot, a mobile application, or any third-party
             interface, our API provides the hooks you need to manage the
             complete donor lifecycle.
@@ -72,8 +72,8 @@ export default function SectionIntro() {
               Standard Response Format
             </h3>
             <p className="text-sm text-slate-500">
-              Every response follows a deterministic structure, making
-              integration across languages seamless.
+              Every response follows a deterministic structure, so integration
+              works the same across languages.
             </p>
             <div className="bg-slate-900 rounded-2xl p-6 shadow-xl overflow-x-auto">
               <pre className="text-blue-300 font-mono text-[13px]">

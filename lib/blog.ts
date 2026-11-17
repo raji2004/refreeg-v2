@@ -34,7 +34,7 @@ export const blogs = [
       content: `
         At RefreeG, transparency is the core of our mission. We’ve integrated
         blockchain technology to bring you a secure, real-time tracking
-        experience that ensures every donation’s journey is visible and
+        experience that keeps every donation visible and
         verifiable.
         <br />
         <br />
@@ -57,7 +57,7 @@ export const blogs = [
         This real-time tracking is designed to build trust and give our
         supporters peace of mind, reinforcing the impact they’re making toward
         socioeconomic growth. RefreeG’s commitment to clarity and
-        accountability empowers every user to see the difference they’re
+        accountability means every user can see the difference they’re
         making, creating a unique donation experience built on transparency
         and trust.
       `,
@@ -72,7 +72,7 @@ export const blogs = [
       easy-to-use platform ensures that anyone can support a cause in just a
       few clicks. Donors can browse verified campaigns, select a cause they
       believe in, and choose to donate using either Naira or cryptocurrency.
-      To make the process seamless, we integrate trusted payment gateways
+      To keep the process simple, we integrate trusted payment gateways
       like Paystack for Naira donations, allowing funds to go directly to
       the recipient’s bank account.
       <br />
@@ -98,7 +98,7 @@ export const blogs = [
       contribute to meaningful causes, no matter their location. With
       support for both traditional and cryptocurrency donations, RefreeG
       allows individuals and organizations across the globe to donate
-      seamlessly. Whether you're contributing in Naira or using
+      easily. Whether you're contributing in Naira or using
       blockchain-based payments, our system ensures that funds reach the
       intended recipients securely and efficiently.
       <br />
@@ -128,7 +128,7 @@ export const blogs = [
       individuals or organizations involved.
       <br />
       <br />
-      To further secure credibility, we utilize blockchain’s immutable
+      To further secure credibility, we use blockchain’s immutable
       ledger to transparently log each cause’s progress and updates, making
       each step visible to donors and our community. This process includes
       financial audits and milestones that every cause must meet to stay
@@ -146,7 +146,7 @@ export const blogs = [
     img: "/images/blockchain.png",
     content: `
       At RefreeG, transparency isn’t just a promise. It’s a fundamental part of 
-      how we operate. By leveraging blockchain technology, we ensure that every 
+      how we operate. With blockchain technology, we ensure that every
       donation is securely recorded on an immutable ledger, providing a clear 
       and tamper-proof history of fund allocations. This decentralized approach 
       eliminates opacity, allowing donors to track their contributions in real 
@@ -157,13 +157,13 @@ export const blogs = [
       that funds reach the intended causes without interference. Additionally, 
       cause creators provide periodic updates, documented on the blockchain, 
       to showcase tangible progress. Through this system, RefreeG fosters a new 
-      level of trust, where giving is not only seamless but also backed by 
+      level of trust, where giving is not just easy but also backed by
       verifiable proof, reinforcing our mission to drive meaningful and 
       transparent socioeconomic change.
     `,
   },
   {
-    title: "Seamless & Inclusive Giving",
+    title: "Simple & Inclusive Giving",
     slug: "seamless-inclusive-giving",
     img: "/images/seamless.png",
     content: `
@@ -176,7 +176,7 @@ export const blogs = [
       of the individuals or organizations involved.
       <br />
       <br />
-       To further secure credibility, we utilize blockchain’s immutable ledger 
+       To further secure credibility, we use blockchain’s immutable ledger
        to transparently log each cause’s progress and updates, making each step 
        visible to donors and our community. This process includes financial 
        audits and milestones that every cause must meet to stay active on the 
@@ -199,7 +199,7 @@ export const blogs = [
       <br />
       <br />
        Through interactive feedback loops, community-driven campaigns, and open 
-       dialogue, we empower individuals to take an active role in shaping the 
+       dialogue, we give individuals an active role in shaping the
        causes they support. Donors don’t just contribute; they become part of a 
        movement, seeing firsthand how their support transforms lives. By fostering 
        trust, collaboration, and shared ownership, RefreeG creates a platform 
@@ -208,12 +208,12 @@ export const blogs = [
     `,
   },
   {
-    title: "Empowering Local Changemakers",
+    title: "Backing Local Changemakers",
     slug: "empowering-local-changemakers",
     img: "/images/changemakers.png",
     content: `
       At RefreeG, we recognize that those closest to the problem often have the 
-      best solutions. That’s why we focus on empowering local 
+      best solutions. That’s why we focus on backing local
       changemakers: passionate individuals and organizations working tirelessly 
       to uplift their communities. Instead of imposing external solutions, we 
       provide these changemakers with the tools, visibility, and resources they 
@@ -221,7 +221,7 @@ export const blogs = [
       <br />
       <br />
        Through our platform, changemakers gain access to funding, mentorship, 
-       and a supportive community that amplifies their efforts. By leveraging 
+       and a supportive community that amplifies their efforts. Using
        blockchain transparency, we ensure that every contribution directly fuels 
        their initiatives, fostering trust and accountability. RefreeG is more 
        than a donation platform. It’s a launchpad for those creating real, 
@@ -235,7 +235,7 @@ export const blogs = [
     img: "/images/education.png",
     content: `
       At RefreeG, we believe that education is the foundation for sustainable 
-      development and economic empowerment. Our platform connects donors with 
+      development and economic growth. Our platform connects donors with
       students and educational initiatives in need of financial support, 
       ensuring that learning opportunities are accessible to everyone, regardless of background.
       <br />
@@ -277,7 +277,7 @@ export const blogs = [
       placement, and ultimately, long-term financial stability.
       <br />
       <br />
-      By empowering individuals with vocational skills, we help create a 
+      By equipping individuals with vocational skills, we help create a
       workforce that drives economic growth and reduces dependency on aid.
     `,
   },
@@ -325,7 +325,7 @@ export const blogs = [
       <br />
       Through transparent funding mechanisms, donors can follow the impact of 
       their contributions while maintaining the privacy of beneficiaries. Every 
-      donation fuels a survivor’s journey to healing, empowerment, and a fresh 
+      donation fuels a survivor’s path to healing, independence, and a fresh
       start.
       <br />
       <br />
