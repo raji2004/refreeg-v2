@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { FaFacebookF, FaTiktok, FaXTwitter } from "react-icons/fa6";
 import { FaWhatsapp } from "react-icons/fa";
+import { formatNaira } from "@/components/giving/format";
 import { useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,14 +50,6 @@ type OrganizationPublicProfileProps = {
   userId: string;
   isOwner: boolean;
 };
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(amount || 0);
-}
 
 export default function OrganizationPublicProfile({
   organization,
@@ -90,7 +83,7 @@ export default function OrganizationPublicProfile({
   const metrics = [
     {
       label: "Total raised",
-      value: formatCurrency(totalRaised),
+      value: formatNaira(totalRaised),
       icon: TrendingUp,
     },
     {

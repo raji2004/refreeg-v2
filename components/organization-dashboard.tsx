@@ -17,6 +17,7 @@ import { DonationTrends } from "@/components/charts/donation-trends";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { formatNaira } from "@/components/giving/format";
 
 type OrganizationDashboardProps = {
   workspace: {
@@ -44,15 +45,6 @@ type OrganizationDashboardProps = {
   donationTrends: Array<{ month: string; amount: number | string | null }>;
   causes: any[];
   petitions: any[];
-};
-
-const formatNaira = (value: number | string | null | undefined) => {
-  const amount = typeof value === "number" ? value : Number(value);
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0);
 };
 
 export function OrganizationDashboard({

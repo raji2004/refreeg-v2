@@ -24,6 +24,8 @@ import {
 import type { DonationWithCause } from "@/types/donation-types";
 import { PaginationButton } from "@/components/pagination-button";
 import { causePublicPath } from "@/lib/causes/slug";
+import { formatNaira } from "@/components/giving/format";
+import { formatDate } from "@/lib/format-date";
 
 interface MyDonationsListProps {
   donations: DonationWithCause[];
@@ -33,24 +35,6 @@ interface MyDonationsListProps {
   totalPages: number;
   timeframe?: "all" | "recent";
 }
-
-const formatNaira = (value: number) =>
-  new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(value || 0);
-
-const formatDate = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Not available";
-
-  return new Intl.DateTimeFormat("en-NG", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-};
 
 const getStatusDetails = (status: string) => {
   switch (status) {

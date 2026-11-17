@@ -1,6 +1,7 @@
 import { createDonation } from "@/actions/donation-actions";
 import { prisma } from "@/lib/prisma";
 import { verifyTransactionFull } from "@/services/payment-provider";
+import Paystack from "@/services/paystack";
 import { sendPledgeConfirmationEmail } from "@/services/mail";
 import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/pledge-constants";
 import { calculateServiceFee } from "@/lib/utils";
@@ -204,8 +205,118 @@ export async function processPledgeScheduledChargeSuccess(
  * and routes to the correct provider.
  */
 export async function chargeDuePledgesForToday() {
-  // Re-export from pledge-paystack for backward compat
-  const { chargeDuePledgesForToday: original } =
-    await import("@/lib/pledge-paystack");
-  return original();
+  const today = new Date().toISOString().split("T")[0];
+  const todayDate = new Date(`${today}T00:00:00.000Z`);
+
+  try {
+    const pledges = await prisma.pledges.findMany({
+      where: {
+        reminder_date: todayDate,
+        status: "pending",
+        paystack_payment_status: "authorized",
+      },
+      select: {
+        id: true,
+        cause_id: true,
+        user_id: true,
+        amount: true,
+        name: true,
+        email: true,
+        note: true,
+        reminder_date: true,
+        paystack_authorization_code: true,
+        authorization_email: true,
+        paystack_payment_status: true,
+        status: true,
+        scheduled_charge_reference: true,
+      },
+    });
+
+    const results: { pledgeId: string; ok: boolean; error?: string }[] = [];
+
+    for (const pledge of pledges) {
+      if (!pledge.paystack_authorization_code || !pledge.authorization_email) {
+        results.push({
+          pledgeId: pledge.id,
+          ok: false,
+          error: "missing_authorization",
+        });
+        continue;
+      }
+
+      const causeRow = await prisma.cause.findUnique({
+        where: { id: pledge.cause_id },
+        select: { userId: true },
+      });
+
+      if (!causeRow?.userId) {
+        results.push({
+          pledgeId: pledge.id,
+          ok: false,
+          error: "cause_missing",
+        });
+        continue;
+      }
+
+      const profile = await prisma.user.findUnique({
+        where: { id: causeRow.userId },
+        select: { subAccountCode: true },
+      });
+
+      const subaccount = profile?.subAccountCode?.trim() || undefined;
+      const pledgeAmount = Number(pledge.amount);
+      const serviceFee = calculateServiceFee(pledgeAmount);
+      // Deterministic per pledge + day so retries do not double-charge (Paystack rejects duplicate reference).
+      const reference = `pledgech_${pledge.id.replace(/-/g, "")}_${today.replace(/-/g, "")}`;
+
+      try {
+        await Paystack.chargeAuthorization({
+          authorizationCode: pledge.paystack_authorization_code,
+          email: pledge.authorization_email,
+          amountNgn: pledgeAmount,
+          serviceFeeNgn: serviceFee,
+          reference,
+          causeId: pledge.cause_id,
+          subaccount,
+          metadata: {
+            pledge_flow: "scheduled_charge",
+            pledge_id: pledge.id,
+            cause_id: pledge.cause_id,
+            amount: pledgeAmount,
+            customer_name: pledge.name,
+            email: pledge.email,
+            message: pledge.note || "",
+            is_anonymous: false,
+            tip_amount: 0,
+            ...(pledge.user_id ? { user_id: pledge.user_id } : {}),
+          },
+        });
+
+        await prisma.pledges.update({
+          where: { id: pledge.id },
+          data: {
+            charge_attempted_at: new Date(),
+          },
+        });
+
+        results.push({ pledgeId: pledge.id, ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        await prisma.pledges.update({
+          where: { id: pledge.id },
+          data: {
+            last_charge_error: msg.slice(0, 500),
+            charge_attempted_at: new Date(),
+            paystack_payment_status: "charge_failed",
+          },
+        });
+
+        results.push({ pledgeId: pledge.id, ok: false, error: msg });
+      }
+    }
+
+    return { today, processed: results.length, results };
+  } catch (error: any) {
+    throw new Error(error.message || String(error));
+  }
 }

@@ -5,6 +5,7 @@ import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Button } from "@/components/ui/button";
 import type { Cause } from "@/types/cause-types";
+import { formatNaira } from "@/components/giving/format";
 
 interface ChecklistItem {
   label: string;
@@ -18,13 +19,6 @@ interface DashboardFirstRunProps {
   checklist: ChecklistItem[];
   weeklyDelivered: number;
 }
-
-const formatNaira = (value: number) =>
-  new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(value);
 
 export function DashboardFirstRun({
   matchedCauses,

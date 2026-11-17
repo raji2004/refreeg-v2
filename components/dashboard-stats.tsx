@@ -4,15 +4,7 @@ import {
   getDashboardStats,
   getPetitionDashboardStats,
 } from "@/actions/dashboard-actions";
-
-const formatNaira = (value: number | string | null | undefined) => {
-  const amount = typeof value === "number" ? value : Number(value);
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0);
-};
+import { formatNaira } from "@/components/giving/format";
 
 export async function DashboardStats({
   type = "all",
