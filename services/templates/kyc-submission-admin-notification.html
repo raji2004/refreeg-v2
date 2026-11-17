@@ -1,162 +1,35 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>New KYC Submission - Admin Notification</title>
-    <style>
-      body {
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        background-color: #f4f7f6;
-        margin: 0;
-        padding: 0;
-      }
-      .container {
-        max-width: 600px;
-        margin: 40px auto;
-        background: #ffffff;
-        padding: 40px;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-      }
-      .logo {
-        text-align: center;
-        margin-bottom: 30px;
-      }
-      .logo img {
-        max-height: 40px;
-        vertical-align: middle;
-        display: inline-block;
-      }
-      .brand-name {
-        font-size: 24px;
-        font-weight: 600;
-        color: #333333;
-        vertical-align: middle;
-        display: inline-block;
-        margin-left: 10px;
-      }
-      h1 {
-        color: #333333;
-        font-size: 24px;
-        font-weight: 600;
-        text-align: center;
-        margin-bottom: 20px;
-      }
-      p {
-        color: #555555;
-        font-size: 16px;
-        line-height: 1.6;
-      }
-      .center-text {
-        text-align: center;
-      }
-      .btn {
-        display: inline-block;
-        background-color: #007bff;
-        color: #ffffff;
-        padding: 12px 24px;
-        text-decoration: none;
-        border-radius: 6px;
-        font-weight: 600;
-        margin: 20px 0;
-      }
-      .btn-container {
-        text-align: center;
-      }
-      .info-box {
-        background: #f8fafc;
-        border: 2px solid #e2e8f0;
-        color: #334155;
-        font-size: 16px;
-        text-align: left;
-        padding: 20px;
-        margin: 30px 0;
-        border-radius: 8px;
-      }
-      .info-box ul {
-        margin: 10px 0 0 0;
-        padding-left: 20px;
-      }
-      .info-box li {
-        margin-bottom: 8px;
-      }
-      .alert-box {
-        background: #fff8e6;
-        border: 2px solid #ffc107;
-        color: #856404;
-        font-size: 16px;
-        text-align: left;
-        padding: 20px;
-        margin: 30px 0;
-        border-radius: 8px;
-      }
-      .footer {
-        text-align: center;
-        margin-top: 40px;
-        font-size: 14px;
-        color: #999999;
-        border-top: 1px solid #eeeeee;
-        padding-top: 20px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="logo">
-        <img src="https://www.refreeg.com/logo.svg" alt="Refreeg Logo" />
-        <span class="brand-name">Refreeg</span>
-      </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>New KYC Submission - Admin Notification</title>
+</head>
+<body style="margin:0;padding:0;width:100%;background-color:#f2f1ed;">
+<div style="display:none;font-size:1px;color:#f2f1ed;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">A Didit KYC verification needs admin attention.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2f1ed;">
+<tr><td align="center" style="padding:32px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background-color:#ffffff;border:1px solid #e0e0dc;border-radius:12px;overflow:hidden;">
+<tr><td style="padding:26px 32px 0 32px;">
+<a href="https://www.refreeg.com" target="_blank" style="text-decoration:none;"><img src="https://www.refreeg.com/logo.svg" width="130" height="40" alt="RefreeG" style="display:block;width:130px;height:40px;border:0;outline:none;"></a>
+</td></tr>
+<tr><td style="padding:24px 32px 26px 32px;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">
+<div style="font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#0a3cb5;margin:0 0 10px 0;">Didit KYC</div>
+<h1 style="font-family:'Fraunces',Georgia,'Times New Roman',serif;font-size:25px;line-height:1.3;font-weight:700;color:#0e1b14;margin:0 0 14px 0;">{{#if isRejected}}KYC verification declined{{else}}New KYC submission needs review{{/if}}</h1>
+<p style="font-size:15px;line-height:1.65;color:#414d46;margin:0 0 14px 0;">Hi {{adminName}}, {{#if isRejected}}a KYC verification was declined by Didit. You can inspect it in the Didit admin console and decide whether a manual approval is warranted.{{else}}a new KYC verification has been submitted via Didit and requires manual review.{{/if}}</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f7f6f2;border:1px solid #e0e0dc;border-radius:12px;margin:6px 0 18px 0;"><tr><td style="padding:6px 20px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:10px 0;"><div style="font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6f7a72;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;margin:0 0 2px 0;">User name</div><div style="font-size:14px;line-height:1.55;color:#0e1b14;font-weight:600;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">{{userName}}</div></td></tr><tr><td style="padding:10px 0;border-top:1px solid #e0e0dc;"><div style="font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6f7a72;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;margin:0 0 2px 0;">Email</div><div style="font-size:14px;line-height:1.55;color:#0e1b14;font-weight:600;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">{{userEmail}}</div></td></tr><tr><td style="padding:10px 0;border-top:1px solid #e0e0dc;"><div style="font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6f7a72;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;margin:0 0 2px 0;">Status</div><div style="font-size:14px;line-height:1.55;color:#0e1b14;font-weight:600;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">{{#if isRejected}}Rejected / Declined{{else}}Pending review{{/if}}</div></td></tr></table></td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0 4px 0;"><tr><td style="border-left:4px solid #b07d18;background-color:#faf3df;border-radius:0 8px 8px 0;padding:13px 16px;font-size:13.5px;line-height:1.6;color:#414d46;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">{{#if isRejected}}{{#if rejectionReason}}<strong>Reason:</strong> {{rejectionReason}}{{else}}Please review this verification in the Didit admin console.{{/if}}{{else}}Please review this submission within 24 to 48 hours to keep onboarding smooth for the user.{{/if}}</td></tr></table>
 
-      <h1>
-        {{#if isRejected}}Action Notice: Didit KYC Verification
-        Declined{{else}}Action Required: New KYC Submission{{/if}}
-      </h1>
-      <p>Dear {{adminName}},</p>
-      <p>
-        {{#if isRejected}}A Know Your Customer (KYC) verification was
-        declined/rejected by Didit. You can inspect the verification in the
-        Didit admin console to verify details or determine if a manual approval
-        is warranted.{{else}}A new Know Your Customer (KYC) verification has
-        been submitted via Didit and requires a manual review.{{/if}}
-      </p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0 6px 0;"><tr><td bgcolor="#0e1b14" style="background-color:#0e1b14;border-radius:8px;"><a href="{{kycReviewUrl}}" style="display:inline-block;padding:13px 26px;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;font-size:15px;font-weight:700;color:#faf9f6;text-decoration:none;border-radius:8px;">Review in Didit</a></td></tr></table>
 
-      <div class="alert-box">
-        <strong
-          >{{#if isRejected}}⚠️ Verification Declined{{else}}⚠️ Review
-          Required{{/if}}</strong
-        >
-        <p style="margin-top: 10px; margin-bottom: 0">
-          {{#if isRejected}}{{#if rejectionReason}}<strong>Reason:</strong>
-          {{rejectionReason}}{{else}}Please review this verification in the
-          Didit admin console.{{/if}}{{else}}Please review this submission
-          within 24-48 hours to ensure a smooth onboarding process for the
-          user.{{/if}}
-        </p>
-      </div>
-
-      <div class="info-box">
-        <strong>Submission Details:</strong>
-        <ul>
-          <li><strong>User Name:</strong> {{userName}}</li>
-          <li><strong>Email:</strong> {{userEmail}}</li>
-          <li>
-            <strong>Status:</strong> {{#if isRejected}}Rejected /
-            Declined{{else}}Pending Review{{/if}}
-          </li>
-        </ul>
-      </div>
-
-      <div class="btn-container">
-        <a href="{{kycReviewUrl}}" class="btn">Review in Didit</a>
-      </div>
-
-      <p class="center-text">
-        This is an automated administrative notification.
-      </p>
-
-      <div class="footer">
-        &copy; {{currentYear}} {{organizationName}}. All rights reserved.
-      </div>
-    </div>
-  </body>
+</td></tr>
+<tr><td style="padding:16px 32px 20px 32px;border-top:1px solid #e0e0dc;background-color:#f7f6f2;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">
+<div style="font-size:12px;line-height:1.6;color:#6f7a72;margin:0 0 6px 0;">Automated administrative notification.</div>
+<div style="font-size:12px;line-height:1.6;color:#6f7a72;margin:0;">&copy; {{currentYear}} RefreeG</div>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
 </html>

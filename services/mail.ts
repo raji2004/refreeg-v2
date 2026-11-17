@@ -22,6 +22,38 @@ const transporter = nodemailer.createTransport({
 
 const TEMPLATE_DIR = path.join(process.cwd(), "services", "templates");
 
+// Sender identity policy: one table decides who sends what.
+// - noreply@: one-way system alerts (codes, reset links, security alerts).
+//   A reply thread would go nowhere, so the From sets that expectation; the
+//   footer still points to support@ for anyone who needs help.
+// - support@: product and account mail a customer might answer (money,
+//   verification outcomes, campaign reviews, reminders).
+// - hello@: general communication (welcome, organization invitations).
+// refreegcorrespondence@gmail.com is for grants and service admin only and
+// must never email customers.
+const SENDERS = {
+  noreply: process.env.EMAIL_FROM_NOREPLY || "noreply@refreeg.com",
+  support: process.env.EMAIL_FROM_SUPPORT || "support@refreeg.com",
+  hello: process.env.EMAIL_FROM_HELLO || "hello@refreeg.com",
+} as const;
+
+type SenderKey = keyof typeof SENDERS;
+
+// Template name -> sender; anything not listed sends as support@.
+const SENDER_BY_TEMPLATE: Partial<Record<string, SenderKey>> = {
+  "otp-verification": "noreply",
+  "password-reset": "noreply",
+  "email-change-confirm": "noreply",
+  "login-notification": "noreply",
+  "bank-account-added": "noreply",
+  "welcome-email": "hello",
+  "organization-invitation": "hello",
+};
+
+function senderFor(templateName: string): string {
+  return SENDERS[SENDER_BY_TEMPLATE[templateName] ?? "support"];
+}
+
 function loadTemplate(templateName: string): TemplateDelegate {
   const templatePath = path.join(TEMPLATE_DIR, `${templateName}.html`);
   const templateSource = fs.readFileSync(templatePath, "utf-8");
@@ -43,18 +75,19 @@ export async function sendMail({
   subject,
   templateName,
   context,
-  from = process.env.EMAIL_FROM || "noreply@refreeg.com",
+  from,
   cc,
   bcc,
 }: SendMailOptions) {
   try {
     const template = loadTemplate(templateName);
     const html = template(context);
+    const resolvedFrom = from ?? senderFor(templateName);
 
     // Enforce a strict 10-second timeout to prevent hanging the main thread
     const info = (await Promise.race([
       transporter.sendMail({
-        from,
+        from: resolvedFrom,
         to,
         cc,
         bcc,
@@ -163,7 +196,7 @@ export async function sendCauseUnderReviewEmail(context: {
     context: {
       ...context,
       userName: profile?.full_name || "User",
-      organizationName: "Refreeg",
+      organizationName: "RefreeG",
       reviewTimeframe: context.reviewTimeframe || "3-5 business days",
       dashboardUrl: context.dashboardUrl,
       currentYear,
@@ -187,8 +220,9 @@ export async function sendPetitionUnderReviewEmail(context: {
     context: {
       ...context,
       userName: profile?.full_name || "User",
-      organizationName: "Refreeg",
+      organizationName: "RefreeG",
       reviewTimeframe: context.reviewTimeframe || "3-5 business days",
+      currentYear: new Date().getFullYear(),
     },
   });
 }
@@ -210,8 +244,9 @@ export async function sendPetitionApprovedEmailForUser(
     context: {
       ...context,
       userName: profile.full_name || "User",
-      organizationName: "Refreeg",
+      organizationName: "RefreeG",
       petitionLink,
+      currentYear: new Date().getFullYear(),
     },
   });
 }
@@ -233,8 +268,9 @@ export async function sendPetitionRejectedEmailForUser(
     context: {
       ...context,
       userName: profile.full_name || "User",
-      organizationName: "Refreeg",
+      organizationName: "RefreeG",
       petitionResubmitLink,
+      currentYear: new Date().getFullYear(),
     },
   });
 }
@@ -283,11 +319,11 @@ export async function sendKycSubmittedEmail(
   const currentYear = new Date().getFullYear();
   return sendMail({
     to: userEmail,
-    subject: "KYC Verification Submitted - Refreeg",
+    subject: "KYC Verification Submitted - RefreeG",
     templateName: "kyc-submitted",
     context: {
       userName: formatBrandUserName(userName),
-      organizationName: "Refreeg",
+      organizationName: "RefreeG",
       reviewTimeframe: "3-5 business days",
       dashboardUrl: "https://www.refreeg.com/dashboard/settings?tab=kyc",
       currentYear,
@@ -302,11 +338,11 @@ export async function sendKycApprovedEmail(
   const currentYear = new Date().getFullYear();
   return sendMail({
     to: userEmail,
-    subject: "KYC Verification Approved - Refreeg",
+    subject: "KYC Verification Approved - RefreeG",
     templateName: "kyc-approved",
     context: {
       userName: formatBrandUserName(userName),
-      organizationName: "Refreeg",
+      organizationName: "RefreeG",
       createCauseUrl: "https://www.refreeg.com/dashboard/settings?tab=kyc",
       currentYear,
     },
@@ -321,11 +357,11 @@ export async function sendKycRejectedEmail(
   const currentYear = new Date().getFullYear();
   return sendMail({
     to: userEmail,
-    subject: "KYC Verification Update - Refreeg",
+    subject: "KYC Verification Update - RefreeG",
     templateName: "kyc-rejected",
     context: {
       userName: formatBrandUserName(userName),
-      organizationName: "Refreeg",
+      organizationName: "RefreeG",
       rejectionReason,
       kycResubmitLink: "https://www.refreeg.com/dashboard/settings?tab=kyc",
       currentYear,
@@ -341,11 +377,11 @@ export async function sendKycResubmittedEmail(
   const currentYear = new Date().getFullYear();
   return sendMail({
     to: userEmail,
-    subject: "Action Required: KYC Verification Update - Refreeg",
+    subject: "Action Required: KYC Verification Update - RefreeG",
     templateName: "kyc-resubmitted",
     context: {
       userName: formatBrandUserName(userName),
-      organizationName: "Refreeg",
+      organizationName: "RefreeG",
       resubmitReason,
       kycResubmitLink: "https://www.refreeg.com/dashboard/settings?tab=kyc",
       currentYear,
@@ -371,8 +407,9 @@ export async function sendCauseRejectedEmailForUser(
     context: {
       ...context,
       userName: formatBrandUserName(profile.full_name),
-      organizationName: "Refreeg",
+      organizationName: "RefreeG",
       causeResubmitLink: context.dashboardUrl,
+      currentYear: new Date().getFullYear(),
     },
   });
 }
@@ -395,7 +432,7 @@ export async function sendCauseSubmissionAdminNotification(
   const emailPromises = adminEmails.map((email: string) =>
     sendMail({
       to: email,
-      subject: "New Cause Submission Requires Review - Refreeg",
+      subject: "New Cause Submission Requires Review - RefreeG",
       templateName: "cause-submission-admin-notification",
       context: {
         adminName: "Admin",
@@ -403,7 +440,7 @@ export async function sendCauseSubmissionAdminNotification(
         userEmail,
         causeTitle,
         reviewUrl,
-        organizationName: "Refreeg",
+        organizationName: "RefreeG",
         currentYear,
       },
     }),
@@ -446,7 +483,7 @@ export async function sendPetitionSubmissionAdminNotification(
   const emailPromises = adminEmails.map((email: string) =>
     sendMail({
       to: email,
-      subject: "New Petition Submission Requires Review - Refreeg",
+      subject: "New Petition Submission Requires Review - RefreeG",
       templateName: "petition-submission-admin-notification",
       context: {
         adminName: "Admin",
@@ -454,7 +491,7 @@ export async function sendPetitionSubmissionAdminNotification(
         userEmail,
         petitionTitle,
         reviewUrl,
-        organizationName: "Refreeg",
+        organizationName: "RefreeG",
         currentYear,
       },
     }),
@@ -790,7 +827,7 @@ export async function sendWelcomeEmailToUser(
 ) {
   return sendMail({
     to: userEmail,
-    subject: "Welcome to Refreeg 🌍 Let's get you started",
+    subject: "Welcome to RefreeG 🌍 Let's get you started",
     templateName: "welcome-email",
     context: {
       userName,
@@ -887,8 +924,8 @@ export async function sendKycSubmissionAdminNotification(
 
   const isRejected = options?.isRejected ?? false;
   const subject = isRejected
-    ? "KYC Verification Declined: Action Required - Refreeg"
-    : "New KYC Submission Requires Review - Refreeg";
+    ? "KYC Verification Declined: Action Required - RefreeG"
+    : "New KYC Submission Requires Review - RefreeG";
 
   const emailPromises = adminEmails.map((email: string) =>
     sendMail({
@@ -900,7 +937,7 @@ export async function sendKycSubmissionAdminNotification(
         userName,
         userEmail,
         kycReviewUrl,
-        organizationName: "Refreeg",
+        organizationName: "RefreeG",
         currentYear: new Date().getFullYear(),
         isRejected,
         rejectionReason: options?.rejectionReason,
@@ -936,7 +973,7 @@ export async function sendKycReminderEmail(
   return sendMail({
     to: userEmail,
     subject:
-      "🔐 Your Refreeg account isn't verified yet. Here's why it matters",
+      "🔐 Your RefreeG account isn't verified yet. Here's why it matters",
     templateName: "kyc-reminder",
     context: {
       userName,
