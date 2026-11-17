@@ -106,7 +106,7 @@ export function SectionErrorRef() {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-6 bg-[#0B1120] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+            <div className="p-6 bg-night rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-2 h-2 rounded-full bg-red-400" />
                 <span className="text-xs font-mono text-slate-400 uppercase tracking-widest">
@@ -230,7 +230,7 @@ export function SectionResources() {
               </div>
 
               <div className="grid grid-cols-1 gap-6">
-                <div className="p-6 bg-[#0B1120] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                <div className="p-6 bg-night rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
                   <div className="flex items-center gap-2 mb-4 px-2">
                     <div className="w-3 h-3 rounded-full bg-red-500/20 flex items-center justify-center">
                       <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
@@ -252,7 +252,7 @@ export function SectionResources() {
                   </pre>
                 </div>
 
-                <div className="p-6 bg-[#0B1120] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                <div className="p-6 bg-night rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
                   <div className="flex items-center gap-2 mb-4 px-2">
                     <div className="w-3 h-3 rounded-full bg-slate-700"></div>
                     <span className="ml-2 text-xs font-medium text-slate-500 font-mono">
@@ -285,7 +285,7 @@ export function SectionResources() {
                   </pre>
                 </div>
 
-                <div className="p-6 bg-[#0B1120] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                <div className="p-6 bg-night rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
                   <div className="flex items-center gap-2 mb-4 px-2">
                     <div className="w-3 h-3 rounded-full bg-slate-700"></div>
                     <span className="ml-2 text-xs font-medium text-slate-500 font-mono">
@@ -369,7 +369,7 @@ export function SectionResources() {
                   </pre>
                 </div>
 
-                <div className="p-6 bg-[#0B1120] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                <div className="p-6 bg-night rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
                   <div className="flex items-center gap-2 mb-4 px-2">
                     <div className="w-3 h-3 rounded-full bg-slate-700"></div>
                     <span className="ml-2 text-xs font-medium text-slate-500 font-mono">
@@ -441,7 +441,7 @@ export function SectionResources() {
                   </pre>
                 </div>
 
-                <div className="p-6 bg-[#0B1120] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                <div className="p-6 bg-night rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
                   <div className="flex items-center gap-2 mb-4 px-2">
                     <div className="w-3 h-3 rounded-full bg-slate-700"></div>
                     <span className="ml-2 text-xs font-medium text-slate-500 font-mono">
@@ -519,7 +519,7 @@ export function SectionResources() {
               </div>
 
               <div className="grid grid-cols-1 gap-6">
-                <div className="p-6 bg-[#0B1120] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                <div className="p-6 bg-night rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
                   <div className="flex items-center gap-2 mb-4 px-2">
                     <div className="w-3 h-3 rounded-full bg-red-500/20 flex items-center justify-center">
                       <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
@@ -541,7 +541,7 @@ export function SectionResources() {
                   </pre>
                 </div>
 
-                <div className="p-6 bg-[#0B1120] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                <div className="p-6 bg-night rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
                   <div className="flex items-center gap-2 mb-4 px-2">
                     <div className="w-3 h-3 rounded-full bg-slate-700"></div>
                     <span className="ml-2 text-xs font-medium text-slate-500 font-mono">
@@ -580,7 +580,7 @@ export function SectionResources() {
                   </pre>
                 </div>
 
-                <div className="p-6 bg-[#0B1120] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                <div className="p-6 bg-night rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
                   <div className="flex items-center gap-2 mb-4 px-2">
                     <div className="w-3 h-3 rounded-full bg-slate-700"></div>
                     <span className="ml-2 text-xs font-medium text-slate-500 font-mono">
@@ -661,7 +661,7 @@ export function SectionResources() {
                   </pre>
                 </div>
 
-                <div className="p-6 bg-[#0B1120] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                <div className="p-6 bg-night rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
                   <div className="flex items-center gap-2 mb-4 px-2">
                     <div className="w-3 h-3 rounded-full bg-slate-700"></div>
                     <span className="ml-2 text-xs font-medium text-slate-500 font-mono">
@@ -755,7 +755,7 @@ export function SectionResources() {
                   </pre>
                 </div>
 
-                <div className="p-6 bg-[#0B1120] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                <div className="p-6 bg-night rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
                   <div className="flex items-center gap-2 mb-4 px-2">
                     <div className="w-3 h-3 rounded-full bg-slate-700"></div>
                     <span className="ml-2 text-xs font-medium text-slate-500 font-mono">

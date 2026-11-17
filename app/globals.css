@@ -170,6 +170,34 @@ select:focus {
     /* #e0e0dc soft card/row borders */
     --verified-soft: 150 20% 91.8%;
     /* #e6eeea VERIFIED chip fill */
+
+    /* Frequently used legacy colors, RGB channels so opacity modifiers work. */
+    --navy-royal: 10 42 92;
+    /* #0a2a5c */
+    --blue-steel: 35 93 167;
+    /* #235da7 */
+    --near-black: 13 13 13;
+    /* #0d0d0d */
+    --navy-ink: 16 35 63;
+    /* #10233f */
+    --night: 11 17 32;
+    /* #0b1120 */
+    --cream-soft: 252 251 250;
+    /* #fcfbfa */
+    --forest-deep: 13 30 22;
+    /* #0d1e16 */
+    --lime-deep: 181 224 46;
+    /* #b5e02e */
+    --wine: 140 24 35;
+    /* #8c1823 */
+    --mist: 221 227 234;
+    /* #dde3ea */
+    --linen: 240 238 233;
+    /* #f0eee9 */
+    --mist-light: 216 224 232;
+    /* #d8e0e8 */
+    --steel: 83 100 122;
+    /* #53647a */
   }
 
   /* Dark theme commented out

@@ -97,18 +97,18 @@ export default function PublicProfile({
       label: "Total Raised",
       value: formatCurrency(totalRaisedAcrossCauses),
       sub: `across ${causesCount} ${causesCount === 1 ? "cause" : "causes"}`,
-      color: "text-[#003366]",
-      bg: "bg-[#003366]/5",
-      border: "border-[#003366]/10",
+      color: "text-palette-primary",
+      bg: "bg-palette-primary/5",
+      border: "border-palette-primary/10",
     },
     {
       icon: <HandCoins className="h-5 w-5" />,
       label: "Donated",
       value: formatCurrency(totalDonated),
       sub: `${donationsCount} ${donationsCount === 1 ? "contribution" : "contributions"}`,
-      color: "text-[#1A7499]",
-      bg: "bg-[#1A7499]/5",
-      border: "border-[#1A7499]/10",
+      color: "text-secondaryShades-800",
+      bg: "bg-secondaryShades-800/5",
+      border: "border-secondaryShades-800/10",
     },
     {
       icon: <FileText className="h-5 w-5" />,
@@ -133,7 +133,7 @@ export default function PublicProfile({
   return (
     <div className="w-full min-h-screen bg-gray-50">
       {/* Brand banner */}
-      <div className="w-full h-36 md:h-48 bg-gradient-to-r from-[#003366] via-[#004d99] to-[#1A7499] relative overflow-hidden">
+      <div className="w-full h-36 md:h-48 bg-gradient-to-r from-palette-primary via-[#004d99] to-secondaryShades-800 relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-10"
           style={{
@@ -186,7 +186,7 @@ export default function PublicProfile({
               </div>
               {isVerified && (
                 <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow">
-                  <CheckCircle className="h-6 w-6 text-[#003366] fill-blue-100" />
+                  <CheckCircle className="h-6 w-6 text-palette-primary fill-blue-100" />
                 </div>
               )}
             </div>
@@ -194,11 +194,11 @@ export default function PublicProfile({
             {}
             <div className="flex-1 min-w-0 pt-1 md:pt-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl md:text-3xl font-bold text-[#003366] tracking-tight">
+                <h1 className="text-2xl md:text-3xl font-bold text-palette-primary tracking-tight">
                   {displayName}
                 </h1>
                 {isVerified && (
-                  <CheckCircle className="h-5 w-5 text-[#003366] fill-blue-100 shrink-0" />
+                  <CheckCircle className="h-5 w-5 text-palette-primary fill-blue-100 shrink-0" />
                 )}
               </div>
 
@@ -207,7 +207,7 @@ export default function PublicProfile({
               )}
 
               {isVerified && (
-                <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-[#003366]/5 text-[#003366] text-xs font-semibold rounded-full border border-[#003366]/10">
+                <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-palette-primary/5 text-palette-primary text-xs font-semibold rounded-full border border-palette-primary/10">
                   <CheckCircle className="h-3 w-3" />
                   <span>Verified RefreeGerian</span>
                 </div>
@@ -229,7 +229,7 @@ export default function PublicProfile({
                 <Link href={`/causes?userId=${userId}&action=pledge`}>
                   <Button
                     size="sm"
-                    className="bg-[#003366] text-white text-xs font-semibold px-4"
+                    className="bg-palette-primary text-white text-xs font-semibold px-4"
                   >
                     <HandHeart className="h-4 w-4 mr-1" />
                     Pledge
@@ -380,11 +380,11 @@ export default function PublicProfile({
 
         {/* Impact tagline */}
         <div className="mt-4 flex items-center gap-2 px-1">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#003366]/20 to-transparent" />
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-palette-primary/20 to-transparent" />
           <span className="text-xs text-gray-400 font-medium tracking-wide uppercase">
             Socio-Economic Impact
           </span>
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#003366]/20 to-transparent" />
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-palette-primary/20 to-transparent" />
         </div>
 
         {/* Tabs */}
@@ -394,36 +394,36 @@ export default function PublicProfile({
               <TabsList className="bg-transparent p-0 gap-0 h-auto">
                 <TabsTrigger
                   value="causes"
-                  className="px-5 py-3.5 font-semibold text-sm flex items-center gap-2 data-[state=active]:text-[#003366] data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:shadow-none text-gray-400 hover:text-gray-600 rounded-none transition-colors"
+                  className="px-5 py-3.5 font-semibold text-sm flex items-center gap-2 data-[state=active]:text-palette-primary data-[state=active]:border-b-2 data-[state=active]:border-palette-primary data-[state=active]:shadow-none text-gray-400 hover:text-gray-600 rounded-none transition-colors"
                 >
                   <TrendingUp className="h-4 w-4" />
                   Causes
                   {causesCount > 0 && (
-                    <span className="text-xs bg-[#003366]/10 text-[#003366] px-1.5 py-0.5 rounded-full font-bold">
+                    <span className="text-xs bg-palette-primary/10 text-palette-primary px-1.5 py-0.5 rounded-full font-bold">
                       {causesCount}
                     </span>
                   )}
                 </TabsTrigger>
                 <TabsTrigger
                   value="donations"
-                  className="px-5 py-3.5 font-semibold text-sm flex items-center gap-2 data-[state=active]:text-[#003366] data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:shadow-none text-gray-400 hover:text-gray-600 rounded-none transition-colors"
+                  className="px-5 py-3.5 font-semibold text-sm flex items-center gap-2 data-[state=active]:text-palette-primary data-[state=active]:border-b-2 data-[state=active]:border-palette-primary data-[state=active]:shadow-none text-gray-400 hover:text-gray-600 rounded-none transition-colors"
                 >
                   <HandCoins className="h-4 w-4" />
                   Donations
                   {donationsCount > 0 && (
-                    <span className="text-xs bg-[#003366]/10 text-[#003366] px-1.5 py-0.5 rounded-full font-bold">
+                    <span className="text-xs bg-palette-primary/10 text-palette-primary px-1.5 py-0.5 rounded-full font-bold">
                       {donationsCount}
                     </span>
                   )}
                 </TabsTrigger>
                 <TabsTrigger
                   value="petitions"
-                  className="px-5 py-3.5 font-semibold text-sm flex items-center gap-2 data-[state=active]:text-[#003366] data-[state=active]:border-b-2 data-[state=active]:border-[#003366] data-[state=active]:shadow-none text-gray-400 hover:text-gray-600 rounded-none transition-colors"
+                  className="px-5 py-3.5 font-semibold text-sm flex items-center gap-2 data-[state=active]:text-palette-primary data-[state=active]:border-b-2 data-[state=active]:border-palette-primary data-[state=active]:shadow-none text-gray-400 hover:text-gray-600 rounded-none transition-colors"
                 >
                   <FileText className="h-4 w-4" />
                   Petitions
                   {petitionsCount > 0 && (
-                    <span className="text-xs bg-[#003366]/10 text-[#003366] px-1.5 py-0.5 rounded-full font-bold">
+                    <span className="text-xs bg-palette-primary/10 text-palette-primary px-1.5 py-0.5 rounded-full font-bold">
                       {petitionsCount}
                     </span>
                   )}

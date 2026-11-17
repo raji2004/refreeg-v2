@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendPledgeReminderEmail } from "@/services/mail";
-import { assertInternalApiKey } from "@/lib/internal-api";
+import { assertInternalApiKey, isValidEmail } from "@/lib/internal-api";
 
 export async function POST(request: Request) {
   const denied = assertInternalApiKey(request);
@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   try {
     const { pledge } = await request.json();
 
-    if (!pledge || !pledge.email) {
+    if (!pledge || !isValidEmail(pledge.email)) {
       return NextResponse.json(
         { error: "Invalid pledge data" },
         { status: 400 },
@@ -19,6 +19,9 @@ export async function POST(request: Request) {
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com";
     const causeId = pledge.cause_id || pledge.causes?.id;
+    if (typeof causeId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(causeId)) {
+      return NextResponse.json({ error: "Invalid cause" }, { status: 400 });
+    }
     const causeTitle = pledge.causes?.title || "this campaign";
 
     await sendPledgeReminderEmail({

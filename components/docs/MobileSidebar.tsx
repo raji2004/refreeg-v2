@@ -17,6 +17,7 @@ import {
   Play,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 export default function MobileSidebar({
   open,
   onClose,
@@ -53,9 +54,14 @@ export default function MobileSidebar({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <button className="absolute top-4 right-4 p-1" onClick={onClose}>
+        <Button
+          variant="bare"
+          size="bare"
+          className="absolute top-4 right-4 p-1"
+          onClick={onClose}
+        >
           <X className="w-5 h-5" />
-        </button>
+        </Button>
 
         <ul className="space-y-3 mt-10">
           {items.map((item) => (

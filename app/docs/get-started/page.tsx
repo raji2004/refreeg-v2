@@ -118,7 +118,7 @@ export default function GetStartedPage() {
 
               <a
                 href="#"
-                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-[#0A2A5C] group"
+                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-navy-royal group"
               >
                 <span className="transition-all duration-300 group-hover:translate-x-1">
                   Start your campaign

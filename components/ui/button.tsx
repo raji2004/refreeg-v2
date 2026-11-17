@@ -28,12 +28,16 @@ const buttonVariants = cva(
         surface:
           "bg-surface border border-hairline text-ink hover:bg-bone shadow-none",
         subtle: "bg-bone text-ink hover:bg-muted border border-hairline/60",
+        // No colors or hover of its own: the caller supplies them in className.
+        bare: "",
       },
       size: {
         default: "h-10 px-4 py-2",
         sm: "h-9 rounded-md px-3",
         lg: "h-11 rounded-md px-8",
         icon: "h-10 w-10",
+        // No height or padding of its own: the caller supplies them in className.
+        bare: "h-auto px-0 py-0",
       },
     },
     defaultVariants: {

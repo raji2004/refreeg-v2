@@ -30,7 +30,6 @@ const PUBLIC_API_PREFIXES = [
   "/api/states",
   "/api/mail",
   "/api/s3",
-  "/api/dev",
   "/api/leaderboard",
 ];
 

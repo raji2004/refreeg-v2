@@ -162,7 +162,7 @@ export function Footer() {
         {/* Brand and Footer Links */}
         <div className="grid items-center gap-14 py-4 lg:grid-cols-[0.25fr_0.75fr]">
           <div className="footer-brand">
-            <p className="mt-4 max-w-lg text-[#0A3CB5] text-sm leading-snug">
+            <p className="mt-4 max-w-lg text-blue-accent text-sm leading-snug">
               Global giving, on-chain. Built so every dollar is traceable from
               your wallet to the moment it lands.
             </p>
@@ -182,7 +182,7 @@ export function Footer() {
                         href={link.href}
                         target={link.external ? "_blank" : undefined}
                         rel={link.external ? "noopener noreferrer" : undefined}
-                        className="text-sm transition-colors hover:text-[#0A3CB5]"
+                        className="text-sm transition-colors hover:text-blue-accent"
                       >
                         {link.label}
                       </Link>
@@ -232,7 +232,7 @@ export function Footer() {
                 <Link
                   key={link.label}
                   href={link.route}
-                  className="text-sm transition-colors hover:text-[#0A3CB5]"
+                  className="text-sm transition-colors hover:text-blue-accent"
                 >
                   {link.label}
                 </Link>

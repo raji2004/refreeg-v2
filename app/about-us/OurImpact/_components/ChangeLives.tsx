@@ -2,6 +2,7 @@ import React from "react";
 import { FaArrowRight } from "react-icons/fa6";
 import { FiArrowUpRight } from "react-icons/fi";
 
+import { Button } from "@/components/ui/button";
 export default function ChangeLives() {
   return (
     <div className="w-full md:w-5/6 lg:w-1/2 px-10 mt-4 md:mt-8 lg:mt-12 lg:mb-16">
@@ -15,12 +16,20 @@ export default function ChangeLives() {
       </div>
       <div className="mt-8 text-base">✨ Want to be part of the movement?</div>
       <div className="flex space-x-2 mt-4">
-        <button className="flex items-center gap-x-1 text-white p-3 font-medium bg-[#0070E0] rounded-sm">
+        <Button
+          variant="bare"
+          size="bare"
+          className="flex items-center gap-x-1 text-white p-3 font-medium bg-primaryShades-700 rounded-sm"
+        >
           Start a cause <FaArrowRight />
-        </button>
-        <button className="flex items-center gap-x-1 p-3 font-medium rounded-sm">
+        </Button>
+        <Button
+          variant="bare"
+          size="bare"
+          className="flex items-center gap-x-1 p-3 font-medium rounded-sm"
+        >
           Explore causes <FiArrowUpRight />
-        </button>
+        </Button>
       </div>
     </div>
   );

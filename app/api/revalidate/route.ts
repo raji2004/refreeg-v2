@@ -1,14 +1,21 @@
 import { revalidatePath, revalidateTag } from "next/cache";
+import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const secret = request.nextUrl.searchParams.get("secret");
+    // Secret travels in a header (query strings end up in logs).
+    const secret = request.headers.get("x-revalidation-secret") || "";
 
     // Protect this route - ensure REVALIDATION_SECRET is set in your .env
     const expectedSecret = process.env.REVALIDATION_SECRET;
-    if (!expectedSecret || secret !== expectedSecret) {
-      return NextResponse.json({ message: "Invalid secret token" }, { status: 401 });
+    const a = Buffer.from(secret);
+    const b = Buffer.from(expectedSecret || "");
+    if (!expectedSecret || a.length !== b.length || !timingSafeEqual(a, b)) {
+      return NextResponse.json(
+        { message: "Invalid secret token" },
+        { status: 401 },
+      );
     }
 
     const body = await request.json();
@@ -28,18 +35,17 @@ export async function POST(request: NextRequest) {
     // If neither path nor tag is provided, we can default to clearing the root layout cache
     // which effectively clears most of the site's cache
     revalidatePath("/", "layout");
-    
-    return NextResponse.json({ 
-      revalidated: true, 
-      message: "Cleared all route cache", 
-      now: Date.now() 
-    });
 
+    return NextResponse.json({
+      revalidated: true,
+      message: "Cleared all route cache",
+      now: Date.now(),
+    });
   } catch (error) {
     console.error("Revalidation error:", error);
     return NextResponse.json(
-      { message: "Error revalidating" }, 
-      { status: 500 }
+      { message: "Error revalidating" },
+      { status: 500 },
     );
   }
 }

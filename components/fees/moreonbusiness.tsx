@@ -44,7 +44,7 @@ export default function MoreOnBusiness() {
         Every transaction, every payout: visible, verifiable, and fair.
       </motion.div>
       <motion.div variants={itemVariants}>
-        <Button className="bg-[#FAFAFA] border text-black px-10 py-4 flex items-center gap-2 rounded-full">
+        <Button className="bg-palette-baseWhite border text-black px-10 py-4 flex items-center gap-2 rounded-full">
           Get started today
           <Image
             src="/images/arrow-right.png"

@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Copy, Terminal, ChevronRight } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 export default function SectionQuickstart() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
@@ -79,9 +80,13 @@ export default function SectionQuickstart() {
                       bash / curl
                     </span>
                   </div>
-                  <button className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-all hover:bg-white/10">
+                  <Button
+                    variant="bare"
+                    size="bare"
+                    className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-all hover:bg-white/10"
+                  >
                     <Copy className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
                 <pre className="text-blue-200 font-mono text-[14px] leading-relaxed overflow-x-auto py-2 scrollbar-hide">
                   <code className="block w-full">
@@ -106,7 +111,7 @@ export default function SectionQuickstart() {
                 <ChevronRight className="w-4 h-4 text-white" />
               </div>
               <div className="space-y-1">
-                <h4 className="font-bold text-[#0A2A5C] text-[15px]">
+                <h4 className="font-bold text-navy-royal text-[15px]">
                   Check the Response
                 </h4>
                 <p className="text-slate-500 text-[13px] leading-relaxed">

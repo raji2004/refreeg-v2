@@ -41,7 +41,7 @@ export default function ApiEndpointDoc({
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="space-y-4">
         {title && (
-          <h2 className="text-2xl font-extrabold text-[#0A2A5C] tracking-tight mb-2">
+          <h2 className="text-2xl font-extrabold text-navy-royal tracking-tight mb-2">
             {title}
           </h2>
         )}

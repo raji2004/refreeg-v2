@@ -150,7 +150,7 @@ export function LocationSelector({
             role="combobox"
             aria-expanded={isOpen}
             className={cn(
-              "w-full justify-between text-base font-normal text-gray-700  bg-white hover:bg-[#003366] border-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0",
+              "w-full justify-between text-base font-normal text-gray-700  bg-white hover:bg-palette-primary border-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0",
               !selected && "text-gray-500",
               (isLoading || isError) &&
                 "cursor-not-allowed opacity-50 z-[1019]",

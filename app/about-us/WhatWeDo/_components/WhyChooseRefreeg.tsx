@@ -21,7 +21,7 @@ export const FeatureCard: FC<FeatureCardProps> = ({
         alt="icon"
         width={70}
         height={70}
-        className="border p-2 rounded-full aspect-square object-cover bg-[#FAFAFA] "
+        className="border p-2 rounded-full aspect-square object-cover bg-palette-baseWhite "
       />
       <div className="space-y-1 md:space-y-0">
         <h2 className="text-sm md:text-base lg:text-xl font-medium">{title}</h2>

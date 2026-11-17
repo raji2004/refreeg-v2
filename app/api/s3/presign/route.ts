@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
     const entityId = body.entityId;
     const fileSize = Number(body.fileSize ?? 0);
 
-    // fileSize is client-reported; the signed URL pins the content type but
-    // S3 does not enforce this size, so it only stops honest oversized files.
+    // fileSize is validated against the policy and signed into the URL, so S3
+    // rejects an upload whose actual Content-Length differs.
     const invalid = validateUpload({
       entityType,
       mediaType,
@@ -62,7 +62,12 @@ export async function POST(request: NextRequest) {
       filename: safeName,
     });
 
-    const uploadUrl = await generatePresignedPutUrl(key, contentType, 900);
+    const uploadUrl = await generatePresignedPutUrl(
+      key,
+      contentType,
+      900,
+      fileSize,
+    );
 
     return NextResponse.json({
       uploadUrl,

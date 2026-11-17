@@ -1,35 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { X } from "lucide-react";
 import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { createPledge } from "@/actions/pledge-actions";
-import { usePayment } from "@/hooks/use-payment";
+import { usePledgeForm } from "@/hooks/use-pledge-form";
 import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/pledge-constants";
-
-function formatLocalYYYYMMDD(date: Date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function getMinPledgeDate() {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  return formatLocalYYYYMMDD(date);
-}
-
-function getDefaultPledgeDate() {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() + 7);
-  return formatLocalYYYYMMDD(date);
-}
-
-const pledgePresets = [5000, 10000, 25000, 50000];
+import {
+  getMaxPledgeDate,
+  getMinPledgeDate,
+  pledgePresets,
+} from "@/lib/schemas/pledge.schema";
 
 /**
  * A slim, modal-sized version of PledgeScreen's pledge form: just the
@@ -51,173 +32,31 @@ export function PledgeQuickForm({
   defaultName?: string;
   defaultEmail?: string;
 }) {
-  const { initializePledgeCheckout, isLoading: paymentLoading } = usePayment();
+  const {
+    form,
+    setFormFields,
+    amountInput,
+    errors,
+    submission,
+    paymentLoading,
+    busy,
+    handleAmountChange,
+    handleAmountBlur,
+    handleAmountFocus,
+    handlePresetClick,
+    handleSubmit,
+    handleRetryPaystack,
+  } = usePledgeForm({ causeId, causeTitle, defaultName, defaultEmail });
 
-  const [pledgeAmount, setPledgeAmount] = useState(25000);
-  const [pledgeAmountInput, setPledgeAmountInput] = useState("25,000");
-  const [pledgeDate, setPledgeDate] = useState(getDefaultPledgeDate);
-  const [pledgeName, setPledgeName] = useState(defaultName);
-  const [pledgeEmail, setPledgeEmail] = useState(defaultEmail);
-  const [pledgeNote, setPledgeNote] = useState("");
-  const [pledgeSubmitted, setPledgeSubmitted] = useState(false);
-  const [pledgeSubmitting, setPledgeSubmitting] = useState(false);
-  const [pledgeError, setPledgeError] = useState<string | null>(null);
-  const [pledgeId, setPledgeId] = useState<string | null>(null);
-  const [guestPledgeToken, setGuestPledgeToken] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{
-    amount?: string;
-    date?: string;
-    email?: string;
-    name?: string;
-  }>({});
-
-  const resetSubmissionState = () => {
-    setPledgeSubmitted(false);
-    setPledgeError(null);
-  };
-
-  const clearFieldError = (key: keyof typeof fieldErrors) => {
-    setFieldErrors((prev) => {
-      if (!prev[key]) return prev;
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-  };
-
-  const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = event.target.value;
-    const next = raw.replace(/,/g, "").replace(/\D/g, "");
-    const capped = next.slice(0, 12);
-    setPledgeAmountInput(capped);
-    setPledgeAmount(capped ? Number(capped) : 0);
-    resetSubmissionState();
-    clearFieldError("amount");
-  };
-
-  const handleAmountBlur = () => {
-    if (!pledgeAmountInput) return;
-    setPledgeAmountInput(Number(pledgeAmountInput).toLocaleString());
-  };
-
-  const handleAmountFocus = () => {
-    setPledgeAmountInput((prev) => prev.replace(/,/g, ""));
-  };
-
-  const handlePresetClick = (value: number) => {
-    setPledgeAmount(value);
-    setPledgeAmountInput(value.toLocaleString());
-    resetSubmissionState();
-    clearFieldError("amount");
-  };
-
-  const validatePledge = () => {
-    const trimmedName = pledgeName.trim();
-    const trimmedEmail = pledgeEmail.trim();
-    const amountValue = Number(pledgeAmount || 0);
-    const nextErrors: typeof fieldErrors = {};
-
-    if (amountValue <= 0) nextErrors.amount = "Enter a valid amount.";
-    if (!pledgeDate) {
-      nextErrors.date = "Select a reminder date.";
-    } else if (pledgeDate < getMinPledgeDate()) {
-      nextErrors.date = "Choose today, tomorrow, or a later date.";
-    }
-    if (!trimmedEmail) nextErrors.email = "Email is required.";
-    if (!trimmedName) nextErrors.name = "Name is required.";
-
-    if (Object.keys(nextErrors).length > 0) {
-      setFieldErrors(nextErrors);
-      return "Add a valid amount, reminder date, name, and email.";
-    }
-    return null;
-  };
-
-  const handleSubmit = async () => {
-    if (pledgeSubmitting || paymentLoading) return;
-
-    const validationError = validatePledge();
-    if (validationError) {
-      setPledgeError(validationError);
-      return;
-    }
-
-    setPledgeSubmitting(true);
-    setPledgeError(null);
-
-    try {
-      const { data, error } = await createPledge({
-        causeId,
-        amount: Number(pledgeAmount || 0),
-        reminderDate: pledgeDate,
-        name: pledgeName.trim(),
-        email: pledgeEmail.trim(),
-        note: pledgeNote.trim() || null,
-        causeTitle,
-      });
-
-      if (error || !data?.id) {
-        setPledgeError(error || "We could not save your pledge.");
-        setPledgeSubmitted(false);
-        return;
-      }
-
-      setPledgeId(data.id);
-      setGuestPledgeToken(data.token ?? null);
-
-      try {
-        await initializePledgeCheckout({
-          pledgeId: data.id,
-          guestToken: data.token,
-        });
-      } catch {
-        setPledgeError(
-          "Your pledge was saved, but Paystack did not open. Click “Continue to Paystack” below to add your card.",
-        );
-        setPledgeSubmitted(false);
-        return;
-      }
-
-      setPledgeSubmitted(true);
-    } catch (err) {
-      setPledgeError(
-        err instanceof Error ? err.message : "We could not save your pledge.",
-      );
-      setPledgeSubmitted(false);
-    } finally {
-      setPledgeSubmitting(false);
-    }
-  };
-
-  const handleRetryPaystack = async () => {
-    if (!pledgeId || paymentLoading) return;
-    setPledgeError(null);
-    try {
-      await initializePledgeCheckout({
-        pledgeId,
-        guestToken: guestPledgeToken,
-      });
-    } catch {
-      setPledgeError("Could not open Paystack. Please try again.");
-    }
-  };
-
-  const maxPledgeDate = (() => {
-    if (!daysActive) return undefined;
-    const end = new Date();
-    end.setHours(0, 0, 0, 0);
-    end.setDate(end.getDate() + daysActive);
-    return formatLocalYYYYMMDD(end);
-  })();
-  const chargeDay = pledgeDate
-    ? new Date(`${pledgeDate}T00:00:00`).toLocaleDateString("en-GB", {
+  const maxPledgeDate = getMaxPledgeDate(daysActive);
+  const chargeDay = form.date
+    ? new Date(`${form.date}T00:00:00`).toLocaleDateString("en-GB", {
         day: "numeric",
         month: "long",
       })
     : "your chosen date";
   // Signed-in donors already have both; only ask when something is missing.
   const askContact = !defaultName.trim() || !defaultEmail.trim();
-  const busy = pledgeSubmitting || paymentLoading;
 
   const label =
     "text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/55";
@@ -254,7 +93,7 @@ export function PledgeQuickForm({
             onClick={() => handlePresetClick(value)}
             className={cn(
               "h-12 rounded-xl border text-[15px] font-semibold transition-colors",
-              pledgeAmount === value
+              form.amount === value
                 ? "border-ink bg-ink text-ink-foreground"
                 : "border-hairline bg-surface text-ink hover:border-ink/30",
             )}
@@ -269,7 +108,7 @@ export function PledgeQuickForm({
           type="text"
           inputMode="numeric"
           maxLength={12}
-          value={pledgeAmountInput}
+          value={amountInput}
           onChange={handleAmountChange}
           onBlur={handleAmountBlur}
           onFocus={handleAmountFocus}
@@ -278,66 +117,51 @@ export function PledgeQuickForm({
           placeholder="Other amount"
         />
       </label>
-      {fieldError(fieldErrors.amount)}
+      {fieldError(errors.amount)}
 
       <p className={cn(label, "mt-5")}>Charge on</p>
       <input
         type="date"
-        value={pledgeDate}
+        value={form.date}
         min={getMinPledgeDate()}
         max={maxPledgeDate}
-        onChange={(e) => {
-          setPledgeDate(e.target.value);
-          resetSubmissionState();
-          clearFieldError("date");
-        }}
+        onChange={(e) => setFormFields("date", e.target.value)}
         aria-label="Date to charge your pledge"
         className={cn(field, "mt-3")}
       />
-      {fieldError(fieldErrors.date)}
+      {fieldError(errors.date)}
 
       {askContact && (
         <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           <div>
             <input
               type="text"
-              value={pledgeName}
-              onChange={(e) => {
-                setPledgeName(e.target.value);
-                resetSubmissionState();
-                clearFieldError("name");
-              }}
+              value={form.name}
+              onChange={(e) => setFormFields("name", e.target.value)}
               placeholder="Your name"
               aria-label="Your name"
               className={field}
             />
-            {fieldError(fieldErrors.name)}
+            {fieldError(errors.name)}
           </div>
           <div>
             <input
               type="email"
-              value={pledgeEmail}
-              onChange={(e) => {
-                setPledgeEmail(e.target.value);
-                resetSubmissionState();
-                clearFieldError("email");
-              }}
+              value={form.email}
+              onChange={(e) => setFormFields("email", e.target.value)}
               placeholder="Email for reminders"
               aria-label="Email for reminders"
               className={field}
             />
-            {fieldError(fieldErrors.email)}
+            {fieldError(errors.email)}
           </div>
         </div>
       )}
 
       <textarea
         rows={2}
-        value={pledgeNote}
-        onChange={(e) => {
-          setPledgeNote(e.target.value);
-          resetSubmissionState();
-        }}
+        value={form.note}
+        onChange={(e) => setFormFields("note", e.target.value)}
         placeholder="Add a note to the organiser (optional)"
         aria-label="Note to the organiser"
         className="mt-5 w-full resize-none rounded-xl border border-hairline bg-bone px-4 py-3 text-sm text-ink outline-none focus:border-ink/40"
@@ -353,23 +177,21 @@ export function PledgeQuickForm({
         <div className="flex justify-between gap-4">
           <span className="text-ink/70">Charged on {chargeDay}</span>
           <span className="font-semibold text-ink">
-            {pledgeAmount > 0
-              ? `₦${Number(pledgeAmount).toLocaleString()}`
-              : "₦0"}
+            {form.amount > 0 ? `₦${form.amount.toLocaleString()}` : "₦0"}
           </span>
         </div>
       </div>
 
-      {pledgeError && (
+      {submission.error && (
         <p
           className="mt-4 rounded-xl bg-rust/10 px-4 py-3 text-sm text-rust"
           role="alert"
         >
-          {pledgeError}
+          {submission.error}
         </p>
       )}
 
-      {pledgeSubmitted && (
+      {submission.submitted && (
         <p
           className="mt-4 rounded-xl bg-forest/10 px-4 py-3 text-sm text-forest"
           aria-live="polite"
@@ -378,7 +200,7 @@ export function PledgeQuickForm({
         </p>
       )}
 
-      {pledgeId && pledgeError?.includes("Paystack") && (
+      {submission.pledgeId && submission.error?.includes("Paystack") && (
         <Button
           variant="outline"
           onClick={handleRetryPaystack}
@@ -397,7 +219,7 @@ export function PledgeQuickForm({
       >
         {busy
           ? "Working…"
-          : `Pledge ${pledgeAmount > 0 ? `₦${Number(pledgeAmount).toLocaleString()}` : ""}`.trim()}
+          : `Pledge ${form.amount > 0 ? `₦${form.amount.toLocaleString()}` : ""}`.trim()}
       </Button>
       <p className="mt-3 text-center text-[13px] leading-5 text-ink/55">
         Paystack will show ₦{PLEDGE_VERIFICATION_AMOUNT_NGN.toLocaleString()}{" "}

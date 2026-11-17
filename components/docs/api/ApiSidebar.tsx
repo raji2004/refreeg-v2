@@ -204,7 +204,7 @@ export default function ApiSidebar({
                       onClick={() => onSelect(item.id)}
                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         isActive
-                          ? "bg-[#0A2A5C] text-white shadow-md shadow-blue-900/10"
+                          ? "bg-navy-royal text-white shadow-md shadow-blue-900/10"
                           : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                       }`}
                     >

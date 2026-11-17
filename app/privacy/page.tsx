@@ -156,7 +156,7 @@ export default function PrivacyPolicy() {
         initial={{ opacity: 0, y: 30 }}
         animate={headerInView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8 }}
-        className="bg-gradient-to-r from-[#003366] to-[#0055aa] text-white py-20"
+        className="bg-gradient-to-r from-palette-primary to-[#0055aa] text-white py-20"
       >
         <div className="container px-6">
           <div className="max-w-4xl mx-auto text-center">

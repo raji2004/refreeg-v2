@@ -23,8 +23,8 @@ export default function TopTabs({
                 onClick={() => onSelect(tab)}
                 className={`pt-2 pb-3 px-1 transition-colors ${
                   isActive
-                    ? "text-[#0A2A5C] font-semibold"
-                    : "text-gray-700 hover:text-[#0A2A5C]"
+                    ? "text-navy-royal font-semibold"
+                    : "text-gray-700 hover:text-navy-royal"
                 }`}
               >
                 {tab}
@@ -33,7 +33,7 @@ export default function TopTabs({
               {isActive && (
                 <motion.div
                   layoutId="topTabUnderline"
-                  className="h-[2px] bg-[#0A2A5C] absolute bottom-0 left-0 right-0"
+                  className="h-[2px] bg-navy-royal absolute bottom-0 left-0 right-0"
                 />
               )}
             </li>

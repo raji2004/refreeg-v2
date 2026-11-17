@@ -142,7 +142,7 @@ export function BreetCryptoDonationModal({
           variant={triggerClassName ? "outline" : "default"}
           className={
             triggerClassName ||
-            "w-full gap-x-2 rounded-xl bg-[#2563EB] py-6 text-base font-semibold text-white shadow-[0_12px_24px_rgba(37,99,235,0.2)] transition hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+            "w-full gap-x-2 rounded-xl bg-blue-600 py-6 text-base font-semibold text-white shadow-[0_12px_24px_rgba(37,99,235,0.2)] transition hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
           }
         >
           <svg
@@ -166,7 +166,7 @@ export function BreetCryptoDonationModal({
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin text-[#2563EB]" />
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
             <p className="text-sm text-slate-500 font-medium">
               Generating your secure payment address...
             </p>
@@ -238,7 +238,7 @@ export function BreetCryptoDonationModal({
             </div>
 
             <div className="w-full flex items-start gap-2.5 rounded-xl bg-blue-50/50 border border-blue-100 p-3.5 text-xs text-slate-600">
-              <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#2563EB]" />
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
               <div className="leading-normal space-y-1">
                 <p>
                   <strong>
