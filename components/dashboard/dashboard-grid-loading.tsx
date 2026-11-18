@@ -1,6 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function DashboardLoading() {
+/** Shared card-grid skeleton for dashboard list routes (causes, petitions). */
+export default function DashboardGridLoading() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

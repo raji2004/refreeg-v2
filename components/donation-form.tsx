@@ -356,7 +356,7 @@ export function DonationForm({
             />
           </div>
 
-          {/* Platform tip — always visible below email */}
+          {/* Platform tip: always visible below email */}
           <div className="space-y-1.5 sm:space-y-2">
             <Label htmlFor="tip">Platform tip (optional)</Label>
             <div className="flex items-stretch overflow-hidden rounded-xl border border-input">

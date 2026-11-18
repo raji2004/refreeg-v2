@@ -50,7 +50,7 @@ export default function KycRejectionDialog({ kycId }: KycRejectionDialogProps) {
       router.push("/dashboard/admin/users?kyc_alert=rejected");
     } catch (error) {
       console.error("Error in handleReject:", error);
-      alert("An error occurred. Please try again.");
+      alert("Couldn't reject the submission. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

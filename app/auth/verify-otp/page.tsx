@@ -97,7 +97,7 @@ function VerifyOtpContent() {
       }
     } catch (error) {
       setErrorMessage("An unexpected network error occurred.");
-      toast.error("An unexpected error occurred");
+      toast.error("Something went wrong. Please try again.");
       setIsVerifying(false);
     }
   };
@@ -128,7 +128,7 @@ function VerifyOtpContent() {
         setCooldown(60);
       }
     } catch (error) {
-      toast.error("An error occurred while resending the code");
+      toast.error("Couldn't resend the code. Try again in a moment");
     } finally {
       setIsResending(false);
     }

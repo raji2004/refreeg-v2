@@ -23,30 +23,13 @@ import {
 } from "lucide-react";
 import { getUserCausesWithStatus } from "@/actions/cause-actions";
 import { CauseDropdown } from "./cause-dropdown";
+import { formatNaira } from "@/components/giving/format";
+import { formatDate } from "@/lib/format-date";
 
 interface MyCausesListProps {
   status: string;
   userId: string;
 }
-
-const formatNaira = (value: number | string | null | undefined) =>
-  new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(Number(value) || 0);
-
-const formatDate = (value: string | Date | null | undefined) => {
-  if (!value) return "Not available";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Not available";
-
-  return new Intl.DateTimeFormat("en-NG", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-};
 
 const getStatusDetails = (status: string, isPaused: boolean) => {
   if (isPaused) {

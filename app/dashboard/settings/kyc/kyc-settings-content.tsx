@@ -88,7 +88,7 @@ export function KycSettingsContent({ profile, user }: KycSettingsContentProps) {
     return (
       <SettingsShell>
         <div className="text-sm text-muted-foreground">
-          An error occurred. Please refresh the page.
+          Couldn't load your profile. Refresh the page to try again.
         </div>
       </SettingsShell>
     );

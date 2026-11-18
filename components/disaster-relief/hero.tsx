@@ -37,10 +37,10 @@ export default function Hero() {
                 When Disaster Strikes, <br /> Hope Should Arrive Faster
               </div>
               <div className="text-sm md:text-base lg:text-lg text-gray-700">
-                RefreeG empowers communities, NGOs, and relief organizations to
-                raise urgent funds for disaster response. From floods to fires,
-                donors can send help instantly in fiat or crypto, with
-                transparent tracking and impact updates.
+                RefreeG helps communities, NGOs, and relief organizations raise
+                urgent funds for disaster response. From floods to fires, donors
+                can send help instantly in fiat or crypto, with transparent
+                tracking and impact updates.
               </div>
             </div>
 

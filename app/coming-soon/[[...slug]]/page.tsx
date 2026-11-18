@@ -5,7 +5,7 @@ const pageConfig: Record<string, any> = {
     emoji: "🌍",
     pageTitle: "RefreeG for Businesses",
     pageDescription:
-      "Empower your brand with purpose. Launch business campaigns, support community-driven causes, and connect with customers who care about impact.",
+      "Launch business campaigns, support community-driven causes, and connect with customers who care about impact.",
     titleColor: "text-green-600",
   },
   "disaster-relief": {

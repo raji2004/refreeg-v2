@@ -93,7 +93,7 @@ const publicNavItems: NavItem[] = [
       {
         title: "RefreeG for Businesses",
         description:
-          "Empower your brand with purpose. Launch CSR campaigns, support community-driven causes, and connect with customers who care about impact.",
+          "Launch CSR campaigns, support community-driven causes, and connect with customers who care about impact.",
         href: "/businesses",
         icon: CircleDollarSign,
       },

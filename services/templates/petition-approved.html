@@ -1,111 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Petition Approved</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        line-height: 1.6;
-        color: #333;
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-      .header {
-        background-color: #4caf50;
-        color: white;
-        padding: 20px;
-        text-align: center;
-        border-radius: 8px 8px 0 0;
-      }
-      .content {
-        background-color: #f9f9f9;
-        padding: 30px;
-        border-radius: 0 0 8px 8px;
-      }
-      .footer {
-        text-align: center;
-        margin-top: 20px;
-        color: #666;
-        font-size: 14px;
-      }
-      .highlight {
-        background-color: #e8f5e8;
-        padding: 15px;
-        border-radius: 5px;
-        margin: 20px 0;
-        border-left: 4px solid #4caf50;
-      }
-      .cta-button {
-        display: inline-block;
-        background-color: #0066cc;
-        color: white !important;
-        padding: 12px 24px;
-        text-decoration: none;
-        border-radius: 8px;
-        margin: 20px 0;
-        font-weight: bold;
-        font-size: 16px;
-        transition: background-color 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      .cta-button:hover {
-        background-color: #0052a3;
-        color: white !important;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <h1>🎉 Petition Approved!</h1>
-    </div>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Petition Approved</title>
+</head>
+<body style="margin:0;padding:0;width:100%;background-color:#f2f1ed;">
+<div style="display:none;font-size:1px;color:#f2f1ed;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">Your petition is published. Start gathering signatures.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2f1ed;">
+<tr><td align="center" style="padding:32px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background-color:#ffffff;border:1px solid #e0e0dc;border-radius:12px;overflow:hidden;">
+<tr><td style="padding:26px 32px 0 32px;">
+<a href="https://www.refreeg.com" target="_blank" style="text-decoration:none;"><img src="https://www.refreeg.com/logo.svg" width="130" height="40" alt="RefreeG" style="display:block;width:130px;height:40px;border:0;outline:none;"></a>
+</td></tr>
+<tr><td style="padding:24px 32px 26px 32px;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">
+<div style="font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#0b5d3b;margin:0 0 10px 0;">Approved</div>
+<h1 style="font-family:'Fraunces',Georgia,'Times New Roman',serif;font-size:25px;line-height:1.3;font-weight:700;color:#0e1b14;margin:0 0 14px 0;">&ldquo;{{petitionName}}&rdquo; is live</h1>
+<p style="font-size:15px;line-height:1.65;color:#414d46;margin:0 0 14px 0;">Hi {{userName}}, your petition was approved and published on {{organizationName}}. Share it to gather signatures and track progress on your dashboard.</p>
 
-    <div class="content">
-      <p>Dear {{userName}},</p>
 
-      <p>
-        Congratulations! Your petition
-        <strong>"{{petitionName}}"</strong> has been approved and is now live on
-        {{organizationName}}. 🎉
-      </p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0 6px 0;"><tr><td bgcolor="#0e1b14" style="background-color:#0e1b14;border-radius:8px;"><a href="{{petitionLink}}" style="display:inline-block;padding:13px 26px;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;font-size:15px;font-weight:700;color:#faf9f6;text-decoration:none;border-radius:8px;">View petition</a></td></tr></table>
 
-      <div class="highlight">
-        <strong>What you can do now:</strong>
-        <ul>
-          <li>✅ Share your petition to gather more signatures</li>
-          <li>✅ Raise awareness for your cause</li>
-          <li>✅ Track progress directly on your dashboard</li>
-        </ul>
-      </div>
-
-      <p>
-        Start sharing your petition today and invite others to join your cause.
-      </p>
-
-      <p style="text-align: center">
-        <a
-          href="{{petitionLink}}"
-          class="cta-button"
-          style="color: white; text-decoration: none"
-          >👉 View My Petition</a
-        >
-      </p>
-
-      <p>
-        Wishing you the best of luck in gaining support and making a difference!
-      </p>
-
-      <p>
-        With care,<br />
-        The Refreeg Team
-      </p>
-    </div>
-
-    <div class="footer">
-      <p>This is an automated message. Please do not reply to this email.</p>
-      <p>&copy; {{organizationName}}. All rights reserved.</p>
-    </div>
-  </body>
+</td></tr>
+<tr><td style="padding:16px 32px 20px 32px;border-top:1px solid #e0e0dc;background-color:#f7f6f2;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;">
+<div style="font-size:12px;line-height:1.6;color:#6f7a72;margin:0 0 6px 0;">You&#39;re receiving this because you created a petition on {{organizationName}}.</div>
+<div style="font-size:12px;line-height:1.6;color:#6f7a72;margin:0;">&copy; {{currentYear}} RefreeG &middot; Need help? <a href="mailto:support@refreeg.com" style="color:#0a3cb5;text-decoration:none;">support@refreeg.com</a></div>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
 </html>

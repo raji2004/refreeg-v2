@@ -219,9 +219,7 @@ export default function PublicProfile({
                 </p>
               )}
               {!profile.bio && (
-                <p className="mt-3 text-gray-400 text-sm italic">
-                  No bio yet. Empowering communities one step at a time.
-                </p>
+                <p className="mt-3 text-gray-400 text-sm italic">No bio yet.</p>
               )}
             </div>
 

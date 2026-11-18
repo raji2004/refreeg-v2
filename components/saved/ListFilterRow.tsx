@@ -104,7 +104,7 @@ export function ListFilterRow({
               <span className="text-xs opacity-60">{list.count}</span>
             </button>
 
-            {/* Manage actions live on the active chip only — you are almost
+            {/* Manage actions live on the active chip only: you are almost
                 always managing the list you are looking at, and it keeps the
                 row calm. The button carries an explicit light color + visible
                 circle: it used to inherit the page's dark ink color and sit

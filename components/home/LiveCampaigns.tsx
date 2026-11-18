@@ -8,6 +8,7 @@ import { listCauses } from "@/actions";
 import { listBookmarkedIds } from "@/actions/saved-actions";
 import { sortCausesByFunding } from "@/lib/causes/funding-rank";
 import { causePublicPath } from "@/lib/causes/slug";
+import { formatNaira } from "@/components/giving/format";
 import { BookmarkButton } from "@/components/saved/BookmarkButton";
 import { useGsap } from "@/hooks/use-gsap";
 import {
@@ -149,15 +150,6 @@ export default function LiveCampaigns() {
       left: targetScroll,
       behavior: "smooth",
     });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
   };
 
   if (loading) {
@@ -316,10 +308,10 @@ export default function LiveCampaigns() {
 
                         <div className="flex items-baseline gap-2 mb-3">
                           <span className="text-2xl font-bold text-gray-900">
-                            {formatCurrency(campaign.raised)} raised
+                            {formatNaira(campaign.raised)} raised
                           </span>
                           <span className="text-sm text-gray-500">
-                            of {formatCurrency(campaign.goal)}
+                            of {formatNaira(campaign.goal)}
                           </span>
                         </div>
 

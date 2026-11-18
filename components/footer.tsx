@@ -272,10 +272,10 @@ export function Footer() {
             verified cryptographic or visual proof of spending.
             <br />
             <br />
-            By utilizing this platform, you acknowledge that blockchain
-            transactions are irreversible and that RefreeG operates as a
-            technological governance layer, not a traditional financial
-            institution or charitable trust.
+            By using this platform, you acknowledge that blockchain transactions
+            are irreversible and that RefreeG operates as a technological
+            governance layer, not a traditional financial institution or
+            charitable trust.
             <br />
             <br />© 2026 RefreeG Labs Inc. All rights reserved.
           </p>

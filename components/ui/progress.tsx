@@ -34,7 +34,7 @@ const Progress = React.forwardRef<
     },
     ref,
   ) => {
-    // Radix errors on values outside 0–100.
+    // Radix errors on values outside 0-100.
     const clamped = value == null ? value : Math.min(100, Math.max(0, value));
     const labelled = props["aria-label"] || props["aria-labelledby"];
 

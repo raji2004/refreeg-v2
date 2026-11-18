@@ -4,7 +4,10 @@ const naira = new Intl.NumberFormat("en-NG", {
   maximumFractionDigits: 0,
 });
 
-export const formatNaira = (value: number) => naira.format(value);
+export const formatNaira = (value: number | string | null | undefined) => {
+  const amount = typeof value === "number" ? value : Number(value);
+  return naira.format(Number.isFinite(amount) ? amount : 0);
+};
 
 export const formatDay = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long" });

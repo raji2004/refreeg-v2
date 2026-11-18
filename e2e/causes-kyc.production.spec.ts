@@ -41,11 +41,11 @@ async function resolveCauseIdNearTitle(page: Page, title: string) {
 
   const scoped = page
     .locator("div")
-    .filter({ hasText: new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) })
     .filter({
-      has: page.locator(
-        'a[href*="/causes/"], a[href*="/dashboard/causes/"]',
-      ),
+      hasText: new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+    })
+    .filter({
+      has: page.locator('a[href*="/causes/"], a[href*="/dashboard/causes/"]'),
     })
     .last();
 
@@ -96,12 +96,16 @@ test.describe("RefreeG Production — Causes & KYC", () => {
     await expect(
       page
         .getByText(
-          /Identity Verification|KYC Verification Status|Your KYC has been approved|Your KYC is approved|All features unlocked/i,
+          /Identity Verification|KYC Verification Status|Your KYC has been approved|Your KYC is approved|All features available/i,
         )
         .first(),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
-      page.getByText(/Your KYC has been approved|Your KYC is approved|All features unlocked|Approved/i).first(),
+      page
+        .getByText(
+          /Your KYC has been approved|Your KYC is approved|All features available|Approved/i,
+        )
+        .first(),
     ).toBeVisible({ timeout: 20_000 });
   });
 
@@ -137,7 +141,12 @@ test.describe("RefreeG Production — Causes & KYC", () => {
     const toast = page.getByText(
       /Cause created successfully|submitted for approval/i,
     );
-    if (await toast.first().isVisible({ timeout: 5_000 }).catch(() => false)) {
+    if (
+      await toast
+        .first()
+        .isVisible({ timeout: 5_000 })
+        .catch(() => false)
+    ) {
       console.log("Create-success toast visible.");
     }
 
@@ -335,7 +344,9 @@ test.describe("RefreeG Production — Causes & KYC", () => {
     const pendingEdit = page.getByText(/Edit Already Pending/i);
     if (await pendingEdit.isVisible({ timeout: 5_000 }).catch(() => false)) {
       console.log("Edit already pending — verifying gate UI.");
-      await expect(page.getByRole("link", { name: /Back to Causes/i })).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: /Back to Causes/i }),
+      ).toBeVisible();
       return;
     }
 
@@ -359,7 +370,12 @@ test.describe("RefreeG Production — Causes & KYC", () => {
         }
 
         // Timeline
-        if (await page.locator("#start-date").isVisible({ timeout: 1_000 }).catch(() => false)) {
+        if (
+          await page
+            .locator("#start-date")
+            .isVisible({ timeout: 1_000 })
+            .catch(() => false)
+        ) {
           const startLabel = await page.locator("#start-date").innerText();
           if (/Pick a date/i.test(startLabel)) {
             const d = new Date().getDate();
@@ -459,9 +475,7 @@ test.describe("RefreeG Production — Causes & KYC", () => {
 
     // Wait for status card (copy differs across KYC UI revisions)
     await expect(
-      page
-        .getByText(/Identity Verification|KYC Verification Status/i)
-        .first(),
+      page.getByText(/Identity Verification|KYC Verification Status/i).first(),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
       page
@@ -501,28 +515,34 @@ test.describe("RefreeG Production — Causes & KYC", () => {
     const container = page.getByTestId("kyc-setup-container");
     await expect(container).toBeVisible({ timeout: 15_000 });
     const userId = await container.getAttribute("data-userid");
-    
+
     const response = await page.request.post("/api/webhooks/didit", {
       data: {
         session_id: "e2e-session-mock",
         status: "Resubmitted",
         vendor_data: userId,
         reason: "Document blurry",
-        webhook_type: "status.updated"
-      }
+        webhook_type: "status.updated",
+      },
     });
     expect(response.ok()).toBeTruthy();
 
     await page.goto("/dashboard/settings/kyc", {
       waitUntil: "domcontentloaded",
     });
-    
-    await expect(page.getByText(/Your KYC requires a few corrections/i).first()).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole("button", { name: /Resume Verification/i })).toBeVisible({ timeout: 15_000 });
+
+    await expect(
+      page.getByText(/Your KYC requires a few corrections/i).first(),
+    ).toBeVisible({ timeout: 20_000 });
+    await expect(
+      page.getByRole("button", { name: /Resume Verification/i }),
+    ).toBeVisible({ timeout: 15_000 });
     console.log("Resubmitted status and Resume button visible.");
   });
 
-  test("8.6) user resumes verification and it returns to pending", async ({ page }) => {
+  test("8.6) user resumes verification and it returns to pending", async ({
+    page,
+  }) => {
     await submitKycSetupForm(page);
 
     await page.goto("/dashboard/settings/kyc", {
@@ -553,9 +573,9 @@ test.describe("RefreeG Production — Causes & KYC", () => {
       timeout: 60_000,
     });
 
-    await expect(
-      page.getByText(/Your KYC was rejected/i).first(),
-    ).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/Your KYC was rejected/i).first()).toBeVisible({
+      timeout: 30_000,
+    });
     await expect(
       page.getByRole("button", {
         name: /Resubmit Application|Resubmit KYC|Resubmit/i,
@@ -591,7 +611,7 @@ test.describe("RefreeG Production — Causes & KYC", () => {
     await expect(
       page
         .getByText(
-          /Your KYC has been approved|Your KYC is approved|All features unlocked|Approved/i,
+          /Your KYC has been approved|Your KYC is approved|All features available|Approved/i,
         )
         .first(),
     ).toBeVisible({ timeout: 20_000 });

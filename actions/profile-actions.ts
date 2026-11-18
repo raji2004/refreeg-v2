@@ -410,7 +410,7 @@ export async function getCurrentOnboardingStep(
       const prefs = org?.preferences as Record<string, unknown> | null;
       const hasVisitedOrgSetup = prefs && Object.keys(prefs).length > 0;
       if (!hasVisitedOrgSetup) {
-        // Return a special value — the orchestrator maps this to step 3B
+        // Return a special value: the orchestrator maps this to step 3B
         return 3.5;
       }
     }
@@ -561,7 +561,7 @@ export async function checkUsernameAvailability(
     // Normalise to lowercase to prevent case-sensitivity false conflicts
     const normalizedUsername = username.trim().toLowerCase();
     if (!normalizedUsername || normalizedUsername.length < 3) {
-      return true; // Too short to check — let field validation handle it
+      return true; // Too short to check: let field validation handle it
     }
 
     const profile = await prisma.user.findUnique({

@@ -130,7 +130,7 @@ export default function ProofSection() {
             variants={itemVariants}
           >
             RefreeG&apos;s fraud-compliance system and blockchain-powered
-            transparency protect donors and elevate your credibility, so your
+            transparency protect donors and strengthen your credibility, so your
             nonprofit stands out as trustworthy and professional.
           </motion.p>
 
