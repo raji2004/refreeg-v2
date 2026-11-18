@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { DiscoverSort } from "@/actions/discover-actions";
+import type { DiscoverSort } from "@/actions/causes/discover-actions";
 
 const SORT_OPTIONS: { id: DiscoverSort; label: string }[] = [
   { id: "most-urgent", label: "Most urgent" },

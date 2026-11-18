@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Building2, Mail, ShieldCheck } from "lucide-react";
 import { auth, signOut } from "@/lib/auth/auth";
-import { getOrganizationInvitation } from "@/actions/organization-actions";
+import { getOrganizationInvitation } from "@/actions/users/organization-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AcceptInvitationButton } from "./accept-invitation-button";

@@ -10,12 +10,12 @@ import { cn } from "@/lib/utils";
 import {
   interestOptions,
   MIN_INTERESTS_REQUIRED,
-} from "@/lib/interest-categories";
+} from "@/lib/causes/interest-categories";
 import {
   getInterestOptions,
   saveUserInterests,
   type InterestOptionWithCount,
-} from "@/actions/interest-actions";
+} from "@/actions/users/interest-actions";
 
 interface StepInterestsProps {
   user: any;

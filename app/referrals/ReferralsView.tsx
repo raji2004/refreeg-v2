@@ -27,14 +27,14 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { formatNairaShort } from "@/lib/discover-summary";
+import { formatNairaShort } from "@/lib/causes/discover-summary";
 import {
   getLeaderboard,
   getReferrerDonorDetail,
   type LeaderboardEntry,
   type ReferrerDonorDetailResult,
-} from "@/actions/leaderboard-actions";
-import type { ReferralRow } from "@/actions/referral-actions";
+} from "@/actions/users/leaderboard-actions";
+import type { ReferralRow } from "@/actions/users/referral-actions";
 
 const PAGE_SIZE = 20;
 const POLL_MS = 30_000;

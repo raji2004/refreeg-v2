@@ -9,8 +9,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { SupportErrorCta } from "@/components/support-error-cta";
-import { followCampaign } from "@/actions/cause-actions";
+import { SupportErrorCta } from "@/components/engagement/SupportErrorCta";
+import { followCampaign } from "@/actions/causes/cause-actions";
 import type { Donor } from "../types/types";
 import { fadeUp } from "../types/types";
 

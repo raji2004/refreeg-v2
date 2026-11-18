@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/actions/auth-actions";
-import { getVerificationStatus } from "@/actions/kyc-actions";
+import { getCurrentUser } from "@/actions/users/auth-actions";
+import { getVerificationStatus } from "@/actions/users/kyc-actions";
 import KycSetupClient from "./KycSetupClient";
 
 export default async function KycSetupPage() {

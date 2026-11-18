@@ -1,29 +1,29 @@
-jest.mock("@/components/auth-provider", () => ({
+jest.mock("@/components/layout/AuthProvider", () => ({
   useAuthContext: jest.fn(),
 }));
 
-jest.mock("@/actions/auth-actions", () => ({
+jest.mock("@/actions/users/auth-actions", () => ({
   signUpAction: jest.fn(),
   requestPasswordResetAction: jest.fn(),
   resetPasswordAction: jest.fn(),
   checkCauseUserLoginAction: jest.fn(),
 }));
 
-jest.mock("@/components/ui/use-toast", () => ({
+jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
 }));
 
 import { renderHook, act } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
-import { useAuthContext } from "@/components/auth-provider";
+import { useAuthContext } from "@/components/layout/AuthProvider";
 import {
   signUpAction,
   requestPasswordResetAction,
   resetPasswordAction,
   checkCauseUserLoginAction,
-} from "@/actions/auth-actions";
-import { toast } from "@/components/ui/use-toast";
+} from "@/actions/users/auth-actions";
+import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 
 describe("useAuth", () => {
@@ -142,9 +142,7 @@ describe("useAuth", () => {
     });
 
     expect(success).toBe(true);
-    expect(requestPasswordResetAction).toHaveBeenCalledWith(
-      "test@example.com",
-    );
+    expect(requestPasswordResetAction).toHaveBeenCalledWith("test@example.com");
   });
 
   it("redirects to reset password if cause user lacks password or profile details", async () => {

@@ -8,8 +8,8 @@ import { Dialog, DialogClose, DialogTitle } from "@/components/ui/dialog";
 import { ResponsiveDialogContent } from "@/components/ui/responsive-dialog-content";
 import { Button } from "@/components/ui/button";
 import { CalloutBanner } from "@/components/ui/callout-banner";
-import { Icons } from "@/components/icons";
-import { getQuickDonateProps } from "@/actions/cause-actions";
+import { Icons } from "@/components/layout/Icons";
+import { getQuickDonateProps } from "@/actions/causes/cause-actions";
 import { usePayment } from "@/hooks/use-payment";
 import { useValidator } from "@/hooks/use-validator";
 import { MIN_DONATION_AMOUNT, giveSchema } from "@/lib/schemas/donation.schema";
@@ -73,7 +73,7 @@ function GiveForm({ props }: { props: QuickDonateProps }) {
 
   const fees =
     calculateServiceFee(amount) + calculateProviderFee(amount, provider);
-  const imageUrl = getMediaUrl(props.causeImage) || "/placeholder.svg";
+  const imageUrl = getMediaUrl(props.causeImage) || "/icons/placeholder.svg";
   const causeHref = `/causes/${props.causeSlug || props.causeId}`;
   const isGuest = !props.userId;
 

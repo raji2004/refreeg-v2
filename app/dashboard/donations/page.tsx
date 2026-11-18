@@ -8,7 +8,7 @@ import {
   getGivingOverview,
   type GivingFilter,
   type GivingPeriod,
-} from "@/actions/giving-actions";
+} from "@/actions/donations/giving-actions";
 import { FilterPills } from "@/components/giving/filter-pills";
 import { GiftRow } from "@/components/giving/gift-row";
 import { PeriodSelect } from "@/components/giving/period-select";

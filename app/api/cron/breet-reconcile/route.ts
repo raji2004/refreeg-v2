@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assertCronAuthorized } from "@/lib/cron-auth";
-import { createCryptoDonation } from "@/actions/crypto-actions";
-import { syncMilestoneRequirements } from "@/lib/proof-milestones";
-import { fetchBreetTradesPage } from "@/lib/breet";
-import { donationFields, reconcileBreetTrades } from "@/lib/breet-reconcile";
+import { assertCronAuthorized } from "@/lib/api/cron-auth";
+import { createCryptoDonation } from "@/actions/donations/crypto-actions";
+import { syncMilestoneRequirements } from "@/lib/causes/proof-milestones";
+import { fetchBreetTradesPage } from "@/lib/payments/breet";
+import {
+  donationFields,
+  reconcileBreetTrades,
+} from "@/lib/payments/breet-reconcile";
 
 export const dynamic = "force-dynamic";
 

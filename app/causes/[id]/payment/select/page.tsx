@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { usePayment } from "@/hooks/use-payment";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { calculateProviderFee } from "@/lib/utils";
 import Image from "next/image";
 import type { PaymentProviderType, TransactionData } from "@/types";

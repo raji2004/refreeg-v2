@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getApiCampaigns } from "@/actions/admin-analytics-actions";
+import { getApiCampaigns } from "@/actions/admin/admin-analytics-actions";
 import { getUserRole } from "@/lib/auth/admin-auth";
 import { auth } from "@/lib/auth/auth";
 

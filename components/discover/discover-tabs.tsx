@@ -1,7 +1,10 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { DiscoverFilters, DiscoverSort } from "@/actions/discover-actions";
+import type {
+  DiscoverFilters,
+  DiscoverSort,
+} from "@/actions/causes/discover-actions";
 
 export type DiscoverTab =
   "all" | "for-you" | "urgent" | "closing-soon" | "petitions" | "new";

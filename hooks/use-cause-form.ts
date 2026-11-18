@@ -10,7 +10,10 @@ import {
   type CauseFormValues,
   type CauseSection,
 } from "@/lib/schemas/cause.schema";
-import { prepareCoverImage, prepareGalleryFiles } from "@/lib/cause-media";
+import {
+  prepareCoverImage,
+  prepareGalleryFiles,
+} from "@/lib/causes/cause-media";
 
 export const LAST_CAUSE_STEP = 5;
 

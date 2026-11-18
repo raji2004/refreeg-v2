@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import MultimediaCarousel from "@/components/MultimediaCarousel";
+import MultimediaCarousel from "@/components/marketing/MultimediaCarousel";
 
 describe("MultimediaCarousel image lightbox", () => {
   it("shows an original image once against a neutral backdrop", () => {
@@ -47,9 +47,7 @@ describe("MultimediaCarousel image lightbox", () => {
       />,
     );
 
-    fireEvent.click(
-      screen.getByAltText("Community fundraiser - Image 1"),
-    );
+    fireEvent.click(screen.getByAltText("Community fundraiser - Image 1"));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     fireEvent.click(

@@ -7,7 +7,7 @@ import { Loader2, ShieldCheck } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { AlreadySignedInCard } from "@/components/auth/already-signed-in-card";
 import { AuthBrandPanel } from "@/components/auth/auth-brand-panel";
 import { AuthField } from "@/components/auth/auth-field";

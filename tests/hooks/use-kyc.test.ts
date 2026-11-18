@@ -1,17 +1,20 @@
-jest.mock("@/actions/profile-actions", () => ({
+jest.mock("@/actions/users/profile-actions", () => ({
   hasKycVerification: jest.fn(),
   updateKycStatus: jest.fn(),
 }));
 
-jest.mock("@/components/ui/use-toast", () => ({
+jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
 }));
 
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import { hasKycVerification, updateKycStatus } from "@/actions/profile-actions";
-import { toast } from "@/components/ui/use-toast";
+import {
+  hasKycVerification,
+  updateKycStatus,
+} from "@/actions/users/profile-actions";
+import { toast } from "@/hooks/use-toast";
 import { useKyc } from "@/hooks/use-kyc";
 
 const createWrapper = () => {

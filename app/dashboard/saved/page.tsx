@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SavedGrid } from "@/components/saved/SavedGrid";
-import { toSavedItems, type SavedListSummary } from "@/lib/saved";
+import { toSavedItems, type SavedListSummary } from "@/lib/saved/saved";
 
 export default async function SavedPage() {
   const session = await auth();

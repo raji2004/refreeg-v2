@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { cn } from "@/lib/utils";
-import type { GiftRow as Gift } from "@/actions/giving-actions";
+import type { GiftRow as Gift } from "@/actions/donations/giving-actions";
 import { formatDay, formatNaira } from "./format";
 
 const STATUS = {
@@ -14,7 +14,7 @@ const STATUS = {
 
 export function GiftRow({ gift }: { gift: Gift }) {
   const status = STATUS[gift.status];
-  const imageUrl = getMediaUrl(gift.image) || "/placeholder.svg";
+  const imageUrl = getMediaUrl(gift.image) || "/icons/placeholder.svg";
   const isPledge = gift.kind === "pledge";
 
   return (

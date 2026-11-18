@@ -23,7 +23,7 @@ const PetitionEngagementMetrics = dynamic(
     loading: () => <Skeleton className="h-[200px] w-full" />,
   },
 );
-import { getPetitionAnalytics } from "@/actions/dashboard-actions";
+import { getPetitionAnalytics } from "@/actions/users/dashboard-actions";
 
 export default async function AnalyticsPage({
   params,

@@ -21,7 +21,7 @@ jest.mock("@/services/payment-provider", () => ({
   initializeTransaction: (...args: any[]) => mockInitializeTransaction(...args),
 }));
 
-jest.mock("@/lib/proof-milestones", () => ({
+jest.mock("@/lib/causes/proof-milestones", () => ({
   assertCauseAcceptingDonations: jest.fn().mockResolvedValue(true),
 }));
 
@@ -32,10 +32,7 @@ jest.mock("@/lib/utils", () => ({
 
 import { POST } from "@/app/api/payments/initialize/route";
 
-function makeInitRequest(
-  body: Record<string, unknown>,
-  cookieRefV1?: string,
-) {
+function makeInitRequest(body: Record<string, unknown>, cookieRefV1?: string) {
   return {
     json: jest.fn().mockResolvedValue({ ...body }),
     cookies: {

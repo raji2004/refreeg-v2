@@ -1,4 +1,4 @@
-import type { getOrganizationWorkspace } from "@/actions/organization-actions";
+import type { getOrganizationWorkspace } from "@/actions/users/organization-actions";
 
 export type Workspace = Extract<
   Awaited<ReturnType<typeof getOrganizationWorkspace>>,

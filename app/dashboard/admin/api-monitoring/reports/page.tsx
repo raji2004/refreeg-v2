@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import {
   listCampaignReports,
   takeDownApiCampaign,
-} from "@/actions/api-monitoring-actions";
+} from "@/actions/admin/api-monitoring-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

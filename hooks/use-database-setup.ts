@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { checkDatabaseSetup } from "@/actions/database-actions";
+import { checkDatabaseSetup } from "@/actions/admin/database-actions";
 
 export function useDatabaseSetup() {
   const [isReady, setIsReady] = useState<boolean | null>(null);

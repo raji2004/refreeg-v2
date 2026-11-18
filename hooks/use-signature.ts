@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { createSignature } from "@/actions/signature-actions";
+import { createSignature } from "@/actions/petitions/signature-actions";
 import type { SignatureFormData } from "@/types";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
 export function useSignature() {
@@ -14,7 +14,7 @@ export function useSignature() {
   const createUserSignature = async (
     petitionId: string,
     userId: string | null,
-    signatureData: SignatureFormData
+    signatureData: SignatureFormData,
   ) => {
     setIsLoading(true);
 

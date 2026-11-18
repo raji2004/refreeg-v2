@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth/auth";
 import { type NextRequest, NextResponse } from "next/server";
-import { hasCompletedOnboarding } from "@/actions/profile-actions";
+import { hasCompletedOnboarding } from "@/actions/users/profile-actions";
 import { prisma } from "@/lib/prisma";
 
 function normalizeRedirectPath(target: string | null): string | null {

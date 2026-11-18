@@ -41,7 +41,7 @@ import {
   getUserWallet,
   getUserStats,
   updateUserStreaks,
-} from "@/actions/event-reward-actions";
+} from "@/actions/users/event-reward-actions";
 
 const mockAuth = auth as jest.Mock;
 

@@ -15,8 +15,8 @@ import { KeyRound } from "lucide-react";
 import {
   getHasPasswordAction,
   updatePasswordAction,
-} from "@/actions/auth-actions";
-import { toast } from "@/components/ui/use-toast";
+} from "@/actions/users/auth-actions";
+import { toast } from "@/hooks/use-toast";
 import { useValidator } from "@/hooks/use-validator";
 import { changePasswordSchema } from "@/lib/schemas/registration.schema";
 

@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { Loader2 } from "lucide-react";
-import { acceptOrganizationInvitation } from "@/actions/organization-actions";
+import { acceptOrganizationInvitation } from "@/actions/users/organization-actions";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 export function AcceptInvitationButton({ token }: { token: string }) {
   const router = useRouter();

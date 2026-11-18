@@ -21,15 +21,15 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/actions/auth-actions", () => ({
+jest.mock("@/actions/users/auth-actions", () => ({
   getCurrentUser: jest.fn(),
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   isAdminOrManager: jest.fn(),
 }));
 
-jest.mock("@/actions/database-actions", () => ({
+jest.mock("@/actions/admin/database-actions", () => ({
   logAdminActivity: jest.fn(),
 }));
 
@@ -48,15 +48,15 @@ jest.mock("@/lib/s3/s3-utils", () => ({
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/actions/auth-actions";
-import { isAdminOrManager } from "@/actions/role-actions";
-import { logAdminActivity } from "@/actions/database-actions";
+import { getCurrentUser } from "@/actions/users/auth-actions";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
+import { logAdminActivity } from "@/actions/admin/database-actions";
 import { sendKycApprovedEmail, sendKycReminderEmail } from "@/services/mail";
 import {
   getVerificationStatus,
   updateVerificationStatus,
   sendKycReminderToUnverifiedUsers,
-} from "@/actions/kyc-actions";
+} from "@/actions/users/kyc-actions";
 
 const mockPrisma = prisma as unknown as {
   kyc_verifications: {

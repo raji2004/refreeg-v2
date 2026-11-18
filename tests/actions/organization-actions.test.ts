@@ -35,7 +35,7 @@ import { auth } from "@/lib/auth/auth";
 import {
   updateOrganization,
   getOrganizationPublicProfile,
-} from "@/actions/organization-actions";
+} from "@/actions/users/organization-actions";
 
 const mockPrisma = prisma as unknown as {
   user: { findUnique: jest.Mock; update: jest.Mock };

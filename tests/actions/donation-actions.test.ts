@@ -28,7 +28,7 @@ jest.mock("@/lib/prisma", () => {
   return { prisma: prismaMock };
 });
 
-jest.mock("@/lib/reward-core", () => ({
+jest.mock("@/lib/rewards/reward-core", () => ({
   recordEventCore: jest.fn(),
 }));
 
@@ -42,7 +42,7 @@ jest.mock("@/lib/event-bus", () => ({
   },
 }));
 
-jest.mock("@/actions/referral-attribution", () => ({
+jest.mock("@/actions/users/referral-attribution", () => ({
   recordDonorReferralAttribution: jest
     .fn()
     .mockResolvedValue({ recorded: true }),
@@ -50,15 +50,15 @@ jest.mock("@/actions/referral-attribution", () => ({
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { recordDonorReferralAttribution } from "@/actions/referral-attribution";
-import { recordEventCore as recordEvent } from "@/lib/reward-core";
+import { recordDonorReferralAttribution } from "@/actions/users/referral-attribution";
+import { recordEventCore as recordEvent } from "@/lib/rewards/reward-core";
 import { sendDonationReceivedEmail } from "@/services/mail";
 import {
   createDonation,
   listDonationsForCause,
   listUserDonations,
   listUserDonationsPage,
-} from "@/actions/donation-actions";
+} from "@/actions/donations/donation-actions";
 
 const mockPrisma = prisma as unknown as {
   donation: {

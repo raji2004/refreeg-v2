@@ -1,5 +1,5 @@
 import AdminLogs from "@/components/admin/AdminLogs";
-import { listAdminLogs } from "@/actions/database-actions";
+import { listAdminLogs } from "@/actions/admin/database-actions";
 import { auth } from "@/lib/auth/auth";
 import { getUserRole } from "@/lib/auth/admin-auth";
 import { redirect } from "next/navigation";

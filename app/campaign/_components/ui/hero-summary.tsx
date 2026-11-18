@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { BadgeCheck, MapPin, Users } from "lucide-react";
-import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
+import { getCampaignCategoryStyle } from "@/lib/causes/campaign-categories";
 import { cn } from "@/lib/utils";
 import type { CauseDetail } from "../types/types";
 import { fadeUp } from "../types/types";

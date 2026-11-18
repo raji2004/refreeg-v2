@@ -11,9 +11,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { Icons } from "@/components/icons";
-import { requestEmailChangeAction } from "@/actions/auth-actions";
-import { toast } from "@/components/ui/use-toast";
+import { Icons } from "@/components/layout/Icons";
+import { requestEmailChangeAction } from "@/actions/users/auth-actions";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const emptyForm = { newEmail: "", password: "" };

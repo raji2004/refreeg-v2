@@ -28,11 +28,11 @@ jest.mock("@/services/mail", () => ({
   sendKycSubmittedEmail: jest.fn(),
 }));
 
-jest.mock("@/actions/database-actions", () => ({
+jest.mock("@/actions/admin/database-actions", () => ({
   logAdminActivity: jest.fn(),
 }));
 
-jest.mock("@/actions/kyc-actions", () => ({
+jest.mock("@/actions/users/kyc-actions", () => ({
   issueReferralRewardOnKycApproval: jest.fn(),
 }));
 

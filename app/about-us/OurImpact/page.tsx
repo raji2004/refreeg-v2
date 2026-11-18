@@ -3,7 +3,7 @@ import HowDoWeAchieveThis from "../OurMission/_components/HowDoWeAchieveThis";
 import Hero from "./_components/hero";
 import ByNumbers from "./_components/ByNumbers";
 import ChangeLives from "./_components/ChangeLives";
-import AdBanner from "@/components/AdBanner";
+import AdBanner from "@/components/marketing/AdBanner";
 
 export default function Impact() {
   return (

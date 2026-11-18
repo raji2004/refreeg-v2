@@ -1,9 +1,9 @@
 import { Suspense } from "react";
-import { PetitionsList } from "@/components/petitions-list";
-import { PetitionsFilter } from "@/components/petitions-filter";
+import { PetitionsList } from "@/components/causes/PetitionsList";
+import { PetitionsFilter } from "@/components/causes/PetitionsFilter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { categories } from "@/lib/categories";
-import AdBanner from "@/components/AdBanner";
+import { categories } from "@/lib/causes/categories";
+import AdBanner from "@/components/marketing/AdBanner";
 
 import { Metadata } from "next";
 

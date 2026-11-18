@@ -1,4 +1,4 @@
-import { getWebhooks } from "@/actions/webhook-actions";
+import { getWebhooks } from "@/actions/donations/webhook-actions";
 import WebhookManager from "./WebhookManager";
 import WebhookLogViewer from "./WebhookLogViewer";
 

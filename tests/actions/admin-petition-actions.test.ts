@@ -5,7 +5,7 @@ jest.mock("@/lib/auth/auth", () => ({
   auth: jest.fn(),
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   isAdminOrManager: jest.fn(),
 }));
 
@@ -23,7 +23,7 @@ jest.mock("@/services/mail", () => ({
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth/auth";
-import { isAdminOrManager } from "@/actions/role-actions";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
 import { prisma } from "@/lib/prisma";
 import {
   sendPetitionApprovedEmailForUser,
@@ -33,7 +33,7 @@ import {
   listAdminPetitions,
   getPetitionEdits,
   updatePetitionStatus,
-} from "@/actions/admin-petition-actions";
+} from "@/actions/admin/admin-petition-actions";
 
 const mockAuth = auth as jest.Mock;
 const mockPrisma = prisma as unknown as {
@@ -141,9 +141,7 @@ describe("admin-petition-actions", () => {
     it("approves petition without pending edit and sends email", async () => {
       mockPrisma.$queryRaw
         .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([
-          { user_id: "user-1", title: "Save Park" },
-        ]);
+        .mockResolvedValueOnce([{ user_id: "user-1", title: "Save Park" }]);
 
       const result = await updatePetitionStatus("petition-1", "approved");
 
@@ -152,17 +150,13 @@ describe("admin-petition-actions", () => {
       expect(sendPetitionApprovedEmailForUser).toHaveBeenCalledWith("user-1", {
         petitionName: "Save Park",
       });
-      expect(revalidatePath).toHaveBeenCalledWith(
-        "/dashboard/admin/petitions",
-      );
+      expect(revalidatePath).toHaveBeenCalledWith("/dashboard/admin/petitions");
     });
 
     it("rejects petition and sends rejection email", async () => {
       mockPrisma.$queryRaw
         .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([
-          { user_id: "user-1", title: "Save Park" },
-        ]);
+        .mockResolvedValueOnce([{ user_id: "user-1", title: "Save Park" }]);
 
       const result = await updatePetitionStatus(
         "petition-1",

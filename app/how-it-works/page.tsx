@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import AdBanner from "@/components/AdBanner";
+import AdBanner from "@/components/marketing/AdBanner";
 
 export const metadata: Metadata = {
   title: "How It Works | Refreeg",

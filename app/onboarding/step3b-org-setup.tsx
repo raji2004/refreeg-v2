@@ -22,10 +22,10 @@ import {
 import { FaFacebookF, FaTiktok } from "react-icons/fa6";
 import { FaWhatsapp } from "react-icons/fa";
 import { Switch } from "@/components/ui/switch";
-import { getOrganizationOnboardingData } from "@/actions/profile-actions";
-import { updateOrganization } from "@/actions/organization-actions";
+import { getOrganizationOnboardingData } from "@/actions/users/profile-actions";
+import { updateOrganization } from "@/actions/users/organization-actions";
 import { uploadOrganizationLogo } from "@/lib/organization-logo-upload";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 interface Step3BProps {
   user: any;

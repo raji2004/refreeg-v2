@@ -20,7 +20,7 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { createReferralRecord } from "@/lib/referral-utils";
+import { createReferralRecord } from "@/lib/referrals/referral-utils";
 
 const REFERRER_ID = "referrer-user-id";
 const NEW_USER_ID = "new-user-id";

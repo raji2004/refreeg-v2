@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assertCronAuthorized } from "@/lib/cron-auth";
-import { internalApiHeaders } from "@/lib/internal-api";
+import { assertCronAuthorized } from "@/lib/api/cron-auth";
+import { internalApiHeaders } from "@/lib/api/internal-api";
 import { causePublicPath } from "@/lib/causes/slug";
 
 async function runPledgeReminders() {

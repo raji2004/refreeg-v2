@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { createDonation } from "@/actions/donation-actions";
+import { createDonation } from "@/actions/donations/donation-actions";
 import type { DonationFormData } from "@/types";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
 export function useDonation() {
@@ -13,7 +13,7 @@ export function useDonation() {
   const createUserDonation = async (
     causeId: string,
     userId: string | null,
-    donationData: DonationFormData
+    donationData: DonationFormData,
   ) => {
     setIsLoading(true);
 

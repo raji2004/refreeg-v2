@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "nextjs-toploader/app";
-import { SupportErrorCta } from "@/components/support-error-cta";
+import { SupportErrorCta } from "@/components/engagement/SupportErrorCta";
 
 export default function NotFoundPage() {
   const router = useRouter();

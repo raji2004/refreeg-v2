@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { GivingPeriod } from "@/actions/giving-actions";
+import type { GivingPeriod } from "@/actions/donations/giving-actions";
 import { formatNaira } from "./format";
 
 export function PeriodSelect({

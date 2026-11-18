@@ -5,7 +5,7 @@ import type { FormEvent } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { useAuth } from "@/hooks/use-auth";
 import { useValidator } from "@/hooks/use-validator";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { normalizeRegistrationInput } from "@/lib/auth/registration";
 import type { SignupAccountType } from "@/lib/auth/registration";
 import {

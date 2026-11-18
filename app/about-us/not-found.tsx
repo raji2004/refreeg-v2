@@ -10,7 +10,7 @@ export default function NotFoundPage() {
     <div className="flex flex-col items-center justify-center min-h-[90vh] bg-white px-4 text-center pb-20">
       <div className="max-w-lg">
         <Image
-          src="/404-illustration.svg"
+          src="/images/404-illustration.svg"
           alt="404 Illustration"
           width={300}
           height={300}

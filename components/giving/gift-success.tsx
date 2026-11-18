@@ -7,8 +7,8 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
-import { formatNairaShort } from "@/lib/discover-summary";
-import type { GiftCause, GiftDetails } from "@/actions/gift-actions";
+import { formatNairaShort } from "@/lib/causes/discover-summary";
+import type { GiftCause, GiftDetails } from "@/actions/donations/gift-actions";
 
 const percentOf = (c: GiftCause) =>
   c.goal > 0 ? Math.min(Math.round((c.raised / c.goal) * 100), 100) : 0;
@@ -46,7 +46,7 @@ export function GiftSuccess({ gift }: { gift: GiftDetails }) {
     hour: "2-digit",
     minute: "2-digit",
   });
-  const imageUrl = getMediaUrl(cause.image) || "/placeholder.svg";
+  const imageUrl = getMediaUrl(cause.image) || "/icons/placeholder.svg";
 
   const share = async () => {
     const url = `${window.location.origin}${cause.href}`;

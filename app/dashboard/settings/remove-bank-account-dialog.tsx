@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import {
   dialogClass,
   maskAccount,

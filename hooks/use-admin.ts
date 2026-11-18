@@ -1,20 +1,20 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getUserRoleInfo, setUserRole } from "@/actions/role-actions";
-import { blockUser, unblockUser } from "@/actions/admin-user-actions";
+import { getUserRoleInfo, setUserRole } from "@/actions/admin/role-actions";
+import { blockUser, unblockUser } from "@/actions/admin/admin-user-actions";
 import {
   updateCauseStatus,
   listAdminCauses,
   getCauseEdits,
-} from "@/actions/admin-cause-actions";
+} from "@/actions/admin/admin-cause-actions";
 import {
   updatePetitionStatus,
   listAdminPetitions,
   getPetitionEdits,
-} from "@/actions/admin-petition-actions";
-import { logAdminActivity } from "@/actions/database-actions";
-import { toast } from "@/components/ui/use-toast";
+} from "@/actions/admin/admin-petition-actions";
+import { logAdminActivity } from "@/actions/admin/database-actions";
+import { toast } from "@/hooks/use-toast";
 import type { CauseStatus, UserRole, UserWithRole } from "@/types";
 
 export type PetitionStatus = "pending" | "approved" | "rejected";

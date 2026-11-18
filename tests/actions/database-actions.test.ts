@@ -16,7 +16,7 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   ensureDefaultAdmin: jest.fn(),
   isAdminOrManager: jest.fn(),
 }));
@@ -26,7 +26,7 @@ import { prisma } from "@/lib/prisma";
 import {
   ensureDefaultAdmin,
   isAdminOrManager,
-} from "@/actions/role-actions";
+} from "@/actions/admin/role-actions";
 import {
   checkTableExists,
   checkDatabaseSetup,
@@ -34,7 +34,7 @@ import {
   listAdminLogs,
   getRecentAdminActions,
   getAdminActionStats,
-} from "@/actions/database-actions";
+} from "@/actions/admin/database-actions";
 
 const mockAuth = auth as jest.Mock;
 const mockEnsureDefaultAdmin = ensureDefaultAdmin as jest.Mock;

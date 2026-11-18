@@ -24,7 +24,7 @@ export default async function ProfileSettingsPage({
     return (
       <SettingsShell>
         <p className="text-sm text-ink/60">
-          Couldn't load your profile. Refresh the page to try again.
+          Couldn&apos;t load your profile. Refresh the page to try again.
         </p>
       </SettingsShell>
     );
