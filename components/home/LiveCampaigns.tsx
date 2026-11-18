@@ -162,21 +162,21 @@ export default function LiveCampaigns() {
 
   if (loading) {
     return (
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-end mb-8">
             <div>
-              <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-3"></div>
-              <div className="h-12 w-96 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 w-24 bg-cream-muted rounded animate-pulse mb-3"></div>
+              <div className="h-12 w-96 bg-cream-muted rounded animate-pulse"></div>
             </div>
-            <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 w-24 bg-cream-muted rounded animate-pulse"></div>
           </div>
-          <div className="h-6 w-64 bg-gray-200 rounded animate-pulse mb-8"></div>
+          <div className="h-6 w-64 bg-cream-muted rounded animate-pulse mb-8"></div>
           <div className="flex gap-6 overflow-hidden">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="min-w-[280px] md:min-w-[320px] bg-gray-100 rounded-2xl h-96 animate-pulse flex-shrink-0"
+                className="min-w-[280px] md:min-w-[320px] bg-bone rounded-2xl h-96 animate-pulse flex-shrink-0"
               ></div>
             ))}
           </div>
@@ -188,7 +188,7 @@ export default function LiveCampaigns() {
   if (campaigns.length === 0) return null;
 
   return (
-    <section ref={sectionRef} className="py-16 bg-white">
+    <section ref={sectionRef} className="py-16 bg-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={headerRef} className="flex justify-between items-end mb-8">
           <div>
@@ -208,7 +208,7 @@ export default function LiveCampaigns() {
           </Link>
         </div>
 
-        <p className="text-gray-600 max-w-2xl text-base mb-8">
+        <p className="text-ink/70 max-w-2xl text-base mb-8">
           A glimpse of what&apos;s funding right now. Each campaign is verified,
           every naira tracked from contribution to impact.
         </p>
@@ -220,7 +220,7 @@ export default function LiveCampaigns() {
               size={16}
               className="text-brand-blue hidden sm:block"
             />
-            <span className="text-xs sm:text-sm font-medium text-gray-500 tracking-wide text-center">
+            <span className="text-xs sm:text-sm font-medium text-ink/60 tracking-wide text-center">
               <span className="sm:hidden">← Swipe to explore →</span>
               <span className="hidden sm:inline">
                 Swipe to explore more campaigns
@@ -238,14 +238,11 @@ export default function LiveCampaigns() {
           {canScrollLeft && (
             <button
               onClick={() => scroll("left")}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg rounded-full p-1.5 sm:p-2 border border-gray-200 transition-all duration-200 -ml-2 sm:-ml-4 flex items-center justify-center"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-surface/90 hover:bg-surface shadow-lg rounded-full p-1.5 sm:p-2 border border-hairline transition-all duration-200 -ml-2 sm:-ml-4 flex items-center justify-center"
               aria-label="Scroll left"
             >
-              <ChevronLeft size={16} className="text-gray-700 sm:hidden" />
-              <ChevronLeft
-                size={20}
-                className="text-gray-700 hidden sm:block"
-              />
+              <ChevronLeft size={16} className="text-ink/80 sm:hidden" />
+              <ChevronLeft size={20} className="text-ink/80 hidden sm:block" />
             </button>
           )}
 
@@ -274,8 +271,8 @@ export default function LiveCampaigns() {
                     }}
                     className="group cursor-pointer flex-shrink-0 w-[280px] md:w-[320px]"
                   >
-                    <div className="bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative">
-                      <div className="aspect-[4/3] w-full overflow-hidden relative bg-gray-100">
+                    <div className="bg-surface rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative">
+                      <div className="aspect-[4/3] w-full overflow-hidden relative bg-bone">
                         <Image
                           src={
                             getMediaUrl(campaign.image) || "/placeholder.svg"
@@ -299,31 +296,31 @@ export default function LiveCampaigns() {
                       </div>
 
                       <div className="absolute top-3 left-3 z-10">
-                        <span className="bg-[#CEF037] text-near-black text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+                        <span className="bg-lime text-lime-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
                           LIVE
                         </span>
                       </div>
 
                       <div className="p-5">
-                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                        <div className="text-xs font-medium text-ink/60 uppercase tracking-wide mb-2">
                           {campaign.category}
                           {campaign.location ? ` · ${campaign.location}` : ""}
                         </div>
 
-                        <h3 className="font-semibold text-gray-900 text-base leading-tight mb-4 line-clamp-2">
+                        <h3 className="font-semibold text-ink text-base leading-tight mb-4 line-clamp-2">
                           {campaign.title}
                         </h3>
 
                         <div className="flex items-baseline gap-2 mb-3">
-                          <span className="text-2xl font-bold text-gray-900">
+                          <span className="font-fraunces text-2xl font-medium text-ink">
                             {formatCurrency(campaign.raised)} raised
                           </span>
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-ink/60">
                             of {formatCurrency(campaign.goal)}
                           </span>
                         </div>
 
-                        <div className="w-full bg-gray-200 rounded-full h-1">
+                        <div className="w-full bg-cream-muted rounded-full h-1">
                           <div
                             className="bg-brand-blue h-1 rounded-full transition-all duration-300"
                             style={{
@@ -342,14 +339,11 @@ export default function LiveCampaigns() {
           {canScrollRight && (
             <button
               onClick={() => scroll("right")}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg rounded-full p-1.5 sm:p-2 border border-gray-200 transition-all duration-200 -mr-2 sm:-mr-4 flex items-center justify-center"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-surface/90 hover:bg-surface shadow-lg rounded-full p-1.5 sm:p-2 border border-hairline transition-all duration-200 -mr-2 sm:-mr-4 flex items-center justify-center"
               aria-label="Scroll right"
             >
-              <ChevronRight size={16} className="text-gray-700 sm:hidden" />
-              <ChevronRight
-                size={20}
-                className="text-gray-700 hidden sm:block"
-              />
+              <ChevronRight size={16} className="text-ink/80 sm:hidden" />
+              <ChevronRight size={20} className="text-ink/80 hidden sm:block" />
             </button>
           )}
         </div>

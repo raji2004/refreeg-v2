@@ -72,11 +72,11 @@ function FeatureCard({
         hasBorder ? "border-b md:border-b-0 md:border-r border-white/10" : ""
       }`}
     >
-      <div className="feature-icon inline-flex rounded-full bg-[#CFF454] p-2 mb-6">
+      <div className="feature-icon inline-flex rounded-full bg-lime p-2 mb-6">
         <Image src={icon} alt={title} width={iconWidth} height={iconHeight} />
       </div>
 
-      <h3 className="mb-3 md:mb-2 lg:mb-3 text-xl lg:text-2xl font-semibold text-[#FFD8D8]">
+      <h3 className="mb-3 md:mb-2 lg:mb-3 text-xl lg:text-2xl font-semibold text-sand">
         {title}
       </h3>
 
@@ -86,7 +86,7 @@ function FeatureCard({
 
       <Link
         href={link.href}
-        className="text-xs md:text-sm text-[#CFF454] underline underline-offset-4 transition-opacity hover:opacity-80"
+        className="text-xs md:text-sm text-lime underline underline-offset-4 transition-opacity hover:opacity-80"
       >
         → {link.label}
       </Link>
