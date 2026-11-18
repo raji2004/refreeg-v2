@@ -3,9 +3,11 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, LockKeyhole } from "lucide-react";
 import { Icons } from "@/components/icons";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FormStepper } from "@/components/ui/premium/form-stepper";
-import { PremiumFormContainer } from "@/components/ui/premium/premium-form-container";
+import { Card } from "@/components/ui/card";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { Stepper } from "@/components/ui/stepper";
 import { causeSteps } from "@/lib/options/cause.options";
 import { LAST_CAUSE_STEP } from "@/hooks/use-cause-form";
 
@@ -57,83 +59,104 @@ export function CauseWizard({
   }, [currentStep]);
 
   return (
-    <PremiumFormContainer
-      title={title}
-      description={description}
-      variant="refreeg"
-    >
-      <div ref={flowTopRef} className="scroll-mt-28 space-y-4">
-        <FormStepper
-          steps={causeSteps}
-          currentStep={currentStep}
-          variant="refreeg"
-          onStepSelect={(step) => {
-            if (step < currentStep) onStepSelect(step);
-          }}
-        />
-
-        <section className="overflow-hidden rounded-2xl border border-[#D6DEE7] bg-white shadow-[0_18px_45px_-38px_rgba(16,35,63,0.55)]">
-          <div className="border-b border-[#E1E7ED] bg-[#FBFCFD] px-3 py-4 sm:p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-blue-steel">
-              {causeSteps[currentStep - 1]}
+    <div className="min-h-screen w-full bg-cream px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+      <div className="mx-auto max-w-5xl">
+        <header className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Eyebrow>Campaign builder</Eyebrow>
+            <h1 className="mt-2 font-fraunces text-3xl font-medium text-ink sm:text-4xl">
+              {title}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-ink/70">
+              {description}
             </p>
-            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h2 className="text-[22px] font-extrabold tracking-[-0.015em] text-navy-ink sm:text-2xl">
-                  {activeStep.title}
-                </h2>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-steel">
-                  {activeStep.description}
-                </p>
-              </div>
-              <div className="inline-flex w-fit shrink-0 items-center gap-2 rounded-lg border border-[#C9D9E8] bg-[#EEF5FB] px-3 py-2 text-[10px] font-bold text-[#274C72]">
-                <LockKeyhole className="h-3.5 w-3.5" />
-                Milestone protected
-              </div>
-            </div>
+          </div>
+          <p className="inline-flex w-fit items-center gap-2 text-xs font-medium text-ink/60">
+            <span className="h-1.5 w-1.5 rounded-full bg-forest" />
+            Draft saves automatically
+          </p>
+        </header>
+
+        <div ref={flowTopRef} className="scroll-mt-28 space-y-6">
+          <div className="overflow-x-auto pb-1">
+            <Stepper
+              className="min-w-[520px]"
+              steps={causeSteps.map((label, i) => ({
+                label,
+                status:
+                  i + 1 < currentStep
+                    ? "done"
+                    : i + 1 === currentStep
+                      ? "current"
+                      : "upcoming",
+              }))}
+              onStepSelect={onStepSelect}
+            />
           </div>
 
-          <form
-            className="cause-flow space-y-6 px-3 py-4 sm:space-y-8 sm:p-6"
-            autoComplete="off"
-            onKeyDown={(e) => {
-              if (
-                currentStep === LAST_CAUSE_STEP &&
-                e.key === "Enter" &&
-                e.target instanceof HTMLElement &&
-                e.target.tagName !== "TEXTAREA" &&
-                e.target.tagName !== "BUTTON"
-              ) {
-                e.preventDefault();
-              }
-            }}
-          >
-            <div className="min-h-[320px] sm:min-h-[400px]">
-              <div
-                key={currentStep}
-                className="animate-in fade-in duration-200"
-              >
-                {children}
+          <Card variant="surface" className="overflow-hidden shadow-none">
+            <div className="border-b border-hairline bg-bone px-4 py-5 sm:p-6">
+              <Eyebrow>
+                Step {currentStep} of {LAST_CAUSE_STEP} ·{" "}
+                {causeSteps[currentStep - 1]}
+              </Eyebrow>
+              <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="font-fraunces text-2xl font-medium text-ink">
+                    {activeStep.title}
+                  </h2>
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-ink/70">
+                    {activeStep.description}
+                  </p>
+                </div>
+                <Badge variant="forest" className="w-fit shrink-0 gap-1.5">
+                  <LockKeyhole className="h-3.5 w-3.5" />
+                  Milestone protected
+                </Badge>
               </div>
             </div>
 
-            <div className="sticky bottom-0 z-10 -mx-3 -mb-4 flex items-center justify-between gap-3 border-t border-mist bg-white px-3 py-4 sm:static sm:-mx-6 sm:-mb-6 sm:px-6 sm:py-5">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onBack}
-                disabled={currentStep === 1}
-                className="h-11 rounded-xl border-mist-light bg-white px-4 font-bold text-navy-ink shadow-none hover:border-[#9FB1C5] hover:bg-[#F8FAFC] hover:text-navy-ink disabled:!border-mist-light disabled:!bg-[#F4F6F8] disabled:!text-[#8795A8] disabled:opacity-100 sm:px-5"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              <div className="flex gap-3">
+            <form
+              className="cause-flow space-y-6 px-4 py-5 sm:space-y-8 sm:p-6"
+              autoComplete="off"
+              onKeyDown={(e) => {
+                if (
+                  currentStep === LAST_CAUSE_STEP &&
+                  e.key === "Enter" &&
+                  e.target instanceof HTMLElement &&
+                  e.target.tagName !== "TEXTAREA" &&
+                  e.target.tagName !== "BUTTON"
+                ) {
+                  e.preventDefault();
+                }
+              }}
+            >
+              <div className="min-h-[320px] sm:min-h-[400px]">
+                <div
+                  key={currentStep}
+                  className="animate-in fade-in duration-200"
+                >
+                  {children}
+                </div>
+              </div>
+
+              <div className="sticky bottom-0 z-10 -mx-4 -mb-5 flex items-center justify-between gap-3 border-t border-hairline bg-surface px-4 py-4 sm:static sm:-mx-6 sm:-mb-6 sm:px-6 sm:py-5">
+                <Button
+                  type="button"
+                  variant="surface"
+                  onClick={onBack}
+                  disabled={currentStep === 1}
+                  className="h-11 px-4 sm:px-5"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
                 {currentStep < LAST_CAUSE_STEP ? (
                   <Button
                     type="button"
+                    variant="ink"
                     onClick={onNext}
-                    className="h-11 rounded-xl bg-blue-steel px-5 font-bold text-white shadow-none hover:bg-[#1B4E8C] sm:px-7"
+                    className="h-11 px-5 sm:px-7"
                   >
                     Continue
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -141,9 +164,10 @@ export function CauseWizard({
                 ) : (
                   <Button
                     type="button"
+                    variant="lime"
                     disabled={busy}
                     onClick={onSubmit}
-                    className="h-11 rounded-xl bg-blue-steel px-5 font-bold text-white shadow-none hover:bg-[#1B4E8C] sm:px-7"
+                    className="h-11 px-5 sm:px-7"
                   >
                     {busy ? (
                       <>
@@ -156,10 +180,10 @@ export function CauseWizard({
                   </Button>
                 )}
               </div>
-            </div>
-          </form>
-        </section>
+            </form>
+          </Card>
+        </div>
       </div>
-    </PremiumFormContainer>
+    </div>
   );
 }

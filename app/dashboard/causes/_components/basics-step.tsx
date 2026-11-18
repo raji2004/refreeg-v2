@@ -22,7 +22,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { FieldError } from "@/components/ui/field-error";
 
-const labelClass = "text-sm font-semibold text-gray-700 sm:text-base";
+const labelClass = "text-sm font-semibold text-ink sm:text-base";
 
 type Props = {
   /** New causes type a location; existing ones pick from place suggestions. */
@@ -50,7 +50,7 @@ export function CauseBasicsStep({ mode, form, errors, setFormFields }: Props) {
           onChange={(e) => setFormFields("title", e.target.value)}
           className={cn(
             "h-11 text-base premium-input sm:h-12 sm:text-lg",
-            errors.title && "border-red-500",
+            errors.title && "border-rust",
           )}
         />
         <FieldError message={errors.title} />
@@ -60,7 +60,7 @@ export function CauseBasicsStep({ mode, form, errors, setFormFields }: Props) {
         <div className="space-y-2">
           <Label htmlFor="summary" className={labelClass}>
             Short Summary{" "}
-            <span className="font-normal text-gray-400">(optional)</span>
+            <span className="font-normal text-ink/50">(optional)</span>
           </Label>
           <Input
             id="summary"
@@ -71,14 +71,14 @@ export function CauseBasicsStep({ mode, form, errors, setFormFields }: Props) {
             maxLength={200}
             className={cn(
               "h-11 premium-input sm:h-12",
-              errors.summary && "border-red-500",
+              errors.summary && "border-rust",
             )}
           />
           <FieldError message={errors.summary} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="location" className={labelClass}>
-            Location <span className="text-red-500">*</span>
+            Location <span className="text-rust">*</span>
           </Label>
           {mode === "edit" ? (
             <CampaignLocationAutocomplete
@@ -98,11 +98,11 @@ export function CauseBasicsStep({ mode, form, errors, setFormFields }: Props) {
               aria-invalid={Boolean(errors.location)}
               className={cn(
                 "h-11 premium-input sm:h-12",
-                errors.location && "border-red-500",
+                errors.location && "border-rust",
               )}
             />
           )}
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink/60">
             {mode === "edit"
               ? "Type at least two letters, then select a place from the list."
               : "Enter the city, state, and country where your cause is based."}
@@ -143,10 +143,10 @@ export function CauseBasicsStep({ mode, form, errors, setFormFields }: Props) {
                 }}
                 className={cn(
                   "h-11 pl-11 premium-input font-mono text-base sm:h-12 sm:pl-12 sm:text-lg",
-                  errors.goal && "border-red-500",
+                  errors.goal && "border-rust",
                 )}
               />
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-gray-400 sm:left-4">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-ink/50 sm:left-4">
                 ₦
               </span>
             </div>

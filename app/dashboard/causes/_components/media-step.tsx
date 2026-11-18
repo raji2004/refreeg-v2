@@ -39,8 +39,9 @@ const GALLERY_ACCEPT = {
   "video/webm": [".webm"],
 };
 
-const labelClass = "block text-sm font-semibold text-gray-700 sm:text-base";
-const panelClass = "rounded-2xl border border-mist bg-white px-3 py-4 sm:p-6";
+const labelClass = "block text-sm font-semibold text-ink sm:text-base";
+const panelClass =
+  "rounded-xl border border-hairline bg-surface px-3 py-4 sm:p-6";
 
 type Props = {
   form: CauseFormValues;
@@ -90,7 +91,7 @@ export function CauseMediaStep({
             description={`${CAUSE_COVER_DESCRIPTION} · up to 100MB`}
           />
           {coverSrc && (
-            <div className="group relative mt-4 aspect-video overflow-hidden rounded-xl border border-brand/10 shadow-sm">
+            <div className="group relative mt-4 aspect-video overflow-hidden rounded-xl border border-hairline shadow-sm">
               <Image
                 src={coverSrc}
                 alt="Cover Preview"
@@ -122,7 +123,7 @@ export function CauseMediaStep({
       <div className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Label className={labelClass}>Multimedia Gallery</Label>
-          <span className="w-fit rounded-full border border-mist-light bg-[#F8FAFC] px-2.5 py-1 text-xs font-semibold text-steel">
+          <span className="w-fit rounded-full border border-hairline bg-bone px-2.5 py-1 text-xs font-semibold text-ink/70">
             Max 5 files · 2 videos (MP4/WebM, 50MB, 90s)
           </span>
         </div>
@@ -162,7 +163,7 @@ export function CauseMediaStep({
                 value={link}
                 onChange={(e) => setLink(index, e.target.value)}
                 placeholder="YouTube or Vimeo link"
-                className="h-11 premium-input bg-white sm:h-12"
+                className="h-11 premium-input sm:h-12"
               />
               <Button
                 type="button"
@@ -173,7 +174,7 @@ export function CauseMediaStep({
                     form.videoLinks.filter((_, i) => i !== index),
                   )
                 }
-                className="h-11 shrink-0 rounded-xl border-[#E7B9B5] bg-white px-5 font-semibold text-[#B42318] shadow-none hover:border-[#D77A72] hover:bg-[#FFF4F2] hover:text-[#912018] sm:h-12"
+                className="h-11 shrink-0 rounded-xl border-rust/40 bg-surface px-5 font-semibold text-rust shadow-none hover:border-rust hover:bg-rust/10 hover:text-rust sm:h-12"
               >
                 Remove
               </Button>
@@ -185,7 +186,7 @@ export function CauseMediaStep({
               setFormFields("videoLinks", [...form.videoLinks, ""])
             }
             variant="outline"
-            className="h-11 w-full rounded-xl border border-dashed border-[#B8C5D3] bg-white text-steel shadow-none hover:border-blue-steel hover:bg-[#F4F8FC] hover:text-blue-steel sm:h-12"
+            className="h-11 w-full rounded-xl border border-dashed border-ink/20 bg-surface text-ink/70 shadow-none hover:border-forest hover:bg-bone hover:text-forest sm:h-12"
           >
             <Plus className="mr-1.5 h-4 w-4" />
             Add video link
