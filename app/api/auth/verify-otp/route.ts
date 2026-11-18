@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { createReferralRecord } from "@/lib/referral-utils";
 import { otpMatches } from "@/lib/auth/otp";
 import { deriveFullNameFromEmail } from "@/lib/auth/registration";
+import { runPostSignupActions } from "@/lib/auth/welcome";
 
 const SIGNUP_EIZA_BONUS = 150;
 
@@ -168,6 +169,13 @@ export async function POST(req: Request) {
       });
 
       return profile;
+    });
+
+    await runPostSignupActions({
+      email: newProfile.email as string,
+      fullName:
+        newProfile.fullName || deriveFullNameFromEmail(newProfile.email),
+      accountType: newProfile.accountType,
     });
 
     const timestamp = Date.now().toString();

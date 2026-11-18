@@ -1,1 +1,5 @@
+# macOS GUI clients do not inherit the terminal's Homebrew PATH.
+# Append these paths so an existing terminal Node setup keeps priority.
+export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
+
 pnpm exec lint-staged
