@@ -54,7 +54,7 @@ export async function createPledge(input: CreatePledgeInput) {
         cause_id: input.causeId,
         user_id: user?.id ?? null,
         amount: input.amount,
-        reminder_date: input.reminderDate,
+        reminder_date: new Date(`${input.reminderDate}T00:00:00.000Z`),
         name: input.name,
         email: input.email,
         note: input.note ?? null,

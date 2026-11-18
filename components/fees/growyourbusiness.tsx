@@ -17,7 +17,7 @@ export default function GrowYourBusiness() {
         transition={{ duration: 0.7, ease: "easeOut" }}
         viewport={{ once: true }}
       >
-        <p className="text-xs p-2 border rounded-full bg-[#FAFAFA]">
+        <p className="text-xs p-2 border rounded-full bg-palette-baseWhite">
           Powered by vetted, audited smart contracts. Withdraw anytime. Your
           funds remain yours, always.
         </p>
@@ -30,7 +30,7 @@ export default function GrowYourBusiness() {
         </p>
 
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button className="bg-[#FAFAFA] border text-black px-10 py-4 flex items-center gap-2 rounded-full">
+          <Button className="bg-palette-baseWhite border text-black px-10 py-4 flex items-center gap-2 rounded-full">
             Get Started
             <ArrowRight size={16} />
           </Button>

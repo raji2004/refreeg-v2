@@ -132,7 +132,7 @@ export default function AllYouNeed() {
         viewport={{ once: true }}
       >
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button className="bg-[#FAFAFA] border text-black px-10 py-4 flex items-center gap-2 rounded-full">
+          <Button className="bg-palette-baseWhite border text-black px-10 py-4 flex items-center gap-2 rounded-full">
             Get Started
             <Image
               src="/images/arrow-right.png"

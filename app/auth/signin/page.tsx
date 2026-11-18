@@ -3,16 +3,16 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { AlreadySignedInCard } from "@/components/auth/already-signed-in-card";
 import { AuthBrandPanel } from "@/components/auth/auth-brand-panel";
+import { AuthField } from "@/components/auth/auth-field";
 import { AuthLogo } from "@/components/auth/auth-logo";
+import { SocialSignInButtons } from "@/components/auth/social-sign-in-buttons";
 
 function normalizeRedirect(target: string | null): string | null {
   if (!target || !target.startsWith("/") || target.startsWith("//"))
@@ -21,17 +21,20 @@ function normalizeRedirect(target: string | null): string | null {
 }
 
 function SignInContent() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({ email: "", password: "" });
   const [loadingType, setLoadingType] = useState<
     "manual" | "google" | "apple" | null
   >(null);
-  const [showPassword, setShowPassword] = useState(false);
   const { user, isLoading, signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
   const hasShownAuthNotice = useRef(false);
+
+  const setFormFields = <K extends keyof typeof form>(
+    key: K,
+    value: (typeof form)[K],
+  ) => setForm((current) => ({ ...current, [key]: value }));
 
   useEffect(() => {
     router.prefetch("/petitions");
@@ -73,7 +76,7 @@ function SignInContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email.trim() || !password) {
+    if (!form.email.trim() || !form.password) {
       toast({
         title: "Missing fields",
         description: "Please enter both your email address and password.",
@@ -90,7 +93,7 @@ function SignInContent() {
     });
 
     try {
-      await signIn(email.trim().toLowerCase(), password, redirectTo);
+      await signIn(form.email.trim().toLowerCase(), form.password, redirectTo);
     } catch (error: any) {
       console.error("Sign in failed:", error);
     } finally {
@@ -99,7 +102,7 @@ function SignInContent() {
   };
 
   if (isLoading) {
-    return <div className="min-h-screen w-screen bg-[#FCFBFA]" />;
+    return <div className="min-h-screen w-screen bg-cream-soft" />;
   }
 
   if (user) {
@@ -143,7 +146,7 @@ function SignInContent() {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-[#FCFBFA]">
+    <div className="flex min-h-screen w-full bg-cream-soft">
       {}
       <AuthBrandPanel
         headline="Welcome back to transparent impact."
@@ -215,120 +218,51 @@ function SignInContent() {
             </div>
           )}
 
-          {/* Social Sign In */}
-          <div className="space-y-3 mb-6">
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={loadingType !== null}
-              className="w-full h-12 flex items-center justify-center gap-3 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 shadow-sm text-sm font-medium text-neutral-800 transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer"
-            >
-              {loadingType === "google" ? (
-                <Loader2 className="h-4 w-4 animate-spin text-neutral-700" />
-              ) : (
-                <>
-                  <Image
-                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                    width={18}
-                    height={18}
-                    alt="Google"
-                    className="shrink-0"
-                  />
-                  <span>Continue with Google</span>
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleAppleSignIn}
-              disabled={loadingType !== null}
-              className="w-full h-12 flex items-center justify-center gap-2.5 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 shadow-sm text-sm font-medium text-neutral-800 transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 170 170"
-                fill="currentColor"
-                className="shrink-0"
-              >
-                <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.08-7.7-7.94-12.04-14.58-6.19-9.52-11.04-20.17-14.55-31.96-3.51-11.78-5.27-23.04-5.27-33.77 0-14.33 3.66-26.11 10.98-35.34 7.32-9.23 16.5-13.9 27.54-14.02 5.06 0 10.43 1.25 16.12 3.75 5.68 2.5 9.77 3.81 12.26 3.93 1.93-.12 6.13-1.49 12.61-4.11 6.48-2.62 11.96-3.84 16.44-3.65 12.44.63 22.39 5.25 29.85 13.86-10.87 6.64-16.18 15.65-15.93 27.03.26 8.94 3.74 16.5 10.45 22.68 6.7 6.18 14.68 9.77 23.94 10.77-1.93 5.92-4.15 11.66-6.66 17.23zM119.22 33.56c0-6.73 2.45-13.11 7.35-19.14 4.9-6.03 11.02-9.98 18.36-11.86.87 3.37 1.08 6.47.63 9.31-.7 4.49-2.73 9.07-6.09 13.74-3.36 4.67-7.46 7.97-12.3 9.9-1.99.8-3.79 1.15-5.4 1.05-.33-1-.62-2.02-.85-3.05-.62-2.82-.93-5.29-.93-7.42z" />
-              </svg>
-              <span>Continue with Apple</span>
-            </button>
-          </div>
+          <SocialSignInButtons
+            disabled={loadingType !== null}
+            googleLoading={loadingType === "google"}
+            onGoogle={handleGoogleSignIn}
+            onApple={handleAppleSignIn}
+          />
 
           {/* Divider */}
           <div className="relative my-7 text-center">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-neutral-200" />
             </div>
-            <span className="relative bg-[#FCFBFA] px-3 text-[11px] font-bold uppercase tracking-widest text-neutral-400">
+            <span className="relative bg-cream-soft px-3 text-[11px] font-bold uppercase tracking-widest text-neutral-400">
               Or use your email
             </span>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email Address */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="email"
-                className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
-              >
-                Email Address
-              </label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-12 rounded-xl bg-[#F0EEE9]/70 border border-neutral-200/80 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-blue-600 transition-colors"
-              />
-            </div>
-
-            {/* Password */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="password"
-                  className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600"
-                >
-                  Password
-                </label>
+            <AuthField
+              id="email"
+              type="email"
+              label="Email Address"
+              placeholder="name@example.com"
+              value={form.email}
+              onChange={(e) => setFormFields("email", e.target.value)}
+              required
+            />
+            <AuthField
+              id="password"
+              type="password"
+              label="Password"
+              placeholder="••••••••"
+              value={form.password}
+              onChange={(e) => setFormFields("password", e.target.value)}
+              required
+              labelAction={
                 <Link
                   href="/auth/reset-password"
                   className="text-xs font-medium text-neutral-500 hover:text-neutral-900 hover:underline transition-colors"
                 >
                   Forgot Password?
                 </Link>
-              </div>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-12 rounded-xl bg-[#F0EEE9]/70 border border-neutral-200/80 px-4 pr-11 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-blue-600 transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 top-0 bottom-0 px-3.5 flex items-center text-neutral-400 hover:text-neutral-600 cursor-pointer"
-                  tabIndex={-1}
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
+              }
+            />
 
             {/* Submit Action Button */}
             <div className="pt-2">
@@ -336,7 +270,7 @@ function SignInContent() {
                 type="submit"
                 aria-label="Sign In"
                 disabled={loadingType !== null}
-                className="w-full h-13 rounded-2xl bg-[#0D1E16] text-white hover:bg-neutral-900 font-medium text-sm sm:text-base shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full h-13 rounded-2xl bg-forest-deep text-white hover:bg-neutral-900 font-medium text-sm sm:text-base shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {loadingType === "manual" ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -384,7 +318,9 @@ function SignInContent() {
 
 export default function SignInPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen w-screen bg-[#FCFBFA]" />}>
+    <Suspense
+      fallback={<div className="min-h-screen w-screen bg-cream-soft" />}
+    >
       <SignInContent />
     </Suspense>
   );

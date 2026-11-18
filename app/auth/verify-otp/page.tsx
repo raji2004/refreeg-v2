@@ -141,7 +141,7 @@ function VerifyOtpContent() {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-[#FCFBFA]">
+    <div className="flex min-h-screen w-full bg-cream-soft">
       {}
       <AuthBrandPanel
         headline="One code, three characters at a time."
@@ -231,7 +231,7 @@ function VerifyOtpContent() {
             <Button
               type="submit"
               disabled={isVerifying || otpCode.length !== 6}
-              className="w-full h-13 rounded-2xl bg-[#0D1E16] text-white hover:bg-neutral-900 font-medium text-sm sm:text-base shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full h-13 rounded-2xl bg-forest-deep text-white hover:bg-neutral-900 font-medium text-sm sm:text-base shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isVerifying ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -261,7 +261,9 @@ function VerifyOtpContent() {
 
 export default function VerifyOtpPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen w-screen bg-[#FCFBFA]" />}>
+    <Suspense
+      fallback={<div className="min-h-screen w-screen bg-cream-soft" />}
+    >
       <VerifyOtpContent />
     </Suspense>
   );

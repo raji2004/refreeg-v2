@@ -138,14 +138,14 @@ export default function WhyOnChain() {
       <div className="bg-[#EAE5D8] px-4 sm:px-8 md:px-20 pt-12 sm:pt-16 md:pt-20 pb-0">
         <p
           ref={eyebrowRef}
-          className="text-center text-[11px] font-medium tracking-[0.16em] uppercase text-[#1C3CD5] mb-5"
+          className="text-center text-[11px] font-medium tracking-[0.16em] uppercase text-brand-blue mb-5"
         >
           Why On-Chain
         </p>
 
         <h2
           ref={headlineRef}
-          className="font-serif font-normal text-[#0D0D0D] text-center leading-[1.08] text-[clamp(32px,4.8vw,64px)] max-w-4xl mx-auto mb-12 sm:mb-16 md:mb-20"
+          className="font-serif font-normal text-near-black text-center leading-[1.08] text-[clamp(32px,4.8vw,64px)] max-w-4xl mx-auto mb-12 sm:mb-16 md:mb-20"
         >
           Built for the people who ask{" "}
           <em className="italic">
@@ -155,7 +155,7 @@ export default function WhyOnChain() {
 
         <div
           ref={dividerRef}
-          className="grid grid-cols-1 md:grid-cols-3 border-t border-[#0D0D0D]/20"
+          className="grid grid-cols-1 md:grid-cols-3 border-t border-near-black/20"
         >
           {features.map(
             (
@@ -170,21 +170,21 @@ export default function WhyOnChain() {
                 className={[
                   "pt-8 sm:pt-10 pb-12 sm:pb-16 flex flex-col",
 
-                  "border-b border-[#0D0D0D]/10 md:border-b-0",
+                  "border-b border-near-black/10 md:border-b-0",
 
                   i === 0 && "md:pr-12 md:border-b-0",
                   i === 1 &&
-                    "md:px-12 md:border-x md:border-[#0D0D0D]/20 md:border-b-0",
+                    "md:px-12 md:border-x md:border-near-black/20 md:border-b-0",
                   i === 2 && "md:pl-12 md:border-b-0",
                 ]
                   .filter(Boolean)
                   .join(" ")}
               >
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#1C3CD5] rounded-xl flex items-center justify-center mb-5 sm:mb-7 shrink-0">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-brand-blue rounded-xl flex items-center justify-center mb-5 sm:mb-7 shrink-0">
                   <Icon size={20} strokeWidth={1.8} className={iconColor} />
                 </div>
 
-                <h3 className="font-serif font-normal text-[#0D0D0D] text-2xl sm:text-[1.75rem] leading-tight mb-3">
+                <h3 className="font-serif font-normal text-near-black text-2xl sm:text-[1.75rem] leading-tight mb-3">
                   {title}
                 </h3>
 
@@ -194,7 +194,7 @@ export default function WhyOnChain() {
 
                 <Link
                   href={href}
-                  className="text-[13px] text-[#0D0D0D]/60 hover:text-[#0D0D0D] transition-colors mt-auto inline-flex items-center gap-1"
+                  className="text-[13px] text-near-black/60 hover:text-near-black transition-colors mt-auto inline-flex items-center gap-1"
                 >
                   → {linkLabel}
                 </Link>
@@ -208,7 +208,7 @@ export default function WhyOnChain() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 max-w-6xl mx-auto">
           <h1
             ref={heroHeadlineRef}
-            className="font-serif font-normal text-[#0D0D0D] text-[clamp(40px,6.5vw,88px)] leading-[1.1] md:leading-[1.0] m-0 text-center md:text-left"
+            className="font-serif font-normal text-near-black text-[clamp(40px,6.5vw,88px)] leading-[1.1] md:leading-[1.0] m-0 text-center md:text-left"
           >
             Giving,
             <br />
@@ -220,7 +220,7 @@ export default function WhyOnChain() {
           <div className="flex flex-col justify-center mt-0 md:mt-24">
             <p
               ref={heroSubRef}
-              className="text-[#0D0D0D] text-sm sm:text-base leading-relaxed m-0 mb-6 sm:mb-8 text-center md:text-left"
+              className="text-near-black text-sm sm:text-base leading-relaxed m-0 mb-6 sm:mb-8 text-center md:text-left"
             >
               Whether you give ₦10 or rally ten thousand people, RefreeG turns
               intent into impact you can prove.
@@ -232,7 +232,7 @@ export default function WhyOnChain() {
             >
               <Link
                 href="#"
-                className="flex items-center justify-center gap-2 bg-[#1C3CD5] text-white text-[15px] font-medium rounded-full px-6 py-[14px] hover:opacity-90 transition-colors no-underline w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 bg-brand-blue text-white text-[15px] font-medium rounded-full px-6 py-[14px] hover:opacity-90 transition-colors no-underline w-full sm:w-auto"
               >
                 Give to a cause
                 <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
@@ -242,7 +242,7 @@ export default function WhyOnChain() {
 
               <Link
                 href="/dashboard/causes/create"
-                className="flex items-center justify-center text-[#0D0D0D] text-[15px] font-medium rounded-full px-6 py-[14px] border border-[#0D0D0D] hover:bg-black/5 transition-colors no-underline w-full sm:w-auto"
+                className="flex items-center justify-center text-near-black text-[15px] font-medium rounded-full px-6 py-[14px] border border-near-black hover:bg-black/5 transition-colors no-underline w-full sm:w-auto"
               >
                 Start a campaign
               </Link>

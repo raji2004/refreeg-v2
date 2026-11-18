@@ -28,6 +28,7 @@ import { H4, P } from "../typography";
 import AnimatedCard from "./components/AnimatedCard";
 import { causePublicPath } from "@/lib/causes/slug";
 
+import { Button } from "@/components/ui/button";
 type Cause = {
   id: string;
   slug?: string | null;
@@ -141,9 +142,13 @@ export default function UrgentCausesCarousel({ causes }: { causes: Cause[] }) {
 
         {}
         <Link href="/causes" className="w-full">
-          <button className="w-full py-3 rounded-xl border border-gray-300 text-sm font-medium hover:bg-gray-100 transition">
+          <Button
+            variant="bare"
+            size="bare"
+            className="w-full py-3 rounded-xl border border-gray-300 text-sm font-medium hover:bg-gray-100 transition"
+          >
             See More
-          </button>
+          </Button>
         </Link>
       </div>
 

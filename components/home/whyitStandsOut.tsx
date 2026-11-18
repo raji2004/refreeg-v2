@@ -9,19 +9,19 @@ import { useAnimateInView } from "@/hooks/use-animate-In-view";
 
 const features = [
   {
-    icon: <FaUsers size={70} className="text-[#0070E0]" />,
+    icon: <FaUsers size={70} className="text-primaryShades-700" />,
     title: "Global",
     description:
       "Support causes from anywhere in the world with our secure, web-based platform.",
   },
   {
-    icon: <FaCheckSquare size={70} className="text-[#0070E0]" />,
+    icon: <FaCheckSquare size={70} className="text-primaryShades-700" />,
     title: "Safe",
     description:
       "Your donations are secured and verified on the blockchain, ensuring they reach the right cause.",
   },
   {
-    icon: <FaSmile size={70} className="text-[#0070E0]" />,
+    icon: <FaSmile size={70} className="text-primaryShades-700" />,
     title: "Easy",
     description:
       "Donate to causes with just a few clicks and track progress every step of the way.",
@@ -72,7 +72,7 @@ export default function WhyItStandsOut() {
         initial={{ opacity: 0, y: 40 }}
         animate={isInView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="flex gap-2 items-center justify-center bg-[#0070E0] px-6 py-2 w-fit mx-auto rounded-full mb-6"
+        className="flex gap-2 items-center justify-center bg-primaryShades-700 px-6 py-2 w-fit mx-auto rounded-full mb-6"
       >
         <FaBoltLightning className="text-white" size={18} />
         <P className="text-white text-sm font-semibold">

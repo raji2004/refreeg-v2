@@ -3,23 +3,6 @@
 import { useState } from "react";
 import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,9 +10,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { createList, deleteList, renameList } from "@/actions/saved-actions";
+import { createList } from "@/actions/saved-actions";
 import { toast } from "@/hooks/use-toast";
 import type { SavedListSummary } from "@/lib/saved";
+import { DeleteListDialog } from "./delete-list-dialog";
+import { RenameListDialog } from "./rename-list-dialog";
 
 interface Props {
   lists: SavedListSummary[];
@@ -57,7 +42,6 @@ export function ListFilterRow({
   const [renameTarget, setRenameTarget] = useState<SavedListSummary | null>(
     null,
   );
-  const [renameName, setRenameName] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<SavedListSummary | null>(
     null,
   );
@@ -77,54 +61,6 @@ export function ListFilterRow({
       toast({ title: `List "${res.list.name}" created` });
     } catch {
       toast({ title: "Failed to create list", variant: "destructive" });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const openRename = (list: SavedListSummary) => {
-    setRenameName(list.name);
-    setRenameTarget(list);
-  };
-
-  const submitRename = async () => {
-    const clean = renameName.trim();
-    if (!renameTarget || !clean || busy) return;
-    setBusy(true);
-    try {
-      const res = await renameList(renameTarget.id, clean);
-      if (!res.ok) {
-        toast({ title: res.error, variant: "destructive" });
-        return;
-      }
-      setRenameTarget(null);
-      toast({ title: "List renamed" });
-      onListRenamed();
-    } catch {
-      toast({ title: "Failed to rename list", variant: "destructive" });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const submitDelete = async () => {
-    if (!deleteTarget || busy) return;
-    setBusy(true);
-    try {
-      const res = await deleteList(deleteTarget.id);
-      if (!res.ok) {
-        toast({ title: res.error, variant: "destructive" });
-        return;
-      }
-      const deleted = deleteTarget;
-      setDeleteTarget(null);
-      toast({
-        title: `List "${deleted.name}" deleted`,
-        description: "Its campaigns are still saved under All.",
-      });
-      onListDeleted(deleted.id);
-    } catch {
-      toast({ title: "Failed to delete list", variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -187,7 +123,7 @@ export function ListFilterRow({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuItem onSelect={() => openRename(list)}>
+                  <DropdownMenuItem onSelect={() => setRenameTarget(list)}>
                     <Pencil className="mr-2 h-4 w-4" />
                     Rename
                   </DropdownMenuItem>
@@ -239,77 +175,16 @@ export function ListFilterRow({
         </button>
       )}
 
-      <Dialog
-        open={renameTarget !== null}
-        onOpenChange={(open) => !open && setRenameTarget(null)}
-      >
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="font-fraunces text-xl">
-              Rename list
-            </DialogTitle>
-          </DialogHeader>
-          <Input
-            autoFocus
-            value={renameName}
-            disabled={busy}
-            maxLength={40}
-            placeholder="List name"
-            onChange={(e) => setRenameName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") submitRename();
-            }}
-          />
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="surface"
-              disabled={busy}
-              onClick={() => setRenameTarget(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="ink"
-              disabled={busy || !renameName.trim()}
-              onClick={submitRename}
-            >
-              {busy ? "Saving…" : "Save"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Delete &ldquo;{deleteTarget?.name}&rdquo;?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteTarget?.count === 1
-                ? "The campaign will remain saved under All."
-                : "The campaigns will remain saved under All."}{" "}
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Keep it</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={busy}
-              onClick={(e) => {
-                e.preventDefault();
-                void submitDelete();
-              }}
-              className="bg-rust text-rust-foreground hover:bg-rust/90"
-            >
-              {busy ? "Deleting…" : "Delete list"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <RenameListDialog
+        list={renameTarget}
+        onClose={() => setRenameTarget(null)}
+        onRenamed={onListRenamed}
+      />
+      <DeleteListDialog
+        list={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onDeleted={onListDeleted}
+      />
     </div>
   );
 }

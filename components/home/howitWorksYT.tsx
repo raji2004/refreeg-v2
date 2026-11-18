@@ -16,7 +16,7 @@ export default function HowitWorksYT() {
         initial={{ opacity: 0, y: 40 }}
         animate={isInView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="flex gap-2 items-center justify-center bg-[#0070E0] px-6 py-2 w-fit mx-auto rounded-full mb-6"
+        className="flex gap-2 items-center justify-center bg-primaryShades-700 px-6 py-2 w-fit mx-auto rounded-full mb-6"
       >
         <FaStairs className="text-white" size={18} />
         <P className="text-white text-sm font-semibold">

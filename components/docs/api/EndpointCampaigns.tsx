@@ -95,7 +95,7 @@ export function SectionCreateCampaign() {
       </header>
 
       <div className="bg-blue-50/50 p-6 rounded-3xl border border-blue-100 flex flex-col gap-6">
-        <h3 className="font-bold text-[#0A2A5C] flex items-center gap-2">
+        <h3 className="font-bold text-navy-royal flex items-center gap-2">
           <Banknote className="w-5 h-5 text-blue-600" />
           Flexible Settlement
         </h3>

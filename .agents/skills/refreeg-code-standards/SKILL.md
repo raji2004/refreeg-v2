@@ -10,8 +10,8 @@ Tool-agnostic: works for any AI coding agent or human reviewer. Full rules with 
 1. **Actions do only the work.** `actions/*` authenticate, validate, run one operation, return `{ success, error }` or data. Parsing, view shaping and side effects (toast, open tab) go in a hook under `hooks/`.
 2. **No intermediary layers.** Plain call, backend pagination, API filters. No fetch-all-pages wrappers, no single-use helpers, no needless mappers.
 3. **Real errors only.** Show `result.error` or `query.error?.message` directly. No error helper, no `*_ERRORS` maps, no generic fallback strings at call sites. Fix bad messages in the action.
-4. **One state object per form.** One `useState` object plus a `setFormFields(key, value)` updater. No per-field `useState`. Forms using React Hook Form skip this.
-5. **Zod for forms.** Schema in `lib/schemas/<feature>.schema.ts`, `useForm` plus `zodResolver`, `components/ui/form.tsx` messages under fields. Do not hardcode limits the server owns.
+4. **One state object per form.** Forms and dialogs with related fields: one `useState` object plus a `setFormFields(key, value)` updater, no per-field `useState`. Non-form flags (tabs, open, loading) stay separate. Forms that share a submit flow share one hook.
+5. **Zod for forms.** Schema in `lib/schemas/<feature>.schema.ts`, checked with `useValidator({ store: form, schema })` (`hooks/use-validator.ts`); show `errors.<field>` under inputs. Do not hardcode limits the server owns. Existing React Hook Form forms keep `zodResolver`.
 6. **One dialog per file.** Named for its job, exported by name. Sections only import and open them. Try `ConfirmationModal` first.
 7. **Options files.** `{ label, value }` lists in `lib/options/<feature>.options.ts` as `xxxOptions`, `as const satisfies readonly Option[]`.
 8. **Say it once.** Repeated expression, lookup or branch in a file becomes a variable or same-file helper.

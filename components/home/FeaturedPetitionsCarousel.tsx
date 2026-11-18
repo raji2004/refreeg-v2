@@ -14,6 +14,7 @@ import {
 
 import { PetitionCard } from "../petition-card";
 
+import { Button } from "@/components/ui/button";
 type Petition = {
   id: string;
   title: string;
@@ -65,9 +66,13 @@ export default function FeaturedPetitionsCarousel({
         ))}
 
         <Link href="/petitions" className="w-full">
-          <button className="w-full py-3 rounded-xl border border-gray-300 text-sm font-medium hover:bg-gray-100 transition">
+          <Button
+            variant="bare"
+            size="bare"
+            className="w-full py-3 rounded-xl border border-gray-300 text-sm font-medium hover:bg-gray-100 transition"
+          >
             See More
-          </button>
+          </Button>
         </Link>
       </div>
 
