@@ -48,7 +48,7 @@ export default function InvestEasy() {
           Investing made easier!
         </h1>
         <p className="text-lg text-gray-600">
-          Sign up today and unlock the power of earning while you create.
+          Sign up today and start earning while you create.
         </p>
 
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>

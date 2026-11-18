@@ -12,6 +12,7 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookmarkButton } from "@/components/saved/BookmarkButton";
+import { formatNaira } from "@/components/giving/format";
 
 type Spotlight = {
   id: string;
@@ -25,13 +26,6 @@ type Spotlight = {
 };
 
 const FALLBACK_IMAGE = "/live-donations.png";
-
-const formatNaira = (amount: number) =>
-  new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(amount);
 
 export function LiveSpotlight() {
   const [cause, setCause] = useState<Spotlight | null>(null);

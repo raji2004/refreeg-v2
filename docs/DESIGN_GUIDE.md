@@ -9,7 +9,7 @@
 
 The RefreeG palette is warm, utilitarian, and restrained. It pairs earth neutrals with purposeful functional accents, never purely decorative ones.
 
-All colors are declared as CSS variables in `app/globals.css` (`:root`) and mapped in `tailwind.config.ts`. **Never hardcode hex values in components** — use the corresponding token classes.
+All colors are declared as CSS variables in `app/globals.css` (`:root`) and mapped in `tailwind.config.ts`. **Never hardcode hex values in components**: use the corresponding token classes.
 
 ### Primary Palette
 
@@ -40,16 +40,16 @@ All colors are declared as CSS variables in `app/globals.css` (`:root`) and mapp
 | `--surface`      | `#ffffff`  | Card surface, modal sheets, input backgrounds             | `bg-surface`, `text-surface-foreground` |
 | `--cream-muted`  | `#f2f2ee`  | Inactive controls, subtle borders, divider fills          | `bg-cream-muted`, `border-cream-muted`  |
 | `--warm-neutral` | `#efebe1`  | Soft panel container, category tags                       | `bg-warm-neutral`                       |
-| `--parchment`    | `#f0ece4`  | **Petition surfaces only** — warm paper aesthetic         | `bg-parchment`                          |
+| `--parchment`    | `#f0ece4`  | **Petition surfaces only**: warm paper aesthetic          | `bg-parchment`                          |
 | `--hairline`     | `#e0e0dc`  | Soft card/row borders, subtle dividers                    | `border-hairline`, `divide-hairline`    |
 
 ### Palette Usage Rules
 
-1. **Lime is scarce.** One lime button per screen — the single next action. Two lime buttons on one view means the hierarchy is wrong.
+1. **Lime is scarce.** One lime button per screen: the single next action. Two lime buttons on one view means the hierarchy is wrong.
 2. **Lime marks the actual money-moving action, not "get to it."** On Discover, every Give/Pledge/Sign/Apply button in the grid, filter dialog, and search results is `ink` (or `outline` for secondary actions). Lime is reserved for the final submission button inside the payment or sign step (`QuickDonateForm`'s "Give ₦5,000" / "Donate ₦X").
 3. **Gold means "waiting," not "error."** Use `rust` (`bg-rust` or `destructive`) for actual failures (declined card, rejected KYC). Gold is for money or process in flight that will resolve on its own.
-4. **Ink is a surface, not just a border.** A dark `ink` panel is reserved for money state — wallet balance, held bounty amount. Don't use it as a generic "dark card" for unrelated content.
-5. **Parchment is scoped to petitions.** It is the one part of the platform that moves no money, so it gets its own warm, paper-like background instead of `cream` — a visual cue that signing is a civic action, not a financial one.
+4. **Ink is a surface, not just a border.** A dark `ink` panel is reserved for money state: wallet balance, held bounty amount. Don't use it as a generic "dark card" for unrelated content.
+5. **Parchment is scoped to petitions.** It is the one part of the platform that moves no money, so it gets its own warm, paper-like background instead of `cream`: a visual cue that signing is a civic action, not a financial one.
 
 ---
 
@@ -65,7 +65,7 @@ All colors are declared as CSS variables in `app/globals.css` (`:root`) and mapp
   - Body copy, descriptions, helper text
   - Form labels, buttons, dropdown options
   - Data tables, transaction rows, list items
-- **Eyebrow Labels** (`<Eyebrow>` or `.label-eyebrow`): Small-caps tracked labels above a heading or section (`"STEP 1 OF 4"`, `"WHAT LEVEL 2 UNLOCKS"`, `"FINANCIAL SUMMARY"`). Never use an un-tracked plain uppercase `<span>`.
+- **Eyebrow Labels** (`<Eyebrow>` or `.label-eyebrow`): Small-caps tracked labels above a heading or section (`"STEP 1 OF 4"`, `"WHAT LEVEL 2 INCLUDES"`, `"FINANCIAL SUMMARY"`). Never use an un-tracked plain uppercase `<span>`.
 
 ---
 
@@ -89,11 +89,11 @@ Follows a standard 4px baseline: `4px` (`p-1`), `8px` (`p-2`), `12px` (`p-3`), `
 
 ### Elevation & Shadows
 
-- `shadow-flat`: `0 0 0 1px hsl(var(--hairline))` — clean, unshadowed hairline container
-- `shadow-subtle`: `0 1px 2px 0 rgba(0, 0, 0, 0.05)` — inputs, dropdown menus, tooltips
-- `shadow-card`: `0 2px 8px -2px rgba(14, 27, 20, 0.08)` — surface cards on hover
-- `shadow-elevated`: `0 8px 24px -4px rgba(14, 27, 20, 0.12)` — floating MultiSelectBar, popovers
-- `shadow-sheet`: `0 16px 32px -8px rgba(14, 27, 20, 0.16)` — side drawers, modals
+- `shadow-flat`: `0 0 0 1px hsl(var(--hairline))`: clean, unshadowed hairline container
+- `shadow-subtle`: `0 1px 2px 0 rgba(0, 0, 0, 0.05)`: inputs, dropdown menus, tooltips
+- `shadow-card`: `0 2px 8px -2px rgba(14, 27, 20, 0.08)`: surface cards on hover
+- `shadow-elevated`: `0 8px 24px -4px rgba(14, 27, 20, 0.12)`: floating MultiSelectBar, popovers
+- `shadow-sheet`: `0 16px 32px -8px rgba(14, 27, 20, 0.16)`: side drawers, modals
 
 ---
 
@@ -261,11 +261,11 @@ import { MultiSelectBar } from "@/components/ui/multi-select-bar";
 ## 5. Interaction Rules
 
 1. **One level at a time.** A multi-step flow (verification levels, bounty claim → submit → review → paid) shows exactly one active step; completed steps collapse to a summary, future steps are visible but inert.
-2. **State the wait before the work.** When something is processing (documents under review, a bank transfer in flight), say how long it normally takes and what happens next — don't just show a spinner.
+2. **State the wait before the work.** When something is processing (documents under review, a bank transfer in flight), say how long it normally takes and what happens next: don't just show a spinner.
 3. **Removal is reversible until it isn't.** Bookmarking, list membership, and draft edits undo silently (toast with "Undo"). Money movement, deleting a saved list, and account closure require a typed or explicit confirmation and are stated as irreversible.
 4. **A rejection names the exact mismatch and offers the one-tap fix.** ("The name on the slip reads X, your account says Y") plus a button that resolves it directly, never just "try again."
 5. **Confirmation dialogs restate the number.** Withdrawals, bulk actions, and account closure show the exact amount/count being acted on in the confirmation step, not just a generic "Are you sure?".
-6. **A settings-style index has no sub-rail on narrow screens.** Settings (Profile, Notifications, Payments, Privacy, Security, Verification) is a flat index of full, independently-routed pages, not a persistent sub-navigation rail squeezed into a narrow column — the index page itself _is_ the navigation.
+6. **A settings-style index has no sub-rail on narrow screens.** Settings (Profile, Notifications, Payments, Privacy, Security, Verification) is a flat index of full, independently-routed pages, not a persistent sub-navigation rail squeezed into a narrow column: the index page itself _is_ the navigation.
 
 ---
 

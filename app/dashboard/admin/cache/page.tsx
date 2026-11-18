@@ -20,7 +20,7 @@ export default function AdminCachePage() {
         toast.error(result.message);
       }
     } catch (e) {
-      toast.error("An unexpected error occurred.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setIsClearingGlobal(false);
     }
@@ -40,7 +40,7 @@ export default function AdminCachePage() {
         toast.error(result.message);
       }
     } catch (e) {
-      toast.error("An unexpected error occurred.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setIsClearingPath(false);
     }
@@ -51,7 +51,8 @@ export default function AdminCachePage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Cache Management</h1>
         <p className="text-muted-foreground mt-2">
-          Manually invalidate the Next.js Data and Full Route Cache to force fresh data to appear in production.
+          Manually invalidate the Next.js Data and Full Route Cache to force
+          fresh data to appear in production.
         </p>
       </div>
 
@@ -61,10 +62,15 @@ export default function AdminCachePage() {
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-2">
               <RefreshCw className="h-6 w-6 text-blue-500" />
-              <h3 className="font-semibold text-lg leading-none tracking-tight">Global Purge</h3>
+              <h3 className="font-semibold text-lg leading-none tracking-tight">
+                Global Purge
+              </h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              This will clear the entire site&apos;s layout cache. It ensures everyone sees the absolute latest version of the site, but may cause the next immediate page loads to be slightly slower as they rebuild.
+              This will clear the entire site&apos;s layout cache. It ensures
+              everyone sees the absolute latest version of the site, but may
+              cause the next immediate page loads to be slightly slower as they
+              rebuild.
             </p>
             <button
               onClick={handleGlobalClear}
@@ -87,12 +93,22 @@ export default function AdminCachePage() {
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-6 w-6 text-green-500" />
-              <h3 className="font-semibold text-lg leading-none tracking-tight">Targeted Purge</h3>
+              <h3 className="font-semibold text-lg leading-none tracking-tight">
+                Targeted Purge
+              </h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              Only clear the cache for a specific route. Best if you just pushed a fix to one specific page (e.g., <code className="bg-muted px-1 rounded">/causes/save-the-whales</code>) and don&apos;t want to affect the whole site.
+              Only clear the cache for a specific route. Best if you just pushed
+              a fix to one specific page (e.g.,{" "}
+              <code className="bg-muted px-1 rounded">
+                /causes/save-the-whales
+              </code>
+              ) and don&apos;t want to affect the whole site.
             </p>
-            <form onSubmit={handlePathClear} className="flex flex-col gap-3 mt-4">
+            <form
+              onSubmit={handlePathClear}
+              className="flex flex-col gap-3 mt-4"
+            >
               <input
                 type="text"
                 placeholder="e.g. /dashboard/admin/causes"
@@ -117,11 +133,21 @@ export default function AdminCachePage() {
           </div>
         </div>
       </div>
-      
+
       <div className="mt-8 p-4 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg flex gap-3 text-sm text-blue-800 dark:text-blue-300">
         <AlertCircle className="h-5 w-5 shrink-0" />
         <div>
-          <strong>Note:</strong> Clearing the cache only affects Next.js server-side caching (Data Cache and Full Route Cache). If users are still seeing stale data, ask them to hard-refresh their browser (<kbd className="font-mono bg-blue-100 dark:bg-blue-900 px-1 rounded text-xs">Ctrl + Shift + R</kbd> / <kbd className="font-mono bg-blue-100 dark:bg-blue-900 px-1 rounded text-xs">Cmd + Shift + R</kbd>) to clear their local Browser/Router cache.
+          <strong>Note:</strong> Clearing the cache only affects Next.js
+          server-side caching (Data Cache and Full Route Cache). If users are
+          still seeing stale data, ask them to hard-refresh their browser (
+          <kbd className="font-mono bg-blue-100 dark:bg-blue-900 px-1 rounded text-xs">
+            Ctrl + Shift + R
+          </kbd>{" "}
+          /{" "}
+          <kbd className="font-mono bg-blue-100 dark:bg-blue-900 px-1 rounded text-xs">
+            Cmd + Shift + R
+          </kbd>
+          ) to clear their local Browser/Router cache.
         </div>
       </div>
     </div>

@@ -89,8 +89,7 @@ export default async function AdminUsersPage({
         <CardHeader>
           <CardTitle>Unable to load users</CardTitle>
           <CardDescription>
-            An error occurred while loading users. Check server logs for
-            details.
+            Couldn't load users. Check the server logs for details.
           </CardDescription>
         </CardHeader>
       </Card>

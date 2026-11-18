@@ -1,6 +1,7 @@
 "use client";
 
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { formatNaira } from "@/components/giving/format";
 
 interface DashboardGivingCardProps {
   givenSoFar: number;
@@ -8,14 +9,6 @@ interface DashboardGivingCardProps {
   livePledges: number;
   eizaBalance?: number;
 }
-
-const formatNaira = (value: number) => {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(value);
-};
 
 export function DashboardGivingCard({
   givenSoFar,

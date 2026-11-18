@@ -11,7 +11,7 @@ type ScrollTriggerPlugin =
  * effect, so the animation library (~40KB gzipped) is a separate async chunk
  * instead of part of the initial JS bundle.
  *
- * `build` runs inside `gsap.context(..., scope)` — same scoping/cleanup
+ * `build` runs inside `gsap.context(..., scope)`: same scoping/cleanup
  * semantics as the inline `useEffect` it replaces:
  *
  *   useGsap((gsap) => { gsap.from(".hero-title", {...}); }, heroRef);

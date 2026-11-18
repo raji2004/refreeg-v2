@@ -14,13 +14,7 @@ import { ArrowRight, BarChart3, Eye, Plus } from "lucide-react";
 import { getSessionUser } from "@/lib/auth/session-user";
 import { getUserCausesWithStats } from "@/actions/dashboard-actions";
 import { causePublicPath } from "@/lib/causes/slug";
-
-const formatNaira = (value: number) =>
-  new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(value || 0);
+import { formatNaira } from "@/components/giving/format";
 
 const getCauseProgress = (raised: number, goal: number) => {
   if (!goal || goal <= 0) return 0;

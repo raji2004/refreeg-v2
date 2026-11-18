@@ -242,8 +242,8 @@ export function BreetCryptoDonationModal({
               <div className="leading-normal space-y-1">
                 <p>
                   <strong>
-                    Kindly note: There is a 15 USDT minimum requirement for
-                    crypto donations on this network.
+                    Note: there is a 15 USDT minimum requirement for crypto
+                    donations on this network.
                   </strong>
                 </p>
               </div>

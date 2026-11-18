@@ -47,7 +47,7 @@ export default function DiditKycForm({ userId }: DiditKycFormProps) {
         throw new Error("SDK not loaded properly or URL is missing");
       }
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred");
+      setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -62,8 +62,8 @@ export default function DiditKycForm({ userId }: DiditKycFormProps) {
           RefreeG Identity Verification
         </CardTitle>
         <CardDescription className="text-base text-slate-500 mt-2">
-          Fast, secure, and automated identity verification to unlock premium
-          platform features.
+          Fast, secure, and automated identity verification that qualifies your
+          account for premium features.
         </CardDescription>
       </CardHeader>
 

@@ -8,9 +8,9 @@
 [![NextAuth](https://img.shields.io/badge/NextAuth-5-purple)](https://next-auth.js.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## Empower Communities, Build a Better World
+## Transparent Crowdfunding for Communities
 
-RefreeG is a blockchain-powered crowdfunding platform designed to empower communities through transparent and secure fundraising. Support causes that foster socioeconomic growth, from education and healthcare to disaster relief and social justice initiatives. With RefreeG, anyone can start or support verified causes, track donations in real-time, and drive measurable impact across Africa and beyond.
+RefreeG is a blockchain-powered crowdfunding platform built to help communities raise money through transparent and secure fundraising. Support causes that foster socioeconomic growth, from education and healthcare to disaster relief and social justice initiatives. With RefreeG, anyone can start or support verified causes, track donations in real-time, and drive measurable impact across Africa and beyond.
 
 ![RefreeG Hero](public/hero1.png)
 

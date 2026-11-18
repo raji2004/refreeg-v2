@@ -92,7 +92,7 @@ const sections = [
     content: [
       {
         subtitle: "Transparency Requirements",
-        text: "Cause creators are required to provide regular updates on how funds are being utilized. This includes sharing progress reports, receipts, and evidence of fund application to ensure donor trust and accountability.",
+        text: "Cause creators are required to provide regular updates on how funds are being spent. This includes sharing progress reports, receipts, and evidence of fund application to ensure donor trust and accountability.",
       },
       {
         subtitle: "Update Schedule",
@@ -100,7 +100,7 @@ const sections = [
       },
       {
         subtitle: "Proof of Impact",
-        text: "Donors have the right to request proof of fund utilization. Cause creators must maintain documentation and evidence of how funds are spent and make this available upon reasonable request.",
+        text: "Donors have the right to request proof of how funds were used. Cause creators must maintain documentation and evidence of how funds are spent and make this available upon reasonable request.",
       },
       {
         subtitle: "Consequences of Misuse",

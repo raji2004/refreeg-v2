@@ -16,9 +16,7 @@ export default function NotFoundPage() {
           height={300}
           className="mx-auto mb-6"
         />
-        <h1 className="text-2xl font-bold text-gray-900">
-          Oops! Page Not Found
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900">Page Not Found</h1>
         <p className="text-gray-600 mt-2 mb-6">
           Looks like you took a wrong turn, but do not worry, we are here to
           guide you back!

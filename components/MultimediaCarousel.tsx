@@ -243,7 +243,7 @@ export default function MultimediaCarousel({
             />
           );
         }
-        // No embeddable video ID could be extracted — YouTube's normal
+        // No embeddable video ID could be extracted: YouTube's normal
         // watch-page URLs refuse to load in an iframe (X-Frame-Options), so
         // falling back to the raw url here would always render a broken
         // frame. Link out instead, matching the TikTok/Drive fallback below.

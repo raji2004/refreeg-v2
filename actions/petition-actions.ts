@@ -374,7 +374,7 @@ export const listPetitions = cache(
         orderBy = { created_at: "desc" };
         break;
       // Petitions have no end_date, so "ending-soon" has no petition-side
-      // equivalent — falls back to newest first.
+      // equivalent: falls back to newest first.
     }
 
     const petitions = await prisma.petitions.findMany({
