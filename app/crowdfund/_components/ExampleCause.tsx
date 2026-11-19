@@ -3,7 +3,7 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
-import type { UseCase } from "../_data/use-cases";
+import type { UseCase } from "@/types/crowdfund-types";
 
 export function ExampleCause({ example }: { example: UseCase["example"] }) {
   const percent = (example.raised / example.goal) * 100;

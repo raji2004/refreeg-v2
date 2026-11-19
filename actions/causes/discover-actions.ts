@@ -38,6 +38,7 @@ export interface DiscoverFilters {
   location?: string;
   urgentOnly?: boolean;
   verifiedOnly?: boolean;
+  claimedOnly?: boolean;
   nearGoalOnly?: boolean;
   minAmountNeeded?: number;
   maxAmountNeeded?: number;
@@ -154,6 +155,7 @@ function queryFilters(filters: DiscoverFilters) {
     location: filters.location,
     urgentOnly: filters.urgentOnly,
     verifiedOnly: filters.verifiedOnly,
+    claimedOnly: filters.claimedOnly,
     minAmountNeeded: filters.minAmountNeeded,
     maxAmountNeeded: filters.maxAmountNeeded,
     includeType: filters.includeType,
@@ -192,6 +194,7 @@ const getCappedItems = cachedByArgs(
             location: filters.location,
             urgentOnly: filters.urgentOnly,
             verifiedOnly: filters.verifiedOnly,
+            claimedOnly: filters.claimedOnly,
             minAmountNeeded: filters.minAmountNeeded,
             maxAmountNeeded: filters.maxAmountNeeded,
             limit: DISCOVER_RESULT_CAP,
@@ -255,6 +258,7 @@ const getResultCount = cachedByArgs(
             location: filters.location,
             urgentOnly: filters.urgentOnly,
             verifiedOnly: filters.verifiedOnly,
+            claimedOnly: filters.claimedOnly,
             minAmountNeeded: filters.minAmountNeeded,
             maxAmountNeeded: filters.maxAmountNeeded,
           })

@@ -114,7 +114,7 @@ const Hero = () => {
 
         <div className="hero-image w-full max-w-4xl px-2 sm:px-6">
           <Image
-            src="/heropage.jpg"
+            src="/heropage.svg"
             alt="Hero Background"
             width={1400}
             height={900}

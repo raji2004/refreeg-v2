@@ -9,7 +9,7 @@ import { AnnouncementMarquee } from "@/components/ui/announcement-marquee";
 import { CrowdfundHero } from "./_components/CrowdfundHero";
 import { UseCaseNav } from "./_components/UseCaseNav";
 import { UseCaseSection } from "./_components/UseCaseSection";
-import { useCases } from "./_data/use-cases";
+import { crowdfundUseCases } from "@/lib/options/crowdfund.options";
 
 export const metadata: Metadata = {
   title: "What can I crowdfund?",
@@ -23,7 +23,7 @@ export default function CrowdfundPage() {
       <CrowdfundHero />
       <UseCaseNav />
 
-      {useCases.map((useCase, index) => (
+      {crowdfundUseCases.map((useCase, index) => (
         <UseCaseSection key={useCase.id} useCase={useCase} index={index} />
       ))}
 

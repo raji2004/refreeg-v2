@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { useCases } from "../_data/use-cases";
+import { crowdfundUseCases } from "@/lib/options/crowdfund.options";
 
 export function UseCaseNav() {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -18,7 +18,7 @@ export function UseCaseNav() {
       },
       { rootMargin: "-45% 0px -50% 0px" },
     );
-    useCases.forEach(({ id }) => {
+    crowdfundUseCases.forEach(({ id }) => {
       const section = document.getElementById(id);
       if (section) observer.observe(section);
     });
@@ -44,7 +44,7 @@ export function UseCaseNav() {
         ref={listRef}
         className="relative mx-auto flex max-w-6xl gap-6 overflow-x-auto px-4 sm:justify-center sm:gap-10 sm:px-6 [&::-webkit-scrollbar]:hidden"
       >
-        {useCases.map(({ id, label }, index) => (
+        {crowdfundUseCases.map(({ id, label }, index) => (
           <li key={id} className="shrink-0">
             <a
               href={`#${id}`}

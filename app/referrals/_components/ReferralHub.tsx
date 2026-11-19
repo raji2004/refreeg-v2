@@ -2,30 +2,15 @@ import { ArrowRight, Users } from "lucide-react";
 
 import type { ReferralRow } from "@/actions/users/referral-actions";
 import { Heading } from "@/components/marketing/Typography";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { Input } from "@/components/ui/input";
+import { referralSteps } from "@/lib/options/referral.options";
 import { cn } from "@/lib/utils";
 
 import { CopyLinkButton } from "./CopyLinkButton";
 import { ReferralItem } from "./ReferralItem";
-
-const STEPS = [
-  {
-    title: "Share your link.",
-    text: "Send it to friends on WhatsApp, by email, or anywhere people listen to you.",
-  },
-  {
-    title: "They join or give.",
-    text: "They sign up or donate to a verified cause through your link.",
-  },
-  {
-    title: "You earn and climb.",
-    text: "Collect points for every friend who completes KYC and rise on the public leaderboard.",
-  },
-];
-
-const inviteButtonClass =
-  "inline-flex items-center justify-center gap-2 rounded-full bg-blue-accent px-6 py-3 text-sm font-medium text-white shadow-xl transition-colors hover:bg-blue-accent/90";
 
 export function ReferralHub({
   referralLink,
@@ -38,6 +23,13 @@ export function ReferralHub({
   referrals: ReferralRow[];
   onInvite: () => void;
 }) {
+  const inviteButton = (
+    <Button variant="accent" size="pill" onClick={onInvite}>
+      Invite friends
+      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+    </Button>
+  );
+
   return (
     <div className="space-y-16 md:space-y-20">
       <section className="rounded-2xl bg-warm-neutral px-6 py-10 sm:px-10 md:py-14">
@@ -55,22 +47,15 @@ export function ReferralHub({
             <label htmlFor="referral-link" className="sr-only">
               Referral link
             </label>
-            <input
+            <Input
               id="referral-link"
               readOnly
               value={referralLink}
               onFocus={(e) => e.currentTarget.select()}
-              className="mt-5 w-full truncate rounded-full bg-surface px-5 py-3 font-mono text-xs text-ink/70 outline-none focus-visible:ring-2 focus-visible:ring-blue-accent"
+              className="mt-5 h-12 truncate rounded-full border-0 bg-surface px-5 font-mono text-xs text-ink/70 focus-visible:ring-blue-accent md:text-xs"
             />
             <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={onInvite}
-                className={inviteButtonClass}
-              >
-                Invite friends
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </button>
+              {inviteButton}
               <CopyLinkButton referralLink={referralLink} label="Copy link" />
             </div>
           </div>
@@ -107,7 +92,7 @@ export function ReferralHub({
           </Heading>
         </div>
         <ol>
-          {STEPS.map((step, index) => (
+          {referralSteps.map((step, index) => (
             <li
               key={step.title}
               className="flex items-start gap-4 border-b border-hairline py-6 first:pt-0"
@@ -140,16 +125,7 @@ export function ReferralHub({
             icon={<Users className="h-6 w-6 text-ink/40" />}
             title="No referrals yet"
             description="Share your link to start earning. Every signup counts."
-            action={
-              <button
-                type="button"
-                onClick={onInvite}
-                className={inviteButtonClass}
-              >
-                Invite friends
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </button>
-            }
+            action={inviteButton}
           />
         ) : (
           <ul className="mt-8 border-t border-hairline">

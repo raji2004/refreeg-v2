@@ -8,7 +8,10 @@ import {
   getCurrentUserRank,
   getLeaderboard,
 } from "@/actions/users/leaderboard-actions";
+import { HeroBadge } from "@/components/marketing/HeroBadge";
 import { Heading, Lead } from "@/components/marketing/Typography";
+import { Button } from "@/components/ui/button";
+import { leaderboardPageSize } from "@/lib/options/referral.options";
 import { ReferralsView } from "./ReferralsView";
 
 export const metadata: Metadata = {
@@ -28,10 +31,7 @@ export default async function ReferralsPage({
   if (!user?.id) {
     return (
       <section className="mx-auto flex w-full max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 md:py-28">
-        <span className="inline-flex items-center gap-2 rounded-full bg-lime px-4 py-2 text-xs font-semibold text-ink shadow-md sm:text-sm">
-          <span className="h-1.5 w-1.5 rounded-full bg-blue-accent" />
-          Referrals live with your account
-        </span>
+        <HeroBadge>Referrals live with your account</HeroBadge>
         <Heading as="h1" size="display" className="mt-6">
           Bring your people.
           <br />
@@ -41,20 +41,19 @@ export default async function ReferralsPage({
           Sign in to get your referral link, track the friends you invite, and
           climb the community leaderboard.
         </Lead>
-        <Link
-          href="/auth/signin?redirect=%2Freferrals"
-          className="mt-8 inline-flex items-center gap-2 rounded-full bg-blue-accent px-8 py-3.5 text-sm font-medium text-white shadow-xl transition-colors hover:bg-blue-accent/90"
-        >
-          Sign in
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
+        <Button asChild variant="accent" size="pill" className="mt-8 px-8">
+          <Link href="/auth/signin?redirect=%2Freferrals">
+            Sign in
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </Button>
       </section>
     );
   }
 
   const [data, leaderboard, rank] = await Promise.all([
     getReferralDashboardData(),
-    getLeaderboard({ page: 1, pageSize: 20 }),
+    getLeaderboard({ page: 1, pageSize: leaderboardPageSize }),
     getCurrentUserRank(user.id),
   ]);
   const headerList = await headers();
@@ -78,8 +77,7 @@ export default async function ReferralsPage({
         rank={rank.rank}
         referralCount={rank.referralCount}
         referrals={data?.referrals ?? []}
-        leaderboard={leaderboard.entries}
-        leaderboardTotal={leaderboard.totalCount}
+        leaderboard={leaderboard}
       />
     </div>
   );

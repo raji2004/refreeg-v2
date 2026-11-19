@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-import type { UseCase } from "../_data/use-cases";
+import { Button } from "@/components/ui/button";
+import type { UseCase } from "@/types/crowdfund-types";
 import { ExampleCause } from "./ExampleCause";
 import { LiveCauses, LiveCausesSkeleton } from "./LiveCauses";
 import { UseCaseBand } from "./UseCaseBand";
@@ -50,13 +51,14 @@ export function UseCaseSection({
               ))}
             </ol>
 
-            <Link
-              href={`/dashboard/causes/create?category=${useCase.categoryId}`}
-              className="mt-10 inline-flex items-center gap-2 rounded-full bg-blue-accent px-6 py-3.5 text-sm font-medium text-white shadow-xl transition-colors hover:bg-blue-accent/90"
-            >
-              {useCase.cta}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
+            <Button asChild variant="accent" size="pill" className="mt-10">
+              <Link
+                href={`/dashboard/causes/create?category=${useCase.categoryId}`}
+              >
+                {useCase.cta}
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </Button>
           </div>
 
           <div className="md:sticky md:top-48 md:self-start">

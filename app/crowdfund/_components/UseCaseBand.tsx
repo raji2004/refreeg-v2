@@ -7,7 +7,7 @@ import { Heading } from "@/components/marketing/Typography";
 import { useGsap } from "@/hooks/use-gsap";
 import { cn } from "@/lib/utils";
 
-import type { UseCase } from "../_data/use-cases";
+import type { UseCase } from "@/types/crowdfund-types";
 
 export function UseCaseBand({
   useCase,

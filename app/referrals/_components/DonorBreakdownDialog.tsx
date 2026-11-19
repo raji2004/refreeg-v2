@@ -1,20 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import {
-  getReferrerDonorDetail,
-  type ReferrerDonorDetailResult,
-} from "@/actions/users/leaderboard-actions";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useReferrerDonors } from "@/hooks/use-referrals";
 import { formatNairaShort } from "@/lib/causes/discover-summary";
 import { formatDate } from "@/lib/format-date";
-import { toast } from "@/hooks/use-toast";
 
 export function DonorBreakdownDialog({
   referrerId,
@@ -23,29 +17,11 @@ export function DonorBreakdownDialog({
   referrerId: string | null;
   onClose: () => void;
 }) {
-  const [detail, setDetail] = useState<ReferrerDonorDetailResult | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!referrerId) return;
-    let cancelled = false;
-    setDetail(null);
-    setLoading(true);
-    getReferrerDonorDetail(referrerId, { page: 1, pageSize: 50 })
-      .then((res) => !cancelled && setDetail(res))
-      .catch(() => {
-        if (cancelled) return;
-        toast({ title: "Couldn't load donor details", variant: "destructive" });
-        onClose();
-      })
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [referrerId]);
-
+  const { detail, loading, error } = useReferrerDonors(referrerId);
   const donations = detail?.donations ?? [];
+  const message = loading
+    ? "Loading donors…"
+    : (error ?? "No donations from their referrals yet.");
 
   return (
     <Dialog open={!!referrerId} onOpenChange={(open) => !open && onClose()}>
@@ -56,12 +32,8 @@ export function DonorBreakdownDialog({
             <em>{detail?.referrer.fullName ?? "this champion"}</em>
           </DialogTitle>
         </DialogHeader>
-        {loading || donations.length === 0 ? (
-          <p className="py-8 text-center text-sm text-ink/60">
-            {loading
-              ? "Loading donors…"
-              : "No donations from their referrals yet."}
-          </p>
+        {donations.length === 0 ? (
+          <p className="py-8 text-center text-sm text-ink/60">{message}</p>
         ) : (
           <ul className="max-h-[50vh] overflow-y-auto pr-1">
             {donations.map((donation) => (

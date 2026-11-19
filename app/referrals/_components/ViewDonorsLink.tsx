@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function ViewDonorsLink({
@@ -10,12 +11,13 @@ export function ViewDonorsLink({
   compact?: boolean;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="bare"
+      size="bare"
       onClick={onClick}
       aria-label="View donors"
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-blue-accent hover:opacity-80",
+        "shrink-0 gap-1.5 text-blue-accent hover:opacity-80",
         !compact && "mt-4",
       )}
     >
@@ -25,6 +27,6 @@ export function ViewDonorsLink({
         "View donors"
       )}
       <ArrowRight className="h-4 w-4" aria-hidden="true" />
-    </button>
+    </Button>
   );
 }

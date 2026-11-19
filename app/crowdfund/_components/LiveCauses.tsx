@@ -10,13 +10,14 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
-import type { UseCase } from "../_data/use-cases";
+import type { UseCase } from "@/types/crowdfund-types";
 
 export async function LiveCauses({ useCase }: { useCase: UseCase }) {
   const { items } = await listDiscoverResults(
     {
       categories: [useCase.categoryId],
       includeType: "campaigns",
+      claimedOnly: true,
       sortBy: "most-urgent",
     },
     { limit: 3, offset: 0 },

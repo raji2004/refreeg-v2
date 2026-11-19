@@ -4,10 +4,12 @@ import { useRef } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+import { HeroBadge } from "@/components/marketing/HeroBadge";
 import { Heading, Lead } from "@/components/marketing/Typography";
+import { Button } from "@/components/ui/button";
 import { useGsap } from "@/hooks/use-gsap";
 
-import { useCases } from "../_data/use-cases";
+import { crowdfundUseCases } from "@/lib/options/crowdfund.options";
 
 export function CrowdfundHero() {
   const heroRef = useRef<HTMLElement>(null);
@@ -30,10 +32,9 @@ export function CrowdfundHero() {
       <div className="absolute left-1/2 top-[-200px] h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-blue-accent/15 blur-3xl" />
 
       <div className="relative mx-auto flex max-w-5xl flex-col items-center text-center">
-        <span className="cf-hero-reveal inline-flex items-center gap-2 rounded-full bg-lime px-4 py-2 text-xs font-semibold text-ink shadow-md sm:text-sm">
-          <span className="h-1.5 w-1.5 rounded-full bg-blue-accent" />
-          {useCases.length} ways to raise on Refreeg
-        </span>
+        <HeroBadge className="cf-hero-reveal">
+          {crowdfundUseCases.length} ways to raise on Refreeg
+        </HeroBadge>
 
         <Heading
           as="h1"
@@ -51,13 +52,17 @@ export function CrowdfundHero() {
         </Lead>
 
         <div className="cf-hero-reveal mt-8 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
-          <Link
-            href="/dashboard/causes/create"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-accent px-8 py-3.5 text-sm font-medium text-white shadow-xl transition-colors hover:bg-blue-accent/90 sm:w-auto"
+          <Button
+            asChild
+            variant="accent"
+            size="pill"
+            className="w-full px-8 sm:w-auto"
           >
-            Start a cause
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
+            <Link href="/dashboard/causes/create">
+              Start a cause
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </Button>
           <Link
             href="/causes"
             className="inline-flex w-full items-center justify-center rounded-full border border-ink px-8 py-3.5 text-sm font-medium text-ink transition-colors hover:bg-ink/5 sm:w-auto"

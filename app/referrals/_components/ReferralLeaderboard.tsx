@@ -1,85 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Trophy } from "lucide-react";
 
-import {
-  getLeaderboard,
-  type LeaderboardEntry,
-} from "@/actions/users/leaderboard-actions";
 import { Heading } from "@/components/marketing/Typography";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import type { useLeaderboard } from "@/hooks/use-referrals";
 import { formatNairaShort } from "@/lib/causes/discover-summary";
-import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 import { DonorBreakdownDialog } from "./DonorBreakdownDialog";
 import { LeaderboardIdentity } from "./LeaderboardIdentity";
 import { ViewDonorsLink } from "./ViewDonorsLink";
 
-export const LEADERBOARD_PAGE_SIZE = 20;
 const plural = (count: number, word: string) =>
   `${count.toLocaleString()} ${count === 1 ? word : `${word}s`}`;
-const POLL_MS = 30_000;
 
 export function ReferralLeaderboard({
-  entries,
-  totalCount,
-  onEntriesChange,
+  board,
   rank,
   referralCount,
   onGetLink,
 }: {
-  entries: LeaderboardEntry[];
-  totalCount: number;
-  onEntriesChange: (entries: LeaderboardEntry[], totalCount: number) => void;
+  board: ReturnType<typeof useLeaderboard>;
   rank: number | null;
   referralCount: number;
   onGetLink: () => void;
 }) {
-  const [page, setPage] = useState(1);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
-
-  // Rankings move as donations verify, so keep page 1 fresh while visible.
-  useEffect(() => {
-    const id = setInterval(async () => {
-      try {
-        const res = await getLeaderboard({
-          page: 1,
-          pageSize: LEADERBOARD_PAGE_SIZE,
-        });
-        onEntriesChange(res.entries, res.totalCount);
-        setPage(1);
-      } catch {
-        // background refresh: stay quiet, next tick may succeed
-      }
-    }, POLL_MS);
-    return () => clearInterval(id);
-  }, [onEntriesChange]);
-
-  const loadMore = async () => {
-    if (loadingMore) return;
-    setLoadingMore(true);
-    try {
-      const res = await getLeaderboard({
-        page: page + 1,
-        pageSize: LEADERBOARD_PAGE_SIZE,
-      });
-      const seen = new Set(entries.map((e) => e.id));
-      onEntriesChange(
-        [...entries, ...res.entries.filter((e) => !seen.has(e.id))],
-        res.totalCount,
-      );
-      setPage((p) => p + 1);
-    } catch {
-      toast({ title: "Couldn't load more", variant: "destructive" });
-    } finally {
-      setLoadingMore(false);
-    }
-  };
+  const { entries } = board;
 
   const topThree = entries.slice(0, 3);
   const rest = entries.slice(3);
@@ -195,16 +146,19 @@ export function ReferralLeaderboard({
             </ol>
           )}
 
-          {entries.length < totalCount && (
-            <div className="mt-10 flex justify-center">
+          {board.hasMore && (
+            <div className="mt-10 flex flex-col items-center gap-3">
               <Button
                 variant="outline"
-                onClick={loadMore}
-                disabled={loadingMore}
+                onClick={board.loadMore}
+                disabled={board.loadingMore}
                 className="rounded-full border-ink px-8"
               >
-                {loadingMore ? "Loading…" : "Load more"}
+                {board.loadingMore ? "Loading…" : "Load more"}
               </Button>
+              {board.error && (
+                <p className="text-sm text-rust">{board.error}</p>
+              )}
             </div>
           )}
         </section>
