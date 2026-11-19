@@ -37,8 +37,8 @@ import { AskResubmitDialog } from "@/components/admin/kyc/ask-resubmit-dialog";
 import { KycFlashToast } from "@/components/admin/kyc/kyc-flash-toast";
 import KycRejectionDialog from "./KycRejectionDialog";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import { formatIdTypeLabel, initials } from "@/lib/kyc-review";
 import {
-  formatIdTypeLabel,
   KYC_FACE_MATCH_THRESHOLD,
   kycStatusTabs,
 } from "@/lib/options/kyc-review.options";
@@ -52,17 +52,6 @@ import type { KycQueueTab, KycVerification } from "@/types/kyc-types";
 
 const RESUBMIT_MESSAGE_PLACEHOLDER =
   "Your selfie didn't match your ID photo clearly. Please take a new one facing a window, and check your details match your ID.";
-
-function initials(name: string): string {
-  return (
-    name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? "")
-      .join("") || "?"
-  );
-}
 
 function buildDiditTiles(
   kyc: KycVerification,
@@ -93,7 +82,6 @@ function buildDiditTiles(
     }
     return tiles;
   }
-  // No live decision (Didit unreachable or session id missing): placeholders.
   return [
     { key: "front", label: `${idLabel} · Front`, url: null },
     { key: "back", label: `${idLabel} · Back`, url: null },

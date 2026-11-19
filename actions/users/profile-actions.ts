@@ -16,6 +16,10 @@ import type {
   OnboardingProfileData,
 } from "@/types";
 import { KycStatus, KycVerification } from "@/types/kyc-types";
+import {
+  kycUserIdSchema,
+  userKycStatusSchema,
+} from "@/lib/schemas/kyc-review.schema";
 
 function mapPrismaToProfile(p: any): Profile {
   return {
@@ -709,8 +713,11 @@ export async function hasKycVerification(
   userId: string,
 ): Promise<KycVerification | null> {
   try {
+    const parsedId = kycUserIdSchema.safeParse({ userId });
+    if (!parsedId.success) return null;
+
     const data = await prisma.kyc_verifications.findFirst({
-      where: { user_id: userId },
+      where: { user_id: parsedId.data.userId },
     });
 
     if (!data) return null;
@@ -737,11 +744,34 @@ export async function updateKycStatus(
   notes?: string,
 ) {
   try {
+    const parsed = userKycStatusSchema.safeParse({
+      verificationId,
+      status,
+      notes,
+    });
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message ?? "Invalid KYC status update",
+      );
+    }
+
+    const session = await auth();
+    const userId = session?.user?.id;
+    if (!userId) throw new Error("Not authenticated");
+
+    const verification = await prisma.kyc_verifications.findUnique({
+      where: { id: parsed.data.verificationId },
+      select: { user_id: true },
+    });
+    if (!verification || verification.user_id !== userId) {
+      throw new Error("No verification record found for this id.");
+    }
+
     const data = await prisma.kyc_verifications.update({
-      where: { id: verificationId },
+      where: { id: parsed.data.verificationId },
       data: {
-        status,
-        verification_notes: notes ?? null,
+        status: parsed.data.status,
+        verification_notes: parsed.data.notes ?? null,
         updated_at: new Date(),
       },
     });

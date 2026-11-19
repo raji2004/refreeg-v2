@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { ArrowRight, Clock, RefreshCw } from "lucide-react";
@@ -23,11 +24,6 @@ import { resubmitKycSchema } from "@/lib/schemas/kyc-review.schema";
 import { kycRedoOptions } from "@/lib/options/kyc-review.options";
 import { resubmitKycRequest } from "@/actions/users/kyc-actions";
 
-/**
- * "Ask to resubmit" dialog from the designer's flow: pick what to redo,
- * add a message, and Didit gets a partial-redo request when the session
- * supports it.
- */
 export function AskResubmitDialog({
   verificationId,
   applicantFirstName,
@@ -38,7 +34,6 @@ export function AskResubmitDialog({
   messagePlaceholder: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState({
     verificationId,
@@ -68,32 +63,42 @@ export function AskResubmitDialog({
     );
   };
 
-  const handleSubmit = async () => {
+  const resubmitMutation = useMutation({
+    mutationFn: () =>
+      resubmitKycRequest({
+        verificationId: form.verificationId,
+        redo: form.redo,
+        message: form.message,
+      }),
+    onSuccess: ({ error }) => {
+      if (error) {
+        setSubmitError(error);
+        return;
+      }
+      setOpen(false);
+      toast({
+        title: "Resubmission request sent",
+        description:
+          "The case stays in review until the applicant redoes the checks.",
+      });
+      router.replace(
+        `${pathname}?flash=resubmitted&name=${encodeURIComponent(firstName)}`,
+        { scroll: false },
+      );
+      router.refresh();
+    },
+    onError: (mutationError) => {
+      setSubmitError(mutationError.message);
+    },
+  });
+
+  const handleSubmit = () => {
     setSubmitError(null);
-    if (!validate() || isSubmitting) return;
-    setIsSubmitting(true);
-    const result = await resubmitKycRequest({
-      verificationId: form.verificationId,
-      redo: form.redo,
-      message: form.message,
-    });
-    setIsSubmitting(false);
-    if (result.error) {
-      setSubmitError(result.error);
-      return;
-    }
-    setOpen(false);
-    toast({
-      title: "Resubmission request sent",
-      description:
-        "The case stays in review until the applicant redoes the checks.",
-    });
-    router.replace(
-      `${pathname}?flash=resubmitted&name=${encodeURIComponent(firstName)}`,
-      { scroll: false },
-    );
-    router.refresh();
+    if (!validate() || resubmitMutation.isPending) return;
+    resubmitMutation.mutate();
   };
+
+  const isSubmitting = resubmitMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

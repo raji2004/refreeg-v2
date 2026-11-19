@@ -2,10 +2,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { KYC_FACE_MATCH_THRESHOLD } from "@/lib/options/kyc-review.options";
 
-/**
- * Face match score with the review threshold applied: forest when strong,
- * rust with a "Below 80%" pill when the case needs a closer look.
- */
 export function FaceMatchMeter({
   score,
   compact = false,

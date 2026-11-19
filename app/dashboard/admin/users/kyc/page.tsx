@@ -14,12 +14,6 @@ import { kycStatusTabs } from "@/lib/options/kyc-review.options";
 import type { KycQueueTab } from "@/types/kyc-types";
 import { KycQueueClient } from "./kyc-queue-client";
 
-/**
- * Server shell for the KYC review board: auth + role guard, the flash
- * toast from approve/reject actions, and one snapshot fetch. Tabs,
- * search, filters and pagination are client state (see KycQueueClient)
- * so switching feels instant instead of reloading the page.
- */
 export default async function KycListPage({
   searchParams,
 }: {
@@ -47,8 +41,6 @@ export default async function KycListPage({
     );
   }
 
-  // Deep links like /dashboard/admin/users/kyc?tab=approved still open the
-  // right tab; every interaction after that stays client-side.
   const params = (await searchParams) ?? {};
   const tabParam = Array.isArray(params.tab) ? params.tab[0] : params.tab;
   const initialTab = (

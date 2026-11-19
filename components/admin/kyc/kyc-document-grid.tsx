@@ -6,11 +6,6 @@ export interface KycDocumentTile {
   url: string | null;
 }
 
-/**
- * Document tiles from the designer's spec: ID front, ID back and live selfie.
- * Didit serves short-lived presigned URLs, so tiles use plain img tags and
- * open the full image in a new tab.
- */
 export function KycDocumentGrid({ tiles }: { tiles: KycDocumentTile[] }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
