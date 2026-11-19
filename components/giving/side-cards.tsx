@@ -1,4 +1,4 @@
-import type { GivingOverview } from "@/actions/giving-actions";
+import type { GivingOverview } from "@/actions/donations/giving-actions";
 import { formatMonthYear, formatNaira, ordinalDay } from "./format";
 
 function initials(name: string) {

@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-jest.mock("@/lib/reward-core", () => ({
+jest.mock("@/lib/rewards/reward-core", () => ({
   recordEventCore: jest.fn(),
   updateUserStreaksCore: jest.fn(),
   addRewardsCore: jest.fn(),
@@ -55,7 +55,7 @@ jest.mock("@/services/convertkit", () => ({
 import {
   recordEventCore as recordEvent,
   updateUserStreaksCore as updateUserStreaks,
-} from "@/lib/reward-core";
+} from "@/lib/rewards/reward-core";
 import {
   getCurrentUser,
   signUpAction,
@@ -64,7 +64,7 @@ import {
   recordSignupReward,
   requestPasswordResetAction,
   resetPasswordAction,
-} from "@/actions/auth-actions";
+} from "@/actions/users/auth-actions";
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
-import { interestOptions } from "@/lib/interest-categories";
+import { interestOptions } from "@/lib/causes/interest-categories";
 import { cn } from "@/lib/utils";
 import { SettingsSwitch } from "./components/settings-switch";
 

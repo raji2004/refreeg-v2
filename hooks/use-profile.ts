@@ -6,10 +6,10 @@ import {
   updateProfile,
   updateBankDetails,
   setProfilePhoto,
-} from "@/actions/profile-actions";
+} from "@/actions/users/profile-actions";
 import { uploadFileWithPresign } from "@/lib/s3/upload-client";
 import type { Profile, ProfileFormData, BankDetailsFormData } from "@/types";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 export function useProfile(userId: string | undefined) {
   const queryClient = useQueryClient();

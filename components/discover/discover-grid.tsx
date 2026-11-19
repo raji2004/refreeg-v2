@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { DiscoverCard, DiscoverCardSkeleton } from "./discover-card";
 import { DiscoverEmptyState } from "./discover-empty-state";
@@ -13,8 +13,8 @@ import {
   listDiscoverResults,
   type DiscoverFilters,
   type DiscoverItem,
-} from "@/actions/discover-actions";
-import { DISCOVER_RESULT_CAP } from "@/lib/discover-constants";
+} from "@/actions/causes/discover-actions";
+import { DISCOVER_RESULT_CAP } from "@/lib/causes/discover-constants";
 
 const PAGE_SIZE = 12;
 

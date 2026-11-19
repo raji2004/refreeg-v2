@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { ChangeEvent } from "react";
-import { createPledge } from "@/actions/pledge-actions";
+import { createPledge } from "@/actions/donations/pledge-actions";
 import { usePayment } from "@/hooks/use-payment";
 import { useValidator } from "@/hooks/use-validator";
 import {

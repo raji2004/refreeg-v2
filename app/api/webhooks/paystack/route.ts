@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSubscription } from "@/actions";
-import { processSuccessfulCharge } from "@/lib/paystack-charge-processing";
+import { processSuccessfulCharge } from "@/lib/payments/paystack-charge-processing";
 import crypto from "crypto";
 
 interface PaystackWebhookData {

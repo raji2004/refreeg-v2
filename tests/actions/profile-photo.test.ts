@@ -17,7 +17,7 @@ jest.mock("next/cache", () => ({
 
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
-import { setProfilePhoto } from "@/actions/profile-actions";
+import { setProfilePhoto } from "@/actions/users/profile-actions";
 
 const mockAuth = auth as jest.Mock;
 const mockUpdate = prisma.user.update as jest.Mock;

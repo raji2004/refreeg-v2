@@ -34,7 +34,7 @@ import {
   getDonationTrends,
   getAlerts,
   getApiCampaigns,
-} from "@/actions/admin-analytics-actions";
+} from "@/actions/admin/admin-analytics-actions";
 
 const mockRequireAdmin = requireAdminOrManager as jest.Mock;
 const mockPrisma = prisma as unknown as {
@@ -76,10 +76,7 @@ describe("admin-analytics-actions", () => {
         .mockResolvedValueOnce(40);
       mockPrisma.cause.count.mockResolvedValueOnce(5);
 
-      const result = await getAdminAnalytics(
-        "2026-01-01",
-        "2026-01-31",
-      );
+      const result = await getAdminAnalytics("2026-01-01", "2026-01-31");
 
       expect(result.totalDonations.trend).toBe(100);
       expect(result.totalUsers.current).toBe(100);

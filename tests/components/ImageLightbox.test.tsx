@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { ImageLightbox } from "@/components/ImageLightbox";
+import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 
 function LightboxHarness() {
   const [index, setIndex] = useState<number | null>(0);

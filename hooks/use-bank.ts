@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import type { BankDetailsFormData, ICreateSubaccount } from "@/types";
-import { updateBankDetails } from "@/actions/profile-actions";
+import { updateBankDetails } from "@/actions/users/profile-actions";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface UseBankProps {

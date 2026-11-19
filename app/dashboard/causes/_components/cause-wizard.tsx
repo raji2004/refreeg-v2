@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, LockKeyhole } from "lucide-react";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

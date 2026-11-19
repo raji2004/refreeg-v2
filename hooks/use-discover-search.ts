@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { useDebounce } from "@/hooks/use-debounce";
-import { searchDiscover, type DiscoverItem } from "@/actions/discover-actions";
+import {
+  searchDiscover,
+  type DiscoverItem,
+} from "@/actions/causes/discover-actions";
 
 const RECENT_SEARCHES_KEY = "discover:recent-searches";
 const RECENT_SEARCHES_LIMIT = 5;

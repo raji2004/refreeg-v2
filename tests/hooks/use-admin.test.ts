@@ -1,44 +1,47 @@
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   getUserRoleInfo: jest.fn(),
   setUserRole: jest.fn(),
 }));
 
-jest.mock("@/actions/admin-user-actions", () => ({
+jest.mock("@/actions/admin/admin-user-actions", () => ({
   blockUser: jest.fn(),
   unblockUser: jest.fn(),
 }));
 
-jest.mock("@/actions/admin-cause-actions", () => ({
+jest.mock("@/actions/admin/admin-cause-actions", () => ({
   updateCauseStatus: jest.fn(),
   listAdminCauses: jest.fn(),
   getCauseEdits: jest.fn(),
 }));
 
-jest.mock("@/actions/admin-petition-actions", () => ({
+jest.mock("@/actions/admin/admin-petition-actions", () => ({
   updatePetitionStatus: jest.fn(),
   listAdminPetitions: jest.fn(),
   getPetitionEdits: jest.fn(),
 }));
 
-jest.mock("@/actions/database-actions", () => ({
+jest.mock("@/actions/admin/database-actions", () => ({
   logAdminActivity: jest.fn(),
 }));
 
-jest.mock("@/components/ui/use-toast", () => ({
+jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
 }));
 
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { getUserRoleInfo, setUserRole } from "@/actions/role-actions";
-import { listAdminCauses, getCauseEdits } from "@/actions/admin-cause-actions";
+import { getUserRoleInfo, setUserRole } from "@/actions/admin/role-actions";
+import {
+  listAdminCauses,
+  getCauseEdits,
+} from "@/actions/admin/admin-cause-actions";
 import {
   listAdminPetitions,
   getPetitionEdits,
-} from "@/actions/admin-petition-actions";
-import { logAdminActivity } from "@/actions/database-actions";
-import { toast } from "@/components/ui/use-toast";
+} from "@/actions/admin/admin-petition-actions";
+import { logAdminActivity } from "@/actions/admin/database-actions";
+import { toast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 
 const mockGetUserRoleInfo = getUserRoleInfo as jest.Mock;

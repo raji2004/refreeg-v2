@@ -12,7 +12,7 @@ import {
   resolveBreetDepositAssetId,
   type BreetBank,
   type BreetDepositAsset,
-} from "@/lib/breet";
+} from "@/lib/payments/breet";
 
 const BANKS: BreetBank[] = [
   { id: "15", name: "Guaranty Trust Bank" },

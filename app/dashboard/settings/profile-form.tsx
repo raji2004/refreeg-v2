@@ -8,13 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import type { ProfileFormData } from "@/types";
 import { useProfile } from "@/hooks/use-profile";
 import { compressImage } from "@/utils/image-compression";
 import { getMediaUrl } from "@/lib/s3/media";
 import { cn } from "@/lib/utils";
-import { interestOptions } from "@/lib/interest-categories";
+import { interestOptions } from "@/lib/causes/interest-categories";
 import { ChangeEmailModal } from "./change-email-modal";
 import {
   SettingsCancelButton,

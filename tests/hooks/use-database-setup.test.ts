@@ -1,9 +1,9 @@
-jest.mock("@/actions/database-actions", () => ({
+jest.mock("@/actions/admin/database-actions", () => ({
   checkDatabaseSetup: jest.fn(),
 }));
 
 import { renderHook, waitFor } from "@testing-library/react";
-import { checkDatabaseSetup } from "@/actions/database-actions";
+import { checkDatabaseSetup } from "@/actions/admin/database-actions";
 import { useDatabaseSetup } from "@/hooks/use-database-setup";
 
 describe("useDatabaseSetup", () => {

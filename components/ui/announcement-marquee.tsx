@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
   ANNOUNCEMENT_PLACEHOLDER_ITEMS,
   mapLiveRecordsToAnnouncementItems,
-} from "@/lib/announcement-feed";
+} from "@/lib/causes/announcement-feed";
 import { cn } from "@/lib/utils";
 import {
   AnnouncementItem,

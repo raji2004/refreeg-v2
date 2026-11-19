@@ -6,18 +6,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { SignatureForm } from "@/components/signature-form";
+import { SignatureForm } from "@/components/engagement/SignatureForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getPetition } from "@/actions/petition-actions";
+import { getPetition } from "@/actions/petitions/petition-actions";
 import { auth } from "@/lib/auth/auth";
-import { getProfile, getProfileByUsername } from "@/actions/profile-actions";
+import {
+  getProfile,
+  getProfileByUsername,
+} from "@/actions/users/profile-actions";
 import {
   listSignaturesForPetition,
   checkUserSignature,
-} from "@/actions/signature-actions";
+} from "@/actions/petitions/signature-actions";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/uuid";
-import { ShareModal } from "@/components/share-modal";
+import { ShareModal } from "@/components/engagement/ShareModal";
 import { getBaseURL } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -28,8 +31,8 @@ import {
   Twitter,
 } from "lucide-react";
 import Link from "next/link";
-import MultimediaCarousel from "@/components/MultimediaCarousel";
-import { SignersList } from "@/components/signers-list";
+import MultimediaCarousel from "@/components/marketing/MultimediaCarousel";
+import { SignersList } from "@/components/engagement/SignersList";
 import { CommentsSection } from "@/components/comments/comment-section";
 import { Signature } from "@/types";
 import { Metadata } from "next";
@@ -145,7 +148,7 @@ export default async function PetitionDetailPage({
       (async () => {
         try {
           const { listPetitionComments } =
-            await import("@/actions/petition-comment-actions");
+            await import("@/actions/petitions/petition-comment-actions");
           return await listPetitionComments(petition.id);
         } catch (e) {
           return [];
@@ -290,7 +293,7 @@ export default async function PetitionDetailPage({
             ) : (
               <div className="aspect-video w-full overflow-hidden rounded-lg relative">
                 <Image
-                  src={getMediaUrl(petition.image) || "/placeholder.svg"}
+                  src={getMediaUrl(petition.image) || "/icons/placeholder.svg"}
                   alt={petition.title}
                   fill
                   sizes="(max-width: 1024px) 100vw, 66vw"

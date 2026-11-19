@@ -1,4 +1,4 @@
-jest.mock("@/actions/admin-analytics-actions", () => ({
+jest.mock("@/actions/admin/admin-analytics-actions", () => ({
   getAdminAnalytics: jest.fn(),
   getDonationTrends: jest.fn(),
   getUserGrowth: jest.fn(),
@@ -19,7 +19,7 @@ import {
   getPaymentAnalytics,
   getCauseLifecycleAnalytics,
   getAlerts,
-} from "@/actions/admin-analytics-actions";
+} from "@/actions/admin/admin-analytics-actions";
 import {
   useAdminAnalytics,
   useAnalyticsCharts,
@@ -35,7 +35,9 @@ describe("useAdminAnalytics", () => {
     const analyticsData = { totalUsers: 100, totalDonations: 50 };
     (getAdminAnalytics as jest.Mock).mockResolvedValue(analyticsData);
 
-    const { result } = renderHook(() => useAdminAnalytics("2026-01-01", "2026-01-31"));
+    const { result } = renderHook(() =>
+      useAdminAnalytics("2026-01-01", "2026-01-31"),
+    );
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -47,7 +49,9 @@ describe("useAdminAnalytics", () => {
   });
 
   it("sets error when fetch fails", async () => {
-    (getAdminAnalytics as jest.Mock).mockRejectedValue(new Error("unauthorized"));
+    (getAdminAnalytics as jest.Mock).mockRejectedValue(
+      new Error("unauthorized"),
+    );
 
     const { result } = renderHook(() => useAdminAnalytics());
 

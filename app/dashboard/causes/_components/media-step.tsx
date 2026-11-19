@@ -1,7 +1,7 @@
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

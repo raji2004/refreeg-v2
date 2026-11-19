@@ -18,7 +18,7 @@ import {
   deletePetitionComment,
   listPetitionComments,
   listRepliesForPetitionComment,
-} from "@/actions/petition-comment-actions";
+} from "@/actions/petitions/petition-comment-actions";
 
 const mockPrisma = prisma as unknown as {
   petition_comments: {

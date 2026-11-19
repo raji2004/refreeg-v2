@@ -62,7 +62,12 @@ const Hero = () => {
         className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center text-center md:pt-0 sm:pt-28"
       >
         <div className="hero-badge flex items-center gap-2 rounded-full border border-border bg-lime px-4 py-2 text-xs sm:text-sm font-semibold text-lime-foreground shadow-md">
-          <Image src="/dot.svg" alt="On-chain Icon" width={8} height={8} />
+          <Image
+            src="/icons/dot.svg"
+            alt="On-chain Icon"
+            width={8}
+            height={8}
+          />
           <span className="whitespace-nowrap">
             Live on-chain · 10,000+ donations verified
           </span>
@@ -88,7 +93,7 @@ const Hero = () => {
             <Link href="/causes">
               Give to a cause
               <Image
-                src="/arrow.svg"
+                src="/icons/arrow.svg"
                 alt="Arrow Icon"
                 width={12}
                 height={12}

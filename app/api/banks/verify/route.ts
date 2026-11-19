@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAccountNumber } from "@/services/payment-provider";
 import { auth } from "@/lib/auth/auth";
-import { createRateLimiter } from "@/lib/rate-limit";
+import { createRateLimiter } from "@/lib/api/rate-limit";
 import type { PaymentProviderType } from "@/types";
 
 const limited = createRateLimiter({ max: 10, windowMs: 60_000 });

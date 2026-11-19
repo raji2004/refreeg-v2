@@ -2,7 +2,7 @@ import { Montserrat, Fraunces } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "./providers";
-import { ClientLayout } from "@/components/client-layout";
+import { ClientLayout } from "@/components/layout/ClientLayout";
 import { Metadata } from "next";
 import NextTopLoader from "nextjs-toploader";
 

@@ -3,11 +3,11 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { Share2 } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
-import { getReferralDashboardData } from "@/actions/referral-actions";
+import { getReferralDashboardData } from "@/actions/users/referral-actions";
 import {
   getCurrentUserRank,
   getLeaderboard,
-} from "@/actions/leaderboard-actions";
+} from "@/actions/users/leaderboard-actions";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ReferralsView } from "./ReferralsView";

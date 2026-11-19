@@ -5,7 +5,7 @@ import {
   checkCircuit,
   recordFailure,
   recordSuccess,
-} from "@/lib/circuit-breaker";
+} from "@/lib/api/circuit-breaker";
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
@@ -18,7 +18,7 @@ if (!PAYSTACK_SECRET_KEY) {
 const Paystack = {
   api: axios.create({
     baseURL: "https://api.paystack.co",
-    timeout: 5000, 
+    timeout: 5000,
     headers: {
       Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
       "Content-Type": "application/json",

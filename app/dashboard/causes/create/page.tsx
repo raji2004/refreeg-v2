@@ -1,6 +1,9 @@
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
-import { hasBankDetails, isProfileComplete } from "@/actions/profile-actions";
+import {
+  hasBankDetails,
+  isProfileComplete,
+} from "@/actions/users/profile-actions";
 import CreateCauseForm from "./create-cause-form";
 import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Eyebrow } from "@/components/ui/eyebrow";

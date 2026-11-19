@@ -22,16 +22,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useQueryState } from "nuqs";
-import { getPetition } from "@/actions/petition-actions";
+import { getPetition } from "@/actions/petitions/petition-actions";
 import type { Petition, PetitionStatus, PetitionWithUser } from "@/types";
 import { format } from "date-fns";
-import { categories } from "@/lib/categories";
+import { categories } from "@/lib/causes/categories";
 import {
   Table,
   TableHeader,
@@ -47,8 +47,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
-import NavigationLoader from "../NavigationLoader";
-import MultimediaCarousel from "../MultimediaCarousel";
+import NavigationLoader from "../layout/NavigationLoader";
+import MultimediaCarousel from "../marketing/MultimediaCarousel";
 
 export default function ManagePetition() {
   const router = useRouter();

@@ -7,7 +7,7 @@
  * database access is injected, so no network or Prisma is involved.
  */
 
-import { breetAssetNetwork, parseBreetLabel } from "@/lib/breet";
+import { breetAssetNetwork, parseBreetLabel } from "@/lib/payments/breet";
 import {
   donationFields,
   grossNaira,
@@ -15,7 +15,7 @@ import {
   reconcileBreetTrades,
   type BreetTradeSummary,
   type ReconcileDeps,
-} from "@/lib/breet-reconcile";
+} from "@/lib/payments/breet-reconcile";
 
 describe("parseBreetLabel", () => {
   it("parses a plain donorId_causeId label from the end", () => {

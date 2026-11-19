@@ -1,5 +1,5 @@
-import { CampaignCategorySelect } from "@/components/campaign-category-select";
-import { CampaignLocationAutocomplete } from "@/components/campaign-location-autocomplete";
+import { CampaignCategorySelect } from "@/components/causes/CampaignCategorySelect";
+import { CampaignLocationAutocomplete } from "@/components/causes/CampaignLocationAutocomplete";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -12,7 +12,7 @@ import {
 import {
   formatFundingGoalInput,
   normalizeFundingGoalInput,
-} from "@/lib/funding-goal";
+} from "@/lib/causes/funding-goal";
 import { causeCurrencyOptions } from "@/lib/options/cause.options";
 import type {
   CauseFormErrors,

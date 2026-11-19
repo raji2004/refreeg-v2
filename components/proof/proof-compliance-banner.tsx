@@ -1,4 +1,4 @@
-import { getCreatorComplianceStatus } from "@/actions/proof-update-actions";
+import { getCreatorComplianceStatus } from "@/actions/causes/proof-update-actions";
 import { ProofUploadDialog } from "./proof-upload-dialog";
 import { AlertTriangle, Clock, PauseCircle } from "lucide-react";
 

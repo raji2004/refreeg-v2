@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { usePayment } from "@/hooks/use-payment";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { Button } from "@/components/ui/button";
 import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Eyebrow } from "@/components/ui/eyebrow";

@@ -1,11 +1,11 @@
-jest.mock("@/actions/profile-actions", () => ({
+jest.mock("@/actions/users/profile-actions", () => ({
   getProfile: jest.fn(),
 }));
 
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import { getProfile } from "@/actions/profile-actions";
+import { getProfile } from "@/actions/users/profile-actions";
 import { useWallet } from "@/hooks/use-wallet";
 
 const createWrapper = () => {

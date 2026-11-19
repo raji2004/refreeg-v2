@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { addDays, startOfDay } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
@@ -9,6 +10,7 @@ import { useCauseDraft } from "@/hooks/use-cause-draft";
 import { useCauseForm } from "@/hooks/use-cause-form";
 import { useToast } from "@/hooks/use-toast";
 import { createCauseStepMeta } from "@/lib/options/cause.options";
+import { campaignCategoryStyles } from "@/lib/causes/campaign-categories";
 import type { CauseFormValues } from "@/lib/schemas/cause.schema";
 import {
   resolveMultimediaForSubmit,
@@ -22,11 +24,11 @@ import { CauseStoryStep } from "../_components/story-step";
 import { CauseTimelineStep } from "../_components/timeline-step";
 import { CauseWizard } from "../_components/cause-wizard";
 
-const initialValues = (): CauseFormValues => ({
+const initialValues = (preselectedCategory: string): CauseFormValues => ({
   title: "",
   summary: "",
   location: "",
-  category: "",
+  category: preselectedCategory,
   goal: "",
   currency: "NGN",
   coverImage: null,
@@ -39,13 +41,20 @@ const initialValues = (): CauseFormValues => ({
 });
 
 export default function CreateCauseForm() {
+  const searchParams = useSearchParams();
+  const rawCategory = searchParams.get("category") ?? "";
+  const preselectedCategory = campaignCategoryStyles.some(
+    (c) => c.id === rawCategory,
+  )
+    ? rawCategory
+    : "";
   const { user } = useAuth();
   const { isLoading, createCause } = useCause();
   const { toast } = useToast();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const wizard = useCauseForm({
-    initialValues: initialValues(),
+    initialValues: initialValues(preselectedCategory),
     mode: "create",
   });
   const { form, errors, setFormFields, currentStep } = wizard;

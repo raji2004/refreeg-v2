@@ -1,15 +1,15 @@
 import dynamic from "next/dynamic";
 import { differenceInDays, format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Skeleton } from "@/components/ui/skeleton";
-import { categories } from "@/lib/categories";
+import { categories } from "@/lib/causes/categories";
 import type { CauseFormValues } from "@/lib/schemas/cause.schema";
 
 const MultimediaCarousel = dynamic(
-  () => import("@/components/MultimediaCarousel"),
+  () => import("@/components/marketing/MultimediaCarousel"),
   { loading: () => <Skeleton className="h-64 w-full" /> },
 );
 

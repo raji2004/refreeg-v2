@@ -5,7 +5,7 @@ import { Loader2, MailPlus, ShieldCheck } from "lucide-react";
 import {
   inviteOrganizationMember,
   revokeOrganizationInvitation,
-} from "@/actions/organization-actions";
+} from "@/actions/users/organization-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { Field } from "./organization-fields";
 import type { Workspace } from "./organization-workspace.types";
 

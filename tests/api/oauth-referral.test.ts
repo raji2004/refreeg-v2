@@ -10,9 +10,11 @@
  */
 
 // ── Mock createReferralRecord ─────────────────────────────────────────────────
-const mockCreateReferralRecord = jest.fn().mockResolvedValue({ created: true, referrerId: "ref-id" });
+const mockCreateReferralRecord = jest
+  .fn()
+  .mockResolvedValue({ created: true, referrerId: "ref-id" });
 
-jest.mock("@/lib/referral-utils", () => ({
+jest.mock("@/lib/referrals/referral-utils", () => ({
   createReferralRecord: (...args: any[]) => mockCreateReferralRecord(...args),
 }));
 
@@ -41,10 +43,12 @@ async function handleOAuthReferralAttribution(params: {
     .find((c) => c.startsWith("ref_v1="))
     ?.split("=")[1];
 
-  if (!refV1Cookie || !userId) return { attributed: false, reason: "no_cookie_or_id" };
+  if (!refV1Cookie || !userId)
+    return { attributed: false, reason: "no_cookie_or_id" };
 
   const { prisma } = await import("@/lib/prisma");
-  const { createReferralRecord } = await import("@/lib/referral-utils");
+  const { createReferralRecord } =
+    await import("@/lib/referrals/referral-utils");
 
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
@@ -150,7 +154,7 @@ describe("OAuth referral attribution (signIn event logic)", () => {
     });
 
     expect(mockCreateReferralRecord).toHaveBeenCalledWith(
-      expect.objectContaining({ referralCode: "MYCODE" })
+      expect.objectContaining({ referralCode: "MYCODE" }),
     );
   });
 
@@ -171,7 +175,7 @@ describe("OAuth referral attribution (signIn event logic)", () => {
     // Attribution was attempted but createReferralRecord handled the invalid code
     expect(result.attributed).toBe(true); // we still tried
     expect(mockCreateReferralRecord).toHaveBeenCalledWith(
-      expect.objectContaining({ referralCode: "INVALID_CODE" })
+      expect.objectContaining({ referralCode: "INVALID_CODE" }),
     );
   });
 });

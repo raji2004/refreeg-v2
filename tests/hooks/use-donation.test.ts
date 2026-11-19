@@ -1,15 +1,15 @@
-jest.mock("@/actions/donation-actions", () => ({
+jest.mock("@/actions/donations/donation-actions", () => ({
   createDonation: jest.fn(),
 }));
 
-jest.mock("@/components/ui/use-toast", () => ({
+jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
 }));
 
 import { renderHook, act } from "@testing-library/react";
 import { useRouter } from "next/navigation";
-import { createDonation } from "@/actions/donation-actions";
-import { toast } from "@/components/ui/use-toast";
+import { createDonation } from "@/actions/donations/donation-actions";
+import { toast } from "@/hooks/use-toast";
 import { useDonation } from "@/hooks/use-donation";
 
 describe("useDonation", () => {
@@ -59,7 +59,9 @@ describe("useDonation", () => {
   });
 
   it("shows error toast and returns false on failure", async () => {
-    (createDonation as jest.Mock).mockRejectedValue(new Error("payment failed"));
+    (createDonation as jest.Mock).mockRejectedValue(
+      new Error("payment failed"),
+    );
 
     const { result } = renderHook(() => useDonation());
 

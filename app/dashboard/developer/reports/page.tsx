@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { getDeveloperCampaignReports } from "@/actions/api-campaign-report-actions";
+import { getDeveloperCampaignReports } from "@/actions/admin/api-campaign-report-actions";
 import {
   Card,
   CardContent,
@@ -13,7 +13,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Clock, ShieldAlert, BadgeInfo, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DeveloperApiReportsPage() {
   const [reports, setReports] = useState<any[]>([]);

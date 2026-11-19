@@ -32,7 +32,7 @@ import {
   listSignaturesForPetition,
   listUserSignatures,
   getPetitionSignatureTotals,
-} from "@/actions/signature-actions";
+} from "@/actions/petitions/signature-actions";
 
 const mockPrisma = prisma as unknown as {
   signatures: {

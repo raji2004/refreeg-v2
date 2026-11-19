@@ -12,7 +12,7 @@ import {
 import { motion } from "framer-motion";
 import { ArrowRight, Clock3, Loader2, ShieldCheck } from "lucide-react";
 import Image from "next/image";
-import { getProfile } from "@/actions/profile-actions";
+import { getProfile } from "@/actions/users/profile-actions";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 interface Step4Props {

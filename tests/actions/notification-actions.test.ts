@@ -17,7 +17,7 @@ import { getSessionUser } from "@/lib/auth/session-user";
 import {
   getNotifications,
   markAllNotificationsRead,
-} from "@/actions/notification-actions";
+} from "@/actions/users/notification-actions";
 
 const db = prisma as any;
 const NOW = new Date("2026-10-05T12:00:00Z");

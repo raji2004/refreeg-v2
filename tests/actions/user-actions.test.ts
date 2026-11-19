@@ -15,26 +15,26 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   getUserRole: jest.fn(),
 }));
 
-jest.mock("@/actions/database-actions", () => ({
+jest.mock("@/actions/admin/database-actions", () => ({
   logAdminActivity: jest.fn(),
 }));
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
-import { getUserRole } from "@/actions/role-actions";
-import { logAdminActivity } from "@/actions/database-actions";
+import { getUserRole } from "@/actions/admin/role-actions";
+import { logAdminActivity } from "@/actions/admin/database-actions";
 import {
   blockUser,
   unblockUser,
   isUserBlocked,
   deleteUserAccount,
   deleteUserAsAdmin,
-} from "@/actions/user-actions";
+} from "@/actions/users/user-actions";
 
 const mockAuth = auth as jest.Mock;
 const mockGetUserRole = getUserRole as jest.Mock;

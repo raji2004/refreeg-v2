@@ -1,14 +1,14 @@
 import { notFound, redirect } from "next/navigation";
-import { getCause } from "@/actions/cause-actions";
+import { getCause } from "@/actions/causes/cause-actions";
 import { auth } from "@/lib/auth/auth";
-import { getProfile } from "@/actions/profile-actions";
-import { listDonationsForCause } from "@/actions/donation-actions";
-import { listCommentsForCause } from "@/actions/comment-actions";
-import { getApprovedProofUpdates } from "@/actions/proof-update-actions";
+import { getProfile } from "@/actions/users/profile-actions";
+import { listDonationsForCause } from "@/actions/donations/donation-actions";
+import { listCommentsForCause } from "@/actions/causes/comment-actions";
+import { getApprovedProofUpdates } from "@/actions/causes/proof-update-actions";
 import CampaignQualityLab from "@/app/campaign/_components/campaign-quality-lab";
 import { causePublicPath } from "@/lib/causes/slug";
-import { CausePausedNotice } from "@/components/cause-paused-notice";
-import { isAdminOrManager } from "@/actions/role-actions";
+import { CausePausedNotice } from "@/components/causes/CausePausedNotice";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
 
 import { Metadata } from "next";
 

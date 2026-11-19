@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { hasBankDetails } from "@/actions/profile-actions";
-import { getCause } from "@/actions/cause-actions";
+import { hasBankDetails } from "@/actions/users/profile-actions";
+import { getCause } from "@/actions/causes/cause-actions";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";

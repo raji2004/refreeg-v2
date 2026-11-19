@@ -1,17 +1,17 @@
 /**
  * @jest-environment node
  */
-jest.mock("@/actions/petition-actions", () => ({
+jest.mock("@/actions/petitions/petition-actions", () => ({
   listPetitions: jest.fn(),
 }));
 
-jest.mock("@/actions/signature-actions", () => ({
+jest.mock("@/actions/petitions/signature-actions", () => ({
   getPetitionSignatureTotals: jest.fn(),
 }));
 
-import { getRankedPetitions } from "@/lib/petitions-ranked";
-import { listPetitions } from "@/actions/petition-actions";
-import { getPetitionSignatureTotals } from "@/actions/signature-actions";
+import { getRankedPetitions } from "@/lib/causes/petitions-ranked";
+import { listPetitions } from "@/actions/petitions/petition-actions";
+import { getPetitionSignatureTotals } from "@/actions/petitions/signature-actions";
 
 const mockList = listPetitions as jest.Mock;
 const mockTotals = getPetitionSignatureTotals as jest.Mock;

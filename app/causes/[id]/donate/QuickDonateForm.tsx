@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { calculateProviderFee, calculateServiceFee } from "@/lib/utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { FieldError } from "@/components/ui/field-error";
@@ -152,7 +152,7 @@ export default function QuickDonateForm({
                 <CarouselItem key={index}>
                   <div className="relative aspect-video w-full bg-slate-100">
                     <Image
-                      src={getMediaUrl(img) || "/placeholder.svg"}
+                      src={getMediaUrl(img) || "/icons/placeholder.svg"}
                       alt={`${causeTitle} image ${index + 1}`}
                       fill
                       className="object-cover"

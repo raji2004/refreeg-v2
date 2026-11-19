@@ -1,10 +1,10 @@
 "use client";
 
 import { Trash2, Users } from "lucide-react";
-import { removeOrganizationMember } from "@/actions/organization-actions";
+import { removeOrganizationMember } from "@/actions/users/organization-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import type { Workspace } from "./organization-workspace.types";
 
 export function OrganizationTeamCard({

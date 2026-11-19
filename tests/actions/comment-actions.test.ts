@@ -20,7 +20,7 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/lib/reward-core", () => ({
+jest.mock("@/lib/rewards/reward-core", () => ({
   recordEventCore: jest.fn(),
 }));
 
@@ -35,7 +35,7 @@ jest.mock("@/lib/event-bus", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
-import { recordEventCore as recordEvent } from "@/lib/reward-core";
+import { recordEventCore as recordEvent } from "@/lib/rewards/reward-core";
 import { sendNewCommentEmail } from "@/services/mail";
 import { eventBus } from "@/lib/event-bus";
 import {
@@ -44,7 +44,7 @@ import {
   deleteComment,
   listCommentsForCause,
   listRepliesForComment,
-} from "@/actions/comment-actions";
+} from "@/actions/causes/comment-actions";
 
 const mockPrisma = prisma as unknown as {
   comments: {

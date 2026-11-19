@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { listAdminApiDonations } from "@/actions/api-monitoring-actions";
+import { listAdminApiDonations } from "@/actions/admin/api-monitoring-actions";
 import {
   Card,
   CardContent,

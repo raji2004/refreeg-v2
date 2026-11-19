@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { getApiUsageAnalytics } from "@/actions/api-monitoring-actions";
+import { getApiUsageAnalytics } from "@/actions/admin/api-monitoring-actions";
 import {
   Card,
   CardContent,

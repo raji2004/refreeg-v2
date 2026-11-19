@@ -6,13 +6,13 @@ import { Building2, Loader2, Upload } from "lucide-react";
 import {
   getOrganizationWorkspace,
   updateOrganization,
-} from "@/actions/organization-actions";
+} from "@/actions/users/organization-actions";
 import { uploadOrganizationLogo } from "@/lib/organization-logo-upload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { Field, Preference } from "./organization-fields";
 import { OrganizationInviteCard } from "./organization-invite-card";

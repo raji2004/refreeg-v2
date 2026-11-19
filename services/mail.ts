@@ -6,9 +6,9 @@ import path from "path";
 import Handlebars from "handlebars";
 import type { TemplateDelegate } from "handlebars";
 import { headers } from "next/headers";
-import { getClientIp } from "@/lib/client-ip";
-import { getCurrentUser } from "@/actions/auth-actions";
-import { getProfile } from "@/actions/profile-actions";
+import { getClientIp } from "@/lib/api/client-ip";
+import { getCurrentUser } from "@/actions/users/auth-actions";
+import { getProfile } from "@/actions/users/profile-actions";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -420,7 +420,7 @@ export async function sendCauseSubmissionAdminNotification(
   causeTitle: string,
   reviewUrl: string,
 ) {
-  const { getAdminEmails } = await import("@/actions/role-actions");
+  const { getAdminEmails } = await import("@/actions/admin/role-actions");
   const adminEmails = await getAdminEmails();
 
   if (adminEmails.length === 0) {
@@ -471,7 +471,7 @@ export async function sendPetitionSubmissionAdminNotification(
   petitionTitle: string,
   reviewUrl: string,
 ) {
-  const { getAdminEmails } = await import("@/actions/role-actions");
+  const { getAdminEmails } = await import("@/actions/admin/role-actions");
   const adminEmails = await getAdminEmails();
 
   if (adminEmails.length === 0) {
@@ -915,7 +915,7 @@ export async function sendKycSubmissionAdminNotification(
     rejectionReason?: string;
   },
 ) {
-  const { getAdminEmails } = await import("@/actions/role-actions");
+  const { getAdminEmails } = await import("@/actions/admin/role-actions");
   const adminEmails = await getAdminEmails();
 
   if (adminEmails.length === 0) {

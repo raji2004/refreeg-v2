@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { listCauses } from "@/actions";
-import { listBookmarkedIds } from "@/actions/saved-actions";
+import { listBookmarkedIds } from "@/actions/users/saved-actions";
 import { sortCausesByFunding } from "@/lib/causes/funding-rank";
 import { causePublicPath } from "@/lib/causes/slug";
 import { formatNaira } from "@/components/giving/format";
@@ -267,7 +267,8 @@ export default function LiveCampaigns() {
                       <div className="aspect-[4/3] w-full overflow-hidden relative bg-bone">
                         <Image
                           src={
-                            getMediaUrl(campaign.image) || "/placeholder.svg"
+                            getMediaUrl(campaign.image) ||
+                            "/icons/placeholder.svg"
                           }
                           alt={campaign.title}
                           fill

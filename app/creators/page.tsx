@@ -6,7 +6,7 @@ import GrowMoney from "@/components/creators/growmoney";
 import HelpCreators from "@/components/creators/helpcreators";
 import Hero from "@/components/creators/hero";
 import InvestEasy from "@/components/creators/investeasy";
-import Numbers from "@/components/numbers";
+import Numbers from "@/components/marketing/Numbers";
 import React from "react";
 
 export default function Creators() {

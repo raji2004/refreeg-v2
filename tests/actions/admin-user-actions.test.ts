@@ -9,7 +9,7 @@ jest.mock("@/lib/auth/admin-auth", () => ({
   getUserRole: jest.fn(),
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   isAdminOrManager: jest.fn(),
 }));
 
@@ -36,7 +36,7 @@ jest.mock("@/lib/prisma", () => ({
 
 import { auth } from "@/lib/auth/auth";
 import { getUserRole } from "@/lib/auth/admin-auth";
-import { isAdminOrManager } from "@/actions/role-actions";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import {
@@ -45,7 +45,7 @@ import {
   isUserBlocked,
   deleteUserAsAdmin,
   getUserDetailsForAdmin,
-} from "@/actions/admin-user-actions";
+} from "@/actions/admin/admin-user-actions";
 
 const mockAuth = auth as jest.Mock;
 const mockGetUserRole = getUserRole as jest.Mock;

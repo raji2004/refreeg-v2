@@ -1,4 +1,4 @@
-import { getApiKeys } from "@/actions/api-key-actions";
+import { getApiKeys } from "@/actions/admin/api-key-actions";
 import ApiKeysManager from "./ApiKeysManager";
 
 export const metadata = {
