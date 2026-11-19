@@ -1,4 +1,5 @@
-export type KycStatus = "pending" | "approved" | "rejected";
+export type KycStatus =
+  "pending" | "in_progress" | "approved" | "rejected" | "resubmitted";
 
 export interface KycVerification {
   id: string;
@@ -15,6 +16,31 @@ export interface KycVerification {
   state?: string;
   postal?: string;
   country?: string;
+  /** Cached Didit decision fields written by the webhook for the admin queue. */
+  face_match_score?: number | null;
+  id_type?: string | null;
+  id_number?: string | null;
+  checks_passed?: number | null;
+  checks_total?: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export type KycQueueTab =
+  "needs-review" | "resubmitted" | "approved" | "rejected";
+
+export interface KycQueueItem {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  status: KycStatus;
+  idLabel: string;
+  /** Raw, lowercased ID type; Didit sessions resolve to their id_type. */
+  idType: string | null;
+  idNumber: string | null;
+  faceMatchScore: number | null;
+  checksPassed: number | null;
+  checksTotal: number | null;
+  submittedAt: string;
 }

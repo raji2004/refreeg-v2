@@ -12,7 +12,14 @@ import { usePathname } from "next/navigation";
  * Pages migrated to the cream/ink system (docs/DESIGN_GUIDE.md) skip the
  * legacy glass card so they sit flush on AppShell's cream background.
  */
-const CREAM_ROUTES = ["/dashboard/settings", "/dashboard/donations"];
+const CREAM_ROUTES = [
+  "/dashboard/settings",
+  "/dashboard/donations",
+  // The KYC admin screens are built on the cream/ink system (Eyebrow,
+  // fraunces headings, ink buttons) — without this entry they fall back
+  // to the legacy blue-gradient glass card instead of sitting flush.
+  "/dashboard/admin/users/kyc",
+];
 
 export default function ClientLayoutWrapper({
   children,
