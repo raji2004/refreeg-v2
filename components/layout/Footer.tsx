@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useRef } from "react";
 import { useGsap } from "@/hooks/use-gsap";
 
@@ -81,69 +82,76 @@ const socialItems = [
 export function Footer() {
   const year = new Date().getFullYear();
   const footerRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
-  useGsap((gsap) => {
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: footerRef.current,
-        start: "top 80%",
-      },
-    });
+  useGsap(
+    (gsap) => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: footerRef.current,
+          // clamp() caps the start at max scroll so short pages still reach it.
+          start: "clamp(top 80%)",
+        },
+      });
 
-    tl.from(".footer-logo", {
-      y: 60,
-      opacity: 0,
-      scale: 0.9,
-      duration: 1,
-      ease: "power4.out",
-    })
-      .from(
-        ".footer-brand",
-        {
-          y: 40,
-          opacity: 0,
-          filter: "blur(8px)",
-          duration: 0.8,
-          ease: "power3.out",
-        },
-        "-=0.6",
-      )
-      .from(
-        ".footer-columns > div",
-        {
-          y: 70,
-          opacity: 0,
-          scale: 0.9,
-          rotateX: 10,
-          transformOrigin: "top",
-          stagger: 0.12,
-          duration: 0.9,
-          ease: "back.out(1.4)",
-        },
-        "-=0.5",
-      )
-      .from(
-        ".footer-social",
-        {
-          y: 30,
-          opacity: 0,
-          scale: 0.85,
-          duration: 0.7,
-          ease: "elastic.out(1, 0.6)",
-        },
-        "-=0.5",
-      )
-      .from(
-        ".footer-bottom",
-        {
-          y: 25,
-          opacity: 0,
-          duration: 0.6,
-          ease: "power2.out",
-        },
-        "-=0.4",
-      );
-  }, footerRef);
+      tl.from(".footer-logo", {
+        y: 60,
+        opacity: 0,
+        scale: 0.9,
+        duration: 1,
+        ease: "power4.out",
+      })
+        .from(
+          ".footer-brand",
+          {
+            y: 40,
+            opacity: 0,
+            filter: "blur(8px)",
+            duration: 0.8,
+            ease: "power3.out",
+          },
+          "-=0.6",
+        )
+        .from(
+          ".footer-columns > div",
+          {
+            y: 70,
+            opacity: 0,
+            scale: 0.9,
+            rotateX: 10,
+            transformOrigin: "top",
+            stagger: 0.12,
+            duration: 0.9,
+            ease: "back.out(1.4)",
+          },
+          "-=0.5",
+        )
+        .from(
+          ".footer-social",
+          {
+            y: 30,
+            opacity: 0,
+            scale: 0.85,
+            duration: 0.7,
+            ease: "elastic.out(1, 0.6)",
+          },
+          "-=0.5",
+        )
+        .from(
+          ".footer-bottom",
+          {
+            y: 25,
+            opacity: 0,
+            duration: 0.6,
+            ease: "power2.out",
+          },
+          "-=0.4",
+        );
+    },
+    footerRef,
+    // The footer stays mounted across client navigation; re-measure per page.
+    [pathname],
+  );
 
   return (
     <footer ref={footerRef} className="bg-background text-black">
