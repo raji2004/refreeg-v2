@@ -5,6 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { usePayment } from "@/hooks/use-payment";
 import { Icons } from "@/components/layout/Icons";
+import { Button } from "@/components/ui/button";
+import { CalloutBanner } from "@/components/ui/callout-banner";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { calculateProviderFee } from "@/lib/utils";
 import Image from "next/image";
 import type { PaymentProviderType, TransactionData } from "@/types";
@@ -59,97 +62,91 @@ export default function PaymentProviderSelectPage() {
 
   if (!txData) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <Icons.spinner className="h-8 w-8 animate-spin text-gray-400" />
+      <div className="flex min-h-screen items-center justify-center bg-cream">
+        <Icons.spinner className="h-8 w-8 animate-spin text-ink/40" />
       </div>
     );
   }
 
+  const total =
+    txData.amount +
+    txData.serviceFee +
+    (txData.providerFee || 0) +
+    (txData.tipAmount || 0);
+
+  const providers: { id: PaymentProviderType; name: string; logo: string }[] = [
+    { id: "paystack", name: "Paystack", logo: "/paystack.png" },
+    { id: "flutterwave", name: "Flutterwave", logo: "/flutterwave.png" },
+  ];
+  const pendingName = providers.find((p) => p.id === selectedProvider)?.name;
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4">
-      <div className="w-full max-w-md text-center">
-        <h1 className="mb-2 text-2xl font-semibold text-gray-900">
-          Choose Payment Method
-        </h1>
-        <p className="mb-10 text-sm text-gray-500">
-          Select how you&apos;d like to complete your ₦
-          {(
-            txData.amount +
-            txData.serviceFee +
-            (txData.providerFee || 0) +
-            (txData.tipAmount || 0)
-          ).toLocaleString()}{" "}
-          donation
+    <div className="flex min-h-screen flex-col items-center justify-center bg-cream px-4 py-10">
+      <div className="w-full max-w-2xl text-center">
+        <Eyebrow>Choose payment method</Eyebrow>
+        <p className="mt-3 font-fraunces text-4xl font-medium text-ink sm:text-5xl">
+          ₦{total.toLocaleString()}
+        </p>
+        <p className="mt-2 text-sm text-ink/70">
+          Pick how you&apos;d like to complete this donation.
         </p>
 
-        <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center sm:gap-8">
-          {/* Paystack Button */}
-          <button
-            onClick={() => handleSelectProvider("paystack")}
-            disabled={isLoading}
-            className="group relative flex h-32 w-48 flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-[#00C3F7] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#00C3F7] focus:ring-offset-2 disabled:opacity-50 sm:h-36 sm:w-56 lg:h-48 lg:w-72"
-          >
-            {selectedProvider === "paystack" && isLoading ? (
-              <Icons.spinner className="h-8 w-8 animate-spin text-[#00C3F7]" />
-            ) : (
-              <Image
-                src="/paystack.png"
-                alt="Paystack"
-                width={160}
-                height={60}
-                className="h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
-              />
-            )}
-          </button>
-
-          {/* Flutterwave Button */}
-          <button
-            onClick={() => handleSelectProvider("flutterwave")}
-            disabled={isLoading}
-            className="group relative flex h-32 w-48 flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-[#F5A623] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:ring-offset-2 disabled:opacity-50 sm:h-36 sm:w-56 lg:h-48 lg:w-72"
-          >
-            {selectedProvider === "flutterwave" && isLoading ? (
-              <Icons.spinner className="h-8 w-8 animate-spin text-[#F5A623]" />
-            ) : (
-              <Image
-                src="/flutterwave.png"
-                alt="Flutterwave"
-                width={160}
-                height={60}
-                className="h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
-              />
-            )}
-          </button>
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {providers.map((provider) => (
+            <button
+              key={provider.id}
+              type="button"
+              onClick={() => handleSelectProvider(provider.id)}
+              disabled={isLoading}
+              aria-label={`Pay with ${provider.name}`}
+              className="group flex h-32 items-center justify-center rounded-xl border border-hairline bg-surface p-4 shadow-subtle transition-colors hover:border-forest hover:shadow-card focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream disabled:opacity-50 sm:h-40"
+            >
+              {selectedProvider === provider.id && isLoading ? (
+                <Icons.spinner className="h-8 w-8 animate-spin text-forest" />
+              ) : (
+                <Image
+                  src={provider.logo}
+                  alt={provider.name}
+                  width={160}
+                  height={60}
+                  className="h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
+                />
+              )}
+            </button>
+          ))}
         </div>
 
-        {txData &&
-          calculateProviderFee(txData.amount, "flutterwave") > 2000 && (
-            <div className="mt-8 rounded-lg bg-orange-50 p-4 text-left text-sm text-orange-800">
-              <p>
-                <strong>💡 Processing Fee Notice:</strong> Because this is a
-                large donation, you may notice a difference in processing fees
-                at checkout depending on your choice.
-              </p>
-              <ul className="mt-2 ml-4 list-disc space-y-1">
-                <li>
-                  <strong>Paystack</strong> caps its processing fee at a maximum
-                  of ₦2,000.
-                </li>
-                <li>
-                  <strong>Flutterwave</strong> charges a flat 1.4% processing
-                  fee with no upper limit.
-                </li>
-              </ul>
-            </div>
-          )}
+        {isLoading && pendingName && (
+          <p className="mt-4 text-sm text-ink/70" role="status">
+            Taking you to {pendingName} to finish paying. This usually takes a
+            few seconds.
+          </p>
+        )}
 
-        <button
+        {calculateProviderFee(txData.amount, "flutterwave") > 2000 && (
+          <CalloutBanner
+            variant="sand"
+            className="mt-8 text-left"
+            title="Processing fees differ on large donations"
+            description={
+              <>
+                <strong>Paystack</strong> caps its processing fee at ₦2,000.{" "}
+                <strong>Flutterwave</strong> charges a flat 1.4% with no upper
+                limit.
+              </>
+            }
+          />
+        )}
+
+        <Button
+          type="button"
+          variant="link"
           onClick={() => router.back()}
-          className="mt-10 text-sm text-gray-400 underline hover:text-gray-600"
           disabled={isLoading}
+          className="mt-8 text-ink/60 hover:text-ink"
         >
           Go back
-        </button>
+        </Button>
       </div>
     </div>
   );

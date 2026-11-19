@@ -64,7 +64,7 @@ export function SelectedMediaCarousel({
         {previews.map((item, index) => (
           <div
             key={`${item.url}-${index}`}
-            className="relative aspect-video overflow-hidden rounded-xl border border-[#DDE3EA] bg-[#F1F5F9]"
+            className="relative aspect-video overflow-hidden rounded-xl border border-hairline bg-bone"
           >
             {item.isVideo ? (
               <video
@@ -93,7 +93,7 @@ export function SelectedMediaCarousel({
             >
               <X className="h-4 w-4" />
             </Button>
-            <span className="absolute bottom-2 left-2 rounded-full bg-[#10233F]/85 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.06em] text-white">
+            <span className="absolute bottom-2 left-2 rounded-full bg-ink/85 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.06em] text-white">
               {item.isVideo ? "Video" : "Image"} {index + 1}
             </span>
           </div>

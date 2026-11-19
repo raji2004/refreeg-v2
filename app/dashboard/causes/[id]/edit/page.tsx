@@ -5,6 +5,8 @@ import { hasBankDetails } from "@/actions/users/profile-actions";
 import { getCause } from "@/actions/causes/cause-actions";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { CalloutBanner } from "@/components/ui/callout-banner";
 import { prisma } from "@/lib/prisma";
 
 const EditCauseForm = dynamic(() => import("./edit-cause-form"), {
@@ -39,19 +41,20 @@ export default async function EditCausePage({
 
   if (pendingEdit) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">
-        <h1 className="text-2xl font-bold">Edit Already Pending</h1>
-        <p className="text-muted-foreground max-w-md">
-          You already have an edit request for this cause pending review. Please
-          wait for our team to approve or reject your previous changes before
-          making more edits.
-        </p>
-        <Link
-          href="/dashboard/causes"
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-        >
-          Back to Causes
-        </Link>
+      <div className="min-h-screen w-full bg-cream px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+        <div className="mx-auto max-w-3xl">
+          <CalloutBanner
+            variant="gold"
+            className="flex-col sm:flex-row"
+            title="Your last edit is still under review"
+            description="Our team reviews cause edits before they go live. Once that one is approved or rejected you can make more changes."
+            action={
+              <Button asChild variant="ink" size="sm" className="shrink-0">
+                <Link href="/dashboard/causes">Back to causes</Link>
+              </Button>
+            }
+          />
+        </div>
       </div>
     );
   }
@@ -64,27 +67,25 @@ export default async function EditCausePage({
     redirect("/dashboard/causes");
   }
 
-  return (
-    <div className="">
-      <div className="md:mx-auto">
-        {!hasBankInfo ? (
-          <div className="text-center space-y-4">
-            <h1 className="text-2xl font-bold">Bank Details Required</h1>
-            <p className="text-muted-foreground">
-              Please add your bank details in the settings to edit your cause.
-              This is required to receive donations.
-            </p>
-            <Link
-              href="/dashboard/settings/bank"
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-            >
-              Add Bank Details
-            </Link>
-          </div>
-        ) : (
-          <EditCauseForm cause={cause} />
-        )}
+  if (!hasBankInfo) {
+    return (
+      <div className="min-h-screen w-full bg-cream px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+        <div className="mx-auto max-w-3xl">
+          <CalloutBanner
+            variant="gold"
+            className="flex-col sm:flex-row"
+            title="Add your bank details to edit this cause"
+            description="Donations are paid out to this account, so it has to be in place before you make changes."
+            action={
+              <Button asChild variant="ink" size="sm" className="shrink-0">
+                <Link href="/dashboard/settings/bank">Add bank details</Link>
+              </Button>
+            }
+          />
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return <EditCauseForm cause={cause} />;
 }

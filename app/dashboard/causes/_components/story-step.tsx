@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +9,7 @@ import type { CauseFormErrors, CauseSection } from "@/lib/schemas/cause.schema";
 import { cn } from "@/lib/utils";
 import { FieldError } from "@/components/ui/field-error";
 
-const invalidClass = "border-red-500 focus:border-red-500 focus:ring-red-100";
+const invalidClass = "border-rust focus:border-rust focus:ring-rust/15";
 
 type Props = {
   sections: CauseSection[];
@@ -34,8 +35,8 @@ export function CauseStoryStep({
         <Button
           type="button"
           onClick={onAdd}
-          variant="outline"
-          className="h-10 w-full rounded-full border-mist-light bg-white px-4 text-sm font-bold text-navy-ink shadow-none hover:border-blue-steel hover:bg-[#F4F8FC] hover:text-navy-ink sm:w-auto"
+          variant="surface"
+          className="h-10 w-full rounded-full px-4 text-sm font-semibold sm:w-auto"
         >
           <Plus className="mr-1.5 h-4 w-4" />
           Add section
@@ -48,20 +49,19 @@ export function CauseStoryStep({
           return (
             <Card
               key={index}
-              className="relative overflow-hidden rounded-2xl border-mist bg-white shadow-none"
+              variant="surface"
+              className="relative overflow-hidden shadow-none"
             >
               <div className="space-y-4 px-3 py-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-blue-steel">
-                    Section {index + 1}
-                  </span>
+                  <Eyebrow className="text-forest">Section {index + 1}</Eyebrow>
                   {index > 0 && (
                     <Button
                       type="button"
                       onClick={() => onRemove(index)}
                       variant="ghost"
                       size="sm"
-                      className="h-8 rounded-full text-red-600 hover:bg-red-50 hover:text-red-700"
+                      className="h-8 rounded-full text-rust hover:bg-rust/10 hover:text-rust"
                     >
                       Delete
                     </Button>
@@ -71,7 +71,7 @@ export function CauseStoryStep({
                   <div className="space-y-2">
                     <Label
                       htmlFor={`section-heading-${index}`}
-                      className="text-sm font-semibold text-[#33445A]"
+                      className="text-sm font-semibold text-ink"
                     >
                       Heading
                     </Label>
@@ -94,7 +94,7 @@ export function CauseStoryStep({
                   <div className="space-y-2">
                     <Label
                       htmlFor={`section-description-${index}`}
-                      className="text-sm font-semibold text-[#33445A]"
+                      className="text-sm font-semibold text-ink"
                     >
                       Story Content
                     </Label>

@@ -411,11 +411,11 @@ select:focus {
 
 /* Flat, product-led styling for the cause creation workspace. */
 .cause-flow .premium-input {
-  @apply rounded-xl border-[#D8E0E8] bg-white shadow-none transition-colors duration-150 focus:border-[#235DA7] focus:ring-[#235DA7]/15;
+  @apply rounded-xl border-hairline bg-surface shadow-none transition-colors duration-150 focus:border-forest focus:ring-forest/15;
 }
 
 .cause-flow label {
-  color: #33445a;
+  @apply text-ink;
 }
 
 .stepper-line {
