@@ -4,12 +4,12 @@
 import crypto from "crypto";
 import { POST as diditWebhookPOST } from "@/app/api/webhooks/didit/route";
 import { POST as mobileKycPOST } from "@/app/api/mobile/kyc/route";
-import { getVerificationStatus } from "@/actions/kyc-actions";
+import { getVerificationStatus } from "@/actions/users/kyc-actions";
 import { prisma } from "@/lib/prisma";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { sendKycApprovedEmail } from "@/services/mail";
 import { createNotification } from "@/lib/notifications/notification-service";
-import { issueReferralRewardOnKycApproval } from "@/lib/referral-utils";
+import { issueReferralRewardOnKycApproval } from "@/lib/referrals/referral-utils";
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/prisma", () => ({
@@ -43,11 +43,11 @@ jest.mock("@/lib/notifications/notification-service", () => ({
   createNotification: jest.fn(),
 }));
 
-jest.mock("@/lib/referral-utils", () => ({
+jest.mock("@/lib/referrals/referral-utils", () => ({
   issueReferralRewardOnKycApproval: jest.fn(),
 }));
 
-jest.mock("@/actions/database-actions", () => ({
+jest.mock("@/actions/admin/database-actions", () => ({
   logAdminActivity: jest.fn(),
 }));
 
@@ -55,11 +55,11 @@ jest.mock("@auth/prisma-adapter", () => ({
   PrismaAdapter: jest.fn(() => ({})),
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   isAdminOrManager: jest.fn(),
 }));
 
-jest.mock("@/actions/auth-actions", () => ({
+jest.mock("@/actions/users/auth-actions", () => ({
   getCurrentUser: jest.fn(),
 }));
 

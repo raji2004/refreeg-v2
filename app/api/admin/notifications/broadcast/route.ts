@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth/auth";
-import { isAdminOrManager } from "@/actions/role-actions";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import {
   getDeviceTokensForBroadcast,

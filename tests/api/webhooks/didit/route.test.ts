@@ -19,7 +19,7 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/lib/referral-utils", () => ({
+jest.mock("@/lib/referrals/referral-utils", () => ({
   issueReferralRewardOnKycApproval: jest.fn(),
 }));
 
@@ -40,7 +40,7 @@ jest.mock("@/lib/notifications/notification-service", () => ({
 
 import { POST } from "@/app/api/webhooks/didit/route";
 import { prisma } from "@/lib/prisma";
-import { issueReferralRewardOnKycApproval } from "@/lib/referral-utils";
+import { issueReferralRewardOnKycApproval } from "@/lib/referrals/referral-utils";
 import { sendKycApprovedEmail, sendKycRejectedEmail } from "@/services/mail";
 
 describe("Didit Webhook Route (/api/webhooks/didit)", () => {

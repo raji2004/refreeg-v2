@@ -6,7 +6,7 @@ jest.mock("@/lib/auth/mobile-auth", () => ({
   authenticateMobileRequest: jest.fn(),
 }));
 
-jest.mock("@/actions/kyc-actions", () => ({
+jest.mock("@/actions/users/kyc-actions", () => ({
   getVerificationStatus: jest.fn(),
 }));
 
@@ -23,7 +23,7 @@ jest.mock("@/lib/prisma", () => ({
 
 import { GET, POST } from "@/app/api/mobile/kyc/route";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { getVerificationStatus } from "@/actions/kyc-actions";
+import { getVerificationStatus } from "@/actions/users/kyc-actions";
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 

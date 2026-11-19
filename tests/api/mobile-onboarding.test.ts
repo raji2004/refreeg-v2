@@ -14,7 +14,7 @@ jest.mock("@/lib/auth/mobile-auth", () => ({
   authenticateMobileRequest: jest.fn(),
 }));
 
-jest.mock("@/actions/profile-actions", () => ({
+jest.mock("@/actions/users/profile-actions", () => ({
   getOnboardingData: jest.fn(),
   getCurrentOnboardingStep: jest.fn(),
   createOnboardingProfile: jest.fn(),
@@ -47,7 +47,7 @@ import {
   getCurrentOnboardingStep,
   createOnboardingProfile,
   checkUsernameAvailability,
-} from "@/actions/profile-actions";
+} from "@/actions/users/profile-actions";
 import { prisma } from "@/lib/prisma";
 
 function makeRequest(body: Record<string, unknown> = {}): NextRequest {

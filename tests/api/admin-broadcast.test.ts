@@ -10,7 +10,7 @@ jest.mock("next/server", () => ({
 
 import { GET, POST } from "@/app/api/admin/notifications/broadcast/route";
 import { auth } from "@/lib/auth/auth";
-import { isAdminOrManager } from "@/actions/role-actions";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
 import * as deviceTokenService from "@/lib/notifications/device-token-service";
 import * as fcmService from "@/lib/notifications/fcm-service";
 
@@ -18,7 +18,7 @@ jest.mock("@/lib/auth/auth", () => ({
   auth: jest.fn(),
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   isAdminOrManager: jest.fn(),
 }));
 
