@@ -492,7 +492,6 @@ export async function sendKycReminderToUnverifiedUsers(): Promise<{
 // Admin KYC screens (queue + review detail)
 // ---------------------------------------------------------------------------
 
-const QUEUE_PAGE_SIZE = 8;
 const QUEUE_ROW_LIMIT = 2000;
 
 type AdminKycRow = {
@@ -555,17 +554,19 @@ function resolveUserName(
 }
 
 function toQueueItem(row: AdminKycRow): KycQueueItem {
+  const rawIdType =
+    row.document_type === "didit"
+      ? row.id_type
+      : row.document_type || row.id_type;
   return {
     id: row.id,
     userId: row.user_id,
     name: row.full_name || row.profile_name || "Unnamed applicant",
     email: row.email || "",
     status: row.status as KycQueueItem["status"],
-    idLabel: formatIdTypeLabel(
-      row.document_type === "didit"
-        ? row.id_type
-        : row.document_type || row.id_type,
-    ),
+    idLabel: formatIdTypeLabel(rawIdType),
+    idType: rawIdType?.toLowerCase() ?? null,
+    idNumber: row.id_number,
     faceMatchScore: row.face_match_score,
     checksPassed: row.checks_passed,
     checksTotal: row.checks_total,
@@ -573,26 +574,24 @@ function toQueueItem(row: AdminKycRow): KycQueueItem {
   };
 }
 
-export async function getAdminKycQueue(params: {
-  tab?: string;
-  search?: string;
-  idType?: string;
-  faceMatchBelow?: number;
-  page?: number;
-  pageSize?: number;
-}): Promise<{
+/**
+ * Full admin queue snapshot for the client-side review board: every
+ * applicant's latest verification, per-tab counts and the next case to
+ * review. Tabs, search and filters run client-side so switching feels
+ * instant — this loads once per page visit.
+ */
+export async function getAdminKycQueueSnapshot(): Promise<{
   items: KycQueueItem[];
-  total: number;
   counts: Record<KycQueueTab, number>;
   nextReviewUserId: string | null;
   error: string | null;
 }> {
   try {
     const user = await getCurrentUser();
-    if (!user) return queueFailure("Not authenticated");
+    if (!user) return snapshotFailure("Not authenticated");
 
     const isAuthorized = await isAdminOrManager(user.id);
-    if (!isAuthorized) return queueFailure("Unauthorized");
+    if (!isAuthorized) return snapshotFailure("Unauthorized");
 
     const rows = await loadAdminKycRows();
     const tabStatuses = getTabStatuses();
@@ -611,36 +610,13 @@ export async function getAdminKycQueue(params: {
       }
     }
 
-    const tab = (
-      params.tab && params.tab in tabStatuses ? params.tab : "needs-review"
-    ) as KycQueueTab;
-    const search = params.search?.trim().toLowerCase();
-
-    const filtered = rows.filter((row) => {
-      if (!tabStatuses[tab].includes(row.status)) return false;
-      if (search) {
-        const haystack =
-          `${row.full_name ?? ""} ${row.profile_name ?? ""} ${row.email ?? ""} ${row.id_number ?? ""}`.toLowerCase();
-        if (!haystack.includes(search)) return false;
-      }
-      if (params.idType && params.idType !== "all") {
-        const rowIdType = (
-          row.document_type === "didit" ? row.id_type : row.document_type
-        )?.toLowerCase();
-        if (rowIdType !== params.idType.toLowerCase()) return false;
-      }
-      if (
-        params.faceMatchBelow != null &&
-        (row.face_match_score == null ||
-          row.face_match_score >= params.faceMatchBelow)
-      ) {
-        return false;
-      }
-      return true;
-    });
-    filtered.sort(
-      (a, b) => (b.created_at?.getTime() ?? 0) - (a.created_at?.getTime() ?? 0),
-    );
+    const items = rows
+      .slice()
+      .sort(
+        (a, b) =>
+          (b.created_at?.getTime() ?? 0) - (a.created_at?.getTime() ?? 0),
+      )
+      .map(toQueueItem);
 
     const nextReviewRow = rows
       .filter((row) => tabStatuses["needs-review"].includes(row.status))
@@ -649,34 +625,23 @@ export async function getAdminKycQueue(params: {
           (a.created_at?.getTime() ?? 0) - (b.created_at?.getTime() ?? 0),
       )[0];
 
-    const page = Math.max(1, params.page ?? 1);
-    const pageSize = Math.min(
-      50,
-      Math.max(1, params.pageSize ?? QUEUE_PAGE_SIZE),
-    );
-    const items = filtered
-      .slice((page - 1) * pageSize, page * pageSize)
-      .map(toQueueItem);
-
     return {
       items,
-      total: filtered.length,
       counts,
       nextReviewUserId: nextReviewRow?.user_id ?? null,
       error: null,
     };
   } catch (error) {
     console.error("[KYC Admin] Queue query failed:", error);
-    return queueFailure(
+    return snapshotFailure(
       error instanceof Error ? error.message : "Failed to load the KYC queue",
     );
   }
 }
 
-function queueFailure(error: string) {
+function snapshotFailure(error: string) {
   return {
     items: [] as KycQueueItem[],
-    total: 0,
     counts: {
       "needs-review": 0,
       resubmitted: 0,

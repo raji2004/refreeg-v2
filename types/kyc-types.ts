@@ -36,6 +36,9 @@ export interface KycQueueItem {
   email: string;
   status: KycStatus;
   idLabel: string;
+  /** Raw, lowercased ID type; Didit sessions resolve to their id_type. */
+  idType: string | null;
+  idNumber: string | null;
   faceMatchScore: number | null;
   checksPassed: number | null;
   checksTotal: number | null;
