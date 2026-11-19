@@ -1,11 +1,8 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import {
-  hasBankDetails,
-  updateBankDetails,
-  getProfile,
-} from "@/actions/users/profile-actions";
+import { getProfile } from "@/actions/users/profile-actions";
+import { updateBankDetailsCore } from "@/lib/users/profile-core";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -53,7 +50,7 @@ export async function PUT(request: NextRequest) {
       sub_account_code: body.sub_account_code,
     };
 
-    const updatedProfile = await updateBankDetails(user!.id, bankData);
+    const updatedProfile = await updateBankDetailsCore(user!.id, bankData);
 
     // Send bank-account-added email & in-app notification (parity with web)
     try {

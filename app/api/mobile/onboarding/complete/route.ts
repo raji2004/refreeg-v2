@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { completeOnboarding } from "@/actions/users/profile-actions";
+import { completeOnboardingCore } from "@/lib/users/profile-core";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   if (errorResponse) return errorResponse;
 
   try {
-    await completeOnboarding(user!.id);
+    await completeOnboardingCore(user!.id);
 
     const updatedUser = await prisma.user.findUnique({
       where: { id: user!.id },

@@ -2,9 +2,9 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import {
-  saveStep1Progress,
-  saveStep2Progress,
-} from "@/actions/users/profile-actions";
+  saveStep1ProgressCore,
+  saveStep2ProgressCore,
+} from "@/lib/users/profile-core";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -23,9 +23,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (step === 1 && data.accountType) {
-      await saveStep1Progress(user!.id, data.accountType);
+      await saveStep1ProgressCore(user!.id, data.accountType);
     } else if (step === 2 && data.gender) {
-      await saveStep2Progress(user!.id, data.gender);
+      await saveStep2ProgressCore(user!.id, data.gender);
     } else {
       return apiError("Invalid step or missing data for that step", 400);
     }

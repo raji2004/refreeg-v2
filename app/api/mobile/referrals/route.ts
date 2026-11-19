@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { getReferralDashboardData } from "@/actions/users/referral-actions";
+import { getReferralDashboardDataCore } from "@/lib/referrals/referral-dashboard-core";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   if (errorResponse) return errorResponse;
 
   try {
-    const data = await getReferralDashboardData();
+    const data = await getReferralDashboardDataCore(user!.id);
     return apiSuccess(data);
   } catch (error: any) {
     console.error("Mobile API Get Referrals Error:", error);

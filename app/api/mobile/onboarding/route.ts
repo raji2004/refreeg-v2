@@ -4,9 +4,9 @@ import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import {
   getOnboardingData,
   getCurrentOnboardingStep,
-  createOnboardingProfile,
   checkUsernameAvailability,
 } from "@/actions/users/profile-actions";
+import { createOnboardingProfileCore } from "@/lib/users/profile-core";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       delete profileData.profilePhoto;
     }
 
-    const updatedUser = await createOnboardingProfile(
+    const updatedUser = await createOnboardingProfileCore(
       user!.id,
       profileData,
       profilePhotoUrl,

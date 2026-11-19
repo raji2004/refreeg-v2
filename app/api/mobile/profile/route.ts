@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { getProfile, updateProfile } from "@/actions/users/profile-actions";
+import { getProfile } from "@/actions/users/profile-actions";
+import { updateProfileCore } from "@/lib/users/profile-core";
 
 export async function OPTIONS() {
   return handleCorsPreflight();
@@ -48,7 +49,7 @@ export async function PUT(request: NextRequest) {
       linkedin_url: body.linkedin_url,
     };
 
-    const updatedProfile = await updateProfile(user!.id, profileData);
+    const updatedProfile = await updateProfileCore(user!.id, profileData);
     
     return apiSuccess(updatedProfile);
   } catch (error: any) {

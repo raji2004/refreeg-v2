@@ -17,8 +17,11 @@ jest.mock("@/lib/auth/mobile-auth", () => ({
 jest.mock("@/actions/users/profile-actions", () => ({
   getOnboardingData: jest.fn(),
   getCurrentOnboardingStep: jest.fn(),
-  createOnboardingProfile: jest.fn(),
   checkUsernameAvailability: jest.fn(),
+}));
+
+jest.mock("@/lib/users/profile-core", () => ({
+  createOnboardingProfileCore: jest.fn(),
 }));
 
 jest.mock("@/lib/prisma", () => ({
@@ -45,9 +48,9 @@ import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import {
   getOnboardingData,
   getCurrentOnboardingStep,
-  createOnboardingProfile,
   checkUsernameAvailability,
 } from "@/actions/users/profile-actions";
+import { createOnboardingProfileCore } from "@/lib/users/profile-core";
 import { prisma } from "@/lib/prisma";
 
 function makeRequest(body: Record<string, unknown> = {}): NextRequest {
@@ -124,7 +127,7 @@ describe("Mobile Onboarding API Routes", () => {
     });
 
     it("returns 400 when createOnboardingProfile rejects an under-18 dateOfBirth", async () => {
-      (createOnboardingProfile as jest.Mock).mockRejectedValue(
+      (createOnboardingProfileCore as jest.Mock).mockRejectedValue(
         new Error("You need to be 18 or over to use RefreeG."),
       );
 
@@ -143,7 +146,7 @@ describe("Mobile Onboarding API Routes", () => {
     });
 
     it("returns 400 when createOnboardingProfile rejects a single-word name", async () => {
-      (createOnboardingProfile as jest.Mock).mockRejectedValue(
+      (createOnboardingProfileCore as jest.Mock).mockRejectedValue(
         new Error("Enter your first and last name, as on your ID."),
       );
 
@@ -163,7 +166,7 @@ describe("Mobile Onboarding API Routes", () => {
 
     it("saves profileData successfully and returns 200", async () => {
       (checkUsernameAvailability as jest.Mock).mockResolvedValue(true);
-      (createOnboardingProfile as jest.Mock).mockResolvedValue({
+      (createOnboardingProfileCore as jest.Mock).mockResolvedValue({
         id: "user-1",
         firstName: "Amina",
         lastName: "Bello",
@@ -188,7 +191,7 @@ describe("Mobile Onboarding API Routes", () => {
       expect(res.status).toBe(200);
       expect(body.success).toBe(true);
       expect(body.data.fullName).toBe("Amina Bello");
-      expect(createOnboardingProfile).toHaveBeenCalledWith(
+      expect(createOnboardingProfileCore).toHaveBeenCalledWith(
         "user-1",
         expect.objectContaining({
           fullName: "Amina Bello",
