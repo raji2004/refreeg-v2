@@ -18,7 +18,7 @@ import {
   createShortUrl,
   getOriginalUrl,
   getShortUrlAnalytics,
-} from "@/actions/url-actions";
+} from "@/actions/users/url-actions";
 
 const mockPrisma = prisma as unknown as {
   short_urls: {
@@ -61,7 +61,9 @@ describe("url-actions", () => {
         "https://example.com/petition/1",
       );
 
-      expect(result).toMatch(/^https:\/\/apps\.refreeg\.com\/s\/[A-Za-z0-9]{6}$/);
+      expect(result).toMatch(
+        /^https:\/\/apps\.refreeg\.com\/s\/[A-Za-z0-9]{6}$/,
+      );
       expect(mockPrisma.short_urls.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           entity_id: "entity-1",

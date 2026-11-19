@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "nextjs-toploader/app";
-import { SupportErrorCta } from "@/components/support-error-cta";
-import { reportClientError } from "@/lib/client-error-reporter";
+import { SupportErrorCta } from "@/components/engagement/SupportErrorCta";
+import { reportClientError } from "@/lib/api/client-error-reporter";
 
 export default function Error({
   error,

@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 
 function UpdatePasswordForm() {
   const searchParams = useSearchParams();

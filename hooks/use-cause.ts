@@ -1,9 +1,13 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createCause, updateCause, deleteCause } from "@/actions/cause-actions";
+import {
+  createCause,
+  updateCause,
+  deleteCause,
+} from "@/actions/causes/cause-actions";
 import type { CauseFormData } from "@/types";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useRouter } from "nextjs-toploader/app";
 
 export function useCause() {

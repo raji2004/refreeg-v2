@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { minimalJpeg, shortWebm } from "./files";
-import { formatFundingGoalInput } from "../../lib/funding-goal";
+import { formatFundingGoalInput } from "../../lib/causes/funding-goal";
 
 export async function pickCalendarDay(
   page: Page,
@@ -53,10 +53,7 @@ async function advanceFromStep1(page: Page) {
 }
 
 /** Assert primary wizard CTAs are reachable on the current viewport (desktop + mobile). */
-export async function expectWizardActionReachable(
-  page: Page,
-  name: RegExp,
-) {
+export async function expectWizardActionReachable(page: Page, name: RegExp) {
   const btn = page.getByRole("button", { name }).last();
   await btn.scrollIntoViewIfNeeded();
   await expect(btn).toBeVisible({ timeout: 15_000 });
@@ -121,9 +118,7 @@ export async function gotoCreateCauseVisualImpact(
   }
   await selectCategory(page, category);
   await page.locator("#goal").fill(goal);
-  await expect(page.locator("#goal")).toHaveValue(
-    formatFundingGoalInput(goal),
-  );
+  await expect(page.locator("#goal")).toHaveValue(formatFundingGoalInput(goal));
 
   await page.keyboard.press("Escape").catch(() => undefined);
   await advanceFromStep1(page);
@@ -157,7 +152,9 @@ export async function gotoCreateCauseVisualImpact(
   await expect(page.locator("#end-date")).not.toContainText(/Pick a date/i);
 
   await (await expectWizardActionReachable(page, /^Continue$/i)).click();
-  await expect(page.locator('input[type="file"]').first()).toBeAttached({ timeout: 20_000 });
+  await expect(page.locator('input[type="file"]').first()).toBeAttached({
+    timeout: 20_000,
+  });
   console.log("Step 3 (Timeline) complete — on Visual Impact.");
 }
 
@@ -196,7 +193,10 @@ export async function uploadCoverImage(page: Page) {
  * Scrolls the gallery into view first (mobile nav / sticky footers can cover it).
  */
 export async function uploadGalleryVideo(page: Page) {
-  await page.getByText(/Multimedia Gallery/i).first().scrollIntoViewIfNeeded();
+  await page
+    .getByText(/Multimedia Gallery/i)
+    .first()
+    .scrollIntoViewIfNeeded();
 
   const galleryInput = page.locator('input[type="file"]').nth(1);
   await galleryInput.waitFor({ state: "attached", timeout: 15_000 });
@@ -251,8 +251,11 @@ export async function fillCreateCauseWizard(
     mockVideoUpload?: boolean;
   },
 ) {
-  const { includeGalleryVideo = false, mockVideoUpload = false, ...rest } =
-    opts;
+  const {
+    includeGalleryVideo = false,
+    mockVideoUpload = false,
+    ...rest
+  } = opts;
 
   if (mockVideoUpload || includeGalleryVideo) {
     await mockVideoPresignUpload(page);

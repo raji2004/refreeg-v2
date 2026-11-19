@@ -41,7 +41,7 @@ import {
   FolderKanban,
   KeyRound,
 } from "lucide-react";
-import { getApiMonitoringSummary } from "@/actions/api-monitoring-actions";
+import { getApiMonitoringSummary } from "@/actions/admin/api-monitoring-actions";
 import {
   Card,
   CardContent,

@@ -38,7 +38,7 @@ import {
   getPetitionSignatureTrends,
   getUserPetitions,
   getPetitionAnalytics,
-} from "@/actions/dashboard-actions";
+} from "@/actions/users/dashboard-actions";
 
 const mockPrisma = prisma as unknown as {
   cause: {

@@ -4,20 +4,20 @@ import { useEffect, useState } from "react";
 import { Bell, Search } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   explainNoResults,
   type DiscoverFilters,
-} from "@/actions/discover-actions";
-import { createSavedSearchAlert } from "@/actions/saved-search-actions";
-import { getCampaignCategoryStyle } from "@/lib/campaign-categories";
+} from "@/actions/causes/discover-actions";
+import { createSavedSearchAlert } from "@/actions/users/saved-search-actions";
+import { getCampaignCategoryStyle } from "@/lib/causes/campaign-categories";
 import {
   countWord,
   filterChips,
   noneClause,
   withoutChip,
   type FilterChip,
-} from "@/lib/discover-summary";
+} from "@/lib/causes/discover-summary";
 
 type Explanation = Awaited<ReturnType<typeof explainNoResults>>;
 

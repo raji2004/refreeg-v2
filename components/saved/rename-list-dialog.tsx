@@ -9,9 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { renameList } from "@/actions/saved-actions";
+import { renameList } from "@/actions/users/saved-actions";
 import { toast } from "@/hooks/use-toast";
-import type { SavedListSummary } from "@/lib/saved";
+import type { SavedListSummary } from "@/lib/saved/saved";
 
 export function RenameListDialog({
   list,

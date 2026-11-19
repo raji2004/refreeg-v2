@@ -23,7 +23,7 @@ const EngagementMetrics = dynamic(
     loading: () => <Skeleton className="h-[200px] w-full" />,
   },
 );
-import { getCauseAnalytics } from "@/actions/dashboard-actions";
+import { getCauseAnalytics } from "@/actions/users/dashboard-actions";
 
 export default async function AnalyticsPage({
   params,

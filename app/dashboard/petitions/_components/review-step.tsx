@@ -6,7 +6,7 @@ import { petitionCategoryOptions } from "@/lib/options/petition.options";
 import type { PetitionFormFields } from "@/lib/schemas/petition.schema";
 
 const MultimediaCarousel = dynamic(
-  () => import("@/components/MultimediaCarousel"),
+  () => import("@/components/marketing/MultimediaCarousel"),
   { loading: () => <Skeleton className="h-64 w-full" /> },
 );
 

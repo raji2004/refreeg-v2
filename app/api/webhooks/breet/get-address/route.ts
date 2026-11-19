@@ -10,10 +10,10 @@ import {
   resolveBreetBankId,
   resolveBreetDepositAssetId,
   updateBreetWalletBank,
-} from "@/lib/breet";
+} from "@/lib/payments/breet";
 
-import { getClientIp } from "@/lib/client-ip";
-import { createRateLimiter } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/api/client-ip";
+import { createRateLimiter } from "@/lib/api/rate-limit";
 
 export const dynamic = "force-dynamic";
 

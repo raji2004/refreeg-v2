@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendPledgeReminderEmail } from "@/services/mail";
-import { assertInternalApiKey, isValidEmail } from "@/lib/internal-api";
+import { assertInternalApiKey, isValidEmail } from "@/lib/api/internal-api";
 
 export async function POST(request: Request) {
   const denied = assertInternalApiKey(request);

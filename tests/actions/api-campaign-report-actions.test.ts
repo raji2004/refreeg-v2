@@ -5,7 +5,7 @@ jest.mock("@/lib/auth/auth", () => ({
   auth: jest.fn(),
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   isAdminOrManager: jest.fn(),
 }));
 
@@ -30,7 +30,7 @@ jest.mock("@/lib/prisma", () => ({
 }));
 
 import { auth } from "@/lib/auth/auth";
-import { isAdminOrManager } from "@/actions/role-actions";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
 import { dispatchWebhook } from "@/utils/api-bot/webhook-utils";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -39,7 +39,7 @@ import {
   getDeveloperCampaignReports,
   updateReportStatus,
   takedownApiCampaign,
-} from "@/actions/api-campaign-report-actions";
+} from "@/actions/admin/api-campaign-report-actions";
 
 const mockAuth = auth as jest.Mock;
 const mockIsAdminOrManager = isAdminOrManager as jest.Mock;
@@ -166,7 +166,9 @@ describe("api-campaign-report-actions", () => {
         title: "Bad Campaign",
       });
       mockPrisma.api_campaigns.update.mockResolvedValue({ id: "camp-1" });
-      mockPrisma.api_campaign_reports.updateMany.mockResolvedValue({ count: 1 });
+      mockPrisma.api_campaign_reports.updateMany.mockResolvedValue({
+        count: 1,
+      });
       mockPrisma.logs.create.mockResolvedValue({ id: "log-1" });
       mockDispatchWebhook.mockResolvedValue(undefined);
 

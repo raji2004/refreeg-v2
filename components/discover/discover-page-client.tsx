@@ -17,21 +17,21 @@ import { DiscoverFilterRail } from "./discover-filter-rail";
 import { DiscoverTabs, presetForTab, type DiscoverTab } from "./discover-tabs";
 import { DiscoverSort } from "./discover-sort";
 import { DiscoverGrid } from "./discover-grid";
-import { campaignCategoryStyles } from "@/lib/campaign-categories";
+import { campaignCategoryStyles } from "@/lib/causes/campaign-categories";
 import {
   getDiscoverFacets,
   countDiscoverResults,
   type DiscoverFilters,
   type DiscoverItem,
   type DiscoverSort as DiscoverSortType,
-} from "@/actions/discover-actions";
-import { buildDiscoverSearchParams } from "@/lib/discover-url";
+} from "@/actions/causes/discover-actions";
+import { buildDiscoverSearchParams } from "@/lib/causes/discover-url";
 import {
   filterChips,
   filterSummary,
   withoutChip,
   type FilterChip,
-} from "@/lib/discover-summary";
+} from "@/lib/causes/discover-summary";
 
 const CATEGORY_IDS = campaignCategoryStyles.map((c) => c.id);
 const VIEW_STORAGE_KEY = "discover:view";

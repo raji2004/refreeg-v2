@@ -23,7 +23,7 @@ import {
   createWebhook,
   deleteWebhook,
   getWebhookLogs,
-} from "@/actions/webhook-actions";
+} from "@/actions/donations/webhook-actions";
 
 const mockPrisma = prisma as unknown as {
   api_webhooks: {

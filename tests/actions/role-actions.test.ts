@@ -41,7 +41,7 @@ import {
   listUsersWithRolesPage,
   getPendingKycSummary,
   getAdminEmails,
-} from "@/actions/role-actions";
+} from "@/actions/admin/role-actions";
 
 const mockAuth = auth as jest.Mock;
 const mockGetUserRole = getUserRole as jest.Mock;

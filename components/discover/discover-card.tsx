@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
-import { formatNairaShort } from "@/lib/discover-summary";
+import { formatNairaShort } from "@/lib/causes/discover-summary";
 import { BookmarkButton } from "@/components/saved/BookmarkButton";
-import type { DiscoverItem } from "@/actions/discover-actions";
+import type { DiscoverItem } from "@/actions/causes/discover-actions";
 
 type CardProps = {
   item: DiscoverItem;
@@ -173,7 +173,7 @@ function PetitionGridCard({ item, onSignClick, initialBookmarked }: CardProps) {
 
 function CampaignGridCard(props: CardProps) {
   const { item, initialBookmarked } = props;
-  const imageUrl = getMediaUrl(item.image) || "/placeholder.svg";
+  const imageUrl = getMediaUrl(item.image) || "/icons/placeholder.svg";
   const chip = statusChip(item, "solid");
 
   return (
@@ -239,7 +239,7 @@ function CampaignGridCard(props: CardProps) {
 
 function ListRow(props: CardProps) {
   const { item, initialBookmarked } = props;
-  const imageUrl = getMediaUrl(item.image) || "/placeholder.svg";
+  const imageUrl = getMediaUrl(item.image) || "/icons/placeholder.svg";
   const chip = statusChip(item, "soft");
   const isCampaign = item.type === "campaign";
   const toGo = Math.max(item.goal - item.raised, 0);

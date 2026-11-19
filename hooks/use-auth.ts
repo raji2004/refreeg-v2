@@ -2,18 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import {
   signIn as nextAuthSignIn,
   signOut as nextAuthSignOut,
 } from "next-auth/react";
-import { useAuthContext } from "@/components/auth-provider";
+import { useAuthContext } from "@/components/layout/AuthProvider";
 import {
   signUpAction,
   requestPasswordResetAction,
   resetPasswordAction,
   checkCauseUserLoginAction,
-} from "@/actions/auth-actions";
+} from "@/actions/users/auth-actions";
 
 function normalizeRedirectPath(target?: string | null): string | null {
   if (!target) return null;

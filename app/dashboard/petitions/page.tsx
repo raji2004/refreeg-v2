@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Sparkles } from "lucide-react";
-import { MyPetitionsList } from "@/components/my-petitions-list";
+import { MyPetitionsList } from "@/components/causes/MyPetitionsList";
 import { getSessionUser } from "@/lib/auth/session-user";
 
 const validStatuses = ["all", "approved", "pending", "rejected"];

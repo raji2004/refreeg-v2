@@ -1,11 +1,11 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { NotificationProvider } from "@/components/notification-provider";
-import { AuthProvider } from "@/components/auth-provider";
-import { GlobalSupportBoundary } from "@/components/global-support-boundary";
+import { NotificationProvider } from "@/components/layout/NotificationProvider";
+import { AuthProvider } from "@/components/layout/AuthProvider";
+import { GlobalSupportBoundary } from "@/components/engagement/GlobalSupportBoundary";
 
 function makeQueryClient() {
   return new QueryClient({

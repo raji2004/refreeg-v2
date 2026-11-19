@@ -31,7 +31,7 @@ import {
   createApiKey,
   getApiKeys,
   revokeApiKey,
-} from "@/actions/api-key-actions";
+} from "@/actions/admin/api-key-actions";
 
 const mockAuth = auth as jest.Mock;
 const mockPrisma = prisma as unknown as {
@@ -59,7 +59,9 @@ describe("api-key-actions", () => {
 
     it("throws when user is not a developer", async () => {
       mockAuth.mockResolvedValue({ user: { id: "user-1" } });
-      mockPrisma.user.findUnique.mockResolvedValue({ accountType: "individual" });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        accountType: "individual",
+      });
 
       await expect(createApiKey("My Key", "test")).rejects.toThrow(
         "Only developers can create API keys",
@@ -68,7 +70,9 @@ describe("api-key-actions", () => {
 
     it("creates an API key and returns raw key once", async () => {
       mockAuth.mockResolvedValue({ user: { id: "dev-1" } });
-      mockPrisma.user.findUnique.mockResolvedValue({ accountType: "developer" });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        accountType: "developer",
+      });
       mockPrisma.api_keys.create.mockResolvedValue({
         id: "key-1",
         name: "My Key",

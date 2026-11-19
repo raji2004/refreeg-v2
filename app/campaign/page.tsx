@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import { getCause } from "@/actions/cause-actions";
+import { getCause } from "@/actions/causes/cause-actions";
 import { getSessionUser } from "@/lib/auth/session-user";
-import { getProfile } from "@/actions/profile-actions";
-import { listDonationsForCause } from "@/actions/donation-actions";
-import { listCommentsForCause } from "@/actions/comment-actions";
+import { getProfile } from "@/actions/users/profile-actions";
+import { listDonationsForCause } from "@/actions/donations/donation-actions";
+import { listCommentsForCause } from "@/actions/causes/comment-actions";
 import CampaignQualityLab from "@/app/campaign/_components/campaign-quality-lab";
 
 export default async function CampaignQualityTestPage({

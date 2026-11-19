@@ -8,7 +8,8 @@ import type { CauseDetail, ProfileSummary } from "../types/types";
 import { DONATION_PRESETS, fadeUp } from "../types/types";
 
 const DonationForm = dynamic(
-  () => import("@/components/donation-form").then((mod) => mod.DonationForm),
+  () =>
+    import("@/components/causes/DonationForm").then((mod) => mod.DonationForm),
   {
     loading: () => <Skeleton className="h-[400px] w-full rounded-xl" />,
   },

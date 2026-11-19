@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Sparkles } from "lucide-react";
-import { MyCausesList } from "@/components/my-causes-list";
+import { MyCausesList } from "@/components/causes/MyCausesList";
 import { getSessionUser } from "@/lib/auth/session-user";
 import { ProofComplianceBanner } from "@/components/proof/proof-compliance-banner";
 

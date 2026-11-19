@@ -5,7 +5,7 @@ import {
   getApiCampaignReports,
   updateReportStatus,
   takedownApiCampaign,
-} from "@/actions/api-campaign-report-actions";
+} from "@/actions/admin/api-campaign-report-actions";
 import {
   Card,
   CardContent,
@@ -36,7 +36,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminApiReportsPage() {
   const [reports, setReports] = useState<any[]>([]);

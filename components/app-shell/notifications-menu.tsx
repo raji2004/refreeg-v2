@@ -12,7 +12,7 @@ import {
   getNotifications,
   markAllNotificationsRead,
   type NotificationItem,
-} from "@/actions/notification-actions";
+} from "@/actions/users/notification-actions";
 import { cn } from "@/lib/utils";
 
 function timeAgo(iso: string) {

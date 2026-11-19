@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { submitProofUpdate } from "@/actions/proof-update-actions";
+import { submitProofUpdate } from "@/actions/causes/proof-update-actions";
 import { uploadFileWithPresign } from "@/lib/s3/upload-client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, X, FileText } from "lucide-react";
 
 const MAX_FILES = 10;

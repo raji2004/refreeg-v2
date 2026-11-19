@@ -6,11 +6,11 @@ import Image from "next/image";
 import {
   approveProofUpdate,
   rejectProofUpdate,
-} from "@/actions/proof-update-actions";
+} from "@/actions/causes/proof-update-actions";
 import { getMediaUrl } from "@/lib/s3/media";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { BadgeCheck, XCircle, FileText, Loader2 } from "lucide-react";
 
 type MediaEntry = {
@@ -141,7 +141,7 @@ export default function ProofUpdatesClient({
                       className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 hover:border-emerald-500 transition-colors"
                     >
                       <Image
-                        src={url || "/placeholder.svg"}
+                        src={url || "/icons/placeholder.svg"}
                         alt={m.name}
                         fill
                         sizes="20vw"

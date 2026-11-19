@@ -38,16 +38,16 @@ import { format } from "date-fns";
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import { UserActions } from "./user-actions";
-import { UserSearch } from "@/components/search";
-import { CopyEmail } from "@/components/copy-email";
+import { UserSearch } from "@/components/engagement/Search";
+import { CopyEmail } from "@/components/engagement/CopyEmail";
 import type { UserWithRole } from "@/types";
-import type { UsersWithRolesPage } from "@/actions/role-actions";
+import type { UsersWithRolesPage } from "@/actions/admin/role-actions";
 import {
   getUserRole,
   listUsersWithRolesPage,
   getPendingKycSummary,
-} from "@/actions/role-actions";
-import { PaginationButton } from "@/components/pagination-button";
+} from "@/actions/admin/role-actions";
+import { PaginationButton } from "@/components/engagement/PaginationButton";
 import Link from "next/link";
 import { ExportCSVButton } from "./components/export-csv-button";
 import { SendKycReminderButton } from "./components/send-kyc-reminder-button";
@@ -89,7 +89,7 @@ export default async function AdminUsersPage({
         <CardHeader>
           <CardTitle>Unable to load users</CardTitle>
           <CardDescription>
-            Couldn't load users. Check the server logs for details.
+            Couldn&apos;t load users. Check the server logs for details.
           </CardDescription>
         </CardHeader>
       </Card>

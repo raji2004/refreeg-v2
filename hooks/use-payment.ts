@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import { TransactionData, PaymentProviderType } from "@/types";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 interface UsePaymentReturn {
   initializePayment: (data: TransactionData) => Promise<void>;

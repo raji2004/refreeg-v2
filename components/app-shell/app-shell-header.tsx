@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Coins, Menu, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { UserNav } from "@/components/user-nav";
+import { UserNav } from "@/components/layout/UserNav";
 import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { DiscoverSearch } from "@/components/discover/discover-search";

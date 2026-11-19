@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
-import { getPetition } from "@/actions/petition-actions";
+import { getPetition } from "@/actions/petitions/petition-actions";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 

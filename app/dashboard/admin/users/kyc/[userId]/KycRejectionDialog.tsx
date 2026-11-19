@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { XCircle } from "lucide-react";
-import { updateVerificationStatus } from "@/actions/kyc-actions";
+import { updateVerificationStatus } from "@/actions/users/kyc-actions";
 import { useRouter } from "nextjs-toploader/app";
 
 interface KycRejectionDialogProps {

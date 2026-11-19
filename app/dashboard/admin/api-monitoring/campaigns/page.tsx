@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { listAdminApiCampaigns } from "@/actions/api-monitoring-actions";
+import { listAdminApiCampaigns } from "@/actions/admin/api-monitoring-actions";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,

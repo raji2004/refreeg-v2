@@ -10,7 +10,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { updateAlertPrefs } from "@/actions/saved-actions";
+import { updateAlertPrefs } from "@/actions/users/saved-actions";
 import { toast } from "@/hooks/use-toast";
 
 interface Props {

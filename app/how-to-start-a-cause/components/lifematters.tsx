@@ -65,7 +65,7 @@ export default function LifeMatters() {
           </span>
         </motion.div>
 
-        <Link href="/cause/create">
+        <Link href="/dashboard/causes/create">
           <motion.p className="text-lg text-gray-600" variants={item}>
             Don’t wait. Start your cause today and turn support into real
             impact.

@@ -1,7 +1,7 @@
 import { Building2 } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
 import { getCachedProfile } from "@/lib/profile-cache";
-import { getOrganizationWorkspace } from "@/actions/organization-actions";
+import { getOrganizationWorkspace } from "@/actions/users/organization-actions";
 import { SettingsShell } from "../components/settings-shell";
 import { OrganizationSettingsForm } from "./organization-settings-form";
 

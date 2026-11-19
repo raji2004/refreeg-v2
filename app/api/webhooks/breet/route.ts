@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
-import { createCryptoDonation } from "@/actions/crypto-actions";
-import { syncMilestoneRequirements } from "@/lib/proof-milestones";
+import { createCryptoDonation } from "@/actions/donations/crypto-actions";
+import { syncMilestoneRequirements } from "@/lib/causes/proof-milestones";
 import {
   breetAssetNetwork,
   fetchBreetTransaction,
   parseBreetLabel,
-} from "@/lib/breet";
-import { getClientIp } from "@/lib/client-ip";
+} from "@/lib/payments/breet";
+import { getClientIp } from "@/lib/api/client-ip";
 
 export const dynamic = "force-dynamic";
 

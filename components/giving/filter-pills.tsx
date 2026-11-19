@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import type { GivingFilter } from "@/actions/giving-actions";
+import type { GivingFilter } from "@/actions/donations/giving-actions";
 
 const FILTERS: { value: GivingFilter; label: string }[] = [
   { value: "all", label: "All" },

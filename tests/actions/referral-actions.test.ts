@@ -19,7 +19,7 @@ jest.mock("@/lib/prisma", () => ({
 
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
-import { getReferralDashboardData } from "@/actions/referral-actions";
+import { getReferralDashboardData } from "@/actions/users/referral-actions";
 
 const mockAuth = auth as jest.Mock;
 const mockPrisma = prisma as unknown as {
