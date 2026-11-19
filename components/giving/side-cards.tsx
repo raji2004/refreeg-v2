@@ -1,16 +1,6 @@
 import type { GivingOverview } from "@/actions/donations/giving-actions";
+import { getInitials } from "@/lib/utils";
 import { formatMonthYear, formatNaira, ordinalDay } from "./format";
-
-function initials(name: string) {
-  return (
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0]?.toUpperCase())
-      .join("") || "RG"
-  );
-}
 
 export function RecurringGivingCard({
   recurring,
@@ -26,7 +16,7 @@ export function RecurringGivingCard({
         {recurring.map((plan) => (
           <li key={plan.id} className="flex items-start gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lime text-xs font-bold text-ink">
-              {initials(plan.owner)}
+              {getInitials(plan.owner, "RG")}
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-ink">

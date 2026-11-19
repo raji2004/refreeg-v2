@@ -1,6 +1,7 @@
 import { Eyebrow } from "@/components/ui/eyebrow";
 
 import { stats, steps } from "../_data/community";
+import { Heading } from "@/components/marketing/Typography";
 
 export function CommunitySteps() {
   return (
@@ -9,10 +10,10 @@ export function CommunitySteps() {
         <div className="grid gap-10 md:grid-cols-[2fr_3fr] md:gap-16">
           <div className="max-w-md">
             <Eyebrow>How it works</Eyebrow>
-            <h2 className="mt-3 font-fraunces text-4xl font-normal leading-tight text-ink md:text-5xl">
+            <Heading className="mt-3">
               Three steps to a <span className="text-brand-blue">louder</span>{" "}
               cause
-            </h2>
+            </Heading>
           </div>
 
           <ol className="divide-y divide-hairline border-y border-hairline">

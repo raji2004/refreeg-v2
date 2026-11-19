@@ -29,6 +29,7 @@ import {
 } from "@/lib/media/cause-cover";
 import { resolveCampaignLocation } from "@/lib/locations/campaign-location";
 import { allocateUniqueCauseSlug } from "@/lib/causes/slug";
+import { UNCLAIMED_OWNER_EMAIL } from "@/lib/causes/recovered-causes";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -654,6 +655,13 @@ async function queryCauses(options: CauseFilterOptions = {}): Promise<Cause[]> {
     whereClause.user = { isVerified: true };
   }
 
+  if (options.claimedOnly) {
+    whereClause.user = {
+      ...whereClause.user,
+      email: { not: UNCLAIMED_OWNER_EMAIL },
+    };
+  }
+
   // Sorting
   let orderByClause: any = { createdAt: "desc" };
 
@@ -809,6 +817,13 @@ function buildCauseCountWhere(options: CauseFilterOptions) {
 
   if (options.verifiedOnly) {
     whereClause.user = { isVerified: true };
+  }
+
+  if (options.claimedOnly) {
+    whereClause.user = {
+      ...whereClause.user,
+      email: { not: UNCLAIMED_OWNER_EMAIL },
+    };
   }
 
   return whereClause;

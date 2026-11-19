@@ -6,6 +6,24 @@ type GsapInstance = (typeof import("gsap"))["gsap"];
 type ScrollTriggerPlugin =
   (typeof import("gsap/ScrollTrigger"))["ScrollTrigger"];
 
+let pageHeightObserver: ResizeObserver | undefined;
+
+// ScrollTrigger only re-measures on window resize, so content that loads or
+// streams in after mount leaves trigger positions stale (and from() targets hidden).
+function watchPageHeight(ScrollTrigger: ScrollTriggerPlugin) {
+  if (pageHeightObserver || typeof ResizeObserver === "undefined") return;
+  let lastHeight = document.body.scrollHeight;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  pageHeightObserver = new ResizeObserver(() => {
+    const height = document.body.scrollHeight;
+    if (height === lastHeight) return;
+    lastHeight = height;
+    clearTimeout(timer);
+    timer = setTimeout(() => ScrollTrigger.refresh(), 150);
+  });
+  pageHeightObserver.observe(document.body);
+}
+
 /**
  * Runs GSAP animations with gsap + ScrollTrigger lazily imported inside the
  * effect, so the animation library (~40KB gzipped) is a separate async chunk
@@ -34,6 +52,7 @@ export function useGsap(
       ]);
       if (cancelled) return;
       gsap.registerPlugin(ScrollTrigger);
+      watchPageHeight(ScrollTrigger);
       ctx = gsap.context(() => build(gsap, ScrollTrigger), scope);
     })();
 

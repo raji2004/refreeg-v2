@@ -46,7 +46,7 @@ export async function DashboardPetitions({
           <p className="mt-2 text-sm text-slate-600">
             You need to log in to see your petitions.
           </p>
-          <Link href="/auth/login">
+          <Link href="/auth/signin">
             <Button className="mt-5 bg-blue-600 text-white hover:bg-blue-700">
               Sign In
             </Button>

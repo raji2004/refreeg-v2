@@ -9,6 +9,7 @@ import {
 } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CalloutBanner } from "@/components/ui/callout-banner";
 import { Label } from "@/components/ui/label";
 import {
   Popover,
@@ -61,11 +62,8 @@ export function CauseTimelineStep({
     };
 
     return (
-      <div className="space-y-3 rounded-2xl border border-mist bg-white px-3 py-4 sm:p-5">
-        <Label
-          htmlFor={id}
-          className="block text-sm font-semibold text-[#33445A]"
-        >
+      <div className="space-y-3 rounded-xl border border-hairline bg-surface px-3 py-4 sm:p-5">
+        <Label htmlFor={id} className="block text-sm font-semibold text-ink">
           {label}
         </Label>
         <Popover>
@@ -76,10 +74,10 @@ export function CauseTimelineStep({
               className={cn(
                 "h-12 w-full justify-start rounded-xl text-left font-normal premium-input",
                 !value && "text-muted-foreground",
-                errors[field] && "border-red-500",
+                errors[field] && "border-rust",
               )}
             >
-              <CalendarIcon className="mr-3 h-4 w-4 text-blue-steel" />
+              <CalendarIcon className="mr-3 h-4 w-4 text-forest" />
               {value ? format(value, "PPP") : <span>Pick a date</span>}
             </Button>
           </PopoverTrigger>
@@ -111,20 +109,14 @@ export function CauseTimelineStep({
       </div>
 
       {startDate && endDate && (
-        <div className="flex items-start gap-3 rounded-xl border border-[#C9D9E8] bg-[#F2F7FC] px-3 py-4 sm:p-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DCEAF7] text-blue-steel">
-            <CalendarIcon className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-navy-ink">
-              Duration: {differenceInDays(endDate, startDate)} Days
-            </p>
-            <p className="text-xs text-gray-500">
-              Running from {format(startDate, "PPP")} to{" "}
-              {format(endDate, "PPP")}
-            </p>
-          </div>
-        </div>
+        <CalloutBanner
+          variant="forest"
+          icon={
+            <CalendarIcon className="mt-0.5 h-4 w-4 shrink-0 text-forest" />
+          }
+          title={`Duration: ${differenceInDays(endDate, startDate)} days`}
+          description={`Running from ${format(startDate, "PPP")} to ${format(endDate, "PPP")}`}
+        />
       )}
     </div>
   );

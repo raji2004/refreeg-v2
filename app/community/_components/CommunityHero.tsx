@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FaTelegramPlane } from "react-icons/fa";
 
 import { COMMUNITY_LINK } from "../_data/community";
+import { Heading } from "@/components/marketing/Typography";
 
 const stickers = [
   {
@@ -44,10 +45,14 @@ export function CommunityHero() {
           RefreeG community
         </span>
 
-        <h1 className="mt-6 max-w-3xl font-fraunces text-4xl font-normal leading-[1.05] tracking-tight text-ink sm:text-5xl md:text-6xl lg:max-w-[46rem] lg:text-7xl">
+        <Heading
+          as="h1"
+          size="display"
+          className="mt-6 max-w-3xl lg:max-w-[46rem]"
+        >
           Your community is your{" "}
           <span className="text-brand-blue">funding engine.</span>
-        </h1>
+        </Heading>
 
         <p className="mt-6 max-w-md text-sm leading-relaxed text-ink/70 md:text-base">
           On RefreeG, funding comes from people. Join our Telegram community to
