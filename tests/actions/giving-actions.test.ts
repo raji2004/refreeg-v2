@@ -16,7 +16,7 @@ jest.mock("@/lib/auth/session-user", () => ({ getSessionUser: jest.fn() }));
 
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth/session-user";
-import { getGivingOverview } from "@/actions/giving-actions";
+import { getGivingOverview } from "@/actions/donations/giving-actions";
 
 const db = prisma as any;
 const NOW = new Date("2026-10-05T12:00:00Z");

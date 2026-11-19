@@ -10,14 +10,18 @@ import type { CauseDetail } from "../types/types";
 import { fadeUp } from "../types/types";
 
 const ShareModal = dynamic(
-  () => import("@/components/share-modal").then((mod) => mod.ShareModal),
+  () =>
+    import("@/components/engagement/ShareModal").then((mod) => mod.ShareModal),
   {
     loading: () => <Skeleton className="h-10 w-10 rounded-full" />,
   },
 );
 
 const ImageLightbox = dynamic(
-  () => import("@/components/ImageLightbox").then((mod) => mod.ImageLightbox),
+  () =>
+    import("@/components/marketing/ImageLightbox").then(
+      (mod) => mod.ImageLightbox,
+    ),
   {
     ssr: false,
   },
@@ -167,7 +171,7 @@ export function TrustPanel({
                     className="group relative aspect-[4/3] w-[78%] shrink-0 snap-center overflow-hidden rounded-xl border border-white/15 bg-[#08162B] sm:aspect-video sm:w-auto"
                   >
                     <Image
-                      src={getMediaUrl(item) || "/placeholder.svg"}
+                      src={getMediaUrl(item) || "/icons/placeholder.svg"}
                       alt=""
                       fill
                       className="scale-110 object-cover opacity-35 blur-xl"
@@ -176,7 +180,7 @@ export function TrustPanel({
                       aria-hidden="true"
                     />
                     <Image
-                      src={getMediaUrl(item) || "/placeholder.svg"}
+                      src={getMediaUrl(item) || "/icons/placeholder.svg"}
                       alt=""
                       fill
                       className="object-contain transition-transform duration-200 group-hover:scale-[1.03]"
@@ -201,7 +205,7 @@ export function TrustPanel({
 
               <ImageLightbox
                 images={visibleProofMedia.map((item, mediaIndex) => ({
-                  src: getMediaUrl(item) || "/placeholder.svg",
+                  src: getMediaUrl(item) || "/icons/placeholder.svg",
                   alt: `${cause.title} evidence ${mediaIndex + 1}`,
                 }))}
                 currentIndex={lightboxIndex}

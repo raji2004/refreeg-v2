@@ -22,10 +22,10 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Trash2, AlertTriangle } from "lucide-react";
-import { deleteUserAccount } from "@/actions/user-actions";
+import { deleteUserAccount } from "@/actions/users/user-actions";
 import { DATA_RETENTION_POLICY } from "@/lib/config/retention";
 import { useRouter } from "nextjs-toploader/app";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 interface DeleteAccountButtonProps {
   userId: string;

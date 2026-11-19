@@ -7,7 +7,7 @@ import {
 } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import { prisma } from "@/lib/prisma";
-import { createComment } from "@/actions/comment-actions";
+import { createComment } from "@/actions/causes/comment-actions";
 import { getBlockedUserIds } from "@/lib/moderation/moderation-service";
 
 export async function OPTIONS() {

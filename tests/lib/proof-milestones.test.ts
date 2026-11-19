@@ -4,7 +4,7 @@
 import {
   syncMilestoneRequirements,
   assertCauseAcceptingDonations,
-} from "@/lib/proof-milestones";
+} from "@/lib/causes/proof-milestones";
 
 // Mock Prisma
 jest.mock("@/lib/prisma", () => ({

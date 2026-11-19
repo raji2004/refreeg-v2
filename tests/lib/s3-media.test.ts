@@ -29,6 +29,6 @@ describe("isProxyMediaUrl", () => {
         "https://refreeg-media.s3.us-east-1.amazonaws.com/uploads/causes/x.jpg",
       ),
     ).toBe(true);
-    expect(isProxyMediaUrl("/placeholder.svg")).toBe(false);
+    expect(isProxyMediaUrl("/icons/placeholder.svg")).toBe(false);
   });
 });

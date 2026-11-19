@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
-import { checkUsernameAvailability } from "@/actions/profile-actions";
+import { checkUsernameAvailability } from "@/actions/users/profile-actions";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 
 export async function OPTIONS() {

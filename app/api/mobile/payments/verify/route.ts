@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { decodeStoreReviewDemoReference } from "@/lib/auth/store-review-demo";
-import { createDonation } from "@/actions/donation-actions";
+import { createDonation } from "@/actions/donations/donation-actions";
 import Paystack from "@/services/paystack";
-import { processSuccessfulCharge } from "@/lib/paystack-charge-processing";
+import { processSuccessfulCharge } from "@/lib/payments/paystack-charge-processing";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {

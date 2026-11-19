@@ -13,21 +13,32 @@ Visual rules (colors, typography, shared UI) live in [DESIGN_GUIDE.md](./DESIGN_
 
 | Layer | Location | Job |
 | --- | --- | --- |
-| Server actions | `actions/<feature>-actions.ts` | Auth check, input check, one Prisma or provider call, return a result. Nothing else. |
+| Server actions | `actions/<domain>/<feature>-actions.ts` | Auth check, input check, one Prisma or provider call, return a result. Nothing else. |
 | Provider clients | `services/`, `lib/` | Talk to Paystack, Flutterwave, Breet, mail. No UI knowledge. |
 | Hooks | `hooks/use-<feature>.ts` | React Query wiring and any post-processing of a result. |
 | Schemas | `lib/schemas/<feature>.schema.ts` | One zod schema per form. |
 | Options | `lib/options/<feature>.options.ts` | Label and value lists. |
-| Components | `components/<feature>/` | Thin. Render, call hooks, hold local UI state. |
+| Components | `components/<domain>/<Component>.tsx` | Thin. Render, call hooks, hold local UI state. |
 
-`lib/schemas/` and `lib/options/` are new folders. Older `*-constants.ts` files stay until a change touches them.
+Domain folders keep the flat namespaces small:
+
+- `actions/`: `admin/`, `causes/`, `petitions/`, `donations/`, `users/`. The `index.ts` barrel stays at the root.
+- `components/`: `layout/`, `causes/`, `engagement/`, `profile/`, `marketing/`, plus the existing feature folders (`home/`, `discover/`, `auth/`, `dashboard/`, `docs/`, `saved/`, `creators/`, `fees/`, `giving/`, `healthcare/`, `app-shell/`) and `ui/` for shadcn primitives.
+- `lib/`: `api/`, `causes/`, `payments/`, `rewards/`, `saved/`, `referrals/`, `schemas/`, `options/`, `s3/`, `media/`, `auth/`, `health/`. Shared singletons stay at the `lib/` root (`prisma.ts`, `utils.ts`, `event-bus.ts`, and similar). `lib/public-file-manifest.ts` is generated; never move it or hand-edit it.
+- `scripts/`: `db/` (one-off data fixes), `ops/` (manual maintenance jobs), `one-off/` (test and dev scratch scripts). Deployment and cron-facing files referenced by CI or the servers (`remote-deploy*.sh`, `rollback*.sh`, `bootstrap-instance.sh`, `send-recovery-emails.ts`, `backup-db.sh`, `setup-db-backup-cron.sh`, `sync-s3.ts`) stay at the `scripts/` root because workflows and crons call them by path.
+
+## File naming
+
+Component files are `PascalCase.tsx` (`components/layout/Header.tsx`, `components/causes/DonateButton.tsx`). Hook, lib, util and action files stay lowercase (`use-cause-form.ts`, `cause-actions.ts`). Files in `components/ui/` keep their lowercase shadcn names; do not rename them. Do not bulk-rename untouched files: apply the rule when a file is moved or substantially changed.
+
+Older `*-constants.ts` files stay until a change touches them.
 
 ## 1. Actions only do the work, nothing around it
 
 An action authenticates, validates, performs one operation and returns `{ success, error }` or the data. It does not format for display, open anything, or toast. Parsing, renaming, building view objects and side effects go in a hook.
 
 ```ts
-// actions/referral-actions.ts: the request only
+// actions/users/referral-actions.ts: the request only
 export async function getReferralDashboard() {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Not authenticated" };

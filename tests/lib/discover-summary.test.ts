@@ -5,7 +5,7 @@ import {
   formatNairaShort,
   noneClause,
   withoutChip,
-} from "@/lib/discover-summary";
+} from "@/lib/causes/discover-summary";
 
 describe("discover summary", () => {
   it("formats naira compactly from a million up", () => {

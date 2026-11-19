@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { enforceRateLimit } from "@/lib/api/rate-limit";
-import { trackLogin } from "@/actions/auth-actions";
+import { trackLogin } from "@/actions/users/auth-actions";
 import { signMobileToken } from "@/lib/auth/jwt";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";

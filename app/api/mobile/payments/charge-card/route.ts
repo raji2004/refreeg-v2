@@ -9,8 +9,8 @@ import {
 import { prisma } from "@/lib/prisma";
 import Paystack from "@/services/paystack";
 import { calculateServiceFee, calculateProviderFee } from "@/lib/utils";
-import { assertCauseAcceptingDonations } from "@/lib/proof-milestones";
-import { processSuccessfulCharge } from "@/lib/paystack-charge-processing";
+import { assertCauseAcceptingDonations } from "@/lib/causes/proof-milestones";
+import { processSuccessfulCharge } from "@/lib/payments/paystack-charge-processing";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

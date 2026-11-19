@@ -8,7 +8,7 @@ import {
   sendKycSubmissionAdminNotification,
 } from "@/services/mail";
 import { createNotification } from "@/lib/notifications/notification-service";
-import { issueReferralRewardOnKycApproval } from "@/lib/referral-utils";
+import { issueReferralRewardOnKycApproval } from "@/lib/referrals/referral-utils";
 
 export interface ProcessDiditResultOptions {
   sessionId?: string;
@@ -68,8 +68,8 @@ export async function processDiditVerificationResult(
     where: {
       document_type: "didit",
       OR: [
-        { document_url: { startsWith: `${sessionId}:::` } },
         { document_url: sessionId },
+        { document_url: { startsWith: `${sessionId}:::` } },
       ],
     },
     orderBy: { created_at: "desc" },
@@ -201,35 +201,44 @@ export async function processDiditVerificationResult(
     fullName = webhookData.full_name || body.full_name;
   }
 
-  // ATOMIC CLAIM: Update only if status is still pending or resubmitted.
-  // If concurrent requests arrive, only ONE will update rows (count > 0).
-  const updateResult = await prisma.kyc_verifications.updateMany({
-    where: {
-      id: kyc.id,
-      status: { in: ["pending", "resubmitted", "in_progress"] },
-    },
-    data: {
-      status: newStatus,
-      verification_notes: `Automated Didit result: ${status}${isRejected || isResubmitted ? ` - ${rejectionReason}` : ""}`,
-      ...(fullName && fullName !== "Didit User" && { full_name: fullName }),
-      ...(dob && { dob }),
-      ...(address && { address }),
-      ...(city && { city }),
-      ...(state && { state }),
-      ...(country && { country }),
-      ...(postal && { postal }),
-      ...(phone && { phone }),
-    },
-  });
+  const kycUpdateData = {
+    status: newStatus,
+    verification_notes: `Automated Didit result: ${status}${isRejected || isResubmitted ? ` - ${rejectionReason}` : ""}`,
+    ...(fullName && fullName !== "Didit User" && { full_name: fullName }),
+    ...(dob && { dob }),
+    ...(address && { address }),
+    ...(city && { city }),
+    ...(state && { state }),
+    ...(country && { country }),
+    ...(postal && { postal }),
+    ...(phone && { phone }),
+  };
 
-  // If another process claimed/updated it first, exit without firing duplicate side effects
-  if (updateResult.count === 0 && !isNewRecord) {
-    return {
-      success: true,
-      message: "Already processed",
-      alreadyProcessed: true,
-      status: 200,
-    };
+  if (isManualOverride) {
+    await prisma.kyc_verifications.update({
+      where: { id: kyc.id },
+      data: kycUpdateData,
+    });
+  } else {
+    // ATOMIC CLAIM: Update only if status is still pending or resubmitted.
+    // If concurrent requests arrive, only ONE will update rows (count > 0).
+    const updateResult = await prisma.kyc_verifications.updateMany({
+      where: {
+        id: kyc.id,
+        status: { in: ["pending", "resubmitted", "in_progress"] },
+      },
+      data: kycUpdateData,
+    });
+
+    // If another process claimed/updated it first, exit without firing duplicate side effects
+    if (updateResult.count === 0 && !isNewRecord) {
+      return {
+        success: true,
+        message: "Already processed",
+        alreadyProcessed: true,
+        status: 200,
+      };
+    }
   }
 
   // Update user verification state
@@ -241,11 +250,35 @@ export async function processDiditVerificationResult(
   // Send side effects (emails, notifications, rewards) exactly once
   const userProfile = await prisma.user.findUnique({
     where: { id: kyc.user_id },
-    select: { email: true },
+    select: {
+      email: true,
+      fullName: true,
+      firstName: true,
+      lastName: true,
+      displayName: true,
+      username: true,
+    },
   });
 
   if (userProfile?.email) {
-    const userName = fullName || kyc.full_name || "User";
+    const isPlaceholder = (value?: string | null) => {
+      const normalized = value?.trim().toLowerCase();
+      return !normalized || normalized === "didit user" || normalized === "user";
+    };
+    const combinedFirstLast = [userProfile.firstName, userProfile.lastName]
+      .filter(Boolean)
+      .join(" ");
+    const nameCandidates = [
+      fullName,
+      kyc.full_name,
+      userProfile.fullName,
+      combinedFirstLast,
+      userProfile.displayName,
+      userProfile.username,
+    ];
+    const userName =
+      nameCandidates.find((candidate) => !isPlaceholder(candidate))?.trim() ||
+      "Refreegerian";
 
     try {
       if (isApproved) {
@@ -278,6 +311,13 @@ export async function processDiditVerificationResult(
           userProfile.email,
           userName,
           rejectionReason,
+        );
+        await sendKycSubmissionAdminNotification(
+          userProfile.email,
+          userName,
+          kyc.user_id,
+          "https://verification.didit.me/admin",
+          { isRejected: true, rejectionReason },
         );
         try {
           await createNotification({

@@ -27,7 +27,7 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/actions/auth-actions", () => ({
+jest.mock("@/actions/users/auth-actions", () => ({
   getCurrentUser: jest.fn(),
 }));
 
@@ -35,7 +35,7 @@ jest.mock("@/lib/auth/auth", () => ({
   auth: jest.fn(),
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   isAdminOrManager: jest.fn(),
 }));
 
@@ -68,8 +68,8 @@ jest.mock("@/lib/locations/campaign-location", () => ({
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth/auth";
-import { getCurrentUser } from "@/actions/auth-actions";
-import { isAdminOrManager } from "@/actions/role-actions";
+import { getCurrentUser } from "@/actions/users/auth-actions";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
 import { sendCauseRejectedEmailForUser } from "@/services/mail";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -85,7 +85,7 @@ import {
   getUserCauses,
   deleteCause,
   updateCauseTrustMetrics,
-} from "@/actions/cause-actions";
+} from "@/actions/causes/cause-actions";
 import { resolveDeviceCampaignLocation } from "@/lib/locations/campaign-location";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";

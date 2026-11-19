@@ -93,7 +93,7 @@ For each new user:
 
 ## Optional: Set Up Custom Fields in ConvertKit
 
-To fully utilize the data:
+To get the most from this data:
 
 1. Go to ConvertKit → Settings → Custom Fields
 2. Add these fields:

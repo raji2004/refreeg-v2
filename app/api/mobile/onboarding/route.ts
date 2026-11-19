@@ -6,7 +6,7 @@ import {
   getCurrentOnboardingStep,
   createOnboardingProfile,
   checkUsernameAvailability,
-} from "@/actions/profile-actions";
+} from "@/actions/users/profile-actions";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {

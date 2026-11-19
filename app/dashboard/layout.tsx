@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
-import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
-import { ClaimBanner } from "@/components/claim-banner";
+import ClientLayoutWrapper from "@/components/layout/ClientLayoutWrapper";
+import { ClaimBanner } from "@/components/engagement/ClaimBanner";
 import { isSessionInvalidated } from "@/lib/auth/session-guard";
 import { getCachedProfile } from "@/lib/profile-cache";
 import {

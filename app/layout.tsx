@@ -2,7 +2,7 @@ import { Montserrat, Fraunces } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "./providers";
-import { ClientLayout } from "@/components/client-layout";
+import { ClientLayout } from "@/components/layout/ClientLayout";
 import { Metadata } from "next";
 import NextTopLoader from "nextjs-toploader";
 
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Refreeg - Secure Crowdfunding & Petitions",
     description:
-      "Empowering social change through secure crowdfunding and global petitions.",
+      "Secure crowdfunding and global petitions for causes that matter.",
     images: ["/og-image.png"],
   },
 };

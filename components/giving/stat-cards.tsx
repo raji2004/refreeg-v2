@@ -1,4 +1,4 @@
-import type { GivingOverview } from "@/actions/giving-actions";
+import type { GivingOverview } from "@/actions/donations/giving-actions";
 import { formatDay, formatNaira } from "./format";
 
 function StatCard({

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { hasBankDetails, isProfileComplete } from "@/actions/profile-actions";
+import { hasBankDetails, isProfileComplete } from "@/actions/users/profile-actions";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

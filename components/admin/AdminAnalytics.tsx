@@ -31,7 +31,7 @@ import {
   CreditCard,
   Clock,
 } from "lucide-react";
-import { AnalyticsCard } from "@/components/analytics-card";
+import { AnalyticsCard } from "@/components/marketing/AnalyticsCard";
 import { TimeRangeSelector } from "@/components/ui/time-range-selector";
 import {
   Bar,

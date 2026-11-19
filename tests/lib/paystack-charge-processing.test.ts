@@ -8,7 +8,7 @@
 const mockCreateDonation = jest.fn();
 const mockVerifyTransactionFull = jest.fn();
 
-jest.mock("@/actions/donation-actions", () => ({
+jest.mock("@/actions/donations/donation-actions", () => ({
   createDonation: (...args: any[]) => mockCreateDonation(...args),
 }));
 
@@ -16,12 +16,12 @@ jest.mock("@/services/payment-provider", () => ({
   verifyTransactionFull: (...args: any[]) => mockVerifyTransactionFull(...args),
 }));
 
-jest.mock("@/lib/pledge-provider", () => ({
+jest.mock("@/lib/payments/pledge-provider", () => ({
   processPledgeAuthorizationSuccess: jest.fn(),
   processPledgeScheduledChargeSuccess: jest.fn(),
 }));
 
-import { processSuccessfulCharge } from "@/lib/paystack-charge-processing";
+import { processSuccessfulCharge } from "@/lib/payments/paystack-charge-processing";
 import { calculateProviderFee, calculateServiceFee } from "@/lib/utils";
 
 // The processor cross-checks the charged kobo against the total implied by

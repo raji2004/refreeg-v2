@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
-import { createSignature } from "@/actions/signature-actions";
+import { createSignature } from "@/actions/petitions/signature-actions";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

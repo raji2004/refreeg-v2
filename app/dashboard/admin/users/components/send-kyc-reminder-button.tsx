@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Mail } from "lucide-react";
 import { useState } from "react";
-import { toast } from "@/components/ui/use-toast";
-import { sendKycReminderToUnverifiedUsers } from "@/actions/kyc-actions";
+import { toast } from "@/hooks/use-toast";
+import { sendKycReminderToUnverifiedUsers } from "@/actions/users/kyc-actions";
 
 export function SendKycReminderButton() {
   const [isSending, setIsSending] = useState(false);
@@ -33,7 +33,7 @@ export function SendKycReminderButton() {
         description:
           error instanceof Error
             ? error.message
-            : "An unexpected error occurred",
+            : "Something went wrong. Please try again",
         variant: "destructive",
       });
     } finally {

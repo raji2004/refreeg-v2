@@ -4,8 +4,8 @@ import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
 import {
   getInterestOptions,
   saveUserInterests,
-} from "@/actions/interest-actions";
-import { MIN_INTERESTS_REQUIRED } from "@/lib/interest-categories";
+} from "@/actions/users/interest-actions";
+import { MIN_INTERESTS_REQUIRED } from "@/lib/causes/interest-categories";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

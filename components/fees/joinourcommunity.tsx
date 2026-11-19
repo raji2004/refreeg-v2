@@ -46,7 +46,7 @@ export default function JoinOurCommunity() {
           variants={itemVariants}
         >
           Join the RefreeG community and become a RefreeGerian today! By joining
-          us, you contribute to empowering less privileged individuals in
+          us, you contribute to supporting less privileged individuals in
           communities, supporting causes that foster socio-economic growth, and
           promoting sustainable development. Together, we can make a significant
           impact and create a brighter future for all.

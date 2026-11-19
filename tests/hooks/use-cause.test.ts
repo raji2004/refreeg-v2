@@ -1,10 +1,10 @@
-jest.mock("@/actions/cause-actions", () => ({
+jest.mock("@/actions/causes/cause-actions", () => ({
   createCause: jest.fn(),
   updateCause: jest.fn(),
   deleteCause: jest.fn(),
 }));
 
-jest.mock("@/components/ui/use-toast", () => ({
+jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
 }));
 
@@ -12,8 +12,8 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useRouter } from "next/navigation";
-import { createCause, deleteCause } from "@/actions/cause-actions";
-import { toast } from "@/components/ui/use-toast";
+import { createCause, deleteCause } from "@/actions/causes/cause-actions";
+import { toast } from "@/hooks/use-toast";
 import { useCause } from "@/hooks/use-cause";
 
 const createWrapper = () => {

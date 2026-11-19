@@ -24,15 +24,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
-import { getCause, updateCauseTrustMetrics } from "@/actions/cause-actions";
+import {
+  getCause,
+  updateCauseTrustMetrics,
+} from "@/actions/causes/cause-actions";
 import type { Cause, CauseStatus, CauseWithUser } from "@/types";
 import Image from "next/image";
 import { useQueryState } from "nuqs";
 import { format } from "date-fns";
-import { categories } from "@/lib/categories";
+import { categories } from "@/lib/causes/categories";
 import { useNotifications } from "@/hooks/use-notification";
 import {
   Table,
@@ -50,10 +53,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, ShieldCheck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import NavigationLoader from "../NavigationLoader";
-const MultimediaCarousel = dynamic(() => import("../MultimediaCarousel"), {
-  loading: () => <Skeleton className="h-64 w-full" />,
-});
+import NavigationLoader from "../layout/NavigationLoader";
+const MultimediaCarousel = dynamic(
+  () => import("../marketing/MultimediaCarousel"),
+  {
+    loading: () => <Skeleton className="h-64 w-full" />,
+  },
+);
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -659,7 +665,7 @@ export default function ManageCauses() {
                     <Image
                       src={
                         getMediaUrl(detailDialog.cause.image) ||
-                        "/placeholder.svg"
+                        "/icons/placeholder.svg"
                       }
                       alt={detailDialog.cause.title}
                       className="object-cover w-full h-full"

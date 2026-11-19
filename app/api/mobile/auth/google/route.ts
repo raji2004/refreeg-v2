@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { signMobileToken } from "@/lib/auth/jwt";
 import { prisma } from "@/lib/prisma";
-import { trackLogin, initializeUserWallet } from "@/actions/auth-actions";
+import { trackLogin, initializeUserWallet } from "@/actions/users/auth-actions";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

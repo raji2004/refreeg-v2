@@ -12,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
-import { getUserRole } from "@/actions/role-actions";
+import { getUserRole } from "@/actions/admin/role-actions";
 import {
   listModerationReports,
   resolveModerationReport,

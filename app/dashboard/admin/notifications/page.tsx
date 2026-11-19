@@ -2,7 +2,7 @@ import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
-import { isAdminOrManager } from "@/actions/role-actions";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
 
 const BroadcastPushForm = dynamic(
   () => import("@/components/admin/BroadcastPushForm"),

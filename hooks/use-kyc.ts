@@ -1,8 +1,11 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { hasKycVerification, updateKycStatus } from "@/actions/profile-actions";
-import { toast } from "@/components/ui/use-toast";
+import {
+  hasKycVerification,
+  updateKycStatus,
+} from "@/actions/users/profile-actions";
+import { toast } from "@/hooks/use-toast";
 import { KycVerification, KycStatus } from "@/types/kyc-types";
 
 export function useKyc(userId: string | undefined) {

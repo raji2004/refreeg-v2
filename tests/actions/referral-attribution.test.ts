@@ -26,7 +26,7 @@ jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
 }));
 
-import { recordDonorReferralAttribution } from "@/actions/referral-attribution";
+import { recordDonorReferralAttribution } from "@/actions/users/referral-attribution";
 import { revalidatePath } from "next/cache";
 
 describe("recordDonorReferralAttribution", () => {

@@ -32,11 +32,11 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/actions/auth-actions", () => ({
+jest.mock("@/actions/users/auth-actions", () => ({
   getCurrentUser: jest.fn(),
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   isAdminOrManager: jest.fn(),
 }));
 
@@ -58,8 +58,8 @@ jest.mock("@/lib/s3/s3-utils", () => ({
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/actions/auth-actions";
-import { isAdminOrManager } from "@/actions/role-actions";
+import { getCurrentUser } from "@/actions/users/auth-actions";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
 import {
   sendPetitionApprovedEmailForUser,
   sendPetitionRejectedEmailForUser,
@@ -74,7 +74,7 @@ import {
   deletePetition,
   savePetitionShare,
   createPetition,
-} from "@/actions/petition-actions";
+} from "@/actions/petitions/petition-actions";
 
 const mockGetCurrentUser = getCurrentUser as jest.Mock;
 const mockIsAdminOrManager = isAdminOrManager as jest.Mock;

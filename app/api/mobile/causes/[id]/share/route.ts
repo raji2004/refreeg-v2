@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
-import { saveCauseShare } from "@/actions/cause-actions";
+import { saveCauseShare } from "@/actions/causes/cause-actions";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

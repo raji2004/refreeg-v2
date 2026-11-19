@@ -6,8 +6,8 @@ import {
   handleCorsPreflight,
 } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { listCauses, countCauses } from "@/actions/cause-actions";
-import { hasBankDetails, isProfileComplete } from "@/actions/profile-actions";
+import { listCauses, countCauses } from "@/actions/causes/cause-actions";
+import { hasBankDetails, isProfileComplete } from "@/actions/users/profile-actions";
 import {
   withMobileCache,
   invalidateMobileCachePrefix,

@@ -3,7 +3,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "API Reference & Developer Documentation",
   description:
-    "Official RefreeG API documentation. Integrate secure crowdfunding, manage campaigns, and automate donations with our robust REST API and SDKs for Node.js and Python.",
+    "Official RefreeG API documentation. Integrate secure crowdfunding, manage campaigns, and automate donations with our REST API and SDKs for Node.js and Python.",
   keywords: [
     "RefreeG API",
     "crowdfunding API",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "RefreeG Developer API",
     description:
-      "Build the future of social impact with our developer-friendly API.",
+      "Integrate crowdfunding and donations into your product with our developer-friendly API.",
   },
 };
 

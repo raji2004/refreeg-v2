@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
-import { createPledge } from "@/actions/pledge-actions";
+import { createPledge } from "@/actions/donations/pledge-actions";
 import Paystack from "@/services/paystack";
-import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/pledge-constants";
+import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/payments/pledge-constants";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

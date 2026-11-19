@@ -33,7 +33,7 @@ const Step5 = dynamic(() => import("./step5"), {
 const StepInterests = dynamic(() => import("./step-interests"), {
   loading: () => <Skeleton className="h-[400px] w-full" />,
 });
-import NavigationLoader from "@/components/NavigationLoader";
+import NavigationLoader from "@/components/layout/NavigationLoader";
 import OnboardingNav from "./onboardingNav";
 import {
   hasCompletedOnboarding,
@@ -43,8 +43,8 @@ import {
   saveStep1Progress,
   saveStep2Progress,
   completeOnboarding,
-} from "@/actions/profile-actions";
-import { toast } from "@/components/ui/use-toast";
+} from "@/actions/users/profile-actions";
+import { toast } from "@/hooks/use-toast";
 
 type StepId =
   | "account-type"

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assertCronAuthorized } from "@/lib/cron-auth";
+import { assertCronAuthorized } from "@/lib/api/cron-auth";
 import {
   sendProofCausePausedEmail,
   sendProofUpdateReminderEmail,

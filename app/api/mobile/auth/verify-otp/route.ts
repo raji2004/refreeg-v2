@@ -3,7 +3,7 @@ import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { enforceRateLimit } from "@/lib/api/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { signMobileToken } from "@/lib/auth/jwt";
-import { createReferralRecord } from "@/lib/referral-utils";
+import { createReferralRecord } from "@/lib/referrals/referral-utils";
 
 const SIGNUP_EIZA_BONUS = 150;
 

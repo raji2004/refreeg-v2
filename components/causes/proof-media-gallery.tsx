@@ -33,7 +33,7 @@ export function ProofMediaGallery({ media }: { media: MediaEntry[] }) {
                   className="relative aspect-square overflow-hidden rounded-lg border border-slate-200"
                 >
                   <Image
-                    src={getMediaUrl(img.url) || "/placeholder.svg"}
+                    src={getMediaUrl(img.url) || "/icons/placeholder.svg"}
                     alt={img.name}
                     fill
                     sizes="(max-width: 640px) 33vw, 25vw"
@@ -110,7 +110,7 @@ export function ProofMediaGallery({ media }: { media: MediaEntry[] }) {
             </>
           )}
           <Image
-            src={getMediaUrl(open.url) || "/placeholder.svg"}
+            src={getMediaUrl(open.url) || "/icons/placeholder.svg"}
             alt={open.name}
             width={1200}
             height={800}

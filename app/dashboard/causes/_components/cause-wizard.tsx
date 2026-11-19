@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, LockKeyhole } from "lucide-react";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { Button } from "@/components/ui/button";
 import { FormStepper } from "@/components/ui/premium/form-stepper";
 import { PremiumFormContainer } from "@/components/ui/premium/premium-form-container";

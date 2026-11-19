@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Copy, Check, Loader2, Info, CheckCircle2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
 interface BreetCryptoDonationModalProps {
@@ -242,8 +242,8 @@ export function BreetCryptoDonationModal({
               <div className="leading-normal space-y-1">
                 <p>
                   <strong>
-                    Kindly note: There is a 15 USDT minimum requirement for
-                    crypto donations on this network.
+                    Note: there is a 15 USDT minimum requirement for crypto
+                    donations on this network.
                   </strong>
                 </p>
               </div>

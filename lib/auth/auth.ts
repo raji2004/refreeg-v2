@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@/types/role-types";
 import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
-import { createReferralRecord } from "@/lib/referral-utils";
+import { createReferralRecord } from "@/lib/referrals/referral-utils";
 import { deriveFullNameFromEmail } from "@/lib/auth/registration";
 import { timingSafeEqual } from "crypto";
 

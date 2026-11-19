@@ -15,8 +15,11 @@ import {
   type EventPayload,
 } from "@/hooks/use-event-listeners";
 import { useAuth } from "@/hooks/use-auth";
-import { getUserWallet, getUserStats } from "@/actions/event-reward-actions";
-import { trackLogin } from "@/actions/auth-actions";
+import {
+  getUserWallet,
+  getUserStats,
+} from "@/actions/users/event-reward-actions";
+import { trackLogin } from "@/actions/users/auth-actions";
 import Link from "next/link";
 import type { RewardTransaction, UserStreak } from "@/types";
 

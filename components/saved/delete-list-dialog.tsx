@@ -11,9 +11,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { deleteList } from "@/actions/saved-actions";
+import { deleteList } from "@/actions/users/saved-actions";
 import { toast } from "@/hooks/use-toast";
-import type { SavedListSummary } from "@/lib/saved";
+import type { SavedListSummary } from "@/lib/saved/saved";
 
 export function DeleteListDialog({
   list,

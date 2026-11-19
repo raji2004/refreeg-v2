@@ -23,7 +23,7 @@ jest.mock("@/hooks/use-payment", () => ({
   usePayment: jest.fn(),
 }));
 
-jest.mock("@/actions/gift-actions", () => ({
+jest.mock("@/actions/donations/gift-actions", () => ({
   getGiftByReference: jest.fn(),
 }));
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { listCauses } from "@/actions";
-import { listBookmarkedIds } from "@/actions/saved-actions";
+import { listBookmarkedIds } from "@/actions/users/saved-actions";
 import { sortCausesByFunding } from "@/lib/causes/funding-rank";
 import { causePublicPath } from "@/lib/causes/slug";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
@@ -12,6 +12,7 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookmarkButton } from "@/components/saved/BookmarkButton";
+import { formatNaira } from "@/components/giving/format";
 
 type Spotlight = {
   id: string;
@@ -25,13 +26,6 @@ type Spotlight = {
 };
 
 const FALLBACK_IMAGE = "/live-donations.png";
-
-const formatNaira = (amount: number) =>
-  new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(amount);
 
 export function LiveSpotlight() {
   const [cause, setCause] = useState<Spotlight | null>(null);

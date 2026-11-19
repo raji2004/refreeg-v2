@@ -18,7 +18,7 @@ import {
   type PaymentAnalytics,
   type CauseLifecycle,
   type Alert,
-} from "@/actions/admin-analytics-actions";
+} from "@/actions/admin/admin-analytics-actions";
 
 interface UseAdminAnalyticsReturn {
   data: AnalyticsData | null;
@@ -46,7 +46,10 @@ interface UseOperationalAnalyticsReturn {
   refetch: () => Promise<void>;
 }
 
-export function useAdminAnalytics(from?: string, to?: string): UseAdminAnalyticsReturn {
+export function useAdminAnalytics(
+  from?: string,
+  to?: string,
+): UseAdminAnalyticsReturn {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +62,7 @@ export function useAdminAnalytics(from?: string, to?: string): UseAdminAnalytics
       setData(analyticsData);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to fetch analytics data"
+        err instanceof Error ? err.message : "Failed to fetch analytics data",
       );
       console.error("Error fetching admin analytics:", err);
     } finally {
@@ -79,7 +82,10 @@ export function useAdminAnalytics(from?: string, to?: string): UseAdminAnalytics
   };
 }
 
-export function useAnalyticsCharts(from?: string, to?: string): UseAnalyticsChartsReturn {
+export function useAnalyticsCharts(
+  from?: string,
+  to?: string,
+): UseAnalyticsChartsReturn {
   const [donationTrends, setDonationTrends] = useState<DonationTrend[]>([]);
   const [userGrowth, setUserGrowth] = useState<UserGrowth[]>([]);
   const [causeCategories, setCauseCategories] = useState<CauseCategory[]>([]);
@@ -94,7 +100,7 @@ export function useAnalyticsCharts(from?: string, to?: string): UseAnalyticsChar
       const [trends, growth, categories] = await Promise.all([
         getDonationTrends(from, to),
         getUserGrowth(from, to),
-        getCauseCategories(), 
+        getCauseCategories(),
       ]);
 
       setDonationTrends(trends);
@@ -102,7 +108,7 @@ export function useAnalyticsCharts(from?: string, to?: string): UseAnalyticsChar
       setCauseCategories(categories);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to fetch charts data"
+        err instanceof Error ? err.message : "Failed to fetch charts data",
       );
       console.error("Error fetching analytics charts:", err);
     } finally {
@@ -124,7 +130,10 @@ export function useAnalyticsCharts(from?: string, to?: string): UseAnalyticsChar
   };
 }
 
-export function useOperationalAnalytics(from?: string, to?: string): UseOperationalAnalyticsReturn {
+export function useOperationalAnalytics(
+  from?: string,
+  to?: string,
+): UseOperationalAnalyticsReturn {
   const [kyc, setKyc] = useState<KycAnalytics | null>(null);
   const [payments, setPayments] = useState<PaymentAnalytics | null>(null);
   const [lifecycle, setLifecycle] = useState<CauseLifecycle | null>(null);
@@ -137,12 +146,13 @@ export function useOperationalAnalytics(from?: string, to?: string): UseOperatio
       setIsLoading(true);
       setError(null);
 
-      const [kycData, paymentData, lifecycleData, alertData] = await Promise.all([
-        getKycAnalytics(from, to),
-        getPaymentAnalytics(from, to),
-        getCauseLifecycleAnalytics(from, to),
-        getAlerts(),
-      ]);
+      const [kycData, paymentData, lifecycleData, alertData] =
+        await Promise.all([
+          getKycAnalytics(from, to),
+          getPaymentAnalytics(from, to),
+          getCauseLifecycleAnalytics(from, to),
+          getAlerts(),
+        ]);
 
       setKyc(kycData);
       setPayments(paymentData);
@@ -150,7 +160,7 @@ export function useOperationalAnalytics(from?: string, to?: string): UseOperatio
       setAlerts(alertData);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to fetch operational data"
+        err instanceof Error ? err.message : "Failed to fetch operational data",
       );
       console.error("Error fetching operational analytics:", err);
     } finally {

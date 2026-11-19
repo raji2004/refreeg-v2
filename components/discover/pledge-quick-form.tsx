@@ -5,7 +5,7 @@ import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { usePledgeForm } from "@/hooks/use-pledge-form";
-import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/pledge-constants";
+import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/payments/pledge-constants";
 import {
   getMaxPledgeDate,
   getMinPledgeDate,
@@ -13,7 +13,7 @@ import {
 } from "@/lib/schemas/pledge.schema";
 
 /**
- * A slim, modal-sized version of PledgeScreen's pledge form — just the
+ * A slim, modal-sized version of PledgeScreen's pledge form: just the
  * amount/date/name/email/note fields + submit. Deliberately drops the
  * hero, story, stats, and sticky mobile CTA bar from the full /pledge page,
  * which don't fit a dialog. The full page (app/campaign/_components/pledge-screen.tsx)

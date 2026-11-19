@@ -1,7 +1,7 @@
 import {
   formatFundingGoalInput,
   normalizeFundingGoalInput,
-} from "@/lib/funding-goal";
+} from "@/lib/causes/funding-goal";
 
 describe("funding goal input", () => {
   it("adds thousands separators without changing the stored value", () => {

@@ -1,9 +1,9 @@
-jest.mock("@/components/ui/use-toast", () => ({
+jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
 }));
 
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { usePayment } from "@/hooks/use-payment";
 
 const mockToast = toast as jest.Mock;

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createReferralRecord } from "@/lib/referral-utils";
+import { createReferralRecord } from "@/lib/referrals/referral-utils";
 import { otpMatches } from "@/lib/auth/otp";
 import { deriveFullNameFromEmail } from "@/lib/auth/registration";
 
@@ -203,7 +203,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Verify OTP error:", error);
     return NextResponse.json(
-      { error: "An unexpected error occurred during verification." },
+      { error: "Something went wrong during verification. Please try again." },
       { status: 500 },
     );
   }

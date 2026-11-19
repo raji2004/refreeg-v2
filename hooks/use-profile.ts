@@ -6,10 +6,10 @@ import {
   updateProfile,
   updateBankDetails,
   setProfilePhoto,
-} from "@/actions/profile-actions";
+} from "@/actions/users/profile-actions";
 import { uploadFileWithPresign } from "@/lib/s3/upload-client";
 import type { Profile, ProfileFormData, BankDetailsFormData } from "@/types";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 export function useProfile(userId: string | undefined) {
   const queryClient = useQueryClient();
@@ -44,7 +44,7 @@ export function useProfile(userId: string | undefined) {
       } else if (error.message && typeof error.message === "string") {
         errorMessage =
           error.message.length > 100
-            ? "An error occurred while updating your profile."
+            ? "Couldn't update your profile. Please try again."
             : error.message;
       }
 

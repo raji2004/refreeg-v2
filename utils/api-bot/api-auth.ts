@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { hashApiKey } from "@/utils/api-bot/api-keys";
 import type { Database } from "@/types/database-types";
 import { errorResponse, ApiErrorCode } from "@/utils/api-bot/response-utils";
-import { getClientIp } from "@/lib/client-ip";
-import { createRateLimiter } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/api/client-ip";
+import { createRateLimiter } from "@/lib/api/rate-limit";
 import { CORS_HEADERS } from "@/utils/api-bot/cors";
 
 export async function validateApiKey(request: NextRequest) {

@@ -3,7 +3,7 @@
 import type { FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { Button } from "@/components/ui/button";
 import { FormStepper } from "@/components/ui/premium/form-stepper";
 import { PremiumFormContainer } from "@/components/ui/premium/premium-form-container";

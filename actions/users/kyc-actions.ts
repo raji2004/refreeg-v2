@@ -1,0 +1,427 @@
+"use server";
+
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+import { revalidatePath } from "next/cache";
+import { KycVerification, KycStatus } from "@/types/kyc-types";
+import { logAdminActivity } from "@/actions/admin/database-actions";
+import { isAdminOrManager } from "../admin/role-actions";
+import { getCurrentUser } from "./auth-actions";
+import {
+  sendKycSubmittedEmail,
+  sendKycApprovedEmail,
+  sendKycRejectedEmail,
+  sendKycSubmissionAdminNotification,
+  sendKycReminderEmail,
+} from "@/services/mail";
+import { createNotification } from "@/lib/notifications/notification-service";
+import { processDiditVerificationResult } from "@/services/didit-kyc";
+import { issueReferralRewardOnKycApproval } from "@/lib/referrals/referral-utils";
+export { issueReferralRewardOnKycApproval };
+
+async function syncManualDiditApproval(kyc: {
+  user_id: string;
+  document_url: string | null;
+}): Promise<boolean> {
+  try {
+    const sessionId = kyc.document_url?.split(":::")[0];
+    if (!sessionId) return false;
+
+    const apiKey =
+      process.env.DIDIT_API_KEY || process.env.DIDIT_CLIENT_SECRET || "";
+    const diditRes = await fetch(
+      `https://verification.didit.me/v3/session/${sessionId}/decision/`,
+      { headers: { "x-api-key": apiKey }, cache: "no-store" },
+    );
+    if (!diditRes.ok) return false;
+
+    const sessionData = await diditRes.json();
+    if (sessionData.status?.toLowerCase() !== "approved") return false;
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const webhookRes = await fetch(`${appUrl}/api/webhooks/didit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...sessionData,
+        session_id: sessionData.session_id || sessionData.id || sessionId,
+        vendor_data:
+          sessionData.vendor_data || sessionData.vendorData || kyc.user_id,
+      }),
+    });
+    return webhookRes.ok;
+  } catch (syncError) {
+    console.error(
+      "[KYC Sync] Error syncing rejected Didit session:",
+      syncError,
+    );
+    return false;
+  }
+}
+
+export async function getVerificationStatus(
+  userId: string,
+): Promise<{ status: KycVerification | null; error: string | null }> {
+  try {
+    let data = await prisma.kyc_verifications.findFirst({
+      where: { user_id: userId },
+      orderBy: { created_at: "desc" },
+    });
+
+    const isRejectedDidit =
+      data?.status === "rejected" && data?.document_type === "didit";
+
+    if (isRejectedDidit && data?.document_url?.includes(":::")) {
+      // Reviewers can approve a declined session on Didit after the fact.
+      if (await syncManualDiditApproval(data)) {
+        const updated = await prisma.kyc_verifications.findUnique({
+          where: { id: data.id },
+        });
+        if (updated) data = updated;
+      }
+    } else if (
+      (data?.status === "pending" || data?.status === "in_progress") &&
+      data?.document_type === "didit"
+    ) {
+      if (data.document_url?.includes(":::")) {
+        try {
+          const sessionId = data.document_url.split(":::")[0];
+          if (sessionId) {
+            const apiKey =
+              process.env.DIDIT_API_KEY ||
+              process.env.DIDIT_CLIENT_SECRET ||
+              "";
+
+            const diditRes = await fetch(
+              `https://verification.didit.me/v3/session/${sessionId}/decision/`,
+              {
+                headers: { "x-api-key": apiKey },
+                cache: "no-store",
+              },
+            );
+
+            if (diditRes.ok) {
+              const sessionData = await diditRes.json();
+              const sessionStatus = sessionData.status?.toLowerCase();
+
+              // If the session has progressed past the initial states, forward it to our webhook
+              if (
+                sessionStatus &&
+                !["not started", "in progress"].includes(sessionStatus)
+              ) {
+                console.log(
+                  `[KYC Sync] Found updated Didit session ${sessionId} with status ${sessionStatus}, processing result...`,
+                );
+
+                // Normalize the GET session API response to match the payload shape
+                const webhookPayload = {
+                  ...sessionData,
+                  session_id:
+                    sessionData.session_id || sessionData.id || sessionId,
+                  vendor_data:
+                    sessionData.vendor_data ||
+                    sessionData.vendorData ||
+                    data.user_id,
+                };
+
+                const syncResult =
+                  await processDiditVerificationResult(webhookPayload);
+
+                if (syncResult.success) {
+                  const updated = await prisma.kyc_verifications.findUnique({
+                    where: { id: data.id },
+                  });
+                  if (updated) {
+                    data = updated;
+                  }
+                }
+              } else if (
+                sessionStatus &&
+                ["not started", "in progress"].includes(sessionStatus)
+              ) {
+                // The user started the session but closed the window before finishing.
+                if (data.id && data.status !== "in_progress") {
+                  await prisma.kyc_verifications.update({
+                    where: { id: data.id },
+                    data: { status: "in_progress" },
+                  });
+                }
+                data.status = "in_progress" as any;
+                if (data.id) {
+                  await prisma.kyc_verifications.update({
+                    where: { id: data.id },
+                    data: { status: "in_progress" },
+                  });
+                }
+              }
+            }
+          }
+        } catch (syncError) {
+          console.error("[KYC Sync] Error syncing Didit session:", syncError);
+        }
+      } else {
+        // Backward compatibility: If the session was saved before we added the UUID format,
+        // we can't sync it. Just treat it as in_progress so the user isn't permanently stuck.
+        data.status = "in_progress" as any;
+      }
+    }
+
+    if (data?.document_url) {
+      // Clean up the URL if it contains the Didit session UUID
+      if (data.document_type === "didit" && data.document_url.includes(":::")) {
+        data.document_url =
+          data.document_url.split(":::")[1] || data.document_url;
+      }
+
+      // Use S3 proxy for generating the URL
+      if (
+        !data.document_url.startsWith("http") &&
+        !data.document_url.startsWith("/api/s3/image")
+      ) {
+        (data as any).document_url =
+          `/api/s3/image?key=${encodeURIComponent(data.document_url)}`;
+      }
+    }
+
+    return { status: data as KycVerification | null, error: null };
+  } catch (error) {
+    console.error("Error getting verification status:", JSON.stringify(error));
+    return {
+      status: null,
+      error:
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : JSON.stringify(error) || "Failed to get status",
+    };
+  }
+}
+
+export async function updateVerificationStatus(
+  verificationId: string,
+  status: "approved" | "rejected",
+  notes?: string,
+): Promise<{ error: string | null }> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { error: "Not authenticated" };
+
+    const isAuthorized = await isAdminOrManager(user.id);
+    if (!isAuthorized) return { error: "Unauthorized" };
+
+    // Update KYC status using Prisma
+    await prisma.kyc_verifications.update({
+      where: { id: verificationId },
+      data: {
+        status: status,
+        verification_notes:
+          notes ||
+          (status === "approved" ? "Approved by admin" : "Rejected by admin"),
+        updated_at: new Date(),
+      },
+    });
+
+    if (user) {
+      if (status === "approved") {
+        await logAdminActivity("approve-kyc", user.id);
+      } else if (status === "rejected") {
+        await logAdminActivity("reject-kyc", user.id);
+      }
+    }
+
+    // Fetch the verification record to get user_id and full_name
+    const verification = await prisma.kyc_verifications.findUnique({
+      where: { id: verificationId },
+      select: { id: true, user_id: true, full_name: true },
+    });
+
+    if (verification) {
+      try {
+        const profile = await prisma.user.findUnique({
+          where: { id: verification.user_id },
+          select: { email: true },
+        });
+
+        if (profile?.email) {
+          if (status === "approved") {
+            await sendKycApprovedEmail(
+              profile.email,
+              verification.full_name || "User",
+            );
+          } else if (status === "rejected") {
+            await sendKycRejectedEmail(
+              profile.email,
+              verification.full_name || "User",
+              notes ||
+                "Your KYC verification was rejected. Please review and resubmit.",
+            );
+          }
+        }
+
+        try {
+          if (status === "approved") {
+            await createNotification({
+              userId: verification.user_id,
+              title: "Identity Verified",
+              message:
+                "Your RefreeG identity verification has been approved. You now have full Tier 2 access.",
+              type: "general",
+              data: {
+                kyc_status: "approved",
+                verification_id: verificationId,
+              },
+            });
+          } else if (status === "rejected") {
+            await createNotification({
+              userId: verification.user_id,
+              title: "Verification Needs Attention",
+              message:
+                notes ||
+                "Your identity verification could not be approved. Please review requirements and try again.",
+              type: "general",
+              data: {
+                kyc_status: "rejected",
+                verification_id: verificationId,
+              },
+            });
+          }
+        } catch (notifErr) {
+          console.error(
+            "Failed to create admin KYC update notification:",
+            notifErr,
+          );
+        }
+      } catch (emailError) {
+        console.error("Error sending KYC status email:", emailError);
+      }
+
+      // Update is_verified on the user profile
+      if (status === "approved") {
+        await prisma.user.update({
+          where: { id: verification.user_id },
+          data: { isVerified: true },
+        });
+
+        try {
+          await issueReferralRewardOnKycApproval(verification.user_id);
+        } catch (referralError) {
+          console.error(
+            "[KYC] Referral reward failed after approval:",
+            referralError,
+          );
+        }
+      } else if (status === "rejected") {
+        await prisma.user.update({
+          where: { id: verification.user_id },
+          data: { isVerified: false },
+        });
+      }
+    } else {
+      console.error(
+        "[KYC] No verification record found for id:",
+        verificationId,
+      );
+      return { error: "No verification record found for this id." };
+    }
+
+    revalidatePath("/dashboard/admin/users");
+    revalidatePath("/dashboard/settings");
+    return { error: null };
+  } catch (error) {
+    console.error("[KYC] Unhandled error in updateVerificationStatus:", error);
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : JSON.stringify(error) || "Failed to update status",
+    };
+  }
+}
+
+/**
+ * Sends a KYC reminder email to all platform users who have not yet verified
+ * their identity and have no pending KYC submission.
+ * Restricted to admins and managers.
+ */
+export async function sendKycReminderToUnverifiedUsers(): Promise<{
+  sent: number;
+  failed: number;
+  skipped: number;
+  error: string | null;
+}> {
+  try {
+    const user = await getCurrentUser();
+    if (!user)
+      return { sent: 0, failed: 0, skipped: 0, error: "Not authenticated" };
+
+    const authorized = await isAdminOrManager(user.id);
+    if (!authorized)
+      return { sent: 0, failed: 0, skipped: 0, error: "Unauthorized" };
+
+    // Fetch all non-verified users who have a valid email address using Prisma
+    const unverifiedProfiles = await prisma.user.findMany({
+      where: {
+        isVerified: false,
+        email: { not: null },
+      },
+      select: { id: true, email: true, fullName: true },
+    });
+
+    if (!unverifiedProfiles || unverifiedProfiles.length === 0) {
+      return { sent: 0, failed: 0, skipped: 0, error: null };
+    }
+
+    // Fetch user IDs that already have a pending or approved KYC submission
+    // so we don't spam users who are already in the process
+    const activeKyc = await prisma.kyc_verifications.findMany({
+      where: {
+        status: { in: ["pending", "approved"] },
+      },
+      select: { user_id: true },
+    });
+
+    const activeUserIds = new Set(activeKyc.map((k) => k.user_id));
+
+    const eligibleUsers = unverifiedProfiles.filter(
+      (p) => p.email && !activeUserIds.has(p.id),
+    );
+
+    const skipped = unverifiedProfiles.length - eligibleUsers.length;
+
+    if (eligibleUsers.length === 0) {
+      return { sent: 0, failed: 0, skipped, error: null };
+    }
+
+    // Send reminder emails in parallel, collecting results
+    const results = await Promise.allSettled(
+      eligibleUsers.map((profile) =>
+        sendKycReminderEmail(
+          profile.email as string,
+          profile.fullName || "Refreegerian",
+        ),
+      ),
+    );
+
+    const sent = results.filter(
+      (r) => r.status === "fulfilled" && (r.value as any)?.success !== false,
+    ).length;
+    const failed = results.length - sent;
+
+    console.log(
+      `[KYC Reminder] Emails dispatched. Sent: ${sent}, failed: ${failed}, skipped (already in progress): ${skipped}`,
+    );
+
+    await logAdminActivity("send-kyc-reminders", user.id);
+
+    return { sent, failed, skipped, error: null };
+  } catch (error) {
+    console.error("[KYC Reminder] Unhandled error:", error);
+    return {
+      sent: 0,
+      failed: 0,
+      skipped: 0,
+      error: error instanceof Error ? error.message : "Something went wrong",
+    };
+  }
+}

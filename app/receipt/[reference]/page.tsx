@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getGiftByReference } from "@/actions/gift-actions";
+import { getGiftByReference } from "@/actions/donations/gift-actions";
 import { PrintButton } from "./print-button";
 
 export const metadata: Metadata = {

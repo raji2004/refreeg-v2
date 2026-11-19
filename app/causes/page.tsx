@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 import { DiscoverPageClient } from "@/components/discover/discover-page-client";
-import { listBookmarkedKeys } from "@/actions/saved-actions";
+import { listBookmarkedKeys } from "@/actions/users/saved-actions";
 import {
   countDiscoverResults,
   getDiscoverFacets,
   getDiscoverRailData,
   listDiscoverResults,
-} from "@/actions/discover-actions";
-import { campaignCategoryStyles } from "@/lib/campaign-categories";
+} from "@/actions/causes/discover-actions";
+import { campaignCategoryStyles } from "@/lib/causes/campaign-categories";
 import {
   parseDiscoverSearchParams,
   type DiscoverSearchParams,
-} from "@/lib/discover-url";
+} from "@/lib/causes/discover-url";
 
 export const metadata: Metadata = {
   title: "Discover",

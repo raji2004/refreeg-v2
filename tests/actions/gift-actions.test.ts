@@ -9,7 +9,7 @@ jest.mock("@/lib/prisma", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
-import { getGiftByReference } from "@/actions/gift-actions";
+import { getGiftByReference } from "@/actions/donations/gift-actions";
 
 const db = prisma as any;
 

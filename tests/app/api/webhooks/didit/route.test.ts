@@ -35,11 +35,11 @@ jest.mock("@/lib/notifications/notification-service", () => ({
   createNotification: jest.fn(),
 }));
 
-jest.mock("@/actions/database-actions", () => ({
+jest.mock("@/actions/admin/database-actions", () => ({
   logAdminActivity: jest.fn(),
 }));
 
-jest.mock("@/lib/referral-utils", () => ({
+jest.mock("@/lib/referrals/referral-utils", () => ({
   issueReferralRewardOnKycApproval: jest.fn(),
 }));
 
@@ -154,7 +154,10 @@ describe("Didit Webhook POST", () => {
     expect(res.status).toBe(200);
     expect(mockPrisma.kyc_verifications.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "kyc-1", status: { in: ["pending", "resubmitted"] } },
+        where: {
+          id: "kyc-1",
+          status: { in: ["pending", "resubmitted", "in_progress"] },
+        },
         data: expect.objectContaining({ status: "approved" }),
       }),
     );

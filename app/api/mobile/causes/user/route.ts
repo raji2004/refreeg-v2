@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { getUserCausesWithStatus } from "@/actions/cause-actions";
+import { getUserCausesWithStatus } from "@/actions/causes/cause-actions";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

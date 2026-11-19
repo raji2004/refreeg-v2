@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getProfile } from "@/actions/profile-actions";
+import { getProfile } from "@/actions/users/profile-actions";
 
 export function useWallet(userId: string | undefined) {
   const {

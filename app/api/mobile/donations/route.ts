@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
-import { createDonation } from "@/actions/donation-actions";
+import { createDonation } from "@/actions/donations/donation-actions";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

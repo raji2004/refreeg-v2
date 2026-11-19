@@ -10,15 +10,13 @@ export default function NotFoundPage() {
     <div className="flex flex-col items-center justify-center min-h-[90vh] bg-white px-4 text-center pb-20">
       <div className="max-w-lg">
         <Image
-          src="/404-illustration.svg"
+          src="/images/404-illustration.svg"
           alt="404 Illustration"
           width={300}
           height={300}
           className="mx-auto mb-6"
         />
-        <h1 className="text-2xl font-bold text-gray-900">
-          Oops! Page Not Found
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900">Page Not Found</h1>
         <p className="text-gray-600 mt-2 mb-6">
           Looks like you took a wrong turn, but do not worry, we are here to
           guide you back!

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { updateComment, deleteComment } from "@/actions/comment-actions";
+import { updateComment, deleteComment } from "@/actions/causes/comment-actions";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {

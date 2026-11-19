@@ -112,7 +112,7 @@ export default function GetStartedPage() {
 
               <p className="mt-3 text-[16px] text-gray-700 leading-7">
                 We believe crowdfunding should be more than just raising money:
-                it should be about building trust, empowering change, and
+                it should be about building trust, supporting change, and
                 creating sustainable impact.
               </p>
 

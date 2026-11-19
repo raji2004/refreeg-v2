@@ -10,9 +10,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { createList } from "@/actions/saved-actions";
+import { createList } from "@/actions/users/saved-actions";
 import { toast } from "@/hooks/use-toast";
-import type { SavedListSummary } from "@/lib/saved";
+import type { SavedListSummary } from "@/lib/saved/saved";
 import { DeleteListDialog } from "./delete-list-dialog";
 import { RenameListDialog } from "./rename-list-dialog";
 
@@ -104,7 +104,7 @@ export function ListFilterRow({
               <span className="text-xs opacity-60">{list.count}</span>
             </button>
 
-            {/* Manage actions live on the active chip only — you are almost
+            {/* Manage actions live on the active chip only: you are almost
                 always managing the list you are looking at, and it keeps the
                 row calm. The button carries an explicit light color + visible
                 circle: it used to inherit the page's dark ink color and sit

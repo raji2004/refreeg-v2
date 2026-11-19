@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-jest.mock("@/actions/event-reward-actions", () => ({
+jest.mock("@/actions/users/event-reward-actions", () => ({
   recordEvent: jest.fn(),
   updateUserStreaks: jest.fn(),
 }));
@@ -50,7 +50,7 @@ import {
   checkCauseUserLoginAction,
   requestPasswordResetAction,
   resetPasswordAction,
-} from "@/actions/auth-actions";
+} from "@/actions/users/auth-actions";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/services/mail";
 

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { withMobileCache, invalidateMobileCachePrefix } from "@/lib/api/mobile-cache";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { getPetition, deletePetition } from "@/actions/petition-actions";
+import { getPetition, deletePetition } from "@/actions/petitions/petition-actions";
 import { prisma } from "@/lib/prisma";
 
 const PETITION_DETAIL_CACHE_TTL_MS = 5_000;

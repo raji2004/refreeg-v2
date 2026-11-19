@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { confirmEmailChangeAction } from "@/actions/auth-actions";
+import { confirmEmailChangeAction } from "@/actions/users/auth-actions";
 import { Button } from "@/components/ui/button";
 
 type PageProps = {

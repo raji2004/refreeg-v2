@@ -1,11 +1,14 @@
-import { getProfile, getProfileByUsername } from "@/actions/profile-actions";
-import { getUserCauses } from "@/actions/cause-actions";
-import { listUserDonations } from "@/actions/donation-actions";
-import { getUserPetitions } from "@/actions/petition-actions";
+import {
+  getProfile,
+  getProfileByUsername,
+} from "@/actions/users/profile-actions";
+import { getUserCauses } from "@/actions/causes/cause-actions";
+import { listUserDonations } from "@/actions/donations/donation-actions";
+import { getUserPetitions } from "@/actions/petitions/petition-actions";
 import { getSessionUser } from "@/lib/auth/session-user";
-import { getOrganizationPublicProfile } from "@/actions/organization-actions";
-import PublicProfile from "@/components/PublicProfile";
-import OrganizationPublicProfile from "@/components/organization-public-profile";
+import { getOrganizationPublicProfile } from "@/actions/users/organization-actions";
+import PublicProfile from "@/components/profile/PublicProfile";
+import OrganizationPublicProfile from "@/components/profile/OrganizationPublicProfile";
 import { notFound } from "next/navigation";
 
 type PageParams = {

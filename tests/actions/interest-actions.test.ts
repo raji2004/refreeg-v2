@@ -8,7 +8,7 @@ jest.mock("@/lib/prisma", () => ({
 
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
 
-jest.mock("@/actions/cause-actions", () => ({
+jest.mock("@/actions/causes/cause-actions", () => ({
   listCauses: jest.fn(),
   countCauses: jest.fn(),
   countCausesByCategory: jest.fn(),
@@ -18,12 +18,12 @@ import {
   getInterestOptions,
   getMatchedCauses,
   getMatchedCausesCount,
-} from "@/actions/interest-actions";
+} from "@/actions/users/interest-actions";
 import {
   listCauses,
   countCauses,
   countCausesByCategory,
-} from "@/actions/cause-actions";
+} from "@/actions/causes/cause-actions";
 
 const mockListCauses = listCauses as jest.Mock;
 const mockCountByCategory = countCausesByCategory as jest.Mock;

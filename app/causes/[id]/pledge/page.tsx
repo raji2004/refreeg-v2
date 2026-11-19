@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
-import { getCause } from "@/actions/cause-actions";
+import { getCause } from "@/actions/causes/cause-actions";
 import { getSessionUser } from "@/lib/auth/session-user";
-import { getProfile } from "@/actions/profile-actions";
+import { getProfile } from "@/actions/users/profile-actions";
 import PledgeScreen from "@/app/campaign/_components/pledge-screen";
 import { causePublicPath } from "@/lib/causes/slug";
 

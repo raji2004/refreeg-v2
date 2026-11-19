@@ -10,7 +10,7 @@ import {
 } from "@/lib/auth/store-review-demo";
 import Paystack from "@/services/paystack";
 import { calculateServiceFee, calculateProviderFee } from "@/lib/utils";
-import { assertCauseAcceptingDonations } from "@/lib/proof-milestones";
+import { assertCauseAcceptingDonations } from "@/lib/causes/proof-milestones";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

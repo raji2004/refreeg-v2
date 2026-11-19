@@ -1,16 +1,16 @@
-jest.mock("@/actions/profile-actions", () => ({
+jest.mock("@/actions/users/profile-actions", () => ({
   updateBankDetails: jest.fn(),
 }));
 
-jest.mock("@/components/ui/use-toast", () => ({
+jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
 }));
 
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { updateBankDetails } from "@/actions/profile-actions";
-import { toast } from "@/components/ui/use-toast";
+import { updateBankDetails } from "@/actions/users/profile-actions";
+import { toast } from "@/hooks/use-toast";
 import { useBank } from "@/hooks/use-bank";
 
 const mockUpdateBankDetails = updateBankDetails as jest.Mock;

@@ -6,7 +6,10 @@ import { AlertCircle, Check, Loader2 } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
 import { usePayment } from "@/hooks/use-payment";
-import { getGiftByReference, type GiftDetails } from "@/actions/gift-actions";
+import {
+  getGiftByReference,
+  type GiftDetails,
+} from "@/actions/donations/gift-actions";
 import { GiftSuccess } from "@/components/giving/gift-success";
 
 const PROVIDER_NAMES: Record<string, string> = {

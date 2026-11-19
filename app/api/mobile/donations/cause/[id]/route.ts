@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, apiPaginated, handleCorsPreflight } from "@/lib/api/response";
-import { listDonationsForCause } from "@/actions/donation-actions";
+import { listDonationsForCause } from "@/actions/donations/donation-actions";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {

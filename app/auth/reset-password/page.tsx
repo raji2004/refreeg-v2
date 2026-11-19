@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { useRouter } from "next/navigation";
 
 export default function ResetPasswordPage() {

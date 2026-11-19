@@ -2,10 +2,10 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { withMobileCache, invalidateMobileCachePrefix } from "@/lib/api/mobile-cache";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { getCause, deleteCause } from "@/actions/cause-actions";
-import { listDonationsForCause } from "@/actions/donation-actions";
-import { listCommentsForCause } from "@/actions/comment-actions";
-import { getApprovedProofUpdates } from "@/actions/proof-update-actions";
+import { getCause, deleteCause } from "@/actions/causes/cause-actions";
+import { listDonationsForCause } from "@/actions/donations/donation-actions";
+import { listCommentsForCause } from "@/actions/causes/comment-actions";
+import { getApprovedProofUpdates } from "@/actions/causes/proof-update-actions";
 import { prisma } from "@/lib/prisma";
 
 const CAUSE_DETAIL_CACHE_TTL_MS = 5_000;

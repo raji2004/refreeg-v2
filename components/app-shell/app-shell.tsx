@@ -3,16 +3,16 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Menu } from "lucide-react";
-import { Logo } from "@/components/logo";
+import { Logo } from "@/components/layout/Logo";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
-import { getProfile } from "@/actions/profile-actions";
-import { listBookmarkedIds } from "@/actions/saved-actions";
+import { getProfile } from "@/actions/users/profile-actions";
+import { listBookmarkedIds } from "@/actions/users/saved-actions";
 import {
   getSavedCount,
   setSavedCount,
   subscribeSavedCount,
-} from "@/lib/saved-count";
+} from "@/lib/saved/saved-count";
 import { AppShellNav } from "./app-shell-nav";
 import { AppShellHeader } from "./app-shell-header";
 import { SidebarCtaCard } from "./sidebar-cta-card";

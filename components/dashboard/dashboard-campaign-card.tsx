@@ -75,7 +75,7 @@ export function DashboardCampaignCard({
   const canGive = !isExpired && !cause.paused;
 
   const publicHref = causePublicPath(cause);
-  const imageUrl = getMediaUrl(cause.image) || "/placeholder.svg";
+  const imageUrl = getMediaUrl(cause.image) || "/icons/placeholder.svg";
 
   return (
     <>

@@ -5,7 +5,7 @@ import {
   checkCircuit,
   recordFailure,
   recordSuccess,
-} from "@/lib/circuit-breaker";
+} from "@/lib/api/circuit-breaker";
 
 const getPaystackSecretKey = (): string =>
   (process.env.PAYSTACK_SECRET_KEY || "").replace(/["']/g, "").trim();

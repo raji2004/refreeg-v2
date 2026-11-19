@@ -1,6 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import { processDiditVerificationResult } from "@/services/didit-kyc";
 
 /**
@@ -34,14 +33,13 @@ function verifyDiditWebhookSignature(
     return false;
   }
 
-  const expectedSignature = crypto
-    .createHmac("sha256", webhookSecret)
+  const expectedSignature = createHmac("sha256", webhookSecret)
     .update(rawBody, "utf-8")
     .digest("hex");
 
   // Constant-time comparison to prevent timing attacks
   try {
-    return crypto.timingSafeEqual(
+    return timingSafeEqual(
       Buffer.from(signatureHeader, "hex"),
       Buffer.from(expectedSignature, "hex"),
     );
@@ -54,7 +52,7 @@ function verifyDiditWebhookSignature(
 // This endpoint flips user.isVerified - the KYC gate for payouts and
 // referrals - so unsigned payloads must never reach the logic below. Didit
 // signs each delivery with HMAC-SHA256 over the raw body and the shared
-// webhook secret (X-Didit-Signature header).
+// webhook secret (X-Signature-V2 header).
 export async function POST(request: Request) {
   try {
     // Read the raw body for signature verification

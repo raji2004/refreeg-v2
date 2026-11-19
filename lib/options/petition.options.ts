@@ -1,4 +1,4 @@
-import { categories } from "@/lib/categories";
+import { categories } from "@/lib/causes/categories";
 import type { Option } from "@/types/options";
 
 export const petitionCategoryOptions = categories.map(({ id, name }) => ({

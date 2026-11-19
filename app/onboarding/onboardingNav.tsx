@@ -1,8 +1,8 @@
 "use client";
 
-import { Logo } from "@/components/logo";
+import { Logo } from "@/components/layout/Logo";
 import { Button } from "@/components/ui/button";
-import { UserNav } from "@/components/user-nav";
+import { UserNav } from "@/components/layout/UserNav";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 

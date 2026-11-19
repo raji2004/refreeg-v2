@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { getUserWallet } from "@/actions/event-reward-actions";
+import { getUserWalletCore as getUserWallet } from "@/lib/rewards/reward-core";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

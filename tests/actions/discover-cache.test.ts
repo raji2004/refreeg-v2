@@ -22,19 +22,19 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/actions/cause-actions", () => ({
+jest.mock("@/actions/causes/cause-actions", () => ({
   listCauses: jest.fn(),
   countCauses: jest.fn(),
   countCausesByCategory: jest.fn(),
 }));
 
-jest.mock("@/actions/petition-actions", () => ({
+jest.mock("@/actions/petitions/petition-actions", () => ({
   listPetitions: jest.fn(),
   countPetitions: jest.fn(),
   countPetitionsByCategory: jest.fn(),
 }));
 
-jest.mock("@/actions/organization-actions", () => ({
+jest.mock("@/actions/users/organization-actions", () => ({
   searchOrganizations: jest.fn(),
 }));
 
@@ -42,17 +42,17 @@ import {
   listDiscoverResults,
   countDiscoverResults,
   getDiscoverFacets,
-} from "@/actions/discover-actions";
+} from "@/actions/causes/discover-actions";
 import {
   listCauses,
   countCauses,
   countCausesByCategory,
-} from "@/actions/cause-actions";
+} from "@/actions/causes/cause-actions";
 import {
   listPetitions,
   countPetitions,
   countPetitionsByCategory,
-} from "@/actions/petition-actions";
+} from "@/actions/petitions/petition-actions";
 
 const mockListCauses = listCauses as jest.Mock;
 const mockListPetitions = listPetitions as jest.Mock;

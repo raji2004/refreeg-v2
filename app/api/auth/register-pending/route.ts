@@ -121,7 +121,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Register pending error:", error);
     return NextResponse.json(
-      { error: "An unexpected error occurred during registration." },
+      { error: "Something went wrong during registration. Please try again." },
       { status: 500 },
     );
   }

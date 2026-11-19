@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getWebhookLogs } from "@/actions/webhook-actions";
+import { getWebhookLogs } from "@/actions/donations/webhook-actions";
 import { Button } from "@/components/ui/button";
 import {
   RefreshCcw,

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { getUserStats } from "@/actions/event-reward-actions";
+import { getUserStatsCore as getUserStats } from "@/lib/rewards/reward-core";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

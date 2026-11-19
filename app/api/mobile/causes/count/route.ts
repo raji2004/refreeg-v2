@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, handleCorsPreflight } from "@/lib/api/response";
-import { countCauses } from "@/actions/cause-actions";
+import { countCauses } from "@/actions/causes/cause-actions";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

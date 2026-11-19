@@ -5,7 +5,7 @@ import {
   hasBankDetails,
   updateBankDetails,
   getProfile,
-} from "@/actions/profile-actions";
+} from "@/actions/users/profile-actions";
 
 export async function OPTIONS() {
   return handleCorsPreflight();

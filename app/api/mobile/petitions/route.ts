@@ -6,7 +6,7 @@ import {
   handleCorsPreflight,
 } from "@/lib/api/response";
 import { authenticateMobileRequest } from "@/lib/auth/mobile-auth";
-import { listPetitions, countPetitions } from "@/actions/petition-actions";
+import { listPetitions, countPetitions } from "@/actions/petitions/petition-actions";
 import {
   withMobileCache,
   invalidateMobileCachePrefix,

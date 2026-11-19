@@ -5,11 +5,11 @@ import { Search } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { campaignCategoryStyles } from "@/lib/campaign-categories";
+import { campaignCategoryStyles } from "@/lib/causes/campaign-categories";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
-import { filterChips, formatNairaShort } from "@/lib/discover-summary";
-import type { DiscoverFilters } from "@/actions/discover-actions";
+import { filterChips, formatNairaShort } from "@/lib/causes/discover-summary";
+import type { DiscoverFilters } from "@/actions/causes/discover-actions";
 
 const inkCheckbox =
   "h-[18px] w-[18px] rounded-[5px] border-ink/25 data-[state=checked]:border-ink data-[state=checked]:bg-ink data-[state=checked]:text-ink-foreground";

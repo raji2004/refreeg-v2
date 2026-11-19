@@ -7,7 +7,8 @@ import type { CauseDetail } from "../types/types";
 import { fadeUp } from "../types/types";
 
 const ShareModal = dynamic(
-  () => import("@/components/share-modal").then((mod) => mod.ShareModal),
+  () =>
+    import("@/components/engagement/ShareModal").then((mod) => mod.ShareModal),
   {
     loading: () => <Skeleton className="h-10 w-10 rounded-full" />,
   },

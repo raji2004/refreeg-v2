@@ -8,7 +8,7 @@ import {
 import Paystack from "@/services/paystack";
 import { prisma } from "@/lib/prisma";
 import { calculateServiceFee, calculateProviderFee } from "@/lib/utils";
-import { assertCauseAcceptingDonations } from "@/lib/proof-milestones";
+import { assertCauseAcceptingDonations } from "@/lib/causes/proof-milestones";
 
 const MIN_DONATION_AMOUNT = 100;
 const MAX_DONATION_AMOUNT = 10_000_000;

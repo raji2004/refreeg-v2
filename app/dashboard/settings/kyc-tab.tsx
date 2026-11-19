@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { getVerificationStatus } from "@/actions/kyc-actions";
+import { getVerificationStatus } from "@/actions/users/kyc-actions";
 import {
   Shield,
   CheckCircle,
@@ -27,7 +27,7 @@ import {
 import { useRouter } from "nextjs-toploader/app";
 import type { Profile } from "@/types";
 import Image from "next/image";
-import NavigationLoader from "@/components/NavigationLoader";
+import NavigationLoader from "@/components/layout/NavigationLoader";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 interface KycTabProps {
@@ -158,9 +158,9 @@ export function KycTab({ profile, user }: KycTabProps) {
             </h2>
             <p className="text-slate-600 max-w-2xl mx-auto mb-10 text-base md:text-lg">
               Identity verification keeps the RefreeG community safe and
-              trusted. By verifying your identity, you unlock the ability to
-              create petitions, launch donation campaigns, and access all
-              premium platform features.
+              trusted. By verifying your identity, you can create petitions,
+              launch donation campaigns, and access all premium platform
+              features.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl mb-12 text-left">
@@ -177,7 +177,7 @@ export function KycTab({ profile, user }: KycTabProps) {
               <div className="p-5 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                 <CheckCircle className="h-6 w-6 text-emerald-500 mb-3" />
                 <h4 className="font-semibold text-slate-900 mb-2">
-                  Unlock Features
+                  Full Access
                 </h4>
                 <p className="text-sm text-slate-500 leading-relaxed">
                   Gain full access to campaign creation, wallet withdrawals, and
@@ -266,7 +266,7 @@ export function KycTab({ profile, user }: KycTabProps) {
                 <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50/80 px-4 py-2.5 rounded-lg border border-emerald-200/50">
                   <CheckCircle className="h-5 w-5" />
                   <span className="text-sm font-medium">
-                    All features unlocked
+                    All features available
                   </span>
                 </div>
               )}
@@ -397,7 +397,7 @@ export function KycTab({ profile, user }: KycTabProps) {
                       <Image
                         src={
                           getMediaUrl(kycData.document_url) ||
-                          "/placeholder.svg"
+                          "/icons/placeholder.svg"
                         }
                         alt="KYC Document"
                         width={400}
@@ -430,7 +430,8 @@ export function KycTab({ profile, user }: KycTabProps) {
                   >
                     <Image
                       src={
-                        getMediaUrl(kycData.document_url) || "/placeholder.svg"
+                        getMediaUrl(kycData.document_url) ||
+                        "/icons/placeholder.svg"
                       }
                       alt="Full size document"
                       fill
