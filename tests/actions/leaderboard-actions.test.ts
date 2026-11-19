@@ -33,7 +33,7 @@ import {
   getLeaderboard,
   getCurrentUserRank,
   getReferrerDonorDetail,
-} from "@/actions/leaderboard-actions";
+} from "@/actions/users/leaderboard-actions";
 
 describe("leaderboard-actions", () => {
   beforeEach(() => {
@@ -176,9 +176,21 @@ describe("leaderboard-actions", () => {
   describe("getCurrentUserRank", () => {
     it("returns correct 1-based rank, total amount, and count for user in leaderboard", async () => {
       mockDonationGroupBy.mockResolvedValue([
-        { referrer_id: "user-top-1", _sum: { amount: 500000 }, _count: { id: 25 } },
-        { referrer_id: "target-user-id", _sum: { amount: 200000 }, _count: { id: 14 } },
-        { referrer_id: "user-top-3", _sum: { amount: 80000 }, _count: { id: 8 } },
+        {
+          referrer_id: "user-top-1",
+          _sum: { amount: 500000 },
+          _count: { id: 25 },
+        },
+        {
+          referrer_id: "target-user-id",
+          _sum: { amount: 200000 },
+          _count: { id: 14 },
+        },
+        {
+          referrer_id: "user-top-3",
+          _sum: { amount: 80000 },
+          _count: { id: 8 },
+        },
       ]);
 
       const result = await getCurrentUserRank("target-user-id");
@@ -190,7 +202,11 @@ describe("leaderboard-actions", () => {
 
     it("returns { rank: null, totalAmountDonated: 0, referralCount: 0 } when user has no referrals", async () => {
       mockDonationGroupBy.mockResolvedValue([
-        { referrer_id: "other-user", _sum: { amount: 10000 }, _count: { id: 10 } },
+        {
+          referrer_id: "other-user",
+          _sum: { amount: 10000 },
+          _count: { id: 10 },
+        },
       ]);
 
       const result = await getCurrentUserRank("unranked-user-id");
@@ -227,7 +243,11 @@ describe("leaderboard-actions", () => {
           name: "John Public",
           is_anonymous: false,
           createdAt: new Date("2026-01-10T12:00:00Z"),
-          cause: { id: "cause-1", title: "Clean Water Project", slug: "clean-water" },
+          cause: {
+            id: "cause-1",
+            title: "Clean Water Project",
+            slug: "clean-water",
+          },
         },
         {
           id: "don-2",
@@ -235,7 +255,11 @@ describe("leaderboard-actions", () => {
           name: "Secret Donor",
           is_anonymous: true,
           createdAt: new Date("2026-01-11T12:00:00Z"),
-          cause: { id: "cause-2", title: "Solar Power School", slug: "solar-school" },
+          cause: {
+            id: "cause-2",
+            title: "Solar Power School",
+            slug: "solar-school",
+          },
         },
       ]);
 

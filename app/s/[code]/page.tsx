@@ -1,4 +1,4 @@
-import { getOriginalUrl } from "@/actions/url-actions";
+import { getOriginalUrl } from "@/actions/users/url-actions";
 import { redirect, notFound } from "next/navigation";
 
 export default async function ShortUrlRedirect({

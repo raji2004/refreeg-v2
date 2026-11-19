@@ -18,8 +18,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { LocationSelector } from "@/components/location-selector";
-import { checkUsernameAvailability } from "@/actions/profile-actions";
+import { LocationSelector } from "@/components/causes/LocationSelector";
+import { checkUsernameAvailability } from "@/actions/users/profile-actions";
 import { suggestUsername } from "@/utils/username";
 import {
   Tooltip,
@@ -572,7 +572,7 @@ export default function Step3({
             className="relative hidden flex-col items-center justify-center md:flex"
           >
             <Image
-              src="/onboardingform.svg"
+              src="/images/onboardingform.svg"
               alt="Sign up illustration"
               width={400}
               height={400}

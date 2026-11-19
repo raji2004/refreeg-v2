@@ -17,7 +17,7 @@ jest.mock("@/services/paystack", () => ({
   default: { verifyTransaction: jest.fn() },
 }));
 
-jest.mock("@/lib/paystack-charge-processing", () => ({
+jest.mock("@/lib/payments/paystack-charge-processing", () => ({
   processSuccessfulCharge: jest.fn(),
 }));
 

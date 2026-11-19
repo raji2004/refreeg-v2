@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import NavigationLoader from "@/components/NavigationLoader";
+import NavigationLoader from "@/components/layout/NavigationLoader";
 import type { KycVerification } from "@/types/kyc-types";
 
 const DiditKycForm = dynamic(() => import("./DiditKycForm"), {

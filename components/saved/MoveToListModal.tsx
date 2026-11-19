@@ -13,9 +13,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { createList, moveBookmarksToList } from "@/actions/saved-actions";
+import { createList, moveBookmarksToList } from "@/actions/users/saved-actions";
 import { toast } from "@/hooks/use-toast";
-import type { SavedListSummary } from "@/lib/saved";
+import type { SavedListSummary } from "@/lib/saved/saved";
 
 interface Props {
   open: boolean;

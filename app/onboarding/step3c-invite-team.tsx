@@ -16,8 +16,8 @@ import {
 import {
   inviteOrganizationMember,
   revokeOrganizationInvitation,
-} from "@/actions/organization-actions";
-import { toast } from "@/components/ui/use-toast";
+} from "@/actions/users/organization-actions";
+import { toast } from "@/hooks/use-toast";
 import { useValidator } from "@/hooks/use-validator";
 import { makeInviteSchema } from "@/lib/schemas/invite-team.schema";
 

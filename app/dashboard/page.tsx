@@ -13,21 +13,21 @@ import {
   getUserDonorGivingStats,
   getPlatformWeeklyDeliveredStats,
   getCauseGiftCounts,
-} from "@/actions/dashboard-actions";
-import { getProfile, hasBankDetails } from "@/actions/profile-actions";
-import { getOrganizationWorkspace } from "@/actions/organization-actions";
+} from "@/actions/users/dashboard-actions";
+import { getProfile, hasBankDetails } from "@/actions/users/profile-actions";
+import { getOrganizationWorkspace } from "@/actions/users/organization-actions";
 import {
   getMatchedCauses,
   getMatchedCausesCount,
-} from "@/actions/interest-actions";
-import { countCauses, listCauses } from "@/actions/cause-actions";
-import { OrganizationDashboard } from "@/components/organization-dashboard";
+} from "@/actions/users/interest-actions";
+import { countCauses, listCauses } from "@/actions/causes/cause-actions";
+import { OrganizationDashboard } from "@/components/causes/OrganizationDashboard";
 import { DashboardFirstDonationBanner } from "@/components/dashboard/dashboard-first-donation-banner";
 import {
   DashboardCampaignCard,
   type DashboardCause,
 } from "@/components/dashboard/dashboard-campaign-card";
-import { interestOptions } from "@/lib/interest-categories";
+import { interestOptions } from "@/lib/causes/interest-categories";
 import { DashboardGivingCard } from "@/components/dashboard/dashboard-giving-card";
 import { DashboardSetupCard } from "@/components/dashboard/dashboard-setup-card";
 import { DashboardDeliveredCard } from "@/components/dashboard/dashboard-delivered-card";

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createApiKey, revokeApiKey } from "@/actions/api-key-actions";
+import { createApiKey, revokeApiKey } from "@/actions/admin/api-key-actions";
 import { Plus, Trash2, KeyRound, AlertCircle } from "lucide-react";
 
 export default function ApiKeysManager({

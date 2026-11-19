@@ -9,15 +9,15 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ToastAction } from "@/components/ui/toast";
 import { GiveModal } from "@/components/discover/give-modal";
 import { SignModal } from "@/components/discover/sign-modal";
-import { removeBookmarks, toggleBookmark } from "@/actions/saved-actions";
+import { removeBookmarks, toggleBookmark } from "@/actions/users/saved-actions";
 import { toast } from "@/hooks/use-toast";
-import { bumpSavedCount, setSavedCount } from "@/lib/saved-count";
+import { bumpSavedCount, setSavedCount } from "@/lib/saved/saved-count";
 import {
   isClosingSoon,
   isEligible,
   type SavedItem,
   type SavedListSummary,
-} from "@/lib/saved";
+} from "@/lib/saved/saved";
 import { AlertsModal } from "./AlertsModal";
 import { ListFilterRow } from "./ListFilterRow";
 import { MoveToListModal } from "./MoveToListModal";

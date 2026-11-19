@@ -13,8 +13,8 @@ import { Separator } from "@/components/ui/separator";
 import {
   getVerificationStatus,
   updateVerificationStatus,
-} from "@/actions/kyc-actions";
-import { getProfile, updateProfile } from "@/actions/profile-actions";
+} from "@/actions/users/kyc-actions";
+import { getProfile, updateProfile } from "@/actions/users/profile-actions";
 import {
   Shield,
   User,
@@ -305,7 +305,10 @@ export default async function KycReviewPage({
                     className="block"
                   >
                     <Image
-                      src={getMediaUrl(kyc.document_url) || "/placeholder.svg"}
+                      src={
+                        getMediaUrl(kyc.document_url) ||
+                        "/icons/placeholder.svg"
+                      }
                       alt="KYC Document"
                       width={500}
                       height={300}

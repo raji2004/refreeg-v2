@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createReferralRecord } from "@/lib/referral-utils";
+import { createReferralRecord } from "@/lib/referrals/referral-utils";
 import { otpMatches } from "@/lib/auth/otp";
 import { deriveFullNameFromEmail } from "@/lib/auth/registration";
 

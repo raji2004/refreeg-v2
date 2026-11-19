@@ -35,7 +35,7 @@ import {
   isProfileComplete,
   hasCompletedOnboarding,
   getCurrentOnboardingStep,
-} from "@/actions/profile-actions";
+} from "@/actions/users/profile-actions";
 
 const mockPrisma = prisma as unknown as {
   user: { findUnique: jest.Mock; update: jest.Mock };

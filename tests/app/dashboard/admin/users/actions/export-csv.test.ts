@@ -1,11 +1,11 @@
 /**
  * @jest-environment node
  */
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   listUsersWithRoles: jest.fn(),
 }));
 
-import { listUsersWithRoles } from "@/actions/role-actions";
+import { listUsersWithRoles } from "@/actions/admin/role-actions";
 import { exportUsersToCSV } from "@/app/dashboard/admin/users/actions/export-csv";
 
 const mockListUsersWithRoles = listUsersWithRoles as jest.Mock;
@@ -43,7 +43,9 @@ describe("exportUsersToCSV", () => {
     expect(result.csv).toContain(
       "ID,Full Name,Email,Role,KYC Status,Joined Date",
     );
-    expect(result.csv).toContain("user-1,Jane Doe,jane@example.com,user,approved");
+    expect(result.csv).toContain(
+      "user-1,Jane Doe,jane@example.com,user,approved",
+    );
     expect(result.csv).not.toContain("blocked@example.com");
   });
 

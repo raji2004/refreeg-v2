@@ -2,7 +2,7 @@
 
 import type { ComponentProps } from "react";
 import { Button } from "@/components/ui/button";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { cn } from "@/lib/utils";
 
 type SettingsSaveButtonProps = Omit<

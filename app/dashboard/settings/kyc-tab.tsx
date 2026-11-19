@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { getVerificationStatus } from "@/actions/kyc-actions";
+import { getVerificationStatus } from "@/actions/users/kyc-actions";
 import {
   Shield,
   CheckCircle,
@@ -27,7 +27,7 @@ import {
 import { useRouter } from "nextjs-toploader/app";
 import type { Profile } from "@/types";
 import Image from "next/image";
-import NavigationLoader from "@/components/NavigationLoader";
+import NavigationLoader from "@/components/layout/NavigationLoader";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 
 interface KycTabProps {
@@ -397,7 +397,7 @@ export function KycTab({ profile, user }: KycTabProps) {
                       <Image
                         src={
                           getMediaUrl(kycData.document_url) ||
-                          "/placeholder.svg"
+                          "/icons/placeholder.svg"
                         }
                         alt="KYC Document"
                         width={400}
@@ -430,7 +430,8 @@ export function KycTab({ profile, user }: KycTabProps) {
                   >
                     <Image
                       src={
-                        getMediaUrl(kycData.document_url) || "/placeholder.svg"
+                        getMediaUrl(kycData.document_url) ||
+                        "/icons/placeholder.svg"
                       }
                       alt="Full size document"
                       fill

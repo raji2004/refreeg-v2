@@ -5,9 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { KycTab } from "../kyc-tab";
 import { SettingsShell } from "../components/settings-shell";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { getVerificationStatus } from "@/actions/kyc-actions";
+import { getVerificationStatus } from "@/actions/users/kyc-actions";
 import type { Profile } from "@/types";
 
 interface KycSettingsContentProps {
@@ -88,7 +88,7 @@ export function KycSettingsContent({ profile, user }: KycSettingsContentProps) {
     return (
       <SettingsShell>
         <div className="text-sm text-muted-foreground">
-          Couldn't load your profile. Refresh the page to try again.
+          Couldn&apos;t load your profile. Refresh the page to try again.
         </div>
       </SettingsShell>
     );

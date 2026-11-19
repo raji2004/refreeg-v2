@@ -30,7 +30,7 @@ export const blogs = [
     realTimeTracking: {
       title: "Real-Time Tracking",
       slug: "real-time-tracking",
-      img: "/tracking.svg",
+      img: "/images/tracking.svg",
       content: `
         At RefreeG, transparency is the core of our mission. We’ve integrated
         blockchain technology to bring you a secure, real-time tracking
@@ -66,7 +66,7 @@ export const blogs = [
   {
     title: "Easy Donation Process",
     slug: "easy-donation-process",
-    img: "/easy-donation.svg",
+    img: "/images/easy-donation.svg",
     content: `
       At RefreeG, we make donating simple, secure, and transparent. Our
       easy-to-use platform ensures that anyone can support a cause in just a
@@ -90,7 +90,7 @@ export const blogs = [
   {
     title: "Global Access",
     slug: "global-access",
-    img: "/global-access.svg",
+    img: "/images/global-access.svg",
     content: `
       At RefreeG, we believe that financial support for education should
       have no borders. Our platform is designed to connect donors and
@@ -114,7 +114,7 @@ export const blogs = [
   {
     title: "Vetted Causes",
     slug: "vetted-causes",
-    img: "/vetted.svg",
+    img: "/icons/vetted.svg",
     content: `
       At RefreeG, we prioritize trust and accountability. Every cause
       featured on our platform undergoes a rigorous vetting process to

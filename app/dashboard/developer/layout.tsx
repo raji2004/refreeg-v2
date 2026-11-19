@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getProfile } from "@/actions/profile-actions";
+import { getProfile } from "@/actions/users/profile-actions";
 import { getSessionUser } from "@/lib/auth/session-user";
 import DeveloperNav from "./DeveloperNav";
 import {

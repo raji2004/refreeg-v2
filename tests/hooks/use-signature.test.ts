@@ -1,14 +1,14 @@
-jest.mock("@/actions/signature-actions", () => ({
+jest.mock("@/actions/petitions/signature-actions", () => ({
   createSignature: jest.fn(),
 }));
 
-jest.mock("@/components/ui/use-toast", () => ({
+jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
 }));
 
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { createSignature } from "@/actions/signature-actions";
-import { toast } from "@/components/ui/use-toast";
+import { createSignature } from "@/actions/petitions/signature-actions";
+import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useSignature } from "@/hooks/use-signature";
 

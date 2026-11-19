@@ -27,15 +27,15 @@ import {
   Trash2,
   Loader2,
 } from "lucide-react";
-import { setUserRole } from "@/actions/role-actions";
+import { setUserRole } from "@/actions/admin/role-actions";
 import {
   blockUser,
   unblockUser,
   deleteUserAsAdmin,
-} from "@/actions/user-actions";
+} from "@/actions/users/user-actions";
 import { UserWithRole } from "@/types";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserActionsProps {
   user: UserWithRole;

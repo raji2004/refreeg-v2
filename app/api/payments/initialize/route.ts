@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { initializeTransaction } from "@/services/payment-provider";
 import { TransactionData } from "@/types";
-import { assertCauseAcceptingDonations } from "@/lib/proof-milestones";
+import { assertCauseAcceptingDonations } from "@/lib/causes/proof-milestones";
 import { calculateProviderFee, calculateServiceFee } from "@/lib/utils";
 
 const MIN_DONATION_AMOUNT = 100;

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { listCauses } from "@/actions";
-import { listBookmarkedIds } from "@/actions/saved-actions";
+import { listBookmarkedIds } from "@/actions/users/saved-actions";
 import { sortCausesByFunding } from "@/lib/causes/funding-rank";
 import { causePublicPath } from "@/lib/causes/slug";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";

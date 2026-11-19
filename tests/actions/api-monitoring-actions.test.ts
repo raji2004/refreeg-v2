@@ -38,7 +38,7 @@ import {
   listAdminApiCampaigns,
   getApiUsageAnalytics,
   takeDownApiCampaign,
-} from "@/actions/api-monitoring-actions";
+} from "@/actions/admin/api-monitoring-actions";
 
 const mockAuth = auth as jest.Mock;
 const mockGetUserRole = getUserRole as jest.Mock;

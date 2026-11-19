@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { FieldError } from "@/components/ui/field-error";
-import { signPetitionQuick } from "@/actions/sign-petition-actions";
+import { signPetitionQuick } from "@/actions/petitions/sign-petition-actions";
 import { useValidator } from "@/hooks/use-validator";
 import {
   petitionSignSchema,

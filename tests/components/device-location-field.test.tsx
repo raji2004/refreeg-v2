@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { DeviceLocationField } from "@/components/device-location-field";
+import { DeviceLocationField } from "@/components/causes/DeviceLocationField";
 
 describe("DeviceLocationField", () => {
   beforeEach(() => {
@@ -28,9 +28,9 @@ describe("DeviceLocationField", () => {
     const onVerified = jest.fn();
 
     render(<DeviceLocationField value="" onVerified={onVerified} />);
-    expect(screen.getByPlaceholderText(/Verify your current location/i)).toHaveAttribute(
-      "readonly",
-    );
+    expect(
+      screen.getByPlaceholderText(/Verify your current location/i),
+    ).toHaveAttribute("readonly");
     fireEvent.click(screen.getByRole("button", { name: /Use my location/i }));
 
     await waitFor(() =>

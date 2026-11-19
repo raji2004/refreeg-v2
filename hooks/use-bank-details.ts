@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { hasBankDetails } from "@/actions/profile-actions";
+import { hasBankDetails } from "@/actions/users/profile-actions";
 
 export function useBankDetails(userId: string | undefined) {
   const query = useQuery({

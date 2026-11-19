@@ -1,12 +1,12 @@
 import { notFound, redirect } from "next/navigation";
-import { getCause } from "@/actions/cause-actions";
-import { getCurrentUser } from "@/actions/auth-actions";
-import { getProfile } from "@/actions/profile-actions";
+import { getCause } from "@/actions/causes/cause-actions";
+import { getCurrentUser } from "@/actions/users/auth-actions";
+import { getProfile } from "@/actions/users/profile-actions";
 import QuickDonateForm from "./QuickDonateForm";
 import type { Metadata } from "next";
 import { causePublicPath } from "@/lib/causes/slug";
-import { CausePausedNotice } from "@/components/cause-paused-notice";
-import { isAdminOrManager } from "@/actions/role-actions";
+import { CausePausedNotice } from "@/components/causes/CausePausedNotice";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

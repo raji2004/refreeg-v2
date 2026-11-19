@@ -15,14 +15,14 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
-import { formatNairaShort } from "@/lib/discover-summary";
+import { formatNairaShort } from "@/lib/causes/discover-summary";
 import {
   daysLabel,
   exclusionReason,
   isClosingSoon,
   isEligible,
   type SavedItem,
-} from "@/lib/saved";
+} from "@/lib/saved/saved";
 
 interface Props {
   item: SavedItem;
@@ -75,7 +75,7 @@ export function SavedCard({
   const excluded = selectMode && !eligible;
   const reason = exclusionReason(item);
   const chip = chipFor(item);
-  const imageUrl = getMediaUrl(item.image) || "/placeholder.svg";
+  const imageUrl = getMediaUrl(item.image) || "/icons/placeholder.svg";
   const urgent = isClosingSoon(item);
 
   return (

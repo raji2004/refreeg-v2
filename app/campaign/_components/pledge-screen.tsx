@@ -5,7 +5,7 @@ import { motion, type Variants } from "framer-motion";
 import { HandHeart, ShieldAlert } from "lucide-react";
 import type { Cause } from "@/types";
 import { usePledgeForm } from "@/hooks/use-pledge-form";
-import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/pledge-constants";
+import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/payments/pledge-constants";
 import {
   getMaxPledgeDate,
   getMinPledgeDate,
@@ -426,7 +426,7 @@ export default function PledgeScreen({ cause, profile }: PledgeScreenProps) {
               <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-slate-100">
                 {cause.image ? (
                   <Image
-                    src={getMediaUrl(cause.image) || "/placeholder.svg"}
+                    src={getMediaUrl(cause.image) || "/icons/placeholder.svg"}
                     alt={cause.title}
                     fill
                     className="object-cover"

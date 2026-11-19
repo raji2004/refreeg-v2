@@ -1,17 +1,20 @@
-jest.mock("@/actions/petition-actions", () => ({
+jest.mock("@/actions/petitions/petition-actions", () => ({
   createPetition: jest.fn(),
   updatePetition: jest.fn(),
 }));
 
-jest.mock("@/components/ui/use-toast", () => ({
+jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
 }));
 
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { createPetition, updatePetition } from "@/actions/petition-actions";
-import { toast } from "@/components/ui/use-toast";
+import {
+  createPetition,
+  updatePetition,
+} from "@/actions/petitions/petition-actions";
+import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { usePetition } from "@/hooks/use-petition";
 
@@ -83,11 +86,9 @@ describe("usePetition", () => {
       });
     });
 
-    expect(mockUpdatePetition).toHaveBeenCalledWith(
-      "petition-1",
-      "user-1",
-      { title: "Updated title" },
-    );
+    expect(mockUpdatePetition).toHaveBeenCalledWith("petition-1", "user-1", {
+      title: "Updated title",
+    });
     expect(mockToast).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Petition updated successfully" }),
     );

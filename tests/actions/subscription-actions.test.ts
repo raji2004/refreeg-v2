@@ -12,7 +12,7 @@ import { prisma } from "@/lib/prisma";
 import {
   createSubscription,
   updateSubscriptionStatus,
-} from "@/actions/subscription-actions";
+} from "@/actions/donations/subscription-actions";
 
 const mockPrisma = prisma as unknown as {
   subscriptions: {
@@ -58,9 +58,7 @@ describe("subscription-actions", () => {
     });
 
     it("throws when prisma create fails", async () => {
-      mockPrisma.subscriptions.create.mockRejectedValue(
-        new Error("db error"),
-      );
+      mockPrisma.subscriptions.create.mockRejectedValue(new Error("db error"));
 
       await expect(
         createSubscription({

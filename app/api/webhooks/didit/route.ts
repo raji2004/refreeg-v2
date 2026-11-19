@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { issueReferralRewardOnKycApproval } from "@/actions/kyc-actions";
+import { issueReferralRewardOnKycApproval } from "@/actions/users/kyc-actions";
 import {
   sendKycSubmittedEmail,
   sendKycApprovedEmail,

@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
         if (String(meta.pledge_flow) === "authorization") {
           const { processPledgeAuthorizationSuccess } =
-            await import("@/lib/pledge-provider");
+            await import("@/lib/payments/pledge-provider");
           await processPledgeAuthorizationSuccess(txRef, "flutterwave");
           return new NextResponse(
             JSON.stringify({ message: "Pledge authorization stored" }),
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
         if (String(meta.pledge_flow) === "scheduled_charge") {
           const { processPledgeScheduledChargeSuccess } =
-            await import("@/lib/pledge-provider");
+            await import("@/lib/payments/pledge-provider");
           await processPledgeScheduledChargeSuccess(txRef, "flutterwave");
           return new NextResponse(
             JSON.stringify({ message: "Pledge charge processed" }),

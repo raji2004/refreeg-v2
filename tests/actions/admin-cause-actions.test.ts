@@ -5,7 +5,7 @@ jest.mock("@/lib/auth/auth", () => ({
   auth: jest.fn(),
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   isAdminOrManager: jest.fn(),
 }));
 
@@ -32,14 +32,14 @@ jest.mock("@/services/mail", () => ({
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth/auth";
-import { isAdminOrManager } from "@/actions/role-actions";
+import { isAdminOrManager } from "@/actions/admin/role-actions";
 import { prisma } from "@/lib/prisma";
 import { sendCauseRejectedEmailForUser } from "@/services/mail";
 import {
   listAdminCauses,
   getCauseEdits,
   updateCauseStatus,
-} from "@/actions/admin-cause-actions";
+} from "@/actions/admin/admin-cause-actions";
 
 const mockAuth = auth as jest.Mock;
 const mockPrisma = prisma as unknown as {
@@ -189,7 +189,8 @@ describe("admin-cause-actions", () => {
       expect(sendCauseRejectedEmailForUser).toHaveBeenCalledWith("user-1", {
         causeName: "Help School",
         rejectionReason: "Incomplete docs",
-        dashboardUrl: "https://www.refreeg.com/dashboard/causes?status=rejected",
+        dashboardUrl:
+          "https://www.refreeg.com/dashboard/causes?status=rejected",
       });
     });
   });

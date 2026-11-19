@@ -19,7 +19,7 @@ import { Shield, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
-import { getUserRole } from "@/actions/role-actions";
+import { getUserRole } from "@/actions/admin/role-actions";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 

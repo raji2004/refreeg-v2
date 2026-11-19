@@ -1,4 +1,4 @@
-import { getPendingProofUpdatesForAdmin } from "@/actions/proof-update-actions";
+import { getPendingProofUpdatesForAdmin } from "@/actions/causes/proof-update-actions";
 import ProofUpdatesClient from "./proof-updates-client";
 
 export const metadata = { title: "Proof Updates | RefreeG Admin" };

@@ -1,6 +1,6 @@
 "use server";
 
-import { listUsersWithRoles } from "@/actions/role-actions";
+import { listUsersWithRoles } from "@/actions/admin/role-actions";
 import type { UserWithRole } from "@/types";
 
 export async function exportUsersToCSV(): Promise<{

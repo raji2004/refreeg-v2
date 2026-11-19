@@ -4,7 +4,7 @@ import {
   assertInternalApiKey,
   isOwnAppUrl,
   isValidEmail,
-} from "@/lib/internal-api";
+} from "@/lib/api/internal-api";
 
 const MAX_RECIPIENTS = 500;
 

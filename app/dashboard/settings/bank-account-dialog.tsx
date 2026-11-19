@@ -26,10 +26,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import { useBank } from "@/hooks/use-bank";
 import { sendBankAccountAddedEmail } from "@/services/mail";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
   dialogClass,

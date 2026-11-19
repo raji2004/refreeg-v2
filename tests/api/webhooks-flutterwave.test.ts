@@ -27,7 +27,7 @@ jest.mock("@/services/flutterwave", () => ({
   verifyByReferenceFull: jest.fn(),
 }));
 
-jest.mock("@/lib/pledge-provider", () => ({
+jest.mock("@/lib/payments/pledge-provider", () => ({
   processPledgeAuthorizationSuccess: jest.fn(),
   processPledgeScheduledChargeSuccess: jest.fn(),
 }));

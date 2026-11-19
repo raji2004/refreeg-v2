@@ -11,8 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { clearBankDetails } from "@/actions/profile-actions";
-import { useToast } from "@/components/ui/use-toast";
+import { clearBankDetails } from "@/actions/users/profile-actions";
+import { useToast } from "@/hooks/use-toast";
 import { BankAccountDialog } from "./bank-account-dialog";
 import {
   emptyAccount,

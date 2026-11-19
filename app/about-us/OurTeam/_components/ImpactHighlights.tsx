@@ -19,7 +19,7 @@ type Item = {
 
 const defaultItems: Item[] = [
   {
-    icon: "/money.svg",
+    icon: "/images/money.svg",
     text: "$1M+ raised across causes within the first months of launch.",
   },
   {

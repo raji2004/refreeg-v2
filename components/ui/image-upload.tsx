@@ -5,7 +5,7 @@ import { useCallback } from "react";
 import Image from "next/image";
 import { useDropzone } from "react-dropzone";
 import { Button } from "./button";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/layout/Icons";
 import {
   Dialog,
   DialogContent,

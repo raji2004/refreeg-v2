@@ -21,7 +21,7 @@ import { CampaignHealthCard } from "./ui/campaign-health-card";
 import { StorySections, CollapsibleStoryText } from "./ui/story-sections";
 
 const MultimediaCarousel = dynamic(
-  () => import("@/components/MultimediaCarousel"),
+  () => import("@/components/marketing/MultimediaCarousel"),
   {
     loading: () => <Skeleton className="h-64 w-full rounded-xl" />,
   },

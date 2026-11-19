@@ -5,7 +5,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import Numbers from "@/components/numbers";
+import Numbers from "@/components/marketing/Numbers";
 
 export default function Hero() {
   return (
@@ -59,7 +59,7 @@ export default function Hero() {
           transition={{ duration: 0.8 }}
           whileHover={{ scale: 1.05 }}
         >
-          <Link href="/causes/create">
+          <Link href="/dashboard/causes/create">
             <Button className="bg-secondary hover:bg-[#a72f3b] text-white px-12 py-3 rounded-sm flex items-center justify-center mx-auto transition-all duration-300">
               Start a Cause Now
               <Image

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { PaymentProviderType } from "@/types";
 import Flutterwave from "@/services/flutterwave";
 import Paystack from "@/services/paystack";
-import { processSuccessfulCharge } from "@/lib/paystack-charge-processing";
+import { processSuccessfulCharge } from "@/lib/payments/paystack-charge-processing";
 
 export async function POST(request: NextRequest) {
   try {

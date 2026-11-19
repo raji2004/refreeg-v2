@@ -2,7 +2,7 @@
 
 import { MoveRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatNairaShort } from "@/lib/discover-summary";
+import { formatNairaShort } from "@/lib/causes/discover-summary";
 
 interface Props {
   count: number;

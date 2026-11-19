@@ -5,7 +5,7 @@ import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { usePledgeForm } from "@/hooks/use-pledge-form";
-import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/pledge-constants";
+import { PLEDGE_VERIFICATION_AMOUNT_NGN } from "@/lib/payments/pledge-constants";
 import {
   getMaxPledgeDate,
   getMinPledgeDate,

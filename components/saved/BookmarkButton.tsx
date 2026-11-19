@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toggleBookmark } from "@/actions/saved-actions";
+import { toggleBookmark } from "@/actions/users/saved-actions";
 import { toast } from "@/hooks/use-toast";
-import { bumpSavedCount, setSavedCount } from "@/lib/saved-count";
-import { useAuthContext } from "@/components/auth-provider";
+import { bumpSavedCount, setSavedCount } from "@/lib/saved/saved-count";
+import { useAuthContext } from "@/components/layout/AuthProvider";
 import {
   Tooltip,
   TooltipContent,

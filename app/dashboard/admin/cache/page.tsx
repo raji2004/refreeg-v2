@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { clearSiteCache } from "@/actions/admin-cache-actions";
+import { clearSiteCache } from "@/actions/admin/admin-cache-actions";
 import { RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 

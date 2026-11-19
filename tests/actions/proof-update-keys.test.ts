@@ -5,7 +5,7 @@ jest.mock("@/lib/auth/auth", () => ({
   auth: jest.fn(),
 }));
 
-jest.mock("@/actions/role-actions", () => ({
+jest.mock("@/actions/admin/role-actions", () => ({
   isAdminOrManager: jest.fn(),
 }));
 
@@ -22,7 +22,7 @@ jest.mock("next/cache", () => ({
 
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
-import { submitProofUpdate } from "@/actions/proof-update-actions";
+import { submitProofUpdate } from "@/actions/causes/proof-update-actions";
 
 const form = (media: string) => {
   const fd = new FormData();

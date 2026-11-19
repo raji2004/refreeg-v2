@@ -1,4 +1,4 @@
-import { updateOrganizationLogo } from "@/actions/organization-actions";
+import { updateOrganizationLogo } from "@/actions/users/organization-actions";
 import { uploadFileWithPresign } from "@/lib/s3/upload-client";
 
 const LOGO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
