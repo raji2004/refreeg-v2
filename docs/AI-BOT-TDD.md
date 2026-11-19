@@ -1,4 +1,4 @@
-# RefreeG Crowdfunding Infrastructure API — Technical Design Document (TDD)
+# RefreeG Crowdfunding Infrastructure API: Technical Design Document (TDD)
 
 > **Version:** 1.0
 > **Date:** March 24, 2026
@@ -25,45 +25,45 @@
 
 ## 1. Overview
 
-RefreeG is a **Crowdfunding-as-a-Service (CaaS)** platform. This TDD defines the public REST API that enables external developers to integrate crowdfunding features into their own applications — similar to how Paystack exposes payment APIs.
+RefreeG is a **Crowdfunding-as-a-Service (CaaS)** platform. This TDD defines the public REST API that enables external developers to integrate crowdfunding features into their own applications: similar to how Paystack exposes payment APIs.
 
-### Design Philosophy — Open & Frictionless
+### Design Philosophy: Open & Frictionless
 
 > [!IMPORTANT]
 > **The RefreeG API is fundamentally different from the RefreeG platform website.**
 >
 > On the platform itself, campaigns require KYC verification, admin approval, and identity checks.
-> **The API does NOT enforce any of these rules.** Campaigns created via API go **live immediately** — no pending state, no admin review, no KYC gate.
+> **The API does NOT enforce any of these rules.** Campaigns created via API go **live immediately**: no pending state, no admin review, no KYC gate.
 >
 > Developers using the API have **full freedom** to add their own validation, moderation, and trust mechanisms on their side. RefreeG simply provides the crowdfunding infrastructure: campaign storage, payment processing, and payout distribution.
 >
-> Think of it like **Paystack** — Paystack doesn't verify what you're selling. It just processes payments. RefreeG doesn't gatekeep campaigns. It just enables crowdfunding.
+> Think of it like **Paystack**: Paystack doesn't verify what you're selling. It just processes payments. RefreeG doesn't gatekeep campaigns. It just enables crowdfunding.
 
 ### Key Business Rules
 
-| Rule | Detail |
-|---|---|
-| **No end-user auth** | RefreeG does NOT authenticate the end-user/donor. Developers handle auth on their platform. The API only authenticates the *developer* via API key. |
+| Rule                       | Detail                                                                                                                                                |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **No end-user auth**       | RefreeG does NOT authenticate the end-user/donor. Developers handle auth on their platform. The API only authenticates the _developer_ via API key.   |
 | **Campaigns are isolated** | API campaigns do **NOT** appear on the refreeg.com website. They live only on the developer's platform. RefreeG can view them in the admin dashboard. |
-| **Developers are admins** | Developers have full control over their campaigns — create, update, pause, cancel. No RefreeG admin approval needed. |
-| **Platform fee** | Fixed **2% fee** on every donation, deducted automatically via Paystack split payment. Non-negotiable. |
-| **Payout options** | Developers choose: **immediate** (funds go straight to beneficiary) or **after campaign deadline**. Configurable per campaign. |
-| **Email receipts** | RefreeG sends **payment receipts** to donors automatically after successful donation. This is mandatory. |
-| **No other notifications** | RefreeG does NOT send campaign updates or marketing emails. Devs add their own SMTP provider. We provide a blueprint. |
-| **Campaign reporting** | Users can report campaigns. Reports go to RefreeG. If investigated and confirmed, RefreeG can take the campaign down. |
-| **Anonymous donations** | Allowed. Donor can choose to be anonymous. Messages on donations are also supported. |
-| **Campaign deadlines** | Campaigns can have deadlines. They may auto-complete when the deadline passes or when the goal is reached. |
+| **Developers are admins**  | Developers have full control over their campaigns: create, update, pause, cancel. No RefreeG admin approval needed.                                   |
+| **Platform fee**           | Fixed **2% fee** on every donation, deducted automatically via Paystack split payment. Non-negotiable.                                                |
+| **Payout options**         | Developers choose: **immediate** (funds go straight to beneficiary) or **after campaign deadline**. Configurable per campaign.                        |
+| **Email receipts**         | RefreeG sends **payment receipts** to donors automatically after successful donation. This is mandatory.                                              |
+| **No other notifications** | RefreeG does NOT send campaign updates or marketing emails. Devs add their own SMTP provider. We provide a blueprint.                                 |
+| **Campaign reporting**     | Users can report campaigns. Reports go to RefreeG. If investigated and confirmed, RefreeG can take the campaign down.                                 |
+| **Anonymous donations**    | Allowed. Donor can choose to be anonymous. Messages on donations are also supported.                                                                  |
+| **Campaign deadlines**     | Campaigns can have deadlines. They may auto-complete when the deadline passes or when the goal is reached.                                            |
 
 ### Core Capabilities Exposed via API
 
-| Capability | Description |
-|---|---|
-| **Campaign Management** | Create, read, update, pause, cancel campaigns |
-| **Donation Processing** | Initiate donations, verify payments, send receipts |
+| Capability                | Description                                                              |
+| ------------------------- | ------------------------------------------------------------------------ |
+| **Campaign Management**   | Create, read, update, pause, cancel campaigns                            |
+| **Donation Processing**   | Initiate donations, verify payments, send receipts                       |
 | **Payout Infrastructure** | Fund distribution via Paystack sub-accounts (immediate or post-deadline) |
-| **Campaign Reporting** | Report suspicious campaigns to RefreeG for review |
-| **Campaign Validation** | Validate AI-generated campaign data against schema (optional) |
-| **Webhooks** | Real-time event notifications to developer platforms |
+| **Campaign Reporting**    | Report suspicious campaigns to RefreeG for review                        |
+| **Campaign Validation**   | Validate AI-generated campaign data against schema (optional)            |
+| **Webhooks**              | Real-time event notifications to developer platforms                     |
 
 ---
 
@@ -131,10 +131,10 @@ CREATE TABLE api_keys (
 
 ### 3.2 Key Format
 
-| Environment | Format | Example |
-|---|---|---|
-| Test | `rg_test_` + 40 random chars | `rg_test_sk_a1b2c3d4e5f6g7h8i9j0...` |
-| Live | `rg_live_` + 40 random chars | `rg_live_sk_z9y8x7w6v5u4t3s2r1q0...` |
+| Environment | Format                       | Example                              |
+| ----------- | ---------------------------- | ------------------------------------ |
+| Test        | `rg_test_` + 40 random chars | `rg_test_sk_a1b2c3d4e5f6g7h8i9j0...` |
+| Live        | `rg_live_` + 40 random chars | `rg_live_sk_z9y8x7w6v5u4t3s2r1q0...` |
 
 ### 3.3 Authentication Header
 
@@ -165,34 +165,39 @@ Authorization: Bearer rg_live_sk_a1b2c3d4e5f6g7h8i9...
 ```typescript
 // Full Campaign object (what the API returns)
 interface Campaign {
-  id: string;                  // UUID, auto-generated
-  api_key_id: string;          // UUID — which developer owns this campaign
-  title: string;               // Required
-  description: string;         // Required
-  category: string;            // Required — see Category Enum below
-  goal: number;                // Required — fundraising target amount
-  raised: number;              // Read-only, auto-calculated from donations
+  id: string; // UUID, auto-generated
+  api_key_id: string; // UUID: which developer owns this campaign
+  title: string; // Required
+  description: string; // Required
+  category: string; // Required: see Category Enum below
+  goal: number; // Required: fundraising target amount
+  raised: number; // Read-only, auto-calculated from donations
   status: "active" | "completed" | "paused" | "cancelled"; // See note below
   payout_mode: "immediate" | "after_deadline"; // When funds are released
-  currency: string;            // "NGN" (default)
-  deadline: string | null;     // ISO date — campaign end date (optional)
-  created_at: string;          // ISO timestamp, auto-set
-  updated_at: string;          // ISO timestamp, auto-set
-  image: string | null;        // Cover image URL
-  multimedia: string[];        // Additional image/video URLs
-  video_links: string[];       // External video URLs (YouTube, etc.)
-  sections: {                  // Structured story sections
+  currency: string; // "NGN" (default)
+  deadline: string | null; // ISO date: campaign end date (optional)
+  created_at: string; // ISO timestamp, auto-set
+  updated_at: string; // ISO timestamp, auto-set
+  image: string | null; // Cover image URL
+  multimedia: string[]; // Additional image/video URLs
+  video_links: string[]; // External video URLs (YouTube, etc.)
+  sections: {
+    // Structured story sections
     heading: string;
     description: string;
   }[];
-  summary: string | null;      // Short description
-  location: string | null;     // Campaign location
-  faqs: {                      // Optional FAQ section
-    question: string;
-    answer: string;
-  }[] | null;
-  source: "api";               // Always "api" — distinguishes from platform campaigns
-  bank_account: {              // Beneficiary bank details for payouts
+  summary: string | null; // Short description
+  location: string | null; // Campaign location
+  faqs:
+    | {
+        // Optional FAQ section
+        question: string;
+        answer: string;
+      }[]
+    | null;
+  source: "api"; // Always "api": distinguishes from platform campaigns
+  bank_account: {
+    // Beneficiary bank details for payouts
     account_number: string;
     bank_code: string;
     account_name: string;
@@ -209,16 +214,16 @@ interface Campaign {
 
 **Category Enum (from `lib/categories.ts`):**
 
-| ID | Display Name |
-|---|---|
-| `education` | Education |
-| `health` | Healthcare |
-| `environment` | Environment |
-| `community` | Community |
-| `disaster` | Disaster Relief |
-| `animals` | Animal Welfare |
-| `creative` | Creative |
-| `business` | Business |
+| ID            | Display Name    |
+| ------------- | --------------- |
+| `education`   | Education       |
+| `health`      | Healthcare      |
+| `environment` | Environment     |
+| `community`   | Community       |
+| `disaster`    | Disaster Relief |
+| `animals`     | Animal Welfare  |
+| `creative`    | Creative        |
+| `business`    | Business        |
 
 ### 4.2 Campaign Create Payload (Developer-Submitted)
 
@@ -227,39 +232,44 @@ interface Campaign {
 ```typescript
 // What developers send to POST /api/v1/campaigns
 interface CampaignCreatePayload {
-  title: string;               // Required
-  description?: string;        // Optional (can be generated later)
-  category: string;            // Required — must be a valid category ID
-  goal: number;                // Required — positive number
-  currency?: string;           // Optional (defaults to "NGN")
+  title: string; // Required
+  description?: string; // Optional (can be generated later)
+  category: string; // Required: must be a valid category ID
+  goal: number; // Required: positive number
+  currency?: string; // Optional (defaults to "NGN")
   payout_mode?: "immediate" | "after_deadline"; // Optional (defaults to "after_deadline")
-  deadline?: string;           // Optional — ISO date for campaign end
-  summary?: string;            // Optional — short description
-  location?: string;           // Optional — campaign location
-  sections?: {                 // Optional — structured story sections
+  deadline?: string; // Optional: ISO date for campaign end
+  summary?: string; // Optional: short description
+  location?: string; // Optional: campaign location
+  sections?: {
+    // Optional: structured story sections
     heading: string;
     description: string;
   }[];
-  multimedia?: string[];       // Optional — pre-uploaded media URLs
-  video_links?: string[];      // Optional — external video links
-  cover_image_url?: string;    // Optional — URL to cover image
-  faqs?: {                     // Optional — campaign FAQs
+  multimedia?: string[]; // Optional: pre-uploaded media URLs
+  video_links?: string[]; // Optional: external video links
+  cover_image_url?: string; // Optional: URL to cover image
+  faqs?: {
+    // Optional: campaign FAQs
     question: string;
     answer: string;
   }[];
-  bank_account: {              // Required — beneficiary bank details (developer-verified)
-    account_number: string;    // 10-digit NUBAN account number
-    bank_code: string;         // Paystack bank code (developer provides this)
-    account_name: string;      // Account holder name
+  bank_account: {
+    // Required: beneficiary bank details (developer-verified)
+    account_number: string; // 10-digit NUBAN account number
+    bank_code: string; // Paystack bank code (developer provides this)
+    account_name: string; // Account holder name
   };
 }
 ```
 
 **Payout Modes:**
-- `"immediate"` — Donations go directly to the beneficiary's bank account after each successful payment (minus 2% platform fee)
-- `"after_deadline"` — Funds are held until the campaign deadline passes, then released in one payout (minus 2% platform fee)
+
+- `"immediate"`: Donations go directly to the beneficiary's bank account after each successful payment (minus 2% platform fee)
+- `"after_deadline"`: Funds are held until the campaign deadline passes, then released in one payout (minus 2% platform fee)
 
 **Fields NOT accepted (managed internally):**
+
 - `id`, `api_key_id`, `raised`, `status`, `source`
 - `created_at`, `updated_at`
 
@@ -270,18 +280,18 @@ interface CampaignCreatePayload {
 ```typescript
 // Full Donation object (what the API returns)
 interface Donation {
-  id: string;                  // UUID, auto-generated
-  cause_id: string;            // UUID — the campaign receiving the donation
-  user_id: string | null;      // UUID, nullable (anonymous guest donors)
-  amount: number;              // Donation amount (NOTE: PRD called this "donation_amount")
-  name: string;                // Donor name (NOTE: PRD called this "donor_name")
-  email: string;               // Donor email (NOTE: PRD called this "donor_email")
-  message: string | null;      // Optional donor message (MISSING from PRD)
-  is_anonymous: boolean;       // Whether donor is anonymous (MISSING from PRD)
+  id: string; // UUID, auto-generated
+  cause_id: string; // UUID: the campaign receiving the donation
+  user_id: string | null; // UUID, nullable (anonymous guest donors)
+  amount: number; // Donation amount (NOTE: PRD called this "donation_amount")
+  name: string; // Donor name (NOTE: PRD called this "donor_name")
+  email: string; // Donor email (NOTE: PRD called this "donor_email")
+  message: string | null; // Optional donor message (MISSING from PRD)
+  is_anonymous: boolean; // Whether donor is anonymous (MISSING from PRD)
   status: "pending" | "completed" | "failed"; // Payment status
-  receipt_url: string | null;  // Payment receipt URL
-  tip_amount: number;          // Platform tip from donor (MISSING from PRD)
-  created_at: string;          // ISO timestamp
+  receipt_url: string | null; // Payment receipt URL
+  tip_amount: number; // Platform tip from donor (MISSING from PRD)
+  created_at: string; // ISO timestamp
 }
 ```
 
@@ -292,18 +302,19 @@ interface Donation {
 ```typescript
 // What developers send to POST /api/v1/donations
 interface DonationCreatePayload {
-  campaign_id: string;         // Required — UUID of the target campaign
-  amount: number;              // Required — donation amount
-  name: string;                // Required — donor display name
-  email: string;               // Required — donor email
-  message?: string;            // Optional — donor message
-  is_anonymous?: boolean;      // Optional — defaults to false
-  tip_amount?: number;         // Optional — platform tip, defaults to 0
-  callback_url?: string;       // Optional — redirect after payment
+  campaign_id: string; // Required: UUID of the target campaign
+  amount: number; // Required: donation amount
+  name: string; // Required: donor display name
+  email: string; // Required: donor email
+  message?: string; // Optional: donor message
+  is_anonymous?: boolean; // Optional: defaults to false
+  tip_amount?: number; // Optional: platform tip, defaults to 0
+  callback_url?: string; // Optional: redirect after payment
 }
 ```
 
 **Fields NOT accepted (managed internally):**
+
 - `id`, `user_id`, `status`, `receipt_url`, `created_at`
 
 ### 4.5 Paystack Transaction Data
@@ -315,17 +326,18 @@ interface DonationCreatePayload {
 interface TransactionData {
   email: string;
   full_name: string;
-  id: string;                  // User ID
-  amount: number;              // Donation amount
-  serviceFee: number;          // Platform fee
-  tipAmount?: number;          // Optional donor tip
-  causeId: string;             // Campaign UUID
+  id: string; // User ID
+  amount: number; // Donation amount
+  serviceFee: number; // Platform fee
+  tipAmount?: number; // Optional donor tip
+  causeId: string; // Campaign UUID
   message: string;
   isAnonymous: boolean;
-  plan?: string;               // For recurring donations
-  subaccounts: {               // Paystack split-payment sub-accounts
-    subaccount: string;        // Sub-account code
-    share: number;             // Share percentage
+  plan?: string; // For recurring donations
+  subaccounts: {
+    // Paystack split-payment sub-accounts
+    subaccount: string; // Sub-account code
+    share: number; // Share percentage
   }[];
 }
 ```
@@ -347,34 +359,35 @@ interface Profile {
   account_number: string | null;
   bank_name: string | null;
   account_name: string | null;
-  sub_account_code: string | null;  // Paystack sub-account for payouts
+  sub_account_code: string | null; // Paystack sub-account for payouts
   profile_photo: string | null;
   is_blocked: boolean;
-  account_type?: "individual" | "creator" | "non-profit" | "organization" | "community";
+  account_type?:
+    "individual" | "creator" | "non-profit" | "organization" | "community";
   bio: string | null;
   is_verified?: boolean;
   // ... additional fields
 }
 ```
 
-### 4.7 API vs Platform — Key Differences
+### 4.7 API vs Platform: Key Differences
 
 > [!IMPORTANT]
 > The schemas above reflect the **API context**, which is different from the platform.
 
-| Aspect | RefreeG Platform | RefreeG API |
-|---|---|---|
-| **End-User Auth** | Users sign up, verify email | **No auth.** Dev handles auth on their side |
-| **KYC** | Required before creating campaigns | Not required |
-| **Admin Approval** | Campaigns start as "pending" | Campaigns go **"active" immediately** |
-| **Campaign Visibility** | Visible on refreeg.com | **NEVER visible on refreeg.com** |
-| **Campaign Moderation** | RefreeG team moderates | Developer's responsibility |
-| **Notifications** | RefreeG sends campaign updates, milestones | **Only payment receipts.** Dev handles the rest |
-| **Payouts** | After admin approval | Developer chooses: **immediate** or **after deadline** |
-| **Platform Fee** | 2% (via Paystack split) | Same — **2% fixed** |
-| **Reporting** | Users report on platform | Users can report via API → RefreeG reviews |
+| Aspect                  | RefreeG Platform                           | RefreeG API                                            |
+| ----------------------- | ------------------------------------------ | ------------------------------------------------------ |
+| **End-User Auth**       | Users sign up, verify email                | **No auth.** Dev handles auth on their side            |
+| **KYC**                 | Required before creating campaigns         | Not required                                           |
+| **Admin Approval**      | Campaigns start as "pending"               | Campaigns go **"active" immediately**                  |
+| **Campaign Visibility** | Visible on refreeg.com                     | **NEVER visible on refreeg.com**                       |
+| **Campaign Moderation** | RefreeG team moderates                     | Developer's responsibility                             |
+| **Notifications**       | RefreeG sends campaign updates, milestones | **Only payment receipts.** Dev handles the rest        |
+| **Payouts**             | After admin approval                       | Developer chooses: **immediate** or **after deadline** |
+| **Platform Fee**        | 2% (via Paystack split)                    | Same: **2% fixed**                                     |
+| **Reporting**           | Users report on platform                   | Users can report via API → RefreeG reviews             |
 
-The API stores campaigns in a separate `api_campaigns` table (NOT the `causes` table). This ensures complete isolation — API campaigns never appear on the main site. RefreeG admins can monitor API campaigns through the admin dashboard.
+The API stores campaigns in a separate `api_campaigns` table (NOT the `causes` table). This ensures complete isolation: API campaigns never appear on the main site. RefreeG admins can monitor API campaigns through the admin dashboard.
 
 ### 4.8 Platform Fee Structure
 
@@ -392,27 +405,27 @@ The fee is non-negotiable and automatically deducted. Developers do not need to 
 
 ```typescript
 interface WebhookEvent {
-  id: string;                          // Event UUID
-  event_type: string;                  // e.g. "campaign.created", "donation.completed"
-  api_key_id: string;                  // Which API key owns this event
-  data: Record<string, any>;           // Event payload
-  created_at: string;                  // ISO timestamp
+  id: string; // Event UUID
+  event_type: string; // e.g. "campaign.created", "donation.completed"
+  api_key_id: string; // Which API key owns this event
+  data: Record<string, any>; // Event payload
+  created_at: string; // ISO timestamp
 }
 
 // Events that trigger webhooks:
 type WebhookEventType =
-  | "campaign.created"                 // Campaign was created (immediately active)
-  | "campaign.updated"                 // Campaign details were updated
-  | "campaign.completed"               // Campaign reached its goal or deadline passed
-  | "campaign.paused"                  // Campaign was paused by developer
-  | "campaign.cancelled"               // Campaign was cancelled
-  | "campaign.reported"                // Campaign was reported (sent to RefreeG admin)
-  | "campaign.taken_down"              // Campaign was taken down by RefreeG after investigation
-  | "donation.initiated"               // Donation payment started
-  | "donation.completed"               // Donation payment confirmed + receipt sent
-  | "donation.failed"                  // Donation payment failed
-  | "payout.processed"                 // Payout sent to beneficiary
-  | "payout.failed";                   // Payout failed
+  | "campaign.created" // Campaign was created (immediately active)
+  | "campaign.updated" // Campaign details were updated
+  | "campaign.completed" // Campaign reached its goal or deadline passed
+  | "campaign.paused" // Campaign was paused by developer
+  | "campaign.cancelled" // Campaign was cancelled
+  | "campaign.reported" // Campaign was reported (sent to RefreeG admin)
+  | "campaign.taken_down" // Campaign was taken down by RefreeG after investigation
+  | "donation.initiated" // Donation payment started
+  | "donation.completed" // Donation payment confirmed + receipt sent
+  | "donation.failed" // Donation payment failed
+  | "payout.processed" // Payout sent to beneficiary
+  | "payout.failed"; // Payout failed
 ```
 
 ---
@@ -428,26 +441,27 @@ Test:        https://sandbox.refreeg.com/api/v1
 
 ### 5.2 Campaign Endpoints
 
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `POST` | `/campaigns` | Create a new campaign (goes live immediately) | API Key |
-| `GET` | `/campaigns` | List campaigns (with filters) | API Key |
-| `GET` | `/campaigns/:id` | Get campaign details + progress | API Key |
-| `PATCH` | `/campaigns/:id` | Update a campaign | API Key |
-| `DELETE` | `/campaigns/:id` | Cancel/delete a campaign | API Key |
-| `POST` | `/campaigns/:id/pause` | Pause a campaign | API Key |
-| `POST` | `/campaigns/:id/resume` | Resume a paused campaign | API Key |
-| `GET` | `/campaigns/:id/donations` | List donations for a campaign | API Key |
-| `GET` | `/campaigns/categories` | List valid categories | API Key |
-| `POST` | `/campaigns/validate` | Validate campaign data (for AI output) | API Key |
-| `POST` | `/campaigns/:id/reports` | Report a campaign to RefreeG | API Key |
+| Method   | Endpoint                   | Description                                   | Auth    |
+| -------- | -------------------------- | --------------------------------------------- | ------- |
+| `POST`   | `/campaigns`               | Create a new campaign (goes live immediately) | API Key |
+| `GET`    | `/campaigns`               | List campaigns (with filters)                 | API Key |
+| `GET`    | `/campaigns/:id`           | Get campaign details + progress               | API Key |
+| `PATCH`  | `/campaigns/:id`           | Update a campaign                             | API Key |
+| `DELETE` | `/campaigns/:id`           | Cancel/delete a campaign                      | API Key |
+| `POST`   | `/campaigns/:id/pause`     | Pause a campaign                              | API Key |
+| `POST`   | `/campaigns/:id/resume`    | Resume a paused campaign                      | API Key |
+| `GET`    | `/campaigns/:id/donations` | List donations for a campaign                 | API Key |
+| `GET`    | `/campaigns/categories`    | List valid categories                         | API Key |
+| `POST`   | `/campaigns/validate`      | Validate campaign data (for AI output)        | API Key |
+| `POST`   | `/campaigns/:id/reports`   | Report a campaign to RefreeG                  | API Key |
 
 > [!NOTE]
 > **No `/banks` endpoint.** Developers are responsible for verifying bank account details on their side before submitting to the API. The `bank_account` fields are validated via Zod schemas (account_number must be 10 digits, bank_code and account_name are required strings).
 
-#### POST /campaigns — Create Campaign
+#### POST /campaigns: Create Campaign
 
 **Request:**
+
 ```json
 {
   "title": "Help My Mother's Surgery",
@@ -479,6 +493,7 @@ Test:        https://sandbox.refreeg.com/api/v1
 ```
 
 **Response (201):**
+
 ```json
 {
   "status": "success",
@@ -500,9 +515,10 @@ Test:        https://sandbox.refreeg.com/api/v1
 > Campaign is **immediately active** and can start receiving donations. No approval queue.
 > Bank account is verified via Paystack during creation.
 
-#### POST /campaigns/:id/reports — Report a Campaign
+#### POST /campaigns/:id/reports: Report a Campaign
 
 **Request:**
+
 ```json
 {
   "reason": "fraud",
@@ -511,6 +527,7 @@ Test:        https://sandbox.refreeg.com/api/v1
 ```
 
 **Response (200):**
+
 ```json
 {
   "status": "success",
@@ -523,28 +540,29 @@ Test:        https://sandbox.refreeg.com/api/v1
 
 > Reports are sent to RefreeG's admin dashboard for investigation. If confirmed, RefreeG can take the campaign down.
 
-#### GET /campaigns — List Campaigns
+#### GET /campaigns: List Campaigns
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|---|---|---|
-| `category` | string | Filter by category ID |
-| `status` | string | Filter by status (`active`, `completed`, `paused`, `cancelled`) |
-| `limit` | number | Max results (default: 10, max: 100) |
-| `offset` | number | Pagination offset |
+| Parameter  | Type   | Description                                                     |
+| ---------- | ------ | --------------------------------------------------------------- |
+| `category` | string | Filter by category ID                                           |
+| `status`   | string | Filter by status (`active`, `completed`, `paused`, `cancelled`) |
+| `limit`    | number | Max results (default: 10, max: 100)                             |
+| `offset`   | number | Pagination offset                                               |
 
 ### 5.3 Donation Endpoints
 
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `POST` | `/donations/initialize` | Initiate a donation (returns Paystack payment URL) | API Key |
-| `GET` | `/donations/verify/:reference` | Verify a donation payment | API Key |
-| `GET` | `/donations/:id` | Get donation details | API Key |
+| Method | Endpoint                       | Description                                        | Auth    |
+| ------ | ------------------------------ | -------------------------------------------------- | ------- |
+| `POST` | `/donations/initialize`        | Initiate a donation (returns Paystack payment URL) | API Key |
+| `GET`  | `/donations/verify/:reference` | Verify a donation payment                          | API Key |
+| `GET`  | `/donations/:id`               | Get donation details                               | API Key |
 
-#### POST /donations/initialize — Initiate Donation
+#### POST /donations/initialize: Initiate Donation
 
 **Request:**
+
 ```json
 {
   "campaign_id": "uuid-campaign-id",
@@ -559,6 +577,7 @@ Test:        https://sandbox.refreeg.com/api/v1
 ```
 
 **Response (200):**
+
 ```json
 {
   "status": "success",
@@ -570,9 +589,10 @@ Test:        https://sandbox.refreeg.com/api/v1
 }
 ```
 
-#### GET /donations/verify/:reference — Verify Payment
+#### GET /donations/verify/:reference: Verify Payment
 
 **Response (200):**
+
 ```json
 {
   "status": "success",
@@ -591,20 +611,20 @@ Test:        https://sandbox.refreeg.com/api/v1
 
 ### 5.4 Webhook Endpoints
 
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `POST` | `/webhooks/register` | Register a webhook URL | API Key |
-| `GET` | `/webhooks` | List registered webhooks | API Key |
-| `DELETE` | `/webhooks/:id` | Delete a webhook | API Key |
+| Method   | Endpoint             | Description              | Auth    |
+| -------- | -------------------- | ------------------------ | ------- |
+| `POST`   | `/webhooks/register` | Register a webhook URL   | API Key |
+| `GET`    | `/webhooks`          | List registered webhooks | API Key |
+| `DELETE` | `/webhooks/:id`      | Delete a webhook         | API Key |
 
 ### 5.5 Developer Account Endpoints
 
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `POST` | `/auth/register` | Register for developer access | Public |
-| `POST` | `/auth/api-keys` | Generate new API key | Session |
-| `GET` | `/auth/api-keys` | List API keys (prefix + metadata only) | Session |
-| `DELETE` | `/auth/api-keys/:id` | Revoke an API key | Session |
+| Method   | Endpoint             | Description                            | Auth    |
+| -------- | -------------------- | -------------------------------------- | ------- |
+| `POST`   | `/auth/register`     | Register for developer access          | Public  |
+| `POST`   | `/auth/api-keys`     | Generate new API key                   | Session |
+| `GET`    | `/auth/api-keys`     | List API keys (prefix + metadata only) | Session |
+| `DELETE` | `/auth/api-keys/:id` | Revoke an API key                      | Session |
 
 ### 5.6 Authentication Model
 
@@ -614,31 +634,34 @@ Test:        https://sandbox.refreeg.com/api/v1
 > The API authenticates the **developer** (via API key), not the donor or campaign creator.
 > Developers are responsible for authenticating their own users on their platform.
 >
-> When a donation is made, the donor's `name` and `email` are passed in the request body —
+> When a donation is made, the donor's `name` and `email` are passed in the request body -
 > not verified against any RefreeG user account. This makes the API accessible to any platform
 > without requiring users to create RefreeG accounts.
 
 ### 5.7 Payment Receipts
 
 After a successful donation, RefreeG **automatically sends a payment receipt** to the donor's email:
+
 - Donation amount
 - Campaign title
 - Transaction reference
 - Date/time
 - RefreeG receipt URL
 
-Developers do NOT need to handle this — it's built into the donation verification flow.
+Developers do NOT need to handle this: it's built into the donation verification flow.
 
 ### 5.8 Notification Blueprint (for Developers)
 
 RefreeG only sends payment receipts. For other notifications (campaign updates, milestones, marketing), developers integrate their own email provider.
 
 The docs will include a **"Notifications Blueprint"** guide showing developers how to:
+
 1. Subscribe to RefreeG webhooks (`donation.completed`, `campaign.completed`, etc.)
 2. Connect their own SMTP provider (SendGrid, Resend, AWS SES, etc.)
 3. Send custom emails triggered by webhook events
 
 Example flow:
+
 ```
 Webhook: donation.completed → Dev server → Send "Thank you" email via SendGrid
 Webhook: campaign.completed → Dev server → Send "Goal reached!" email to creator
@@ -681,12 +704,12 @@ RefreeG Event → Queue → POST to developer webhook URL
 Developers verify webhook authenticity by computing HMAC-SHA256 of the raw body using their webhook secret:
 
 ```javascript
-const crypto = require('crypto');
+const crypto = require("crypto");
 const signature = crypto
-  .createHmac('sha256', webhookSecret)
+  .createHmac("sha256", webhookSecret)
   .update(rawBody)
-  .digest('hex');
-const isValid = `sha256=${signature}` === req.headers['x-refreeg-signature'];
+  .digest("hex");
+const isValid = `sha256=${signature}` === req.headers["x-refreeg-signature"];
 ```
 
 ### 6.4 New Database Table: `webhooks`
@@ -720,7 +743,20 @@ Developers feed this schema to their AI provider to generate structured output:
     "title": { "type": "string", "required": true, "maxLength": 200 },
     "description": { "type": "string", "required": false },
     "summary": { "type": "string", "required": false, "maxLength": 500 },
-    "category": { "type": "string", "required": true, "enum": ["education","health","environment","community","disaster","animals","creative","business"] },
+    "category": {
+      "type": "string",
+      "required": true,
+      "enum": [
+        "education",
+        "health",
+        "environment",
+        "community",
+        "disaster",
+        "animals",
+        "creative",
+        "business"
+      ]
+    },
     "goal": { "type": "number", "required": true, "min": 1000 },
     "sections": {
       "type": "array",
@@ -736,7 +772,7 @@ Developers feed this schema to their AI provider to generate structured output:
 
 ### 7.2 Validation Endpoint
 
-`POST /api/v1/campaigns/validate` — Validates AI-generated output against the schema before submission. Returns validation errors if any fields are invalid.
+`POST /api/v1/campaigns/validate`: Validates AI-generated output against the schema before submission. Returns validation errors if any fields are invalid.
 
 ---
 
@@ -744,12 +780,12 @@ Developers feed this schema to their AI provider to generate structured output:
 
 ### 8.1 Rate Limits
 
-| Plan | Requests/min | Campaigns/month | Donations/month |
-|---|---|---|---|
-| Free | 60 | 10 | 100 |
-| Starter | 200 | 100 | 5,000 |
-| Growth | 1,000 | Unlimited | 50,000 |
-| Enterprise | Custom | Unlimited | Unlimited |
+| Plan       | Requests/min | Campaigns/month | Donations/month |
+| ---------- | ------------ | --------------- | --------------- |
+| Free       | 60           | 10              | 100             |
+| Starter    | 200          | 100             | 5,000           |
+| Growth     | 1,000        | Unlimited       | 50,000          |
+| Enterprise | Custom       | Unlimited       | Unlimited       |
 
 ### 8.2 Rate Limit Headers
 
@@ -809,26 +845,26 @@ Build a dedicated docs site at `/docs` (or `docs.refreeg.com`) using the existin
 
 The quickstart should walk a developer through:
 
-1. **Sign Up** — Create a RefreeG developer account (email + password only)
-2. **Get API Keys** — Generate test + live keys
-3. **Provide Bank Details** — Add beneficiary bank account to campaign
-4. **Create Your First Campaign** — `curl` example, goes live instantly
-5. **Accept a Donation** — Initialize payment flow
-6. **Verify Payment** — Confirm donation success, receipt sent automatically
-7. **Go Live** — Switch from test to live keys
+1. **Sign Up**: Create a RefreeG developer account (email + password only)
+2. **Get API Keys**: Generate test + live keys
+3. **Provide Bank Details**: Add beneficiary bank account to campaign
+4. **Create Your First Campaign**: `curl` example, goes live instantly
+5. **Accept a Donation**: Initialize payment flow
+6. **Verify Payment**: Confirm donation success, receipt sent automatically
+7. **Go Live**: Switch from test to live keys
 
 ### 9.3 Admin Dashboard Integration
 
 RefreeG's existing admin dashboard will include a new **"API Monitoring"** section:
 
-| Data Point | Description |
-|---|---|
-| Active API keys | How many developers are using the API |
-| API campaigns | All campaigns created via API (view-only) |
-| API donations | Donation volume processed through API |
-| Revenue from API | Platform fees collected (2% of each donation) |
-| Campaign reports | Flagged campaigns awaiting review |
-| API usage metrics | Request volume, error rates, top endpoints |
+| Data Point        | Description                                   |
+| ----------------- | --------------------------------------------- |
+| Active API keys   | How many developers are using the API         |
+| API campaigns     | All campaigns created via API (view-only)     |
+| API donations     | Donation volume processed through API         |
+| Revenue from API  | Platform fees collected (2% of each donation) |
+| Campaign reports  | Flagged campaigns awaiting review             |
+| API usage metrics | Request volume, error rates, top endpoints    |
 
 ---
 
@@ -847,15 +883,15 @@ RefreeG's existing admin dashboard will include a new **"API Monitoring"** secti
 
 ### Phase 2: Campaign API
 
-- [ ] **2.1** Create `api_campaigns` table in Supabase (separate from `causes` — complete isolation)
+- [ ] **2.1** Create `api_campaigns` table in Supabase (separate from `causes`: complete isolation)
 - [ ] **2.2** Create `campaign_reports` table for reporting system
-- [ ] **2.3** Create `app/api/v1/campaigns/route.ts` — `POST` (create, goes active immediately) + `GET` (list)
-- [ ] **2.4** Create `app/api/v1/campaigns/[id]/route.ts` — `GET` (details) + `PATCH` (update) + `DELETE` (cancel)
+- [ ] **2.3** Create `app/api/v1/campaigns/route.ts`: `POST` (create, goes active immediately) + `GET` (list)
+- [ ] **2.4** Create `app/api/v1/campaigns/[id]/route.ts`: `GET` (details) + `PATCH` (update) + `DELETE` (cancel)
 - [ ] **2.5** Create `app/api/v1/campaigns/[id]/pause/route.ts` + `resume/route.ts`
-- [ ] **2.6** Create `app/api/v1/campaigns/[id]/donations/route.ts` — `GET` (list donations)
-- [ ] **2.7** Create `app/api/v1/campaigns/[id]/report/route.ts` — `POST` (report to RefreeG)
-- [ ] **2.8** Create `app/api/v1/campaigns/categories/route.ts` — `GET` (list categories)
-- [ ] **2.9** Create `app/api/v1/campaigns/validate/route.ts` — `POST` (validate AI output)
+- [ ] **2.6** Create `app/api/v1/campaigns/[id]/donations/route.ts`: `GET` (list donations)
+- [ ] **2.7** Create `app/api/v1/campaigns/[id]/report/route.ts`: `POST` (report to RefreeG)
+- [ ] **2.8** Create `app/api/v1/campaigns/categories/route.ts`: `GET` (list categories)
+- [ ] **2.9** Create `app/api/v1/campaigns/validate/route.ts`: `POST` (validate AI output)
 - [ ] **2.10** Add Zod validation schemas for all campaign request bodies (including strict `bank_account` validation: 10-digit account_number, required bank_code and account_name)
 - [ ] **2.11** Implement `payout_mode` logic ("immediate" → Paystack sub-account direct; "after_deadline" → hold)
 - [ ] **2.12** Auto-create Paystack sub-account from developer-provided `bank_account` during campaign creation
@@ -863,9 +899,9 @@ RefreeG's existing admin dashboard will include a new **"API Monitoring"** secti
 
 ### Phase 3: Donation & Payment API
 
-- [ ] **3.1** Create `app/api/v1/donations/initialize/route.ts` — `POST` (init Paystack with 2% split)
-- [ ] **3.2** Create `app/api/v1/donations/verify/[reference]/route.ts` — `GET` (verify payment)
-- [ ] **3.3** Create `app/api/v1/donations/[id]/route.ts` — `GET` (donation details)
+- [ ] **3.1** Create `app/api/v1/donations/initialize/route.ts`: `POST` (init Paystack with 2% split)
+- [ ] **3.2** Create `app/api/v1/donations/verify/[reference]/route.ts`: `GET` (verify payment)
+- [ ] **3.3** Create `app/api/v1/donations/[id]/route.ts`: `GET` (donation details)
 - [ ] **3.4** Wire up Paystack `initializeTransaction` with 2% platform fee via `transaction_charge`
 - [ ] **3.5** Handle `callback_url` parameter for developer-controlled redirects
 - [ ] **3.6** Implement automatic email receipt sending after successful donation
@@ -876,8 +912,8 @@ RefreeG's existing admin dashboard will include a new **"API Monitoring"** secti
 ### Phase 4: Webhook System
 
 - [ ] **4.1** Create `webhooks` database table in Supabase with migration
-- [ ] **4.2** Create `app/api/v1/webhooks/route.ts` — `POST` (register) + `GET` (list)
-- [ ] **4.3** Create `app/api/v1/webhooks/[id]/route.ts` — `DELETE` (unsubscribe)
+- [ ] **4.2** Create `app/api/v1/webhooks/route.ts`: `POST` (register) + `GET` (list)
+- [ ] **4.3** Create `app/api/v1/webhooks/[id]/route.ts`: `DELETE` (unsubscribe)
 - [ ] **4.4** Build webhook dispatcher utility (HMAC-SHA256 signing, retry logic)
 - [ ] **4.5** Integrate webhook dispatch into campaign events
 - [ ] **4.6** Integrate webhook dispatch into donation events
@@ -895,9 +931,9 @@ RefreeG's existing admin dashboard will include a new **"API Monitoring"** secti
 - [ ] **6.1** Create response helper utilities:
   ```typescript
   // lib/api/response.ts
-  function success(data: any, status = 200)
-  function error(message: string, code: string, status: number)
-  function paginated(data: any[], total: number, limit: number, offset: number)
+  function success(data: any, status = 200);
+  function error(message: string, code: string, status: number);
+  function paginated(data: any[], total: number, limit: number, offset: number);
   ```
 - [ ] **6.2** Create standardized error codes enum:
   ```typescript
@@ -946,10 +982,13 @@ RefreeG's existing admin dashboard will include a new **"API Monitoring"** secti
 
 - [ ] **9.1** Create `refreeg-js` npm package (lightweight API wrapper)
   ```typescript
-  import RefreeG from 'refreeg-js';
-  const refreeg = new RefreeG('rg_live_sk_...');
-  const campaign = await refreeg.campaigns.create({ title: '...', goal: 5000 });
-  const payment = await refreeg.donations.initialize({ campaign_id: '...', amount: 1000 });
+  import RefreeG from "refreeg-js";
+  const refreeg = new RefreeG("rg_live_sk_...");
+  const campaign = await refreeg.campaigns.create({ title: "...", goal: 5000 });
+  const payment = await refreeg.donations.initialize({
+    campaign_id: "...",
+    amount: 1000,
+  });
   ```
 - [ ] **9.2** Create Python SDK (`refreeg-python`)
 - [ ] **9.3** Publish SDKs to npm / PyPI
@@ -982,23 +1021,23 @@ RefreeG's existing admin dashboard will include a new **"API Monitoring"** secti
 
 ## Appendix A: PRD vs Codebase Schema Discrepancies
 
-| PRD Field | Actual Codebase | Notes |
-|---|---|---|
-| `description` (type: `text`) | `description` (type: `string`) | Same field, type naming difference |
-| `currency` (campaign field) | `currency` (only in `CauseFormData`, not in DB) | Currency is on the form, not stored in causes table |
-| `donation_amount` | `amount` | Field name difference |
-| `donor_name` | `name` | Field name difference |
-| `donor_email` | `email` | Field name difference |
-| `payment_method` (card/bank/wallet) | Not in donation schema | Paystack handles payment method selection |
-| — | `image` (cover image URL) | Missing from PRD |
-| — | `days_active` (number) | Missing from PRD |
-| — | `rejection_reason` (string) | Missing from PRD |
-| — | `faqs` (JSONB array) | Missing from PRD |
-| — | `is_anonymous` (boolean) | Missing from PRD donation schema |
-| — | `message` (string) | Missing from PRD donation schema |
-| — | `tip_amount` (number) | Missing from PRD donation schema |
-| — | `receipt_url` (string) | Missing from PRD donation schema |
-| — | `shared` (number, share count) | Missing from PRD |
+| PRD Field                           | Actual Codebase                                 | Notes                                               |
+| ----------------------------------- | ----------------------------------------------- | --------------------------------------------------- |
+| `description` (type: `text`)        | `description` (type: `string`)                  | Same field, type naming difference                  |
+| `currency` (campaign field)         | `currency` (only in `CauseFormData`, not in DB) | Currency is on the form, not stored in causes table |
+| `donation_amount`                   | `amount`                                        | Field name difference                               |
+| `donor_name`                        | `name`                                          | Field name difference                               |
+| `donor_email`                       | `email`                                         | Field name difference                               |
+| `payment_method` (card/bank/wallet) | Not in donation schema                          | Paystack handles payment method selection           |
+| -                                   | `image` (cover image URL)                       | Missing from PRD                                    |
+| -                                   | `days_active` (number)                          | Missing from PRD                                    |
+| -                                   | `rejection_reason` (string)                     | Missing from PRD                                    |
+| -                                   | `faqs` (JSONB array)                            | Missing from PRD                                    |
+| -                                   | `is_anonymous` (boolean)                        | Missing from PRD donation schema                    |
+| -                                   | `message` (string)                              | Missing from PRD donation schema                    |
+| -                                   | `tip_amount` (number)                           | Missing from PRD donation schema                    |
+| -                                   | `receipt_url` (string)                          | Missing from PRD donation schema                    |
+| -                                   | `shared` (number, share count)                  | Missing from PRD                                    |
 
 ---
 

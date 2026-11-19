@@ -76,7 +76,7 @@ export async function getOriginalUrl(
     return null;
   }
 
-  // Atomic increment — no race condition
+  // Atomic increment: no race condition
   await prisma.short_urls.update({
     where: { short_code: shortCode },
     data: { clicks: { increment: 1 } },

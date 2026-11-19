@@ -22,7 +22,7 @@ function getErrorMessage(error: unknown) {
     return error;
   }
 
-  return "An unexpected error occurred.";
+  return "Something went wrong. Please try again.";
 }
 
 const CHUNK_RELOAD_KEY = "refreeg:chunk-reload-attempted";
@@ -108,14 +108,14 @@ export class GlobalSupportBoundary extends React.Component<Props, State> {
   }
 
   componentDidMount() {
-    // A healthy mount means the reload (if one just happened) worked —
+    // A healthy mount means the reload (if one just happened) worked:
     // clear the guard so a later deploy this same session can also
     // trigger one, instead of the flag blocking it for the rest of the tab's
     // lifetime.
     try {
       sessionStorage.removeItem(CHUNK_RELOAD_KEY);
     } catch {
-      // ignore — same best-effort as the guard's own sessionStorage use
+      // ignore: same best-effort as the guard's own sessionStorage use
     }
     window.addEventListener("error", this.handleWindowError);
     window.addEventListener(

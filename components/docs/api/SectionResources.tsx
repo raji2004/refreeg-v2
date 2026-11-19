@@ -99,7 +99,7 @@ export function SectionErrorRef() {
             Validation Errors (422)
           </h3>
           <p className="text-slate-500">
-            RefreeG uses Zod for robust schema validation. When a request fails
+            RefreeG uses Zod for schema validation. When a request fails
             validation, the{" "}
             <code className="text-blue-600 font-mono">details</code> object
             contains a map of field names to their specific errors.
@@ -569,7 +569,7 @@ export function SectionResources() {
                     ))
                     <br />
                     <br />
-                    <code className="text-slate-500">{`# Pro-tip: Use try/except for robust error handling`}</code>
+                    <code className="text-slate-500">{`# Pro-tip: use try/except for clean error handling`}</code>
                     <br />
                     <code className="text-purple-400">from</code>{" "}
                     <code className="text-slate-300">

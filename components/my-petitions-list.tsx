@@ -24,6 +24,7 @@ import {
 import { getUserPetitionsWithStatus } from "@/actions/petition-actions";
 import { getPetitionSignatureTotals } from "@/actions/signature-actions";
 import { PetitionDropdown } from "./petition-dropdown";
+import { formatDate } from "@/lib/format-date";
 
 interface MyPetitionsListProps {
   status: string;
@@ -32,17 +33,6 @@ interface MyPetitionsListProps {
 
 const formatNumber = (value: number) =>
   new Intl.NumberFormat("en-NG").format(value || 0);
-
-const formatDate = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Not available";
-
-  return new Intl.DateTimeFormat("en-NG", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-};
 
 const getStatusDetails = (status: string) => {
   switch (status) {

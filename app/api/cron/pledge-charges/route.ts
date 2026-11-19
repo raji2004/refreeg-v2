@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { assertCronAuthorized } from "@/lib/cron-auth";
-import { chargeDuePledgesForToday } from "@/lib/pledge-paystack";
+import { chargeDuePledgesForToday } from "@/lib/pledge-provider";
 
 async function handle(request: NextRequest) {
   const denied = assertCronAuthorized(request);

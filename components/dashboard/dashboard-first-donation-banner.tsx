@@ -21,9 +21,7 @@ export function DashboardFirstDonationBanner({
         </div>
         <div>
           <h2 className="text-base font-semibold text-ink">
-            {hasDonated
-              ? "Continue your giving journey"
-              : "Make your first donation"}
+            {hasDonated ? "Keep giving" : "Make your first donation"}
           </h2>
           <p className="mt-0.5 text-xs sm:text-sm text-ink/75">
             {hasDonated

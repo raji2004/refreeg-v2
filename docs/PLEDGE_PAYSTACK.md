@@ -8,22 +8,22 @@ This document explains how **quick donate** works in this codebase today, how th
 
 End-to-end path you should mirror for pledges where possible:
 
-| Step | What happens | Where in the repo |
-|------|----------------|-------------------|
-| UI | User enters amount, name, email; submits | `app/causes/[id]/donate/QuickDonateForm.tsx` |
-| Client | `usePayment().initializePayment(...)` POSTs JSON to your API | `hooks/use-payment.ts` |
-| Server | Builds Paystack `transaction/initialize` payload (amount in **kobo**, subaccount, metadata) | `app/api/payments/initialize/route.ts` → `services/paystack.ts` |
-| Redirect | Browser goes to `authorization_url` (Paystack’s hosted card / bank UI) | `use-payment.ts` (`window.location.href = ...`) |
-| Return | `callback_url` defaults to `/causes/{causeId}/payment/verify` | `services/paystack.ts` (`callback_url`) |
-| Verify | Client calls `/api/payments/verify` with `reference` | `app/api/payments/verify/route.ts`, `app/causes/[id]/payment/verify/page.tsx` |
-| Record | **`charge.success`** webhook creates the donation row | `app/api/webhooks/paystack/route.ts` → `createDonation(...)` |
+| Step     | What happens                                                                                | Where in the repo                                                             |
+| -------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| UI       | User enters amount, name, email; submits                                                    | `app/causes/[id]/donate/QuickDonateForm.tsx`                                  |
+| Client   | `usePayment().initializePayment(...)` POSTs JSON to your API                                | `hooks/use-payment.ts`                                                        |
+| Server   | Builds Paystack `transaction/initialize` payload (amount in **kobo**, subaccount, metadata) | `app/api/payments/initialize/route.ts` → `services/paystack.ts`               |
+| Redirect | Browser goes to `authorization_url` (Paystack’s hosted card / bank UI)                      | `use-payment.ts` (`window.location.href = ...`)                               |
+| Return   | `callback_url` defaults to `/causes/{causeId}/payment/verify`                               | `services/paystack.ts` (`callback_url`)                                       |
+| Verify   | Client calls `/api/payments/verify` with `reference`                                        | `app/api/payments/verify/route.ts`, `app/causes/[id]/payment/verify/page.tsx` |
+| Record   | **`charge.success`** webhook creates the donation row                                       | `app/api/webhooks/paystack/route.ts` → `createDonation(...)`                  |
 
 Important implementation details:
 
 - **Subaccount**: Donations pass `subaccounts` from the form; `initializeTransaction` picks a primary subaccount and sets `subaccount` + `bearer: "subaccount"` so the **cause owner receives the donation** (fee handling via `transaction_charge` matches your existing logic).
 - **Metadata**: Paystack metadata carries `cause_id`, amounts, donor fields; the webhook relies on this for `createDonation`.
 
-The pledge page today only inserts into `pledges` via `createPledge` in `actions/pledge-actions.ts` — **no Paystack call yet**.
+The pledge page today only inserts into `pledges` via `createPledge` in `actions/pledge-actions.ts`: **no Paystack call yet**.
 
 ---
 
@@ -39,8 +39,8 @@ Official concept (see Paystack docs: **Recurring charges** / **Charging returnin
 
 1. Customer completes at least one **successful** card payment (first transaction).
 2. You **verify** the transaction and read `data.authorization`:
-   - `authorization_code` — use this to charge again server-side.
-   - `reusable` — must be `true` for subsequent charges; if `false`, you cannot rely on charging that card later.
+   - `authorization_code`: use this to charge again server-side.
+   - `reusable`: must be `true` for subsequent charges; if `false`, you cannot rely on charging that card later.
 3. Later, call the **Charge** API (or transaction charge endpoint documented for your API version) with `email`, `amount` (in kobo), and `authorization_code`.
 4. Route funds to the cause owner using the same **subaccount** model as donate (`subaccount` + `bearer` + `transaction_charge` as appropriate).
 
@@ -56,11 +56,11 @@ Paystack’s documentation for recurring flows typically expects a **first succe
 
 Practical options:
 
-| Strategy | User experience | Notes |
-|----------|------------------|--------|
+| Strategy                         | User experience                                                 | Notes                                                                                                                         |
+| -------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | **A. Small verification charge** | Pays **₦50** (or your minimum) now; full pledge charged on date | Clean path to obtain `authorization_code`; you may **refund** the small charge or disclose it as non-refundable verification. |
-| **B. Full amount now** | Same as donate | Not a future deduction; only use if you change product definition. |
-| **C. No card today** | Email reminder on date with **Pay now** link | No stored card; not what you asked for, but simplest. |
+| **B. Full amount now**           | Same as donate                                                  | Not a future deduction; only use if you change product definition.                                                            |
+| **C. No card today**             | Email reminder on date with **Pay now** link                    | No stored card; not what you asked for, but simplest.                                                                         |
 
 For “card now, money on pledge date,” **A** (or a Paystack-approved alternative your account manager confirms) is the usual engineering approach.
 
@@ -79,18 +79,18 @@ Authorization codes and cards **expire** or become **invalid** (lost, stolen, in
 
 Your `pledges` table (`supabase/migrations/20241202000001_create_campaign_features.sql`) has `status` (`pending`, `fulfilled`, etc.) but no payment fields. You will need something like:
 
-- `paystack_authorization_code` — **treat as secret**; encrypt at rest or store in a restricted table with RLS.
-- `authorization_email` — email used for Paystack customer (needed for charge).
-- `paystack_customer_code` — optional, if you use Paystack Customer API.
-- `first_transaction_reference` — reference of the transaction that created the authorization (audit).
-- `payment_status` — e.g. `awaiting_card`, `authorized`, `charge_pending`, `charged`, `failed`, `cancelled`.
-- `charge_attempted_at`, `last_charge_error` — for support and retries.
+- `paystack_authorization_code`: **treat as secret**; encrypt at rest or store in a restricted table with RLS.
+- `authorization_email`: email used for Paystack customer (needed for charge).
+- `paystack_customer_code`: optional, if you use Paystack Customer API.
+- `first_transaction_reference`: reference of the transaction that created the authorization (audit).
+- `payment_status`: e.g. `awaiting_card`, `authorized`, `charge_pending`, `charged`, `failed`, `cancelled`.
+- `charge_attempted_at`, `last_charge_error`: for support and retries.
 
 Never expose `authorization_code` to the client.
 
 ### 4.2 Pledge checkout flow (align with donate)
 
-1. User fills pledge form (amount, date, name, email) — same UX as `PledgeScreen`, but **before** or **instead of** only calling `createPledge`:
+1. User fills pledge form (amount, date, name, email): same UX as `PledgeScreen`, but **before** or **instead of** only calling `createPledge`:
 2. **Create pledge row** in `pending` / `awaiting_card` with amount + `reminder_date`.
 3. Call **`/api/payments/initialize`** (or a dedicated `/api/payments/pledge/initialize`) with:
    - `amount`: verification amount **or** full amount (per your product choice).
@@ -98,7 +98,7 @@ Never expose `authorization_code` to the client.
    - `metadata`: include `pledge_id`, `type: "pledge_authorization"`, and future charge amount if you use a small first charge.
    - `callbackUrl`: e.g. `/causes/{id}/pledge/payment/verify?pledge_id=...` (new route similar to `payment/verify`).
 
-4. User completes Paystack (card details on Paystack’s page — same as donate).
+4. User completes Paystack (card details on Paystack’s page: same as donate).
 
 5. On **`charge.success`** webhook:
    - If `metadata.type === "pledge_authorization"`: verify transaction, extract `authorization_code`, check `reusable`, update `pledges` row, set status to **authorized / pending_charge**.
@@ -132,9 +132,9 @@ The scheduler and webhook may race. Use:
 
 Names below follow common Paystack REST patterns; **verify paths and bodies** in [Paystack API documentation](https://paystack.com/docs/api/) for your API version.
 
-1. **`POST /transaction/initialize`** — already wrapped in `services/paystack.ts`.
-2. **`GET /transaction/verify/{reference}`** — you already have `verifyTransaction` / `verifyTransactionFull`; use full response to read `authorization`.
-3. **`POST /transaction/charge_authorization`** or **`POST /charge`** with `authorization_code` — for the **future** charge (scheduler). Request body must include `email`, `amount` (kobo), `authorization_code`, and subaccount fields mirroring donate.
+1. **`POST /transaction/initialize`**: already wrapped in `services/paystack.ts`.
+2. **`GET /transaction/verify/{reference}`**: you already have `verifyTransaction` / `verifyTransactionFull`; use full response to read `authorization`.
+3. **`POST /transaction/charge_authorization`** or **`POST /charge`** with `authorization_code`: for the **future** charge (scheduler). Request body must include `email`, `amount` (kobo), `authorization_code`, and subaccount fields mirroring donate.
 
 Add methods to `services/paystack.ts` only after confirming the exact endpoint from Paystack docs.
 
@@ -144,7 +144,7 @@ Add methods to `services/paystack.ts` only after confirming the exact endpoint f
 
 Same as donate:
 
-- `PAYSTACK_SECRET_KEY` — server only.
+- `PAYSTACK_SECRET_KEY`: server only.
 - Webhook URL registered in Paystack dashboard pointing to `https://<your-domain>/api/webhooks/paystack`.
 - For local dev, use Paystack test keys and tools (CLI / ngrok) to receive webhooks.
 
@@ -176,13 +176,13 @@ Optional: `NEXT_PUBLIC_APP_URL` / `getBaseURL()` for `callback_url` (see `initia
 
 ## 9. Files to read first in this repo
 
-- `app/causes/[id]/donate/QuickDonateForm.tsx` — `initializePayment` payload.
-- `hooks/use-payment.ts` — redirect to Paystack.
-- `services/paystack.ts` — initialize + verify patterns.
-- `app/api/webhooks/paystack/route.ts` — `charge.success` → `createDonation`.
-- `app/campaign/_components/pledge-screen.tsx` — where to plug checkout + messaging.
-- `actions/pledge-actions.ts` — `createPledge` insert.
-- `supabase/functions/pledge-reminders/index.ts` — possible place to extend from “email only” to “charge + email”.
+- `app/causes/[id]/donate/QuickDonateForm.tsx`: `initializePayment` payload.
+- `hooks/use-payment.ts`: redirect to Paystack.
+- `services/paystack.ts`: initialize + verify patterns.
+- `app/api/webhooks/paystack/route.ts`: `charge.success` → `createDonation`.
+- `app/campaign/_components/pledge-screen.tsx`: where to plug checkout + messaging.
+- `actions/pledge-actions.ts`: `createPledge` insert.
+- `supabase/functions/pledge-reminders/index.ts`: possible place to extend from “email only” to “charge + email”.
 
 ---
 

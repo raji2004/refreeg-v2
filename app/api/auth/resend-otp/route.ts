@@ -67,7 +67,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Resend OTP error:", error);
     return NextResponse.json(
-      { error: error.message || "An unexpected error occurred" },
+      { error: error.message || "Something went wrong. Please try again." },
       { status: 500 },
     );
   }

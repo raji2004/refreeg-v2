@@ -23,8 +23,8 @@ function OurStory() {
                 platform where giving is transparent, impactful, and accessible
                 to all. In a world where millions struggle to access basic
                 necessities, education, and opportunities, we saw a need for a
-                revolutionary approach that puts the power back in the hands of
-                the people.
+                different approach that puts the power back in the hands of the
+                people.
               </p>
 
               <p>

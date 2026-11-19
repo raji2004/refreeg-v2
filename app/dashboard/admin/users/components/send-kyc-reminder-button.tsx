@@ -33,7 +33,7 @@ export function SendKycReminderButton() {
         description:
           error instanceof Error
             ? error.message
-            : "An unexpected error occurred",
+            : "Something went wrong. Please try again",
         variant: "destructive",
       });
     } finally {

@@ -54,7 +54,7 @@ interface ReferralsViewProps {
 }
 
 // The step art uses lucide icons in the same cream-circle treatment as the
-// stat cards below — the old /images/referrals/*.png assets never shipped,
+// stat cards below: the old /images/referrals/*.png assets never shipped,
 // so referencing them rendered broken images.
 const STEPS = [
   {
@@ -132,7 +132,7 @@ export function ReferralsView({
     };
   }, []);
 
-  // Silent refresh of page 1 while the leaderboard is visible — rankings move
+  // Silent refresh of page 1 while the leaderboard is visible: rankings move
   // as donations verify, so a live tab shouldn't go stale for minutes.
   useEffect(() => {
     if (tab !== "leaderboard") return;
@@ -143,7 +143,7 @@ export function ReferralsView({
         setTotalCount(res.totalCount);
         setPage(1);
       } catch {
-        // background refresh — stay quiet, next tick may succeed
+        // background refresh: stay quiet, next tick may succeed
       }
     }, POLL_MS);
     return () => clearInterval(id);
@@ -152,7 +152,7 @@ export function ReferralsView({
   const switchTab = (next: "hub" | "leaderboard") => {
     setTab(next);
     // Keep the deep link (?tab=leaderboard) shareable without a router
-    // round trip — the data is already in memory.
+    // round trip: the data is already in memory.
     window.history.replaceState(
       null,
       "",
@@ -184,7 +184,7 @@ export function ReferralsView({
         url: referralLink,
       });
     } catch {
-      // user dismissed the share sheet — nothing to do
+      // user dismissed the share sheet: nothing to do
     }
   };
 
@@ -406,7 +406,7 @@ export function ReferralsView({
                 className="m-6"
                 icon={<Users className="h-6 w-6 text-ink/40" />}
                 title="No referrals yet"
-                description="Share your link to start earning — every signup counts."
+                description="Share your link to start earning. Every signup counts."
                 action={
                   <Button
                     variant="ink"
@@ -513,7 +513,7 @@ export function ReferralsView({
               className="py-16"
               icon={<Trophy className="h-7 w-7" />}
               title="No champions yet"
-              description="Be the first to share your link and refer donors — the top spot is open."
+              description="Be the first to share your link and refer donors. The top spot is open."
               action={
                 <Button
                   variant="ink"

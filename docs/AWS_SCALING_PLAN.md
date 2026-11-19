@@ -9,7 +9,7 @@ the phases in order. Tick the boxes as you go.
 ```
 Users ─► CloudFront ─► ALB ─► ASG (EC2 t4g, PM2 cluster, Next.js standalone)
                                  │            │
-                                 │            ├─► ElastiCache (Valkey) — shared Next.js cache
+                                 │            ├─► ElastiCache (Valkey): shared Next.js cache
                                  │            └─► RDS Postgres (later: RDS Proxy / Aurora Serverless v2)
                                  └─► S3 (media, releases)
 EventBridge Scheduler ─► /api/cron/* (exactly once, not per instance)
@@ -30,7 +30,7 @@ EventBridge Scheduler ─► /api/cron/* (exactly once, not per instance)
 
 ---
 
-## Phase 0 — Prerequisites
+## Phase 0: Prerequisites
 
 - [ ] Confirm the AWS region (`us-east-1` per `infra/variables.tf`) and that the
       Terraform state backend in `infra/providers.tf` is remote (S3 + lock), not local.
@@ -43,7 +43,7 @@ EventBridge Scheduler ─► /api/cron/* (exactly once, not per instance)
 
 ---
 
-## Phase 1 — Make the ASG actually autoscale (`infra/asg.tf`, `infra/variables.tf`)
+## Phase 1: Make the ASG actually autoscale (`infra/asg.tf`, `infra/variables.tf`)
 
 - [ ] Add a target-tracking policy on CPU:
   ```hcl
@@ -75,7 +75,7 @@ about 15 minutes after the load stops.
 
 ---
 
-## Phase 2 — Run cron jobs exactly once (EventBridge Scheduler)
+## Phase 2: Run cron jobs exactly once (EventBridge Scheduler)
 
 Every instance runs the same code. If cron ran on each instance, a 4-instance
 fleet would run `pledge-charges` **4 times**, which would charge donors 4 times.
@@ -116,7 +116,7 @@ instance count is.
 
 ---
 
-## Phase 3 — Shared Next.js cache (ElastiCache Valkey)
+## Phase 3: Shared Next.js cache (ElastiCache Valkey)
 
 - [ ] New file `infra/cache.tf`: an `aws_elasticache_replication_group` running
       Valkey, `cache.t4g.small`, 1 primary + 1 replica, in the same subnets. Add a
@@ -139,7 +139,7 @@ instance count is.
 
 ---
 
-## Phase 4 — Database sizing & connections (`infra/rds.tf`)
+## Phase 4: Database sizing & connections (`infra/rds.tf`)
 
 - [ ] Change `db_instance_class` from `db.t4g.micro` to **`db.t4g.medium`**.
 - [ ] Set the pool size explicitly in `DATABASE_URL`:
@@ -156,7 +156,7 @@ instance count is.
 
 ---
 
-## Phase 5 — One process per instance, CloudFront in front
+## Phase 5: One process per instance, CloudFront in front
 
 **Merge PM2 apps** ([`ecosystem.scaled.config.js`](../ecosystem.scaled.config.js)):
 
@@ -187,7 +187,7 @@ instance count is.
 
 ---
 
-## Phase 6 — Go live
+## Phase 6: Go live
 
 - [ ] Load-test the full stack in staging. Record p95 latency and the requests
       per second each instance handles.
@@ -201,7 +201,7 @@ instance count is.
 
 ---
 
-## Phase 7 — Growth milestones (do when the numbers say so)
+## Phase 7: Growth milestones (do when the numbers say so)
 
 | Trigger                                                    | Action                                                                                                   |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -217,13 +217,13 @@ instance count is.
 
 ## Rough monthly cost (us-east-1, check in the AWS Pricing Calculator)
 
-| Item                                     | Phase 1–5 baseline |
+| Item                                     | Phase 1-5 baseline |
 | ---------------------------------------- | ------------------ |
-| 2× t4g.medium (1 on-demand + Spot above) | ~$35–50            |
-| ALB                                      | ~$20–25            |
+| 2× t4g.medium (1 on-demand + Spot above) | ~$35-50            |
+| ALB                                      | ~$20-25            |
 | RDS db.t4g.medium single-AZ + 20 GB gp3  | ~$55               |
 | ElastiCache cache.t4g.small × 2          | ~$45               |
-| CloudFront + S3 + data transfer          | ~$10–30            |
-| **Total**                                | **~$165–205**      |
+| CloudFront + S3 + data transfer          | ~$10-30            |
+| **Total**                                | **~$165-205**      |
 
 Multi-AZ RDS roughly doubles the database line.
