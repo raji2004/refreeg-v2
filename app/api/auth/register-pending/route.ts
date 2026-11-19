@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { sendOtpEmail } from "@/services/mail";
+import { getClientIp } from "@/lib/api/client-ip";
 import {
   normalizeRegistrationInput,
   type RegistrationInput,
@@ -38,10 +39,7 @@ export async function POST(req: Request) {
     const utm_medium = body.utm_medium || null;
     const utm_campaign = body.utm_campaign || null;
     const user_agent = body.user_agent || null;
-    const ip_address =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") ||
-      null;
+    const ip_address = getClientIp(req.headers);
 
     const existingUser = await prisma.user.findUnique({
       where: { email },

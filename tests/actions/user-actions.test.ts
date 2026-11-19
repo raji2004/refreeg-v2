@@ -23,11 +23,16 @@ jest.mock("@/actions/admin/database-actions", () => ({
   logAdminActivity: jest.fn(),
 }));
 
+jest.mock("@/lib/auth/account-deletion", () => ({
+  executeUserAccountDeletion: jest.fn(),
+}));
+
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import { getUserRole } from "@/actions/admin/role-actions";
 import { logAdminActivity } from "@/actions/admin/database-actions";
+import { executeUserAccountDeletion } from "@/lib/auth/account-deletion";
 import {
   blockUser,
   unblockUser,
@@ -39,6 +44,7 @@ import {
 const mockAuth = auth as jest.Mock;
 const mockGetUserRole = getUserRole as jest.Mock;
 const mockLogAdminActivity = logAdminActivity as jest.Mock;
+const mockExecuteDeletion = executeUserAccountDeletion as jest.Mock;
 const mockPrisma = prisma as unknown as {
   user: {
     update: jest.Mock;
@@ -57,6 +63,7 @@ describe("user-actions", () => {
     mockPrisma.kyc_verifications.deleteMany.mockResolvedValue({ count: 0 });
     mockPrisma.user.delete.mockResolvedValue({});
     mockLogAdminActivity.mockResolvedValue(undefined);
+    mockExecuteDeletion.mockResolvedValue({ success: true, statusCode: 200 });
   });
 
   describe("blockUser", () => {
@@ -127,12 +134,7 @@ describe("user-actions", () => {
       const result = await deleteUserAccount("admin-1");
 
       expect(result).toEqual({ error: null });
-      expect(mockPrisma.kyc_verifications.deleteMany).toHaveBeenCalledWith({
-        where: { user_id: "admin-1" },
-      });
-      expect(mockPrisma.user.delete).toHaveBeenCalledWith({
-        where: { id: "admin-1" },
-      });
+      expect(mockExecuteDeletion).toHaveBeenCalledWith("admin-1");
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard/settings");
     });
 
@@ -142,7 +144,7 @@ describe("user-actions", () => {
       expect(result).toEqual({
         error: "You can only delete your own account",
       });
-      expect(mockPrisma.user.delete).not.toHaveBeenCalled();
+      expect(mockExecuteDeletion).not.toHaveBeenCalled();
     });
 
     it("returns error when not authenticated", async () => {

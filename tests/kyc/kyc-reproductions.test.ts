@@ -342,7 +342,7 @@ describe("KYC Phase 1 Fixes & Verification Suite (B1 - B5)", () => {
       expect(mockPrisma.kyc_verifications.updateMany).toHaveBeenCalledWith({
         where: {
           user_id: "user-new",
-          status: "pending",
+          status: { in: ["in_progress", "pending"] },
         },
         data: {
           status: "abandoned",

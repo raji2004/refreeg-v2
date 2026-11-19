@@ -99,12 +99,13 @@ describe("syncMilestoneRequirements", () => {
 });
 
 describe("assertCauseAcceptingDonations", () => {
+  const TEST_CAUSE_ID = "00000000-0000-4000-8000-000000000001";
   beforeEach(() => jest.clearAllMocks());
 
   it("throws an error if the cause is compliance_paused", async () => {
     mockPrisma.cause.findUnique.mockResolvedValue({ compliance_paused: true });
 
-    await expect(assertCauseAcceptingDonations("cause-1")).rejects.toThrow(
+    await expect(assertCauseAcceptingDonations(TEST_CAUSE_ID)).rejects.toThrow(
       "This campaign is not currently accepting donations.",
     );
   });
@@ -113,7 +114,7 @@ describe("assertCauseAcceptingDonations", () => {
     mockPrisma.cause.findUnique.mockResolvedValue({ compliance_paused: false });
 
     await expect(
-      assertCauseAcceptingDonations("cause-1"),
+      assertCauseAcceptingDonations(TEST_CAUSE_ID),
     ).resolves.not.toThrow();
   });
 });

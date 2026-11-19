@@ -313,10 +313,10 @@ describe("Didit Webhook POST", () => {
     expect(mockPrisma.kyc_verifications.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          OR: [
+          OR: expect.arrayContaining([
             { document_url: "uuid-123" },
             { document_url: { startsWith: "uuid-123:::" } },
-          ],
+          ]),
         }),
       }),
     );
@@ -373,7 +373,10 @@ describe("Didit Webhook POST", () => {
       }),
     );
 
-    expect(await res.json()).toEqual({ message: "Already processed" });
+    expect(await res.json()).toEqual({
+      success: true,
+      message: "Already processed",
+    });
     expect(mockPrisma.kyc_verifications.update).not.toHaveBeenCalled();
   });
 });

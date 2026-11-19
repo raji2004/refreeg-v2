@@ -68,8 +68,8 @@ export async function processDiditVerificationResult(
     where: {
       document_type: "didit",
       OR: [
-        { document_url: sessionId },
         { document_url: { startsWith: `${sessionId}:::` } },
+        { document_url: sessionId },
       ],
     },
     orderBy: { created_at: "desc" },

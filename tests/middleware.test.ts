@@ -3,6 +3,10 @@
  */
 const mockAuthHandler = jest.fn();
 
+jest.mock("next-auth/jwt", () => ({
+  getToken: jest.fn().mockResolvedValue(null),
+}));
+
 jest.mock("@/lib/auth/auth", () => ({
   auth: jest.fn(
     () =>

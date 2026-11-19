@@ -20,6 +20,7 @@ jest.mock("@/lib/prisma", () => {
     campaign_follows: {
       findMany: jest.fn(),
     },
+    $executeRaw: jest.fn().mockResolvedValue(1),
     $transaction: jest.fn(),
   };
   // createDonation runs donation.create and cause.update inside one

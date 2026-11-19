@@ -131,7 +131,10 @@ describe("Didit Webhook Route (/api/webhooks/didit)", () => {
 
     // Verify KYC status updated to approved
     expect(prisma.kyc_verifications.updateMany).toHaveBeenCalledWith({
-      where: { id: "kyc-123", status: { in: ["pending", "resubmitted"] } },
+      where: {
+        id: "kyc-123",
+        status: { in: ["pending", "resubmitted", "in_progress"] },
+      },
       data: expect.objectContaining({
         status: "approved",
       }),
@@ -180,7 +183,10 @@ describe("Didit Webhook Route (/api/webhooks/didit)", () => {
 
     // Verify KYC status updated to rejected
     expect(prisma.kyc_verifications.updateMany).toHaveBeenCalledWith({
-      where: { id: "kyc-789", status: { in: ["pending", "resubmitted"] } },
+      where: {
+        id: "kyc-789",
+        status: { in: ["pending", "resubmitted", "in_progress"] },
+      },
       data: expect.objectContaining({
         status: "rejected",
       }),

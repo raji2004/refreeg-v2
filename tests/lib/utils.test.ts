@@ -53,11 +53,11 @@ describe("lib/utils", () => {
     process.env.NEXT_PUBLIC_BASE_URL = original;
   });
 
-  it("returns zero fee when service fee percentage is unset", () => {
+  it("defaults to 2% fee when service fee percentage is unset", () => {
     const original = process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE;
     delete process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE;
 
-    expect(calculateServiceFee(10_000)).toBe(0);
+    expect(calculateServiceFee(10_000)).toBe(200);
 
     process.env.NEXT_PUBLIC_REFREEG_SERVICE_FEE = original;
   });
