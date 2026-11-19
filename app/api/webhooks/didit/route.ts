@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { extractCachedDecisionFields } from "@/lib/didit";
 import { issueReferralRewardOnKycApproval } from "@/actions/users/kyc-actions";
 import {
   sendKycSubmittedEmail,
@@ -243,12 +244,24 @@ export async function POST(request: Request) {
       fullName = webhookData.full_name || body.full_name;
     }
 
+    // Cache decision-derived fields for the admin KYC queue.
+    const cached = extractCachedDecisionFields(webhookData);
+
     // Update kyc record
     await prisma.kyc_verifications.update({
       where: { id: kyc.id },
       data: {
         status: newStatus,
         verification_notes: `Automated Didit result: ${status}${isRejected || isResubmitted ? ` - ${rejectionReason}` : ""}`,
+        ...(cached.faceMatchScore != null && {
+          face_match_score: cached.faceMatchScore,
+        }),
+        ...(cached.idType && { id_type: cached.idType }),
+        ...(cached.idNumber && { id_number: cached.idNumber }),
+        ...(cached.checksTotal != null && { checks_total: cached.checksTotal }),
+        ...(cached.checksPassed != null && {
+          checks_passed: cached.checksPassed,
+        }),
         ...(fullName && fullName !== "Didit User" && { full_name: fullName }),
         ...(dob && { dob }),
         ...(address && { address }),

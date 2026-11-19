@@ -3,7 +3,8 @@ import { TEST_EMAIL } from "./auth";
 import { minimalPdf } from "./files";
 
 /**
- * Reject/approve redirects to /dashboard/admin/users?kyc_alert=...
+ * Reject/approve redirect to either /dashboard/admin/users?kyc_alert=... (legacy)
+ * or /dashboard/admin/users/kyc?flash=... (queue toast flow).
  * Must not match the review URL /dashboard/admin/users/kyc/:id (prefix trap).
  */
 async function waitForAdminUsersKycAlert(
@@ -14,8 +15,10 @@ async function waitForAdminUsersKycAlert(
     (url) => {
       const path = url.pathname.replace(/\/$/, "");
       return (
-        path === "/dashboard/admin/users" &&
-        url.searchParams.get("kyc_alert") === alert
+        (path === "/dashboard/admin/users" &&
+          url.searchParams.get("kyc_alert") === alert) ||
+        (path === "/dashboard/admin/users/kyc" &&
+          url.searchParams.get("flash") === alert)
       );
     },
     { timeout: 60_000 },
@@ -35,15 +38,15 @@ export async function openKycAdminReviewForEmail(
   });
 
   await expect(
-    page.getByRole("heading", { name: /KYC Reviews/i }),
+    page.getByRole("heading", { name: /KYC verification/i }),
   ).toBeVisible({ timeout: 30_000 });
 
   const row = page.locator("table tbody tr").filter({ hasText: email }).first();
   await expect(row).toBeVisible({ timeout: 30_000 });
 
-  const review = row.getByRole("link", { name: /Review/i }).or(
-    row.getByRole("button", { name: /Review/i }),
-  );
+  const review = row
+    .getByRole("link", { name: /Review/i })
+    .or(row.getByRole("button", { name: /Review/i }));
   await review.first().click();
   await page.waitForURL(
     (url) =>
@@ -83,7 +86,9 @@ export async function unapproveKycIfNeeded(page: Page) {
 
   if (!needsReject) {
     // Fallback: if we can't read status clearly but Reject is available, reject anyway
-    console.log(`KYC status "${statusText || "unknown"}" — rejecting to reset.`);
+    console.log(
+      `KYC status "${statusText || "unknown"}" — rejecting to reset.`,
+    );
   }
 
   await page.getByRole("button", { name: /Reject KYC/i }).click();
@@ -91,8 +96,13 @@ export async function unapproveKycIfNeeded(page: Page) {
     page.getByRole("heading", { name: /Reject KYC Verification/i }),
   ).toBeVisible({ timeout: 10_000 });
 
-  await page.locator("#reason").fill("E2E automation reset — safe to re-approve");
-  await page.getByRole("dialog").getByRole("button", { name: /^Reject KYC$/i }).click();
+  await page
+    .locator("#reason")
+    .fill("E2E automation reset — safe to re-approve");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /^Reject KYC$/i })
+    .click();
 
   await waitForAdminUsersKycAlert(page, "rejected");
   console.log("KYC unapproved (rejected) successfully.");
@@ -110,10 +120,12 @@ export async function submitKycSetupForm(page: Page) {
   // Extract user ID from the DOM so we can mock the webhook
   const container = page.getByTestId("kyc-setup-container");
   await expect(container).toBeVisible({ timeout: 15_000 });
-  
+
   const userId = await container.getAttribute("data-userid");
   if (!userId) {
-    throw new Error("Could not find user ID on the page to mock Didit webhook.");
+    throw new Error(
+      "Could not find user ID on the page to mock Didit webhook.",
+    );
   }
 
   // Intercept the /api/kyc/didit/session API call so Didit SDK thinks a session was created successfully
@@ -121,12 +133,17 @@ export async function submitKycSetupForm(page: Page) {
   await page.route("/api/kyc/didit/session", async (route) => {
     await route.fulfill({
       status: 200,
-      json: { session_id: dummySessionId, url: "http://localhost:3000/dummy-didit-url" }
+      json: {
+        session_id: dummySessionId,
+        url: "http://localhost:3000/dummy-didit-url",
+      },
     });
   });
 
   // Click the start verification button
-  await page.getByRole("button", { name: /Start (Secure|RefreeG) Verification/i }).click();
+  await page
+    .getByRole("button", { name: /Start (Secure|RefreeG) Verification/i })
+    .click();
   console.log("KYC session created.");
 
   // Simulate the Didit Webhook hitting our API
@@ -138,10 +155,10 @@ export async function submitKycSetupForm(page: Page) {
       session_id: dummySessionId,
       status: "Review",
       vendor_data: userId,
-      webhook_type: "status.updated"
-    }
+      webhook_type: "status.updated",
+    },
   });
-  
+
   if (!response.ok()) {
     throw new Error(`Mock Didit webhook failed: ${await response.text()}`);
   }
@@ -158,7 +175,12 @@ export async function submitKycSetupForm(page: Page) {
     error.first().waitFor({ state: "visible", timeout: 15_000 }),
   ]);
 
-  if (await error.first().isVisible().catch(() => false)) {
+  if (
+    await error
+      .first()
+      .isVisible()
+      .catch(() => false)
+  ) {
     const errText = await error.first().innerText();
     throw new Error(`KYC submit failed unexpectedly: ${errText}`);
   }
@@ -202,10 +224,7 @@ export async function rejectOwnKyc(
  * No-ops when already Approved. Self-heals leftover E2E/MCP rejections
  * so cause creation is not blocked.
  */
-export async function ensureOwnKycApproved(
-  page: Page,
-  email = TEST_EMAIL,
-) {
+export async function ensureOwnKycApproved(page: Page, email = TEST_EMAIL) {
   await openKycAdminReviewForEmail(page, email);
 
   const approveBtn = page.getByRole("button", { name: /Approve KYC/i });
@@ -221,7 +240,9 @@ export async function ensureOwnKycApproved(
     .first()
     .innerText()
     .catch(() => "unknown");
-  console.log(`KYC status "${statusHint}" — approving so causes can be created.`);
+  console.log(
+    `KYC status "${statusHint}" — approving so causes can be created.`,
+  );
 
   await expect(approveBtn).toBeEnabled({ timeout: 15_000 });
   await approveBtn.click();
@@ -232,9 +253,6 @@ export async function ensureOwnKycApproved(
 /**
  * Approves the test user's pending (or rejected) KYC from admin review.
  */
-export async function approveOwnPendingKyc(
-  page: Page,
-  email = TEST_EMAIL,
-) {
+export async function approveOwnPendingKyc(page: Page, email = TEST_EMAIL) {
   await ensureOwnKycApproved(page, email);
 }

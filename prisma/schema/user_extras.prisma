@@ -66,6 +66,13 @@ model kyc_verifications {
   state              String?
   postal             String?
   country            String?
+  /// Cached Didit decision fields, written by the webhook so the admin KYC
+  /// queue can show face match / checks without calling Didit per row.
+  face_match_score   Int?
+  id_type            String?
+  id_number          String?
+  checks_passed      Int?
+  checks_total       Int?
   created_at         DateTime? @default(now()) @db.Timestamptz(6)
   updated_at         DateTime? @default(now()) @db.Timestamptz(6)
 

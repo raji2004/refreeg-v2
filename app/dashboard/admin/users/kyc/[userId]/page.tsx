@@ -1,385 +1,562 @@
-import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { redirect } from "next/navigation";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+  AlertTriangle,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { auth } from "@/lib/auth/auth";
+import { getUserRole } from "@/actions/admin/role-actions";
 import {
-  getVerificationStatus,
+  getAdminKycDetail,
+  getAdminKycNeighbors,
   updateVerificationStatus,
 } from "@/actions/users/kyc-actions";
-import { getProfile, updateProfile } from "@/actions/users/profile-actions";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { CalloutBanner } from "@/components/ui/callout-banner";
 import {
-  Shield,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  FileText,
-  CheckCircle,
-  XCircle,
-} from "lucide-react";
-import Image from "next/image";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { KycStatusBadge } from "@/components/admin/kyc/kyc-status-badge";
+import { FaceMatchMeter } from "@/components/admin/kyc/face-match-meter";
+import { RecordCheckTable } from "@/components/admin/kyc/record-check-table";
+import {
+  KycDocumentGrid,
+  type KycDocumentTile,
+} from "@/components/admin/kyc/kyc-document-grid";
+import { AskResubmitDialog } from "@/components/admin/kyc/ask-resubmit-dialog";
+import { KycFlashToast } from "@/components/admin/kyc/kyc-flash-toast";
 import KycRejectionDialog from "./KycRejectionDialog";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
+import {
+  formatIdTypeLabel,
+  KYC_FACE_MATCH_THRESHOLD,
+  kycStatusTabs,
+} from "@/lib/options/kyc-review.options";
+import {
+  formatAccountAge,
+  formatDate,
+  formatRelativeTime,
+} from "@/lib/format-date";
+import type { DecisionSummary } from "@/lib/didit";
+import type { KycQueueTab, KycVerification } from "@/types/kyc-types";
+
+const RESUBMIT_MESSAGE_PLACEHOLDER =
+  "Your selfie didn't match your ID photo clearly. Please take a new one facing a window, and check your details match your ID.";
+
+function initials(name: string): string {
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "?"
+  );
+}
+
+function buildDiditTiles(
+  kyc: KycVerification,
+  decision: DecisionSummary | null,
+): KycDocumentTile[] {
+  const idLabel = formatIdTypeLabel(
+    decision?.documents.documentType ?? kyc.id_type,
+  );
+  if (decision) {
+    const tiles: KycDocumentTile[] = [
+      {
+        key: "front",
+        label: `${idLabel} · Front`,
+        url: decision.documents.frontImage,
+      },
+      {
+        key: "selfie",
+        label: "Live selfie",
+        url: decision.documents.selfieImage,
+      },
+    ];
+    if (decision.documents.backImage) {
+      tiles.splice(1, 0, {
+        key: "back",
+        label: `${idLabel} · Back`,
+        url: decision.documents.backImage,
+      });
+    }
+    return tiles;
+  }
+  // No live decision (Didit unreachable or session id missing): placeholders.
+  return [
+    { key: "front", label: `${idLabel} · Front`, url: null },
+    { key: "back", label: `${idLabel} · Back`, url: null },
+    { key: "selfie", label: "Live selfie", url: null },
+  ];
+}
 
 export default async function KycReviewPage({
   params,
   searchParams,
 }: {
   params: Promise<{ userId: string }>;
-  searchParams?: Promise<{ kyc_alert?: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { userId } = await params;
+  const resolvedSearchParams = (await searchParams) ?? {};
 
-  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const session = await auth();
+  const adminId = session?.user?.id;
+  if (!adminId) {
+    redirect("/auth/signin");
+  }
 
-  const { status: kyc, error: kycError } = await getVerificationStatus(userId);
-  const profile = await getProfile(userId);
-
-  if (kycError || !kyc) {
+  const userRole = await getUserRole(adminId);
+  if (!userRole || (userRole !== "admin" && userRole !== "manager")) {
     return (
-      <div className="max-w-4xl mx-auto mt-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Access Denied</CardTitle>
+          <CardDescription>
+            You do not have permission to access this page.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  const tabParam =
+    typeof resolvedSearchParams.from === "string"
+      ? resolvedSearchParams.from
+      : undefined;
+  const tab = (
+    kycStatusTabs.some((item) => item.value === tabParam)
+      ? tabParam
+      : "needs-review"
+  ) as KycQueueTab;
+  const activeTabLabel =
+    kycStatusTabs.find((item) => item.value === tab)?.label ?? "Needs review";
+
+  const [detail, neighbors] = await Promise.all([
+    getAdminKycDetail(userId),
+    getAdminKycNeighbors(userId, tab),
+  ]);
+
+  if (!detail.kyc) {
+    return (
+      <div className="mx-auto mt-8 max-w-4xl">
         <Alert variant="destructive">
           <AlertTitle>No KYC Submission</AlertTitle>
           <AlertDescription>
-            This user has not submitted KYC yet.
+            {detail.error || "This user has not submitted KYC yet."}
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  if (!profile) {
-    return (
-      <div className="max-w-4xl mx-auto mt-8">
-        <Alert variant="destructive">
-          <AlertTitle>No Profile Found</AlertTitle>
-          <AlertDescription>
-            This user does not have a profile yet.
-          </AlertDescription>
-        </Alert>
-      </div>
+  const kyc = detail.kyc;
+  const profile = detail.profile;
+  const decision = detail.decision;
+  const isDidit = kyc.document_type === "didit";
+  const displayName = profile?.fullName || kyc.full_name || "Unnamed applicant";
+  const firstName = displayName.split(" ")[0];
+
+  const faceMatch = decision?.faceMatchScore ?? null;
+  const faceMatchFailing =
+    faceMatch != null && faceMatch < KYC_FACE_MATCH_THRESHOLD;
+  const recordDiffers = detail.recordRows.some(
+    (row) => row.result === "differs",
+  );
+  const sessionFinished = decision ? decision.sessionFinished : true;
+  const disableApprove =
+    isDidit &&
+    decision != null &&
+    (!sessionFinished ||
+      faceMatchFailing ||
+      recordDiffers ||
+      decision.blocklistedMatches);
+
+  const failingReasons: string[] = [];
+  if (faceMatchFailing && faceMatch != null) {
+    failingReasons.push(
+      `Face match is ${faceMatch}%, below the ${KYC_FACE_MATCH_THRESHOLD}% threshold`,
     );
   }
+  if (decision?.blocklistedMatches) {
+    failingReasons.push("the selfie matches a blocklisted session");
+  }
+  for (const row of detail.recordRows) {
+    if (row.result === "differs") {
+      failingReasons.push(
+        row.official
+          ? `${row.field.toLowerCase()} differs from the official record`
+          : `${row.field.toLowerCase()} is missing`,
+      );
+    }
+  }
+
+  const tiles = isDidit ? buildDiditTiles(kyc, decision) : [];
+  const legacyMediaUrl =
+    !isDidit && kyc.document_url ? getMediaUrl(kyc.document_url) : null;
+  const legacyIsPdf =
+    !isDidit &&
+    Boolean(kyc.document_url?.split("?")[0].toLowerCase().endsWith(".pdf"));
+
+  const extras = (
+    [
+      ["Address", kyc.address],
+      ["City", kyc.city],
+      ["State", kyc.state],
+      ["Postal code", kyc.postal],
+      ["Country", kyc.country],
+    ] as [string, string | undefined][]
+  )
+    .filter(([, value]) => Boolean(value))
+    .map(([label, value]) => ({ label, value: value as string }))
+    .filter(
+      (entry) =>
+        !detail.recordRows.some(
+          (row) => row.field === entry.label && row.official == null,
+        ),
+    );
 
   async function approveAction() {
     "use server";
-    if (!kyc) return;
-
-    try {
-      const { error } = await updateVerificationStatus(kyc.id, "approved");
-      if (error) {
-        console.error("Error approving KYC:", error);
-        throw new Error(error);
-      }
-    } catch (error) {
-      if ((error as any).digest?.startsWith("NEXT_REDIRECT")) throw error;
-      console.error("Error in approveAction:", error);
-      throw error;
+    const result = await updateVerificationStatus(kyc.id, "approved");
+    if (result.error) {
+      throw new Error(result.error);
     }
-
-    redirect(`/dashboard/admin/users?kyc_alert=approved`);
+    redirect(
+      `/dashboard/admin/users/kyc?tab=${tab}&flash=approved&name=${encodeURIComponent(firstName)}&kycId=${kyc.id}`,
+    );
   }
 
   return (
-    <div className=" mt-4 md:mt-8 space-y-4 md:space-y-6 px-4 md:px-0">
-      {resolvedSearchParams.kyc_alert === "approved" && (
-        <Alert className="bg-green-100 border-green-300 text-green-800">
-          <CheckCircle className="h-4 w-4 text-green-700" />
-          <AlertTitle className="text-green-900">KYC Approved</AlertTitle>
-          <AlertDescription className="text-green-800">
-            The KYC verification has been approved successfully.
-          </AlertDescription>
-        </Alert>
-      )}
+    <div className="space-y-6 px-4 py-4 md:px-0 md:py-6">
+      <KycFlashToast />
 
-      {resolvedSearchParams.kyc_alert === "rejected" && (
-        <Alert className="bg-red-100 border-red-300 text-red-800">
-          <XCircle className="h-4 w-4 text-red-700" />
-          <AlertTitle className="text-red-900">KYC Rejected</AlertTitle>
-          <AlertDescription className="text-red-800">
-            The KYC verification has been rejected.
-          </AlertDescription>
-        </Alert>
-      )}
+      <nav className="flex items-center gap-2 text-xs text-ink/50">
+        <Link
+          href={`/dashboard/admin/users/kyc?tab=${tab}`}
+          className="hover:text-ink"
+        >
+          KYC
+        </Link>
+        <span className="text-ink/30">→</span>
+        <span>{activeTabLabel}</span>
+      </nav>
 
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            User Information
-          </CardTitle>
-          <CardDescription>Basic user details</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">Full Name</p>
-              <p className="font-medium break-words">
-                {profile.full_name || "Not provided"}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">Email</p>
-              <p className="font-medium break-all">
-                {profile.email || "Not provided"}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            KYC Status
-          </CardTitle>
-          <CardDescription>Current verification status</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">Status</p>
-              <Badge
-                variant={
-                  kyc.status === "approved"
-                    ? "default"
-                    : kyc.status === "pending"
-                      ? "secondary"
-                      : "destructive"
-                }
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="font-fraunces text-3xl tracking-tight text-ink">
+            {displayName}
+          </h1>
+          <KycStatusBadge status={kyc.status} />
+        </div>
+        <div className="flex items-center gap-2">
+          {neighbors.prevUserId ? (
+            <Button asChild variant="outline" size="sm">
+              <Link
+                href={`/dashboard/admin/users/kyc/${neighbors.prevUserId}?from=${tab}`}
               >
-                {kyc.status.charAt(0).toUpperCase() + kyc.status.slice(1)}
-              </Badge>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">Document Type</p>
-              <p className="font-medium">
-                {kyc.document_type || "Not specified"}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Previous
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" disabled>
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Previous
+            </Button>
+          )}
+          {neighbors.nextUserId ? (
+            <Button asChild variant="outline" size="sm">
+              <Link
+                href={`/dashboard/admin/users/kyc/${neighbors.nextUserId}?from=${tab}`}
+              >
+                Next
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" disabled>
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
 
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
-            KYC Submission Details
-          </CardTitle>
-          <CardDescription>
-            Personal information provided by the user
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            <h4 className="font-semibold text-sm text-gray-600 uppercase tracking-wide">
-              Personal Information
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  <span className="font-medium text-sm sm:text-base">
-                    Full Name:
-                  </span>
-                </div>
-                <span className="text-gray-700 break-words">
-                  {kyc.full_name || profile.full_name || "-"}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  <span className="font-medium text-sm sm:text-base">
-                    Date of Birth:
-                  </span>
-                </div>
-                <span className="text-gray-700">
-                  {kyc.dob || profile.date_of_birth || "-"}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  <span className="font-medium text-sm sm:text-base">
-                    Phone:
-                  </span>
-                </div>
-                <span className="text-gray-700 break-all">
-                  {kyc.phone || profile.phone || "-"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <Separator className="my-6" />
-
-          <div className="space-y-4">
-            <h4 className="font-semibold text-sm text-gray-600 uppercase tracking-wide">
-              Address Information
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  <span className="font-medium text-sm sm:text-base">
-                    Address:
-                  </span>
-                </div>
-                <span className="text-gray-700 break-words">
-                  {kyc.address || profile.location || "-"}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  <span className="font-medium text-sm sm:text-base">
-                    City:
-                  </span>
-                </div>
-                <span className="text-gray-700">{kyc.city || "-"}</span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  <span className="font-medium text-sm sm:text-base">
-                    State:
-                  </span>
-                </div>
-                <span className="text-gray-700">{kyc.state || "-"}</span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  <span className="font-medium text-sm sm:text-base">
-                    Postal Code:
-                  </span>
-                </div>
-                <span className="text-gray-700">{kyc.postal || "-"}</span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  <span className="font-medium text-sm sm:text-base">
-                    Country:
-                  </span>
-                </div>
-                <span className="text-gray-700">
-                  {kyc.country || profile.country_of_residence || "-"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <Separator className="my-6" />
-
-          <div className="space-y-4">
-            <h4 className="font-semibold text-sm text-gray-600 uppercase tracking-wide">
-              Document Preview
-            </h4>
-            {kyc?.document_type === "didit" ? (
-              <div className="border rounded-lg p-8 bg-gray-50 text-center text-gray-700">
-                <p className="font-medium text-lg">Verified via Didit</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Session ID: {kyc.document_url || "N/A"}
-                </p>
-              </div>
-            ) : kyc?.document_url ? (
-              kyc.document_url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                <div className="border rounded-lg p-4 bg-gray-50 flex justify-center items-center">
-                  <a
-                    href={getMediaUrl(kyc.document_url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    <Image
-                      src={
-                        getMediaUrl(kyc.document_url) ||
-                        "/icons/placeholder.svg"
-                      }
-                      alt="KYC Document"
-                      width={500}
-                      height={300}
-                      className="object-contain rounded shadow-sm hover:shadow-md transition-shadow max-h-64"
-                      unoptimized={isProxyMediaUrl(
-                        getMediaUrl(kyc.document_url),
-                      )}
-                    />
-                    <p className="text-sm text-blue-600 mt-2 text-center">
-                      Click image to view full size
-                    </p>
-                  </a>
-                </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-6">
+          <Card variant="surface">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base">Documents</CardTitle>
+              <CardDescription>
+                Submitted {formatRelativeTime(kyc.created_at)}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {tiles.length > 0 ? (
+                <KycDocumentGrid tiles={tiles} />
+              ) : legacyMediaUrl && !legacyIsPdf ? (
+                <a
+                  href={legacyMediaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block overflow-hidden rounded-lg border border-hairline bg-cream-muted"
+                >
+                  <Image
+                    src={legacyMediaUrl}
+                    alt="KYC document"
+                    width={640}
+                    height={480}
+                    className="max-h-72 w-full object-contain"
+                    unoptimized={isProxyMediaUrl(legacyMediaUrl)}
+                  />
+                </a>
+              ) : legacyIsPdf ? (
+                <a
+                  href={legacyMediaUrl ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center rounded-lg border border-hairline bg-cream-muted px-4 py-3 text-sm font-medium text-ink underline-offset-4 hover:underline"
+                >
+                  View PDF document
+                </a>
               ) : (
-                <div className="border rounded-lg p-4 bg-gray-50 flex items-center gap-4">
-                  <span className=" w-8 h-8 bg-gray-200 flex items-center justify-center rounded">
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <path
-                        d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.828A2 2 0 0 0 19.414 7.414l-4.828-4.828A2 2 0 0 0 12.172 2H6zm7 1.414L18.586 9H15a2 2 0 0 1-2-2V3.414z"
-                        fill="#e53e3e"
-                      />
-                    </svg>
-                  </span>
-                  <a
-                    href={getMediaUrl(kyc.document_url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline"
-                  >
-                    View PDF Document
-                  </a>
+                <div className="rounded-lg border border-dashed border-ink/20 bg-cream-muted p-8 text-center text-sm text-ink/50">
+                  No document uploaded
                 </div>
-              )
-            ) : (
-              <div className="border rounded-lg p-8 bg-gray-50 text-center text-gray-500">
-                No document uploaded
-              </div>
-            )}
-            {kyc?.status === "rejected" && kyc?.verification_notes && (
-              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mt-4">
-                <h3 className="font-medium text-destructive mb-2">
-                  Rejection Reason
-                </h3>
-                <p className="text-sm text-destructive">
+              )}
+              {isDidit && faceMatch != null && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm text-ink/60">Face match</span>
+                  <FaceMatchMeter score={faceMatch} />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card variant="surface" className="scroll-mt-8" id="record-check">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base">Record check</CardTitle>
+              <CardDescription>{detail.recordSource}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RecordCheckTable rows={detail.recordRows} />
+            </CardContent>
+          </Card>
+
+          {extras.length > 0 && (
+            <Card variant="surface">
+              <CardHeader>
+                <CardTitle className="text-base">Submission details</CardTitle>
+                <CardDescription>
+                  Information provided with the submission
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {extras.map((entry) => (
+                  <div key={entry.label} className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-ink/50">
+                      {entry.label}
+                    </p>
+                    <p className="break-words text-sm font-medium text-ink">
+                      {entry.value}
+                    </p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {kyc.verification_notes && (
+            <Card variant="surface">
+              <CardHeader>
+                <CardTitle className="text-base">Decision log</CardTitle>
+                <CardDescription>
+                  Last updated {formatDate(kyc.updated_at)}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="whitespace-pre-line text-sm leading-relaxed text-ink/70">
                   {kyc.verification_notes}
                 </p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
-      {kyc?.document_type !== "didit" && (
-        <Card className="shadow-lg">
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="space-y-6">
+          <Card variant="surface">
+            <CardHeader>
+              <CardTitle className="text-base">Applicant</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-cream-muted text-sm font-semibold text-ink">
+                    {initials(displayName)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-ink">
+                    {displayName}
+                  </p>
+                  <p className="truncate text-xs text-ink/50">
+                    {profile?.email || "No email on file"}
+                  </p>
+                </div>
+              </div>
+              <Separator />
+              <dl className="space-y-3 text-sm">
+                {[
+                  {
+                    term: "Account age",
+                    value: formatAccountAge(profile?.createdAt),
+                  },
+                  {
+                    term: "Previous attempts",
+                    value:
+                      detail.attempts > 1
+                        ? `${detail.attempts - 1} · earlier attempt${detail.attempts > 2 ? "s" : ""}`
+                        : "0",
+                  },
+                  {
+                    term: "Watchlists",
+                    value: decision
+                      ? decision.amlHits
+                        ? `${decision.amlHits} match${decision.amlHits === 1 ? "" : "es"}`
+                        : "No matches"
+                      : "Not checked",
+                  },
+                  {
+                    term: "ID type",
+                    value: formatIdTypeLabel(
+                      decision?.documents.documentType ??
+                        kyc.id_type ??
+                        (isDidit ? null : kyc.document_type),
+                    ),
+                  },
+                ].map((row) => (
+                  <div
+                    key={row.term}
+                    className="flex items-center justify-between gap-4"
+                  >
+                    <dt className="text-ink/60">{row.term}</dt>
+                    <dd className="text-right font-medium text-ink">
+                      {row.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </CardContent>
+          </Card>
+
+          {isDidit && detail.decisionError ? (
+            <CalloutBanner
+              variant="rust"
+              icon={<AlertTriangle className="mt-0.5 h-4 w-4 text-rust" />}
+              title="Didit isn't responding"
+              description={`${detail.decisionError} Cached details are shown; you can still decide manually.`}
+              action={
+                <div className="flex flex-col gap-2">
+                  <Button asChild size="sm" variant="ink">
+                    <Link
+                      href={`/dashboard/admin/users/kyc/${userId}?from=${tab}`}
+                    >
+                      Try again
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
+                    <a href="#record-check">Review manually</a>
+                  </Button>
+                </div>
+              }
+            />
+          ) : decision && !decision.sessionFinished ? (
+            <CalloutBanner
+              variant="gold"
+              title="Verification in progress"
+              description="The applicant hasn't finished the Didit session yet. Decide once it completes."
+            />
+          ) : kyc.status === "approved" ? (
+            <CalloutBanner
+              variant="forest"
+              icon={<CheckCircle className="mt-0.5 h-4 w-4 text-forest" />}
+              title="Identity approved"
+              description="The applicant is verified for payouts and referrals."
+            />
+          ) : kyc.status === "rejected" ? (
+            <CalloutBanner
+              variant="rust"
+              title="Verification rejected"
+              description={
+                kyc.verification_notes ??
+                "The applicant can resubmit from their settings."
+              }
+            />
+          ) : kyc.status === "resubmitted" ? (
+            <CalloutBanner
+              variant="gold"
+              title="Resubmission requested"
+              description="Waiting for the applicant to redo the requested checks."
+            />
+          ) : failingReasons.length > 0 ? (
+            <CalloutBanner
+              variant="rust"
+              icon={<AlertTriangle className="mt-0.5 h-4 w-4 text-rust" />}
+              title="This case needs a closer look"
+              description={`${failingReasons.join("; ")}. Ask for a resubmission or reject.`}
+            />
+          ) : (
+            <CalloutBanner
+              variant="forest"
+              icon={<CheckCircle className="mt-0.5 h-4 w-4 text-forest" />}
+              title="All automatic checks passed."
+              description="Review the record check, then approve."
+            />
+          )}
+
+          <Card variant="surface">
+            <CardContent className="space-y-3 pt-6">
               <form action={approveAction}>
                 <Button
                   type="submit"
-                  disabled={kyc?.status === "approved"}
-                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 w-full"
+                  variant="ink"
+                  className="w-full"
+                  aria-label="Approve KYC"
+                  disabled={disableApprove || kyc.status === "approved"}
                 >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Approve KYC
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Approve identity
                 </Button>
               </form>
-              <KycRejectionDialog kycId={kyc.id} />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              <div className="flex flex-wrap gap-2">
+                {isDidit && (
+                  <AskResubmitDialog
+                    verificationId={kyc.id}
+                    applicantFirstName={firstName}
+                    messagePlaceholder={RESUBMIT_MESSAGE_PLACEHOLDER}
+                  />
+                )}
+                <KycRejectionDialog
+                  kycId={kyc.id}
+                  applicantFirstName={firstName}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

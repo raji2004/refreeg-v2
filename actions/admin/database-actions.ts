@@ -15,6 +15,8 @@ export type Action =
   | "delete-user"
   | "approve-kyc"
   | "reject-kyc"
+  | "request-kyc-resubmit"
+  | "undo-kyc-decision"
   | "send-kyc-reminders"
   | "appoint-admin"
   | "takedown-api-campaign";
