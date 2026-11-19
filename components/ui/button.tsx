@@ -28,6 +28,8 @@ const buttonVariants = cva(
         surface:
           "bg-surface border border-hairline text-ink hover:bg-bone shadow-none",
         subtle: "bg-bone text-ink hover:bg-muted border border-hairline/60",
+        // Marketing-page primary CTA (home hero "Give to a cause").
+        accent: "bg-blue-accent text-white shadow-xl hover:bg-blue-accent/90",
         // No colors or hover of its own: the caller supplies them in className.
         bare: "",
       },
@@ -36,6 +38,7 @@ const buttonVariants = cva(
         sm: "h-9 rounded-md px-3",
         lg: "h-11 rounded-md px-8",
         icon: "h-10 w-10",
+        pill: "h-12 gap-2 rounded-full px-6",
         // No height or padding of its own: the caller supplies them in className.
         bare: "h-auto px-0 py-0",
       },

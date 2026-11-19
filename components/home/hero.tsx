@@ -5,6 +5,7 @@ import { useGsap } from "@/hooks/use-gsap";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Lead } from "@/components/marketing/Typography";
 
 const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -79,11 +80,11 @@ const Hero = () => {
           it <span className="italic text-brand-blue">lands.</span>
         </h1>
 
-        <p className="hero-description mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
+        <Lead className="hero-description mt-4 max-w-xl">
           Refreeg puts every naira on-chain. Donors get a receipt, not a
           brochure. Causes get funded in seconds, not weeks. No black box, no
           trust tax. Just verifiable giving.
-        </p>
+        </Lead>
 
         <div className="hero-buttons mt-6 flex flex-col items-center gap-4 sm:flex-row">
           <Button
@@ -113,7 +114,7 @@ const Hero = () => {
 
         <div className="hero-image w-full max-w-4xl px-2 sm:px-6">
           <Image
-            src="/heropage.png"
+            src="/heropage.svg"
             alt="Hero Background"
             width={1400}
             height={900}

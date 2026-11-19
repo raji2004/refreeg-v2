@@ -99,6 +99,7 @@ export interface CauseFilterOptions {
   location?: string;
   urgentOnly?: boolean;
   verifiedOnly?: boolean;
+  claimedOnly?: boolean;
   minAmountNeeded?: number;
   maxAmountNeeded?: number;
 }

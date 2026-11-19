@@ -54,6 +54,19 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  async redirects() {
+    return [
+      ["/healthcare", "healthcare"],
+      ["/disaster-relief", "disaster-relief"],
+      ["/non-profits", "nonprofits"],
+      ["/businesses", "businesses"],
+      ["/creators", "creators"],
+    ].map(([source, section]) => ({
+      source,
+      destination: `/crowdfund#${section}`,
+      permanent: true,
+    }));
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "20mb",

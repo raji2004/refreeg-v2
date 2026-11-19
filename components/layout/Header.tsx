@@ -28,6 +28,7 @@ import {
   LogOut,
   Menu,
   Megaphone,
+  Palette,
   Shield,
   Share2,
   Sparkles,
@@ -94,29 +95,36 @@ const publicNavItems: NavItem[] = [
         title: "RefreeG for Businesses",
         description:
           "Launch CSR campaigns, support community-driven causes, and connect with customers who care about impact.",
-        href: "/dashboard/causes/create?category=business",
+        href: "/crowdfund#businesses",
         icon: CircleDollarSign,
       },
       {
         title: "RefreeG for Nonprofits",
         description:
           "Raise more, reach more. Build trust with transparent fundraising tools designed to help nonprofits thrive and grow their donor communities.",
-        href: "/dashboard/causes/create?category=general",
+        href: "/crowdfund#nonprofits",
         icon: Target,
       },
       {
         title: "RefreeG for Disaster Relief",
         description:
           "Rally urgent support for communities hit by disasters and get aid to those who need it; quickly and securely.",
-        href: "/dashboard/causes/create?category=disaster",
+        href: "/crowdfund#disaster-relief",
         icon: HeartHandshake,
       },
       {
         title: "RefreeG for Healthcare",
         description:
           "Give hope a platform. Raise funds for medical bills, healthcare projects, or critical treatments with transparency and community support.",
-        href: "/dashboard/causes/create?category=health",
+        href: "/crowdfund#healthcare",
         icon: FileText,
+      },
+      {
+        title: "RefreeG for Creators",
+        description:
+          "Fund your next project, tour or release with a page your audience can find, share and trust.",
+        href: "/crowdfund#creators",
+        icon: Palette,
       },
     ],
   },

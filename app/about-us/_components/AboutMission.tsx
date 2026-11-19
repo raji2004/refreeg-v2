@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Heading } from "@/components/marketing/Typography";
 
 const goals = [
   {
@@ -35,9 +36,9 @@ export function AboutMission() {
         />
 
         <div className="max-w-md">
-          <h2 className="font-fraunces text-4xl font-normal text-ink md:text-5xl">
+          <Heading>
             Our <span className="text-blue-accent">mission</span>
-          </h2>
+          </Heading>
 
           <ul className="mt-8 space-y-6">
             {goals.map((goal) => (

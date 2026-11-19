@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Flag, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { getMediaUrl, isProxyMediaUrl } from "@/lib/s3/media";
 import { formatNairaShort } from "@/lib/causes/discover-summary";
 import { BookmarkButton } from "@/components/saved/BookmarkButton";
@@ -30,13 +30,7 @@ const AVATAR_TONES = [
 ];
 
 function OrgAvatar({ name }: { name: string }) {
-  const initials =
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0]?.toUpperCase())
-      .join("") || "RG";
+  const initials = getInitials(name, "RG");
   const tone =
     AVATAR_TONES[
       [...name].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) %
