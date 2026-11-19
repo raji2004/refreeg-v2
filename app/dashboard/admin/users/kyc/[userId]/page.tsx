@@ -239,7 +239,7 @@ export default async function KycReviewPage({
   }
 
   return (
-    <div className="space-y-6 px-4 py-4 md:px-0 md:py-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <KycFlashToast />
 
       <nav className="flex items-center gap-2 text-xs text-ink/50">

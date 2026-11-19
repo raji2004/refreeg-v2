@@ -34,14 +34,16 @@ export default async function KycListPage({
   const userRole = await getUserRole(userId);
   if (!userRole || (userRole !== "admin" && userRole !== "manager")) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Access Denied</CardTitle>
-          <CardDescription>
-            You do not have permission to access this page.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              You do not have permission to access this page.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
     );
   }
 
@@ -58,7 +60,7 @@ export default async function KycListPage({
   const snapshot = await getAdminKycQueueSnapshot();
 
   return (
-    <div className="space-y-6 px-4 py-4 md:px-0 md:py-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <KycFlashToast />
       <KycQueueClient snapshot={snapshot} initialTab={initialTab} />
     </div>
