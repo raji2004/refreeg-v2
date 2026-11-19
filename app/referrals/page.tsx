@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
-import { Share2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { auth } from "@/lib/auth/auth";
 import { getReferralDashboardData } from "@/actions/users/referral-actions";
 import {
   getCurrentUserRank,
   getLeaderboard,
 } from "@/actions/users/leaderboard-actions";
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { ReferralsView } from "./ReferralsView";
 
 export const metadata: Metadata = {
@@ -28,20 +26,28 @@ export default async function ReferralsPage({
 
   if (!user?.id) {
     return (
-      <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
-        <EmptyState
-          variant="page"
-          className="py-16"
-          icon={<Share2 className="h-7 w-7" />}
-          title="Referrals live with your account"
-          description="Sign in to get your referral link, track the friends you invite, and climb the community leaderboard."
-          action={
-            <Button asChild variant="ink" className="rounded-xl">
-              <Link href="/auth/signin?redirect=%2Freferrals">Sign in</Link>
-            </Button>
-          }
-        />
-      </div>
+      <section className="mx-auto flex w-full max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 md:py-28">
+        <span className="inline-flex items-center gap-2 rounded-full bg-lime px-4 py-2 text-xs font-semibold text-ink shadow-md sm:text-sm">
+          <span className="h-1.5 w-1.5 rounded-full bg-blue-accent" />
+          Referrals live with your account
+        </span>
+        <h1 className="mt-6 font-fraunces text-5xl font-normal leading-[1.02] tracking-tight text-ink sm:text-6xl md:text-7xl">
+          Bring your people.
+          <br />
+          <em className="text-blue-accent">Climb together.</em>
+        </h1>
+        <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
+          Sign in to get your referral link, track the friends you invite, and
+          climb the community leaderboard.
+        </p>
+        <Link
+          href="/auth/signin?redirect=%2Freferrals"
+          className="mt-8 inline-flex items-center gap-2 rounded-full bg-blue-accent px-8 py-3.5 text-sm font-medium text-white shadow-xl transition-colors hover:bg-blue-accent/90"
+        >
+          Sign in
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      </section>
     );
   }
 
@@ -60,7 +66,7 @@ export default async function ReferralsPage({
       : `${origin}${data?.referralLink ?? ""}`;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">
       <ReferralsView
         initialTab={tab === "leaderboard" ? "leaderboard" : "hub"}
         referralLink={referralLink}
