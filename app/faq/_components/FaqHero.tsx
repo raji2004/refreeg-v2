@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, Search } from "lucide-react";
+import { Heading } from "@/components/marketing/Typography";
 
 type FaqHeroProps = {
   query: string;
@@ -17,10 +18,10 @@ export function FaqHero({ query, onQueryChange, onSubmit }: FaqHeroProps) {
           Help centre
         </span>
 
-        <h1 className="mt-6 font-fraunces text-4xl font-normal leading-[1.05] tracking-tight text-ink sm:text-5xl md:text-6xl lg:text-7xl">
+        <Heading as="h1" size="display" className="mt-6">
           Questions? We&apos;ve got{" "}
           <span className="text-brand-blue">answers.</span>
-        </h1>
+        </Heading>
 
         <form
           role="search"

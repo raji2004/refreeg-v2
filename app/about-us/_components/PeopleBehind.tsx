@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
+import { Heading } from "@/components/marketing/Typography";
 
 const TEAM_LINK = "https://t.me/+ibsgFy6SL0AwYmE8";
 
@@ -16,9 +17,9 @@ export function PeopleBehind() {
       <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
 
       <div className="absolute inset-x-0 bottom-0 flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between md:p-10">
-        <h2 className="font-fraunces text-3xl font-normal leading-tight text-white md:text-5xl">
+        <Heading className="text-3xl leading-tight text-white">
           The people behind <span className="text-lime">Refreeg</span>
-        </h2>
+        </Heading>
         <a
           href={TEAM_LINK}
           target="_blank"

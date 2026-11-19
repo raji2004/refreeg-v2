@@ -1,6 +1,7 @@
 import { ArrowRight, Users } from "lucide-react";
 
 import type { ReferralRow } from "@/actions/users/referral-actions";
+import { Heading } from "@/components/marketing/Typography";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { cn } from "@/lib/utils";
@@ -41,11 +42,11 @@ export function ReferralHub({
     <div className="space-y-16 md:space-y-20">
       <section className="rounded-2xl bg-warm-neutral px-6 py-10 sm:px-10 md:py-14">
         <div className="grid items-center gap-8 lg:grid-cols-[1fr_1.2fr] lg:gap-12">
-          <h2 className="font-fraunces text-4xl font-normal leading-[1.02] tracking-tight text-ink md:text-5xl">
+          <Heading>
             Your link,
             <br />
             <em>your impact.</em>
-          </h2>
+          </Heading>
           <div>
             <p className="text-sm leading-relaxed text-ink/70 sm:text-base">
               Anyone who signs up or gives through your link counts toward your
@@ -101,9 +102,9 @@ export function ReferralHub({
       <section className="grid gap-10 md:grid-cols-[1fr_1.3fr] md:gap-16">
         <div>
           <Eyebrow className="mb-3 block">How it works</Eyebrow>
-          <h2 className="font-fraunces text-4xl font-normal leading-[1.05] text-ink md:text-5xl">
+          <Heading>
             Three steps to <em>rewards.</em>
-          </h2>
+          </Heading>
         </div>
         <ol>
           {STEPS.map((step, index) => (
@@ -129,9 +130,9 @@ export function ReferralHub({
 
       <section>
         <Eyebrow className="mb-3 block">Your referrals</Eyebrow>
-        <h2 className="font-fraunces text-3xl font-normal leading-[1.05] text-ink md:text-4xl">
+        <Heading size="subsection">
           The people <em>you brought.</em>
-        </h2>
+        </Heading>
 
         {referrals.length === 0 ? (
           <EmptyState

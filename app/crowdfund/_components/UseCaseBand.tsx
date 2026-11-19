@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import Image from "next/image";
 
+import { Heading } from "@/components/marketing/Typography";
 import { useGsap } from "@/hooks/use-gsap";
 import { cn } from "@/lib/utils";
 
@@ -58,12 +59,13 @@ export function UseCaseBand({
           </span>
           For {useCase.label.toLowerCase()}
         </p>
-        <h2
+        <Heading
           id={`${useCase.id}-heading`}
-          className="mt-4 max-w-4xl font-fraunces text-5xl font-normal leading-[1.02] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl"
+          size="display"
+          className="mt-4 max-w-4xl text-white lg:text-8xl"
         >
           {useCase.heading} <em className="text-lime">{useCase.emphasis}</em>
-        </h2>
+        </Heading>
       </div>
     </div>
   );

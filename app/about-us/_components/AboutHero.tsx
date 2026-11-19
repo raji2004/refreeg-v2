@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { Heading } from "@/components/marketing/Typography";
 
 const stickers = [
   {
@@ -42,10 +43,14 @@ export function AboutHero() {
           About Refreeg
         </span>
 
-        <h1 className="mt-6 max-w-3xl font-fraunces lg:max-w-[46rem] text-4xl font-normal leading-[1.05] tracking-tight text-ink sm:text-5xl md:text-6xl lg:text-7xl">
+        <Heading
+          as="h1"
+          size="display"
+          className="mt-6 max-w-3xl lg:max-w-[46rem]"
+        >
           We connect people who care with causes that{" "}
           <span className="text-blue-accent">matter.</span>
-        </h1>
+        </Heading>
 
         <p className="mt-6 max-w-md text-sm leading-relaxed text-ink/70 md:text-base">
           Refreeg is a transparent crowdfunding platform. Every donation is

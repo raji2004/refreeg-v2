@@ -7,6 +7,7 @@ import {
   getLeaderboard,
   type LeaderboardEntry,
 } from "@/actions/users/leaderboard-actions";
+import { Heading } from "@/components/marketing/Typography";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Eyebrow } from "@/components/ui/eyebrow";
@@ -87,7 +88,11 @@ export function ReferralLeaderboard({
       <section className="flex flex-col gap-6 rounded-2xl bg-brand-blue px-6 py-10 text-brand-blue-foreground sm:flex-row sm:items-end sm:justify-between sm:px-10 md:py-14">
         <div>
           <p className="text-sm text-brand-blue-foreground/70">Your rank</p>
-          <p className="mt-2 font-fraunces text-6xl font-normal leading-none md:text-7xl">
+          <Heading
+            as="p"
+            size="display"
+            className="mt-2 leading-none text-brand-blue-foreground"
+          >
             {rank ? (
               <>
                 You&apos;re <em className="text-lime">#{rank}.</em>
@@ -97,7 +102,7 @@ export function ReferralLeaderboard({
                 Not ranked <em className="text-lime">yet.</em>
               </>
             )}
-          </p>
+          </Heading>
         </div>
         <p className="max-w-xs text-sm leading-relaxed text-brand-blue-foreground/80">
           {rank
@@ -126,9 +131,9 @@ export function ReferralLeaderboard({
       ) : (
         <section>
           <Eyebrow className="mb-3 block">Live rankings</Eyebrow>
-          <h2 className="font-fraunces text-4xl font-normal leading-[1.05] text-ink md:text-5xl">
+          <Heading>
             Top <em>referrers.</em>
-          </h2>
+          </Heading>
 
           <ol className="mt-10 grid gap-10 sm:grid-cols-3 sm:gap-0">
             {topThree.map((entry, index) => (

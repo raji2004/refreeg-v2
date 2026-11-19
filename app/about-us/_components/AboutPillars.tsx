@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Heading } from "@/components/marketing/Typography";
 
 const pillars = [
   {
@@ -22,11 +23,11 @@ export function AboutPillars() {
   return (
     <section className="bg-blue-accent px-4 py-20 sm:px-6 md:py-28">
       <div className="mx-auto max-w-6xl">
-        <h2 className="text-center font-fraunces text-3xl font-normal leading-tight text-white md:text-5xl">
+        <Heading className="text-center text-3xl leading-tight text-white">
           Built because people kept asking
           <br />
           <span className="text-lime">where did my money go?</span>
-        </h2>
+        </Heading>
 
         <div className="mt-14 grid gap-10 sm:grid-cols-3 md:mt-20">
           {pillars.map((pillar) => (

@@ -1,5 +1,50 @@
+import type { HTMLAttributes } from "react";
+
 import { typographyProps } from "@/lib/type";
 import { cn } from "@/lib/utils";
+
+// Home-page editorial type: Fraunces headlines that end on an <em> accent.
+// Unlike H1–P below, passed classes win, so colour and spacing can be set.
+const headingSizes = {
+  display:
+    "text-4xl leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl",
+  section: "text-4xl leading-[1.05] tracking-tight md:text-5xl",
+  subsection: "text-3xl leading-[1.05] md:text-4xl",
+} as const;
+
+type HeadingProps = HTMLAttributes<HTMLHeadingElement> & {
+  as?: "h1" | "h2" | "h3" | "p";
+  size?: keyof typeof headingSizes;
+};
+
+export const Heading = ({
+  as: Tag = "h2",
+  size = "section",
+  className,
+  ...props
+}: HeadingProps) => (
+  <Tag
+    className={cn(
+      "font-fraunces font-normal text-ink",
+      headingSizes[size],
+      className,
+    )}
+    {...props}
+  />
+);
+
+export const Lead = ({
+  className,
+  ...props
+}: HTMLAttributes<HTMLParagraphElement>) => (
+  <p
+    className={cn(
+      "text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg",
+      className,
+    )}
+    {...props}
+  />
+);
 
 export const H1 = ({ className, children }: typographyProps) => (
   <h1

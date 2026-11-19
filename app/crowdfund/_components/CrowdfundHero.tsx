@@ -4,6 +4,7 @@ import { useRef } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+import { Heading, Lead } from "@/components/marketing/Typography";
 import { useGsap } from "@/hooks/use-gsap";
 
 import { useCases } from "../_data/use-cases";
@@ -34,16 +35,20 @@ export function CrowdfundHero() {
           {useCases.length} ways to raise on Refreeg
         </span>
 
-        <h1 className="cf-hero-reveal mt-6 font-fraunces text-5xl font-normal leading-[1.02] tracking-tight text-ink sm:text-6xl md:text-7xl lg:text-8xl">
+        <Heading
+          as="h1"
+          size="display"
+          className="cf-hero-reveal mt-6 lg:text-8xl"
+        >
           Raise for what <br className="hidden sm:block" />
           <em className="text-blue-accent">matters</em> to you.
-        </h1>
+        </Heading>
 
-        <p className="cf-hero-reveal mt-6 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
+        <Lead className="cf-hero-reveal mt-6 max-w-xl">
           A hospital bill, a flood response, your debut EP. Whatever you raise
           for, funds sit in escrow and release on milestones, with proof donors
           can check.
-        </p>
+        </Lead>
 
         <div className="cf-hero-reveal mt-8 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
           <Link

@@ -8,6 +8,7 @@ import {
   getCurrentUserRank,
   getLeaderboard,
 } from "@/actions/users/leaderboard-actions";
+import { Heading, Lead } from "@/components/marketing/Typography";
 import { ReferralsView } from "./ReferralsView";
 
 export const metadata: Metadata = {
@@ -31,15 +32,15 @@ export default async function ReferralsPage({
           <span className="h-1.5 w-1.5 rounded-full bg-blue-accent" />
           Referrals live with your account
         </span>
-        <h1 className="mt-6 font-fraunces text-5xl font-normal leading-[1.02] tracking-tight text-ink sm:text-6xl md:text-7xl">
+        <Heading as="h1" size="display" className="mt-6">
           Bring your people.
           <br />
           <em className="text-blue-accent">Climb together.</em>
-        </h1>
-        <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
+        </Heading>
+        <Lead className="mt-5 max-w-xl">
           Sign in to get your referral link, track the friends you invite, and
           climb the community leaderboard.
-        </p>
+        </Lead>
         <Link
           href="/auth/signin?redirect=%2Freferrals"
           className="mt-8 inline-flex items-center gap-2 rounded-full bg-blue-accent px-8 py-3.5 text-sm font-medium text-white shadow-xl transition-colors hover:bg-blue-accent/90"

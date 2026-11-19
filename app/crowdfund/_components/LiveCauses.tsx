@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 
 import { listDiscoverResults } from "@/actions/causes/discover-actions";
 import { formatNaira } from "@/components/giving/format";
+import { Heading } from "@/components/marketing/Typography";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,7 +27,7 @@ export async function LiveCauses({ useCase }: { useCase: UseCase }) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <Eyebrow className="mb-3 block">Live on RefreeG</Eyebrow>
-          <h3 className="font-fraunces text-3xl font-normal leading-[1.05] text-ink md:text-4xl">
+          <Heading as="h3" size="subsection">
             {items.length ? (
               <>
                 Raising <em className="font-medium">right now.</em>
@@ -36,7 +37,7 @@ export async function LiveCauses({ useCase }: { useCase: UseCase }) {
                 Nothing live here <em className="font-medium">yet.</em>
               </>
             )}
-          </h3>
+          </Heading>
         </div>
         <Link
           href={

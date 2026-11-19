@@ -1,16 +1,17 @@
 import Image from "next/image";
 
 import { perks } from "../_data/community";
+import { Heading } from "@/components/marketing/Typography";
 
 export function CommunityPerks() {
   return (
     <section className="bg-brand-blue px-4 py-20 sm:px-6 md:py-28">
       <div className="mx-auto max-w-6xl">
-        <h2 className="text-center font-fraunces text-3xl font-normal leading-tight text-brand-blue-foreground md:text-5xl">
+        <Heading className="text-center text-3xl leading-tight text-brand-blue-foreground">
           Funded causes aren&apos;t lucky.
           <br />
           <span className="text-lime">They&apos;re backed by people.</span>
-        </h2>
+        </Heading>
 
         <div className="mt-14 grid gap-10 sm:grid-cols-3 md:mt-20">
           {perks.map((perk) => (

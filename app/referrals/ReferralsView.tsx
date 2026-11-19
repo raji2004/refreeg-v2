@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 
 import type { LeaderboardEntry } from "@/actions/users/leaderboard-actions";
 import type { ReferralRow } from "@/actions/users/referral-actions";
+import { Heading, Lead } from "@/components/marketing/Typography";
 import { cn } from "@/lib/utils";
 
 import { ReferralHub } from "./_components/ReferralHub";
@@ -81,15 +82,15 @@ export function ReferralsView({
           <span className="h-1.5 w-1.5 rounded-full bg-blue-accent" />
           Earn as you share
         </span>
-        <h1 className="mt-6 font-fraunces text-5xl font-normal leading-[1.02] tracking-tight text-ink sm:text-6xl md:text-7xl">
+        <Heading as="h1" size="display" className="mt-6">
           Bring your people.
           <br />
           <em className="text-blue-accent">Climb together.</em>
-        </h1>
-        <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
+        </Heading>
+        <Lead className="mt-5 max-w-xl">
           Invite the people you trust, support meaningful causes, and rise on
           the leaderboard as they give.
-        </p>
+        </Lead>
       </header>
 
       <nav
