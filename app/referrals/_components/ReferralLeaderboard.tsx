@@ -18,9 +18,10 @@ import { cn } from "@/lib/utils";
 import { DonorBreakdownDialog } from "./DonorBreakdownDialog";
 import { LeaderboardIdentity } from "./LeaderboardIdentity";
 import { ViewDonorsLink } from "./ViewDonorsLink";
-import { plural } from "./referral-format";
 
 export const LEADERBOARD_PAGE_SIZE = 20;
+const plural = (count: number, word: string) =>
+  `${count.toLocaleString()} ${count === 1 ? word : `${word}s`}`;
 const POLL_MS = 30_000;
 
 export function ReferralLeaderboard({

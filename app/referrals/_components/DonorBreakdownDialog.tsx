@@ -13,9 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatNairaShort } from "@/lib/causes/discover-summary";
+import { formatDate } from "@/lib/format-date";
 import { toast } from "@/hooks/use-toast";
-
-import { shortDate } from "./referral-format";
 
 export function DonorBreakdownDialog({
   referrerId,
@@ -77,7 +76,7 @@ export function DonorBreakdownDialog({
                       : donation.donorName}
                   </p>
                   <p className="truncate text-xs text-ink/50">
-                    {donation.cause.title} · {shortDate(donation.createdAt)}
+                    {donation.cause.title} · {formatDate(donation.createdAt)}
                   </p>
                 </div>
                 <span className="shrink-0 font-fraunces text-lg text-ink">

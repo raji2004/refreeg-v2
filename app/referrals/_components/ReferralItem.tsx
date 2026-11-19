@@ -1,7 +1,7 @@
 import type { ReferralRow } from "@/actions/users/referral-actions";
 import { cn } from "@/lib/utils";
 
-import { shortDate } from "./referral-format";
+import { formatDate } from "@/lib/format-date";
 
 export function ReferralItem({ row }: { row: ReferralRow }) {
   const name =
@@ -28,7 +28,7 @@ export function ReferralItem({ row }: { row: ReferralRow }) {
         {registered ? "Registered" : "Invited"}
       </p>
       <p className="order-4 text-xs text-ink/60 sm:order-none sm:text-sm">
-        {shortDate(row.created_at)}
+        {formatDate(row.created_at)}
       </p>
       <p
         className={cn(

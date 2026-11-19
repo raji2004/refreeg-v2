@@ -1,8 +1,6 @@
 import type { LeaderboardEntry } from "@/actions/users/leaderboard-actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
-
-import { initials } from "./referral-format";
+import { cn, getInitials } from "@/lib/utils";
 
 export function LeaderboardIdentity({
   entry,
@@ -19,7 +17,7 @@ export function LeaderboardIdentity({
           alt={entry.fullName}
         />
         <AvatarFallback className="bg-warm-neutral text-xs font-semibold text-ink">
-          {initials(entry.fullName)}
+          {getInitials(entry.fullName)}
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0">

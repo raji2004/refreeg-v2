@@ -5,6 +5,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** First letters of the first two words, for avatar fallbacks. */
+export function getInitials(name: string, fallback = "?") {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word[0]?.toUpperCase())
+      .join("") || fallback
+  );
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-NG", {
     style: "currency",
