@@ -13,19 +13,33 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { idToken, accountType } = body;
 
-    if (!idToken) {
+    if (typeof idToken !== "string" || !idToken.trim()) {
       return apiError("Missing required field (idToken)", 400);
     }
 
+    const expectedClientId = process.env.GOOGLE_CLIENT_ID?.trim();
+    if (!expectedClientId) {
+      console.error("Mobile API Google Login Error: GOOGLE_CLIENT_ID is not configured");
+      return apiError("Google sign-in is not configured on the server", 500);
+    }
+
     // Verify the Google ID Token
-    const googleResponse = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+    const googleResponse = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken.trim())}`,
+    );
     const googleData = await googleResponse.json();
 
     if (!googleResponse.ok || !googleData.email) {
       return apiError("Invalid Google ID Token", 401);
     }
 
-    if (googleData.email_verified === false || googleData.email_verified === "false") {
+    // Reject tokens minted for other Google OAuth apps so third-party tokens cannot log into RefreeG.
+    if (googleData.aud !== expectedClientId) {
+      console.warn("Mobile API Google Login rejected: audience mismatch");
+      return apiError("Invalid Google ID Token", 401);
+    }
+
+    if (googleData.email_verified !== true && googleData.email_verified !== "true") {
       return apiError("Google email is not verified", 401);
     }
 
