@@ -1,0 +1,38 @@
+// prisma/schema/email.prisma
+
+/// Admin on/off switch for one notification event (see
+/// lib/options/email-trigger.options.ts). A missing row means "on". Events
+/// marked required there are never read from this table.
+model EmailTrigger {
+  event_key  String   @id
+  enabled    Boolean  @default(true)
+  updated_by String?  @db.Uuid
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+}
+
+/// One admin announcement. `scheduled` rows are picked up by
+/// lib/email/announcement-sender.ts (cron or "send now"). `last_user_id` is the
+/// resume point, so a crashed run continues instead of starting over.
+model EmailAnnouncement {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title           String
+  message         String
+  audience        String
+  /// Path the email button opens, for example /dashboard/causes. Null for none.
+  link_path       String?
+  /// scheduled | sending | sent | failed
+  status          String    @default("scheduled")
+  scheduled_at    DateTime  @default(now()) @db.Timestamptz(6)
+  started_at      DateTime? @db.Timestamptz(6)
+  completed_at    DateTime? @db.Timestamptz(6)
+  recipient_count Int       @default(0)
+  sent_count      Int       @default(0)
+  failed_count    Int       @default(0)
+  last_user_id    String?   @db.Uuid
+  created_by      String    @db.Uuid
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([status, scheduled_at], map: "idx_email_announcements_due")
+  @@index([created_at], map: "idx_email_announcements_created_at")
+}

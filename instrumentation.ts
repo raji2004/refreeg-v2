@@ -7,6 +7,11 @@ import {
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("./sentry.server.config");
+    if (process.env.NEXT_PHASE !== "phase-production-build") {
+      const { startAnnouncementPoller } =
+        await import("@/lib/email/announcement-poller");
+      startAnnouncementPoller();
+    }
   }
   if (process.env.NEXT_RUNTIME === "edge") {
     await import("./sentry.edge.config");

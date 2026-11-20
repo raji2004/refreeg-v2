@@ -15,6 +15,7 @@ import {
   BarChart3,
   ChevronDown,
   ChevronRight,
+  Bell,
   Compass,
   CircleDollarSign,
   ClipboardCheckIcon,
@@ -180,6 +181,11 @@ const adminDashboardItems = [
   },
   { title: "Manage Users", href: "/dashboard/admin/users", icon: UserCog },
   { title: "Analytics", href: "/dashboard/admin/analytics", icon: BarChart3 },
+  {
+    title: "Notifications",
+    href: "/dashboard/admin/notifications",
+    icon: Bell,
+  },
   { title: "Logs", href: "/dashboard/admin/logs", icon: ClipboardCheckIcon },
 ];
 
