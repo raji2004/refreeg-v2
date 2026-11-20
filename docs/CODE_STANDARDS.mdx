@@ -11,14 +11,14 @@ Visual rules (colors, typography, shared UI) live in [DESIGN_GUIDE.md](./DESIGN_
 
 ## Where code lives
 
-| Layer | Location | Job |
-| --- | --- | --- |
-| Server actions | `actions/<domain>/<feature>-actions.ts` | Auth check, input check, one Prisma or provider call, return a result. Nothing else. |
-| Provider clients | `services/`, `lib/` | Talk to Paystack, Flutterwave, Breet, mail. No UI knowledge. |
-| Hooks | `hooks/use-<feature>.ts` | React Query wiring and any post-processing of a result. |
-| Schemas | `lib/schemas/<feature>.schema.ts` | One zod schema per form. |
-| Options | `lib/options/<feature>.options.ts` | Label and value lists. |
-| Components | `components/<domain>/<Component>.tsx` | Thin. Render, call hooks, hold local UI state. |
+| Layer            | Location                                | Job                                                                                  |
+| ---------------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
+| Server actions   | `actions/<domain>/<feature>-actions.ts` | Auth check, input check, one Prisma or provider call, return a result. Nothing else. |
+| Provider clients | `services/`, `lib/`                     | Talk to Paystack, Flutterwave, Breet, mail. No UI knowledge.                         |
+| Hooks            | `hooks/use-<feature>.ts`                | React Query wiring and any post-processing of a result.                              |
+| Schemas          | `lib/schemas/<feature>.schema.ts`       | One zod schema per form.                                                             |
+| Options          | `lib/options/<feature>.options.ts`      | Label and value lists.                                                               |
+| Components       | `components/<domain>/<Component>.tsx`   | Thin. Render, call hooks, hold local UI state.                                       |
 
 Domain folders keep the flat namespaces small:
 
@@ -47,8 +47,14 @@ export async function getReferralDashboard() {
 
 // hooks/use-referrals.ts: post-processing lives here
 export function useReferralDashboard() {
-  const query = useQuery({ queryKey: ["referrals"], queryFn: getReferralDashboard });
-  return { dashboard: query.data?.data ?? null, error: query.data?.error ?? query.error?.message ?? null };
+  const query = useQuery({
+    queryKey: ["referrals"],
+    queryFn: getReferralDashboard,
+  });
+  return {
+    dashboard: query.data?.data ?? null,
+    error: query.data?.error ?? query.error?.message ?? null,
+  };
 }
 ```
 
@@ -79,10 +85,15 @@ const [form, setForm] = useState({
   name: item?.name ?? "",
   description: item?.description ?? "",
 });
-const setFormFields = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
-  setForm((current) => ({ ...current, [key]: value }));
+const setFormFields = <K extends keyof typeof form>(
+  key: K,
+  value: (typeof form)[K],
+) => setForm((current) => ({ ...current, [key]: value }));
 
-<Input value={form.name} onChange={(event) => setFormFields("name", event.target.value)} />
+<Input
+  value={form.name}
+  onChange={(event) => setFormFields("name", event.target.value)}
+/>;
 ```
 
 When one change must set two fields, call `setForm` directly in that handler. Two forms that share fields and submit flow (the pledge page and the Discover pledge dialog) share one hook, such as `hooks/use-pledge-form.ts`, instead of copying the state.
@@ -92,7 +103,10 @@ When one change must set two fields, call `setForm` directly in that handler. Tw
 Every form has a schema in `lib/schemas/<feature>.schema.ts`, checked with `useValidator({ store: form, schema })` from `hooks/use-validator.ts`. It returns `errors`, `validate()` and `clearError(key)`; show `errors.<field>` under each input. The schema checks presence, format and relations between fields, such as end date not before start date.
 
 ```ts
-const { errors, validate, clearError } = useValidator({ store: form, schema: pledgeSchema });
+const { errors, validate, clearError } = useValidator({
+  store: form,
+  schema: pledgeSchema,
+});
 if (!validate()) return;
 ```
 
@@ -141,6 +155,26 @@ Before writing raw HTML, check `components/ui/` and the shared components. Look 
 - No dead code, commented-out blocks or unused exports left behind.
 - Names say what a thing is. Plain words over clever ones.
 - Add a comment only when the reason is not obvious from the code. Say why, not what.
+
+## 11. Tables use the shared DataTable
+
+Every table renders through `components/ui/data-table.tsx` (shadcn base data-table on TanStack Table v9): a `columns.tsx` built with `createColumnHelper`, the shared `data-table-features.ts`, and `<DataTable columns data />`. Client-side pagination state lives in the page or client that owns the filters. Do not hand-roll `<Table>` markup inside a card; the shell owns header styling, row borders and the pagination footer (`data-table-pagination.tsx`).
+
+```tsx
+const columns = useMemo(() => kycQueueColumns(tab), [tab]);
+<DataTable
+  columns={columns}
+  data={filtered}
+  pageSize={8}
+  pageIndex={pageIndex}
+  onPageIndexChange={setPageIndex}
+  pagination
+/>;
+```
+
+## 12. Dialog and form submits run through useMutation
+
+A dialog that calls a server action wraps the call in `useMutation` from `@tanstack/react-query`, validates with `useValidator` first (rule 5), guards against double submit with `isPending`, and handles the result in `onSuccess`: show `result.error` via `FieldError` (rule 3), then close and navigate. No hand-rolled `isSubmitting`/`submitError` state around a plain async handler.
 
 ## Review procedure
 

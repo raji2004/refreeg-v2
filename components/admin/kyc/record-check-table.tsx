@@ -1,12 +1,13 @@
+"use client";
+
+import { useMemo } from "react";
+import { createColumnHelper } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
+import { DataTable } from "@/components/ui/data-table";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  features,
+  type DataTableFeatures,
+} from "@/components/ui/data-table-features";
 import type { RecordCheckResult, RecordCheckRow } from "@/lib/didit";
 
 const resultConfig: Record<
@@ -19,63 +20,65 @@ const resultConfig: Record<
   unknown: null,
 };
 
-const headClassName =
-  "text-xs uppercase tracking-[0.12em] text-ink/50 font-semibold";
+const columnHelper = createColumnHelper<DataTableFeatures, RecordCheckRow>();
 
-/**
- * The designer's "Record check" table: submitted vs official record with a
- * per-field result pill. Rows without official values render a submitted
- * details view instead.
- */
 export function RecordCheckTable({ rows }: { rows: RecordCheckRow[] }) {
   const showOfficial = rows.some((row) => row.official);
+
+  const columns = useMemo(
+    () =>
+      columnHelper.columns([
+        columnHelper.accessor("field", {
+          header: "Field",
+          cell: (info) => (
+            <span className="text-sm text-ink/60">{info.getValue()}</span>
+          ),
+        }),
+        columnHelper.accessor("submitted", {
+          header: "Submitted",
+          cell: (info) => (
+            <span className="text-sm font-medium text-ink">
+              {info.getValue() ?? "—"}
+            </span>
+          ),
+        }),
+        ...(showOfficial
+          ? [
+              columnHelper.accessor("official", {
+                header: "Official record",
+                cell: (info) => (
+                  <span className="text-sm font-medium text-ink">
+                    {info.getValue() ?? "—"}
+                  </span>
+                ),
+              }),
+              columnHelper.display({
+                id: "result",
+                header: "Result",
+                cell: ({ row }) => {
+                  const result = resultConfig[row.original.result];
+                  return (
+                    <span className="block text-right">
+                      {result ? (
+                        <Badge variant={result.variant}>{result.label}</Badge>
+                      ) : (
+                        <span className="text-xs text-ink/40">—</span>
+                      )}
+                    </span>
+                  );
+                },
+              }),
+            ]
+          : []),
+      ]),
+    [showOfficial],
+  );
+
   return (
-    <div className="rounded-lg border border-hairline">
-      <Table>
-        <TableHeader>
-          <TableRow className="border-b border-hairline hover:bg-transparent">
-            <TableHead className={headClassName}>Field</TableHead>
-            <TableHead className={headClassName}>Submitted</TableHead>
-            {showOfficial && (
-              <TableHead className={headClassName}>Official record</TableHead>
-            )}
-            {showOfficial && (
-              <TableHead className={`${headClassName} text-right`}>
-                Result
-              </TableHead>
-            )}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((row) => {
-            const result = showOfficial ? resultConfig[row.result] : null;
-            return (
-              <TableRow key={row.field} className="border-b border-hairline">
-                <TableCell className="text-sm text-ink/60">
-                  {row.field}
-                </TableCell>
-                <TableCell className="text-sm font-medium text-ink">
-                  {row.submitted ?? "—"}
-                </TableCell>
-                {showOfficial && (
-                  <TableCell className="text-sm font-medium text-ink">
-                    {row.official ?? "—"}
-                  </TableCell>
-                )}
-                {showOfficial && (
-                  <TableCell className="text-right">
-                    {result ? (
-                      <Badge variant={result.variant}>{result.label}</Badge>
-                    ) : (
-                      <span className="text-xs text-ink/40">—</span>
-                    )}
-                  </TableCell>
-                )}
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      columns={columns}
+      data={rows}
+      className="rounded-lg border border-hairline"
+    />
   );
 }

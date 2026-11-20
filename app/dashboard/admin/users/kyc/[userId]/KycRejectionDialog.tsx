@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "nextjs-toploader/app";
 import { XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { FieldError } from "@/components/ui/field-error";
 import { Textarea } from "@/components/ui/textarea";
+import { useValidator } from "@/hooks/use-validator";
+import { rejectKycSchema } from "@/lib/schemas/kyc-review.schema";
 import { updateVerificationStatus } from "@/actions/users/kyc-actions";
 
 interface KycRejectionDialogProps {
@@ -27,38 +30,64 @@ export default function KycRejectionDialog({
   applicantFirstName,
 }: KycRejectionDialogProps) {
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [form, setForm] = useState({ verificationId: kycId, reason: "" });
+
+  const setFormFields = <K extends keyof typeof form>(
+    key: K,
+    value: (typeof form)[K],
+  ) => setForm((current) => ({ ...current, [key]: value }));
+
+  const { errors, validate } = useValidator({
+    store: form,
+    schema: rejectKycSchema,
+  });
+
   const router = useRouter();
 
-  const handleReject = async () => {
-    if (!reason.trim() || isSubmitting) return;
-    setIsSubmitting(true);
+  const rejectMutation = useMutation({
+    mutationFn: () =>
+      updateVerificationStatus(
+        form.verificationId,
+        "rejected",
+        form.reason.trim(),
+      ),
+    onSuccess: ({ error }) => {
+      if (error) {
+        setSubmitError(error);
+        return;
+      }
+      setOpen(false);
+      setFormFields("reason", "");
+      router.push(
+        `/dashboard/admin/users/kyc?flash=rejected&name=${encodeURIComponent(
+          applicantFirstName || "The applicant",
+        )}`,
+      );
+    },
+    onError: (mutationError) => {
+      setSubmitError(mutationError.message);
+    },
+  });
+
+  const handleSubmit = () => {
     setSubmitError(null);
-    const { error } = await updateVerificationStatus(
-      kycId,
-      "rejected",
-      reason.trim(),
-    );
-    setIsSubmitting(false);
-    if (error) {
-      setSubmitError(error);
-      return;
-    }
-    setOpen(false);
-    setReason("");
-    router.push(
-      `/dashboard/admin/users/kyc?flash=rejected&name=${encodeURIComponent(
-        applicantFirstName || "The applicant",
-      )}`,
-    );
+    if (!validate() || rejectMutation.isPending) return;
+    rejectMutation.mutate();
   };
 
+  const isSubmitting = rejectMutation.isPending;
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setSubmitError(null);
+      }}
+    >
       <DialogTrigger asChild>
-        <Button variant="destructive" disabled={isSubmitting}>
+        <Button variant="rust" disabled={isSubmitting}>
           <XCircle className="mr-2 h-4 w-4" />
           Reject KYC
         </Button>
@@ -79,11 +108,12 @@ export default function KycRejectionDialog({
             <Textarea
               id="reason"
               placeholder="Enter the reason for rejection..."
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              value={form.reason}
+              onChange={(e) => setFormFields("reason", e.target.value)}
               className="min-h-[100px]"
               disabled={isSubmitting}
             />
+            <FieldError message={errors.reason} />
             {submitError && <FieldError message={submitError} />}
           </div>
         </div>
@@ -95,11 +125,7 @@ export default function KycRejectionDialog({
           >
             Cancel
           </Button>
-          <Button
-            variant="destructive"
-            onClick={handleReject}
-            disabled={!reason.trim() || isSubmitting}
-          >
+          <Button variant="rust" onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? "Rejecting..." : "Reject KYC"}
           </Button>
         </DialogFooter>
