@@ -71,5 +71,21 @@ const config: Config = {
   },
 };
 
+// TanStack Table v9 ships ES modules only, and next/jest leaves node_modules
+// untransformed, so tests that render a DataTable failed to parse it. next/jest
+// lets a config append to transformIgnorePatterns but not change its defaults,
+// so the resolved config is adjusted here.
+const esmPackages = ["@tanstack/react-table", "@tanstack/table-core"];
+
+const jestConfig = createJestConfig(config);
+
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-export default createJestConfig(config);
+export default async () => {
+  const resolved = await jestConfig();
+  resolved.transformIgnorePatterns = [
+    `/node_modules/(?!.pnpm)(?!(${esmPackages.join("|")})/)`,
+    `/node_modules/.pnpm/(?!(${esmPackages.map((name) => name.replace("/", "\\+")).join("|")})@)`,
+    "^.+\\.module\\.(css|sass|scss)$",
+  ];
+  return resolved;
+};

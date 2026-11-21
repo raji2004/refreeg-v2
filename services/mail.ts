@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 import { getClientIp } from "@/lib/api/client-ip";
 import { getCurrentUser } from "@/actions/users/auth-actions";
 import { getProfile } from "@/actions/users/profile-actions";
+import { isTemplateEnabled } from "@/lib/email/triggers";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -47,6 +48,7 @@ const SENDER_BY_TEMPLATE: Partial<Record<string, SenderKey>> = {
   "login-notification": "noreply",
   "bank-account-added": "noreply",
   "welcome-email": "hello",
+  announcement: "hello",
   "organization-invitation": "hello",
 };
 
@@ -80,11 +82,17 @@ export async function sendMail({
   bcc,
 }: SendMailOptions) {
   try {
+    // Admins can switch some events off on the Triggers tab.
+    if (!(await isTemplateEnabled(templateName))) {
+      return { success: true, skipped: true };
+    }
+
     const template = loadTemplate(templateName);
     const html = template(context);
     const resolvedFrom = from ?? senderFor(templateName);
 
     // Enforce a strict 10-second timeout to prevent hanging the main thread
+    let timeout: NodeJS.Timeout | undefined;
     const info = (await Promise.race([
       transporter.sendMail({
         from: resolvedFrom,
@@ -94,10 +102,10 @@ export async function sendMail({
         subject,
         html,
       }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("SMTP Timeout")), 10000),
-      ),
-    ])) as any;
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error("SMTP Timeout")), 10000);
+      }),
+    ]).finally(() => clearTimeout(timeout))) as any;
 
     return { success: true, messageId: info.messageId };
   } catch (error) {
