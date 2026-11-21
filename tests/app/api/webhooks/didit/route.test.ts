@@ -1,6 +1,7 @@
 /**
  * @jest-environment node
  */
+import { createHmac } from "crypto";
 import { POST } from "@/app/api/webhooks/didit/route";
 import { prisma } from "@/lib/prisma";
 import { sendKycApprovedEmail } from "@/services/mail";
@@ -41,17 +42,42 @@ const mockPrisma = prisma as unknown as {
   user: { findUnique: jest.Mock; update: jest.Mock };
 };
 
+const TEST_SECRET = "test-didit-webhook-secret";
+
 describe("Didit Webhook POST", () => {
+  const originalSecret = process.env.DIDIT_WEBHOOK_SECRET;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.DIDIT_WEBHOOK_SECRET = TEST_SECRET;
   });
 
-  const createRequest = (body: any) =>
-    new Request("http://localhost/api/webhooks/didit", {
+  afterAll(() => {
+    if (originalSecret === undefined) delete process.env.DIDIT_WEBHOOK_SECRET;
+    else process.env.DIDIT_WEBHOOK_SECRET = originalSecret;
+  });
+
+  const createRequest = (body: any, signature?: string) => {
+    const raw = JSON.stringify(body);
+    return new Request("http://localhost/api/webhooks/didit", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        "X-Didit-Signature":
+          signature ??
+          createHmac("sha256", TEST_SECRET).update(raw).digest("hex"),
+      },
+      body: raw,
     });
+  };
+
+  it("rejects a payload with an invalid signature", async () => {
+    const res = await POST(
+      createRequest({ session_id: "uuid-123", status: "Approved" }, "bad"),
+    );
+    expect(res.status).toBe(401);
+    expect(mockPrisma.kyc_verifications.findFirst).not.toHaveBeenCalled();
+  });
 
   it("returns 400 if session_id is missing from all fallback fields", async () => {
     const req = createRequest({ status: "Approved" }); // No id, session_id, session

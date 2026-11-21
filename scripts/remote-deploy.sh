@@ -135,6 +135,45 @@ if [[ -n "${AUTH_SECRET:-}" ]]; then
   echo "Cause cover warm-up started (see shared/logs/warm-cause-images.log)."
 fi
 
+# ── 7c. Scheduled jobs (/api/cron/*) ─────────────────────────────────────────
+# Single box only: each job must run exactly once, so this can't move to the
+# scaled fleet as-is (see docs/AWS_SCALING_PLAN.md, Phase 2). Schedules mirror
+# vercel.json and assume the box clock is UTC. The secret is read from
+# secrets.env at run time so it never lands in the crontab itself.
+CRON_RUNNER="${SHARED_DIR}/run-cron.sh"
+cat > "$CRON_RUNNER" <<'RUNNER'
+#!/usr/bin/env bash
+set -uo pipefail
+JOB="$1"
+SHARED_DIR="$(cd "$(dirname "$0")" && pwd)"
+CRON_SECRET=$(sed -n 's/^[[:space:]]*CRON_SECRET=//p' "${SHARED_DIR}/secrets.env" | tail -1)
+if [[ -z "$CRON_SECRET" ]]; then
+  echo "$(date -u +%FT%TZ) ${JOB}: CRON_SECRET missing from secrets.env, skipped"
+  exit 1
+fi
+echo "$(date -u +%FT%TZ) ${JOB}: start"
+exec 9>"/tmp/refreeg-cron-${JOB}.lock"
+flock -n 9 || { echo "${JOB}: previous run still going, skipped"; exit 0; }
+curl -sS --max-time 900 -X POST -H "Authorization: Bearer ${CRON_SECRET}" \
+  -w '\nHTTP %{http_code}\n' "http://127.0.0.1:3000/api/cron/${JOB}"
+RUNNER
+chmod 700 "$CRON_RUNNER"
+
+CRON_TAG="# refreeg-cron"
+if [[ -n "${CRON_SECRET:-}" ]]; then
+  {
+    crontab -l 2>/dev/null | grep -v "$CRON_TAG" || true
+    for entry in "0 6 * * *|pledge-charges" "15 6 * * *|pledge-reminders" "0 0 * * *|proof-enforcement"; do
+      schedule="${entry%%|*}"; job="${entry##*|}"
+      echo "${schedule} ${CRON_RUNNER} ${job} >> ${SHARED_DIR}/logs/cron-${job}.log 2>&1 ${CRON_TAG}"
+    done
+  } | crontab - \
+    && echo "Cron jobs installed (box timezone: $(date +%Z))." \
+    || echo "Warning: could not install cron jobs."
+else
+  echo "Warning: CRON_SECRET not set  cron jobs NOT installed."
+fi
+
 # ── 8. Prune old releases, keep the last N ────────────────────────────────────
 cd "$RELEASES_DIR"
 ls -1t | grep -v '^\.previous$' | tail -n +$((KEEP_RELEASES + 1)) | xargs -r rm -rf --

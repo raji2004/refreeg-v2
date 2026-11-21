@@ -240,10 +240,14 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_FROM_HELLO: ${{ secrets.EMAIL_FROM_HELLO }}
+          EMAIL_FROM_SUPPORT: ${{ secrets.EMAIL_FROM_SUPPORT }}
+          EMAIL_FROM_NOREPLY: ${{ secrets.EMAIL_FROM_NOREPLY }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
           CONVERTKIT_API_KEY: ${{ secrets.CONVERTKIT_API_KEY }}
           CONVERTKIT_FORM_ID: ${{ secrets.CONVERTKIT_FORM_ID }}
           CONVERTKIT_API_SECRET: ${{ secrets.CONVERTKIT_API_SECRET }}
@@ -285,10 +289,14 @@ jobs:
           DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
           GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
           EMAIL_FROM=${EMAIL_FROM}
+          EMAIL_FROM_HELLO=${EMAIL_FROM_HELLO}
+          EMAIL_FROM_SUPPORT=${EMAIL_FROM_SUPPORT}
+          EMAIL_FROM_NOREPLY=${EMAIL_FROM_NOREPLY}
           SMTP_HOST=${SMTP_HOST}
           SMTP_PASSWORD=${SMTP_PASSWORD}
           SMTP_PORT=${SMTP_PORT}
           SMTP_USER=${SMTP_USER}
+          CRON_SECRET=${CRON_SECRET}
           CONVERTKIT_API_KEY=${CONVERTKIT_API_KEY}
           CONVERTKIT_FORM_ID=${CONVERTKIT_FORM_ID}
           CONVERTKIT_API_SECRET=${CONVERTKIT_API_SECRET}
