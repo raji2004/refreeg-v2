@@ -3,8 +3,8 @@
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { isAdminOrManager } from "../admin/role-actions";
 import { isOwnUploadKey } from "@/lib/s3/owned-key";
+import { receiptDetailsSchema } from "@/lib/schemas/proof-update.schema";
 
 const MAX_FILES = 10;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -129,6 +129,18 @@ export async function submitProofUpdate(formData: FormData) {
       ? Number(milestoneRaw)
       : null;
 
+  const details = receiptDetailsSchema.safeParse({
+    receiptTitle: String(formData.get("receiptTitle") ?? ""),
+    vendor: String(formData.get("vendor") ?? ""),
+    receiptDate: String(formData.get("receiptDate") ?? ""),
+    amount: String(formData.get("amount") ?? ""),
+    invoiceNumber: String(formData.get("invoiceNumber") ?? ""),
+  });
+  if (!details.success) {
+    return { success: false, error: details.error.issues[0].message };
+  }
+  const receipt = details.data;
+
   const update = await prisma.campaign_proof_updates.create({
     data: {
       cause_id: causeId,
@@ -136,26 +148,51 @@ export async function submitProofUpdate(formData: FormData) {
       milestone,
       description,
       media, // Stored as JSONB
+      receipt_title: receipt.receiptTitle || null,
+      vendor: receipt.vendor || null,
+      receipt_date: receipt.receiptDate ? new Date(receipt.receiptDate) : null,
+      amount: receipt.amount ? Number(receipt.amount.replace(/,/g, "")) : null,
+      invoice_number: receipt.invoiceNumber || null,
     },
   });
 
-  // Link to the oldest pending requirement this update satisfies
-  const requirement = await prisma.campaign_proof_requirements.findFirst({
-    where: {
-      cause_id: causeId,
-      status: "pending",
-      ...(milestone ? { milestone } : {}),
-    },
-    orderBy: { crossed_at: "asc" },
+  // A reply to an admin's info request replaces the parked receipt and takes over its milestone.
+  const awaitingInfo = await prisma.campaign_proof_updates.findMany({
+    where: { cause_id: causeId, milestone, status: "need_info" },
+    select: { id: true },
   });
-
-  if (requirement) {
-    await prisma.campaign_proof_requirements.update({
-      where: { id: requirement.id },
-      data: { status: "submitted", submitted_update_id: update.id },
+  if (awaitingInfo.length > 0) {
+    const awaitingIds = awaitingInfo.map((row) => row.id);
+    await prisma.$transaction([
+      prisma.campaign_proof_updates.updateMany({
+        where: { id: { in: awaitingIds } },
+        data: { status: "superseded" },
+      }),
+      prisma.campaign_proof_requirements.updateMany({
+        where: { submitted_update_id: { in: awaitingIds } },
+        data: { submitted_update_id: update.id },
+      }),
+    ]);
+  } else {
+    // Link to the oldest pending requirement this update satisfies
+    const requirement = await prisma.campaign_proof_requirements.findFirst({
+      where: {
+        cause_id: causeId,
+        status: "pending",
+        ...(milestone ? { milestone } : {}),
+      },
+      orderBy: { crossed_at: "asc" },
     });
+
+    if (requirement) {
+      await prisma.campaign_proof_requirements.update({
+        where: { id: requirement.id },
+        data: { status: "submitted", submitted_update_id: update.id },
+      });
+    }
   }
 
+  revalidatePath("/dashboard/admin/receipts");
   revalidatePath("/dashboard/causes");
   revalidatePath(`/causes/${causeId}`);
   return { success: true };
@@ -182,189 +219,4 @@ export async function getCreatorComplianceStatus(userId: string) {
     },
     orderBy: { deadline: "asc" },
   });
-}
-
-/** ADMIN: review queue. */
-export async function getPendingProofUpdatesForAdmin() {
-  const session = await auth();
-  if (!session?.user?.id || !(await isAdminOrManager(session.user.id))) {
-    throw new Error("Unauthorized");
-  }
-  return prisma.campaign_proof_updates.findMany({
-    where: { status: "pending" },
-    orderBy: { created_at: "asc" },
-    include: {
-      cause: { select: { id: true, title: true, compliance_paused: true } },
-      user: { select: { fullName: true, email: true } },
-    },
-  });
-}
-
-/** ADMIN: approve → publish update, satisfy requirement, lift pause if clear. */
-export async function approveProofUpdate(updateId: string) {
-  const session = await auth();
-  if (!session?.user?.id || !(await isAdminOrManager(session.user.id)))
-    throw new Error("Unauthorized");
-
-  const update = await prisma.campaign_proof_updates.findUnique({
-    where: { id: updateId },
-    include: {
-      cause: {
-        select: {
-          id: true,
-          title: true,
-          userId: true,
-          compliance_paused: true,
-        },
-      },
-    },
-  });
-  if (!update || update.status !== "pending")
-    throw new Error("Update not found");
-
-  const result = await prisma.$transaction(async (tx) => {
-    await tx.campaign_proof_updates.update({
-      where: { id: updateId },
-      data: { status: "approved", reviewed_at: new Date() },
-    });
-
-    const requirement = await tx.campaign_proof_requirements.findFirst({
-      where: { submitted_update_id: updateId, status: "submitted" },
-    });
-    if (requirement) {
-      await tx.campaign_proof_requirements.update({
-        where: { id: requirement.id },
-        data: {
-          status: "satisfied",
-          satisfied_at: new Date(),
-          last_reminder_at: null,
-        },
-      });
-    }
-
-    const remaining = await tx.campaign_proof_requirements.count({
-      where: {
-        cause_id: update.cause_id,
-        status: { in: ["pending", "submitted"] },
-      },
-    });
-
-    let pauseLifted = false;
-    if (remaining === 0 && update.cause.compliance_paused) {
-      await tx.cause.update({
-        where: { id: update.cause_id },
-        data: { compliance_paused: false, compliance_paused_at: null },
-      });
-      pauseLifted = true;
-    }
-    return { pauseLifted };
-  });
-
-  revalidatePath(`/causes/${update.cause_id}`);
-  revalidatePath("/causes");
-  revalidatePath("/dashboard/admin/proof-updates");
-
-  try {
-    const causeWithUser = await prisma.cause.findUnique({
-      where: { id: update.cause_id },
-      include: { user: { select: { email: true, fullName: true } } },
-    });
-
-    if (causeWithUser?.user?.email) {
-      const { sendProofUpdateApprovedEmail, sendProofUpdatePublishedEmail } =
-        await import("@/services/mail");
-
-      // 1. Email the creator
-      await sendProofUpdateApprovedEmail({
-        to: causeWithUser.user.email,
-        userName: causeWithUser.user.fullName || "there",
-        causeTitle: causeWithUser.title,
-        causeUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/causes/${update.cause_id}`,
-        pauseLifted: result.pauseLifted,
-      });
-
-      const followers = await prisma.campaign_follows.findMany({
-        where: { cause_id: update.cause_id },
-        select: { email: true },
-      });
-      const donors = await prisma.donation.findMany({
-        where: { causeId: update.cause_id },
-        select: { email: true },
-        distinct: ["email"],
-      });
-
-      const allEmails = new Set<string>();
-      followers.forEach((f) => f.email && allEmails.add(f.email));
-      donors.forEach((d) => d.email && allEmails.add(d.email));
-
-      allEmails.delete(causeWithUser.user.email);
-
-      const causeUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/causes/${update.cause_id}`;
-
-      // Fire and forget - don't await all of them to avoid slowing down the admin action
-      Array.from(allEmails).forEach((email) => {
-        sendProofUpdatePublishedEmail({
-          to: email,
-          causeTitle: causeWithUser.title,
-          causeUrl,
-        }).catch((err) =>
-          console.error(`Failed to send published email to ${email}:`, err),
-        );
-      });
-    }
-  } catch (emailError) {
-    console.error("Failed to send approval/published emails:", emailError);
-  }
-
-  return { success: true, pauseLifted: result.pauseLifted };
-}
-
-/** ADMIN: reject → requirement returns to pending so the creator must resubmit. */
-export async function rejectProofUpdate(updateId: string, reason: string) {
-  const session = await auth();
-  if (!session?.user?.id || !(await isAdminOrManager(session.user.id)))
-    throw new Error("Unauthorized");
-
-  const update = await prisma.campaign_proof_updates.findUnique({
-    where: { id: updateId },
-    include: { cause: { select: { title: true } } },
-  });
-  if (!update || update.status !== "pending")
-    throw new Error("Update not found");
-
-  await prisma.$transaction(async (tx) => {
-    await tx.campaign_proof_updates.update({
-      where: { id: updateId },
-      data: {
-        status: "rejected",
-        rejection_reason: reason || null,
-        reviewed_at: new Date(),
-      },
-    });
-    await tx.campaign_proof_requirements.updateMany({
-      where: { submitted_update_id: updateId, status: "submitted" },
-      data: { status: "pending", submitted_update_id: null },
-    });
-  });
-
-  revalidatePath("/dashboard/admin/proof-updates");
-
-  try {
-    const causeWithUser = await prisma.cause.findUnique({
-      where: { id: update.cause_id },
-      include: { user: { select: { email: true, fullName: true } } },
-    });
-    if (causeWithUser?.user?.email) {
-      const { sendProofUpdateRejectedEmail } = await import("@/services/mail");
-      await sendProofUpdateRejectedEmail({
-        to: causeWithUser.user.email,
-        userName: causeWithUser.user.fullName || "there",
-        causeTitle: causeWithUser.title,
-        rejectionReason: reason,
-      });
-    }
-  } catch (emailError) {
-    console.error("Failed to send rejection email:", emailError);
-  }
-  return { success: true };
 }

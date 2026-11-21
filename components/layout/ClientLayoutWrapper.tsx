@@ -7,6 +7,7 @@ const CREAM_ROUTES = [
   "/dashboard/settings",
   "/dashboard/donations",
   "/dashboard/admin/users/kyc",
+  "/dashboard/admin/receipts",
 ];
 
 export default function ClientLayoutWrapper({

@@ -119,19 +119,38 @@ model campaign_proof_requirements {
 }
 
 /// A creator-submitted proof update (milestone-tagged or voluntary).
+/// Admins review it as a receipt: status is pending, need_info, approved,
+/// rejected or superseded (replaced by a reply to an info request).
 model campaign_proof_updates {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cause_id         String    @db.Uuid
-  user_id          String    @db.Uuid
-  milestone        Int?
-  description      String
-  media            Json      @default("[]")
-  status           String    @default("pending")
-  rejection_reason String?
-  reviewed_at      DateTime? @db.Timestamptz(6)
-  created_at       DateTime  @default(now()) @db.Timestamptz(6)
-  cause            Cause     @relation(fields: [cause_id], references: [id], onDelete: Cascade)
-  user             User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  receipt_no           Int       @unique @default(autoincrement())
+  cause_id             String    @db.Uuid
+  user_id              String    @db.Uuid
+  milestone            Int?
+  description          String
+  media                Json      @default("[]")
+  status               String    @default("pending")
+  rejection_reason     String?
+  reviewed_at          DateTime? @db.Timestamptz(6)
+  created_at           DateTime  @default(now()) @db.Timestamptz(6)
+  /// What the creator typed when uploading.
+  receipt_title        String?
+  vendor               String?
+  receipt_date         DateTime? @db.Date
+  amount               Decimal?  @db.Decimal(18, 2)
+  invoice_number       String?
+  /// What the receipt itself says. Null until an extraction step fills it.
+  read_vendor          String?
+  read_date            DateTime? @db.Date
+  read_amount          Decimal?  @db.Decimal(18, 2)
+  read_invoice_number  String?
+  verified_amount      Decimal?  @db.Decimal(18, 2)
+  info_request_reason  String?
+  info_request_message String?
+  info_reply_by        DateTime? @db.Timestamptz(6)
+  info_requested_at    DateTime? @db.Timestamptz(6)
+  cause                Cause     @relation(fields: [cause_id], references: [id], onDelete: Cascade)
+  user                 User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([cause_id, status], map: "idx_proof_updates_cause_status")
   @@index([status, created_at], map: "idx_proof_updates_status_created")

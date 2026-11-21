@@ -6,14 +6,21 @@ import { POST } from "@/app/api/cron/proof-enforcement/route";
 import { prisma } from "@/lib/prisma";
 import {
   sendProofCausePausedEmail,
+  sendProofUpdateRejectedEmail,
   sendProofUpdateReminderEmail,
 } from "@/services/mail";
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
+    $transaction: jest.fn(),
+    campaign_proof_updates: {
+      findMany: jest.fn(),
+      update: jest.fn(),
+    },
     campaign_proof_requirements: {
       findMany: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     cause: {
       update: jest.fn(),
@@ -24,11 +31,18 @@ jest.mock("@/lib/prisma", () => ({
 
 jest.mock("@/services/mail", () => ({
   sendProofCausePausedEmail: jest.fn(),
+  sendProofUpdateRejectedEmail: jest.fn(),
   sendProofUpdateReminderEmail: jest.fn(),
 }));
 
 const mockPrisma = prisma as unknown as {
-  campaign_proof_requirements: { findMany: jest.Mock; update: jest.Mock };
+  $transaction: jest.Mock;
+  campaign_proof_updates: { findMany: jest.Mock; update: jest.Mock };
+  campaign_proof_requirements: {
+    findMany: jest.Mock;
+    update: jest.Mock;
+    updateMany: jest.Mock;
+  };
   cause: { update: jest.Mock; updateMany: jest.Mock };
 };
 
@@ -51,6 +65,7 @@ describe("proof-enforcement cron", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     delete process.env.CRON_SECRET;
+    mockPrisma.campaign_proof_updates.findMany.mockResolvedValue([]);
   });
 
   it("pauses all overdue causes with one updateMany and still emails each owner", async () => {
@@ -72,7 +87,12 @@ describe("proof-enforcement cron", () => {
       data: expect.objectContaining({ compliance_paused: true }),
     });
     expect(sendProofCausePausedEmail).toHaveBeenCalledTimes(2);
-    expect(body).toEqual({ success: true, paused: 2, reminded: 0 });
+    expect(body).toEqual({
+      success: true,
+      expiredReceipts: 0,
+      paused: 2,
+      reminded: 0,
+    });
   });
 
   it("skips causes that are already paused and never calls updateMany with nothing", async () => {
@@ -107,6 +127,37 @@ describe("proof-enforcement cron", () => {
     expect(mockPrisma.cause.updateMany).toHaveBeenCalledTimes(1);
     expect(sendProofCausePausedEmail).not.toHaveBeenCalled();
     expect((await res.json()).paused).toBe(1);
+  });
+
+  it("rejects receipts whose info request passed its reply-by date", async () => {
+    mockPrisma.campaign_proof_updates.findMany.mockResolvedValueOnce([
+      {
+        id: "u1",
+        cause: {
+          title: "Clinic",
+          user: { email: "a@example.com", fullName: "A" },
+        },
+      },
+    ]);
+    mockPrisma.campaign_proof_requirements.findMany.mockResolvedValue([]);
+
+    const res = await POST(request());
+
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.campaign_proof_updates.update).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      data: expect.objectContaining({ status: "rejected" }),
+    });
+    expect(
+      mockPrisma.campaign_proof_requirements.updateMany,
+    ).toHaveBeenCalledWith({
+      where: { submitted_update_id: "u1", status: "submitted" },
+      data: { status: "pending", submitted_update_id: null },
+    });
+    expect(sendProofUpdateRejectedEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "a@example.com", causeTitle: "Clinic" }),
+    );
+    expect((await res.json()).expiredReceipts).toBe(1);
   });
 
   it("rejects requests with the wrong secret", async () => {

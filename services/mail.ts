@@ -1179,6 +1179,38 @@ export async function sendProofUpdateApprovedEmail(params: {
   });
 }
 
+export async function sendReceiptInfoRequestedEmail(params: {
+  to: string;
+  userName: string;
+  causeTitle: string;
+  receiptLabel: string;
+  reason: string;
+  message: string;
+  replyBy: Date;
+}) {
+  if (!params.to) return;
+  const currentYear = new Date().getFullYear();
+  return sendMail({
+    to: params.to,
+    subject: `We need more information about receipt ${params.receiptLabel}`,
+    templateName: "receipt-info-requested",
+    context: {
+      userName: params.userName,
+      causeTitle: params.causeTitle,
+      receiptLabel: params.receiptLabel,
+      reason: params.reason,
+      message: params.message,
+      replyBy: params.replyBy.toLocaleDateString("en-NG", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      }),
+      dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.refreeg.com"}/dashboard/causes`,
+      currentYear,
+    },
+  });
+}
+
 export async function sendProofUpdateRejectedEmail(params: {
   to: string;
   userName: string;

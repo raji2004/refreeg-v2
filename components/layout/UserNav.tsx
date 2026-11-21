@@ -198,6 +198,9 @@ export function UserNav() {
                 Manage petitions
               </MenuLink>
               <MenuLink href="/dashboard/admin/users/kyc">KYC reviews</MenuLink>
+              <MenuLink href="/dashboard/admin/receipts">
+                Receipt reviews
+              </MenuLink>
               <MenuLink href="/dashboard/admin/api-reports">
                 API reports
               </MenuLink>
