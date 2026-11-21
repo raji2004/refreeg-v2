@@ -6,7 +6,7 @@ jest.mock("@/lib/prisma", () => ({
     donation: { findMany: jest.fn() },
     pledges: { findMany: jest.fn() },
     subscriptions: { findMany: jest.fn() },
-    bookmarks: { count: jest.fn() },
+    bookmark: { count: jest.fn() },
     user: { findUnique: jest.fn() },
     cause: { findMany: jest.fn() },
     campaign_proof_updates: { findMany: jest.fn() },
@@ -53,7 +53,7 @@ function seed({
   db.donation.findMany.mockResolvedValue(donations);
   db.pledges.findMany.mockResolvedValue(pledges);
   db.subscriptions.findMany.mockResolvedValue(subscriptions);
-  db.bookmarks.count.mockResolvedValue(12);
+  db.bookmark.count.mockResolvedValue(12);
   db.user.findUnique.mockResolvedValue({ total_points: 2418 });
   db.cause.findMany.mockResolvedValue(extraCauses);
   db.campaign_proof_updates.findMany.mockResolvedValue(
