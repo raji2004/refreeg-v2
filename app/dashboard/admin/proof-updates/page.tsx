@@ -1,15 +1,6 @@
-import { getPendingProofUpdatesForAdmin } from "@/actions/causes/proof-update-actions";
-import ProofUpdatesClient from "./proof-updates-client";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Proof Updates | RefreeG Admin" };
-
-export default async function AdminProofUpdatesPage() {
-  const updates = await getPendingProofUpdatesForAdmin();
-
-  const serialized = updates.map((u) => ({
-    ...u,
-    created_at: u.created_at.toISOString(),
-    reviewed_at: u.reviewed_at?.toISOString() ?? null,
-  }));
-  return <ProofUpdatesClient initialUpdates={serialized} />;
+/** Proof updates are reviewed as receipts now; keep old links working. */
+export default function AdminProofUpdatesPage() {
+  redirect("/dashboard/admin/receipts");
 }

@@ -5,6 +5,9 @@ import { submitProofUpdate } from "@/actions/causes/proof-update-actions";
 import { uploadFileWithPresign } from "@/lib/s3/upload-client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FieldError } from "@/components/ui/field-error";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +16,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useValidator } from "@/hooks/use-validator";
+import { receiptDetailsSchema } from "@/lib/schemas/proof-update.schema";
 import { Loader2, Upload, X, FileText } from "lucide-react";
 
 const MAX_FILES = 10;
@@ -37,11 +42,25 @@ export function ProofUploadDialog({
   onSubmitted,
   trigger,
 }: Props) {
+  const initialForm = {
+    description: "",
+    milestone:
+      pendingMilestones.length > 0 ? String(pendingMilestones[0]) : "general",
+    receiptTitle: "",
+    vendor: "",
+    receiptDate: "",
+    amount: "",
+    invoiceNumber: "",
+  };
   const [open, setOpen] = useState(false);
-  const [description, setDescription] = useState("");
-  const [milestone, setMilestone] = useState<string>(
-    pendingMilestones.length > 0 ? String(pendingMilestones[0]) : "general",
-  );
+  const [form, setForm] = useState(initialForm);
+  const setFormFields = (key: keyof typeof form, value: string) =>
+    setForm((current) => ({ ...current, [key]: value }));
+  const { errors, validate } = useValidator({
+    store: form,
+    schema: receiptDetailsSchema,
+  });
+  const description = form.description;
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -80,19 +99,16 @@ export function ProofUploadDialog({
   };
 
   const reset = () => {
-    setDescription("");
+    setForm(initialForm);
     setFiles([]);
     setError(null);
-    setMilestone(
-      pendingMilestones.length > 0 ? String(pendingMilestones[0]) : "general",
-    );
   };
 
   const handleSubmit = async () => {
+    if (!validate()) return;
     const fd = new FormData();
     fd.append("causeId", causeId);
-    fd.append("description", description);
-    fd.append("milestone", milestone);
+    for (const [key, value] of Object.entries(form)) fd.append(key, value);
 
     setSubmitting(true);
     setError(null);
@@ -159,8 +175,8 @@ export function ProofUploadDialog({
                 This update covers
               </label>
               <select
-                value={milestone}
-                onChange={(e) => setMilestone(e.target.value)}
+                value={form.milestone}
+                onChange={(e) => setFormFields("milestone", e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
               >
                 {pendingMilestones.map((m) => (
@@ -188,11 +204,46 @@ export function ProofUploadDialog({
             </div>
             <Textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => setFormFields("description", e.target.value)}
               placeholder="e.g. We purchased 40 bags of cement and paid the masons for week 2."
               rows={4}
               className="mt-1"
             />
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-hairline p-3">
+            <p className="text-sm font-medium text-ink">
+              Receipt details{" "}
+              <span className="font-normal text-ink/50">
+                (helps our team verify faster)
+              </span>
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  ["receiptTitle", "What is it?", "text", "Pharmacy invoice"],
+                  ["vendor", "Vendor", "text", "Dala Pharmacy Ltd"],
+                  ["receiptDate", "Date on receipt", "date", ""],
+                  ["amount", "Amount (₦)", "text", "120,000"],
+                  ["invoiceNumber", "Invoice no.", "text", "DP-00412"],
+                ] as const
+              ).map(([key, label, type, placeholder]) => (
+                <div key={key} className="space-y-1">
+                  <Label htmlFor={`proof-${key}`} className="text-xs">
+                    {label}
+                  </Label>
+                  <Input
+                    id={`proof-${key}`}
+                    type={type}
+                    inputMode={key === "amount" ? "decimal" : undefined}
+                    value={form[key]}
+                    placeholder={placeholder}
+                    onChange={(e) => setFormFields(key, e.target.value)}
+                  />
+                  <FieldError message={errors[key]} />
+                </div>
+              ))}
+            </div>
           </div>
 
           <div>

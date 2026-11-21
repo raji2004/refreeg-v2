@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Header } from "@/components/layout/Header";
 import { AppShell } from "@/components/app-shell/app-shell";
+import { AdminShell } from "@/components/admin-shell/AdminShell";
 
 const AIAgentBot = dynamic(
   () => import("@/app/ai-agent/_components/ai-agent-bot"),
@@ -51,6 +52,10 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   ];
   const useAppShell =
     !hideLayout && appShellRoutes.some((route) => pathname.startsWith(route));
+
+  if (pathname.startsWith("/dashboard/admin")) {
+    return <AdminShell>{children}</AdminShell>;
+  }
 
   if (useAppShell) {
     return <AppShell>{children}</AppShell>;
